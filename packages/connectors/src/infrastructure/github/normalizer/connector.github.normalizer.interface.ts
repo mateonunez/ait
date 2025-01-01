@@ -1,11 +1,17 @@
 export interface GitHubRepository {
   id: number;
+  node_id: string;
   name: string;
   full_name: string;
-  private: boolean;
-  html_url: string;
-  created_at: string;
-  updated_at: string;
+  license: {
+    key: string;
+    name: string;
+    url: string | null;
+    spdx_id: string | null;
+    node_id: string;
+    html_url?: string;
+  } | null;
+  created_at: string | null;
 }
 
 export interface NormalizedGitHubRepository {

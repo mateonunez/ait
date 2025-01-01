@@ -12,7 +12,7 @@ const mapping: ConnectorDataNormalizerMapping<GitHubRepository, NormalizedGitHub
   updatedAt: "updated_at",
 };
 
-export class GitHubDataNormalizer extends ConnectorDataNormalizer<GitHubRepository, NormalizedGitHubRepository> {
+export class ConnectorGitHubNormalizer extends ConnectorDataNormalizer<GitHubRepository, NormalizedGitHubRepository> {
   constructor() {
     super(mapping);
   }

@@ -1,8 +1,8 @@
 import { Octokit } from "@octokit/rest";
-import type { ConnectorGitHubFetchRepositoriesResponse } from "./connector.github.retriever.interface";
-import { ConnectorGitHubDataRetrieverFetchRepositoriesError } from "./connector.github.retriever.errors";
+import type { ConnectorGitHubFetchRepositoriesResponse, IConnectorGitHubRetriever } from "./connector.github.retriever.interface";
+import { ConnectorGitHubRetrieverFetchRepositoriesError } from "./connector.github.retriever.errors";
 
-export class GitHubDataRetriever {
+export class ConnectorGitHubRetriever implements IConnectorGitHubRetriever {
   private octokit: Octokit;
 
   constructor(accessToken: string) {
@@ -15,7 +15,7 @@ export class GitHubDataRetriever {
       return data;
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || 'Unknown error';
-      throw new ConnectorGitHubDataRetrieverFetchRepositoriesError(`Invalid fetch repositories: ${message}`, message);
+      throw new ConnectorGitHubRetrieverFetchRepositoriesError(`Invalid fetch repositories: ${message}`, message);
     }
   }
 }

@@ -1,10 +1,10 @@
-export class ConnectorGitHubDataRetrieverFetchRepositoriesError extends Error {
+export class ConnectorGitHubRetrieverFetchRepositoriesError extends Error {
   public responseBody: string;
 
   constructor(message: string, responseBody: string) {
     super(message);
-    this.name = "ConnectorGitHubDataRetrieverFetchRepositoriesError";
+    this.name = "ConnectorGitHubRetrieverFetchRepositoriesError";
     this.responseBody = responseBody;
-    Object.setPrototypeOf(this, ConnectorGitHubDataRetrieverFetchRepositoriesError.prototype);
+    Object.setPrototypeOf(this, ConnectorGitHubRetrieverFetchRepositoriesError.prototype);
   }
 }
