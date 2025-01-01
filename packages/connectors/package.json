@@ -1,0 +1,18 @@
+{
+  "name": "@ait/connectors",
+  "version": "1.0.0",
+  "description": "AIt's connectors",
+  "main": "index.js",
+  "scripts": {
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "test": "glob src/**/*.test.ts -c 'c8 tsx --test'",
+    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --test --watch'"
+  },
+  "keywords": [],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "undici": "^7.2.0"
+  }
+}
