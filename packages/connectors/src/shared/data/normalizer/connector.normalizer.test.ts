@@ -1,7 +1,7 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { ConnectorDataNormalizer } from "./connector.data-normalizer";
-import type { ConnectorDataNormalizerMapping } from "./connector.data-normalizer.interface";
+import { ConnectorDataNormalizer } from "./connector.normalizer";
+import type { ConnectorDataNormalizerMapping } from "./connector.normalizer.interface";
 
 interface SourceData {
   firstName: string;

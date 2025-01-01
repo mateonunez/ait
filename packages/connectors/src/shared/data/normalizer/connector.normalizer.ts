@@ -1,4 +1,4 @@
-import type { ConnectorDataNormalizerMapping, IConnectorDataNormalizer } from "./connector.data-normalizer.interface";
+import type { ConnectorDataNormalizerMapping, IConnectorDataNormalizer } from "./connector.normalizer.interface";
 
 export class ConnectorDataNormalizer<T, U>
   implements IConnectorDataNormalizer<T, U>
