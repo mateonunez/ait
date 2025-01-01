@@ -13,9 +13,7 @@ export class ConnectorGitHubAuthenticator implements IConnectorGitHubAuthenticat
     return await this.oauth.getAccessToken(code);
   }
 
-  async refreshToken(
-    refreshToken: string
-  ): Promise<IConnectorOAuthTokenResponse> {
+  async refreshToken(refreshToken: string): Promise<IConnectorOAuthTokenResponse> {
     return await this.oauth.refreshAccessToken(refreshToken);
   }
 }

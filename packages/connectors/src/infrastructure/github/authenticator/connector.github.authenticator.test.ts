@@ -3,7 +3,10 @@ import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
 import { ConnectorGitHubAuthenticator } from "./connector.github.authenticator";
 import { ConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorOAuthConfig, IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
+import type {
+  IConnectorOAuthConfig,
+  IConnectorOAuthTokenResponse,
+} from "../../../shared/auth/lib/oauth/connector.oauth.interface";
 
 describe("ConnectorGitHubAuthenticator", { concurrency: true }, () => {
   let agent: MockAgent;
@@ -36,7 +39,7 @@ describe("ConnectorGitHubAuthenticator", { concurrency: true }, () => {
       .intercept({ path: "/", method: "POST" })
       .reply(200, { access_token: "fake-access-token" });
 
-    const result = await authenticator.authenticate("test-code");
+    const result = await authenticator.authenticate();
     assert.equal(result.access_token, "fake-access-token");
   });
 

@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
-import { GitHubDataRetriever } from "./connector.github.retriever";
+import { ConnectorGitHubRetriever } from "./connector.github.retriever";
 import type { ConnectorGitHubFetchRepositoriesResponse } from "./connector.github.retriever.interface";
 
-describe("GitHubDataRetriever", () => {
+describe("ConnectorGitHubRetriever", () => {
   let agent: MockAgent;
-  let retriever: GitHubDataRetriever;
+  let retriever: ConnectorGitHubRetriever;
   let mockAccessToken: string;
 
   beforeEach(() => {
@@ -14,7 +14,7 @@ describe("GitHubDataRetriever", () => {
     setGlobalDispatcher(agent);
 
     mockAccessToken = "test-access-token";
-    retriever = new GitHubDataRetriever(mockAccessToken);
+    retriever = new ConnectorGitHubRetriever(mockAccessToken);
   });
 
   it("should instantiate correctly", () => {
@@ -37,10 +37,7 @@ describe("GitHubDataRetriever", () => {
       },
     ] as unknown as ConnectorGitHubFetchRepositoriesResponse;
 
-    agent
-      .get("https://api.github.com")
-      .intercept({ path: "/user/repos", method: "GET" })
-      .reply(200, mockResponse);
+    agent.get("https://api.github.com").intercept({ path: "/user/repos", method: "GET" }).reply(200, mockResponse);
 
     const result = await retriever.fetchRepositories();
     assert.deepEqual(result, JSON.stringify(mockResponse));

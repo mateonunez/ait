@@ -4,6 +4,7 @@
   "description": "AIt's connectors",
   "main": "index.js",
   "scripts": {
+    "dev": "tsx src/api/server.ts",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "test": "glob src/**/*.test.ts -c 'c8 tsx --test'",
@@ -15,9 +16,13 @@
   "dependencies": {
     "@octokit/rest": "^21.0.2",
     "dotenv": "^16.4.7",
+    "fastify": "^5.2.0",
+    "fastify-cors": "^6.1.0",
+    "fastify-env": "^2.2.0",
     "undici": "^7.2.0"
   },
   "devDependencies": {
-    "@octokit/types": "^13.6.2"
+    "@octokit/types": "^13.6.2",
+    "sinon": "^19.0.2"
   }
 }

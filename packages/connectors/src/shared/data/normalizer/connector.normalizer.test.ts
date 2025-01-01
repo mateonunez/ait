@@ -81,7 +81,7 @@ describe("ConnectorDataNormalizer skipping undefined fields", () => {
   it("should skip fields that are undefined", () => {
     const mapping: ConnectorDataNormalizerMapping<Partial<SourceData>, Partial<NormalizedData>> = {
       first_name: "firstName",
-      last_name: (data) => data.lastName ? data.lastName.toLowerCase() : undefined,
+      last_name: (data) => (data.lastName ? data.lastName.toLowerCase() : undefined),
       age: "age",
     };
     const normalizer = new ConnectorDataNormalizer<Partial<SourceData>, Partial<NormalizedData>>(mapping);
@@ -95,7 +95,7 @@ describe("ConnectorDataNormalizer skipping undefined fields", () => {
   it("should assign fields that are defined", () => {
     const mapping: ConnectorDataNormalizerMapping<Partial<SourceData>, Partial<NormalizedData>> = {
       first_name: "firstName",
-      last_name: (data) => data.lastName ? data.lastName.toLowerCase() : undefined,
+      last_name: (data) => (data.lastName ? data.lastName.toLowerCase() : undefined),
       age: "age",
     };
     const normalizer = new ConnectorDataNormalizer<Partial<SourceData>, Partial<NormalizedData>>(mapping);

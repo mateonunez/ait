@@ -5,4 +5,3 @@ export interface IConnectorDataNormalizer<T, U> {
 export type ConnectorDataNormalizerMapping<T, U> = {
   [K in keyof U]: keyof T | ((source: T) => U[K]);
 };
-

@@ -4,26 +4,38 @@ import { ConnectorGitHubNormalizer } from "./normalizer/connector.github.normali
 import { ConnectorGitHubRetriever } from "./retriever/connector.github.retriever";
 import { ConnectorGitHubStore } from "./store/connector.github.store";
 
-export class ConnectorGitHubConnector {
-    private authenticator: ConnectorGitHubAuthenticator;
-    private retriever?: ConnectorGitHubRetriever;
-    private normalizer: ConnectorGitHubNormalizer;
-    private store: ConnectorGitHubStore;
+export interface IConnector {
+  connect(code: string): Promise<void>;
+}
 
-    constructor(oauth: ConnectorOAuth) {
-        this.authenticator = new ConnectorGitHubAuthenticator(oauth);
-        this.normalizer = new ConnectorGitHubNormalizer();
-        this.store = new ConnectorGitHubStore();
-    }
+export class ConnectorGitHubConnector implements IConnector {
+  private _authenticator: ConnectorGitHubAuthenticator;
+  private _retriever?: ConnectorGitHubRetriever;
+  private _normalizer: ConnectorGitHubNormalizer;
+  private _store: ConnectorGitHubStore;
 
-    async connect(code: string): Promise<void> {
-        const { access_token } = await this.authenticator.authenticate(code);
+  constructor(oauth: ConnectorOAuth) {
+    this._authenticator = new ConnectorGitHubAuthenticator(oauth);
+    this._normalizer = new ConnectorGitHubNormalizer();
+    this._store = new ConnectorGitHubStore();
+  }
 
-        this.retriever = new ConnectorGitHubRetriever(access_token);
+  async connect(code: string): Promise<void> {
+    const { access_token: accessToken } = await this._authenticator.authenticate(code);
 
-        const repositories = await this.retriever.fetchRepositories();
-        const normalizedRepos = repositories.map(repo => this.normalizer.normalize(repo));
+    this._retriever = new ConnectorGitHubRetriever(accessToken);
 
-        await this.store.save(normalizedRepos);
-    }
+    const repositories = await this._retriever.fetchRepositories();
+    const normalizedRepos = repositories.map((repo) => this._normalizer.normalize(repo));
+
+    await this._store.save(normalizedRepos);
+  }
+
+  get retriever(): ConnectorGitHubRetriever | undefined {
+    return this._retriever;
+  }
+
+  get normalizer(): ConnectorGitHubNormalizer {
+    return this.normalizer;
+  }
 }

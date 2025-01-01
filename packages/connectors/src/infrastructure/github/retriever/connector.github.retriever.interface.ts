@@ -4,7 +4,5 @@ export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];
 
 export interface IConnectorGitHubRetriever {
-  fetchRepositories(
-    code: string
-  ): Promise<ConnectorGitHubFetchRepositoriesResponse>;
+  fetchRepositories(code: string): Promise<ConnectorGitHubFetchRepositoriesResponse>;
 }

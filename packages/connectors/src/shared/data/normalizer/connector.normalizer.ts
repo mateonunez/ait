@@ -1,8 +1,6 @@
 import type { ConnectorDataNormalizerMapping, IConnectorDataNormalizer } from "./connector.normalizer.interface";
 
-export class ConnectorDataNormalizer<T, U>
-  implements IConnectorDataNormalizer<T, U>
-{
+export class ConnectorDataNormalizer<T, U> implements IConnectorDataNormalizer<T, U> {
   private readonly mapping: ConnectorDataNormalizerMapping<T, U>;
 
   constructor(mapping: ConnectorDataNormalizerMapping<T, U>) {
