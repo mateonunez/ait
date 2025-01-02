@@ -1,9 +1,9 @@
-import { describe, it, beforeEach } from "node:test";
+import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import sinon from "sinon";
-import { ConnectorGitHubService } from "./github.service";
-import { ConnectorGitHubConnector } from "../infrastructure/github/connector.github";
-import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorGitHubService } from "./connector.github.service";
+import { ConnectorGitHubConnector } from "../../infrastructure/github/connector.github";
+import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 describe("ConnectorGitHubService", () => {
   let service: ConnectorGitHubService;
@@ -16,6 +16,10 @@ describe("ConnectorGitHubService", () => {
 
     service = new ConnectorGitHubService();
     service.connector = connectorStub as unknown as ConnectorGitHubConnector;
+  });
+
+  afterEach(() => {
+    sinon.restore();
   });
 
   it("should instantiate correctly", () => {

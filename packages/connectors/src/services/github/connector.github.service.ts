@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
-import { ConnectorGitHubConnector } from "../infrastructure/github/connector.github";
-import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorGitHubConnector } from "../../infrastructure/github/connector.github";
+import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 dotenv.config();
 

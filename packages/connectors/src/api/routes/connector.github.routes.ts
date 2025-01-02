@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { ConnectorGitHubService } from "../../services/github.service";
+import { ConnectorGitHubService } from "../../services/github/connector.github.service";
 
 interface AuthCallbackQuery {
   code: string;
