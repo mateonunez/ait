@@ -18,7 +18,11 @@ pnpm install
 pnpm test
 ```
 
-### Authenticate OAuth 2.0
+### Connectors
+
+#### Manual
+
+**GitHub**:
 
 ```
 https://github.com/login/oauth/authorize?client_id=Ov23liPVDFK2UZgKcv7E&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo

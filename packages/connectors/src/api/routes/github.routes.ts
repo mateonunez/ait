@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { GitHubService } from "../../services/github.service";
+import { ConnectorGitHubService } from "../../services/github.service";
 
 interface AuthCallbackQuery {
   code: string;
 }
 
 export default async function githubRoutes(fastify: FastifyInstance) {
-  const githubService = new GitHubService();
+  const githubService = new ConnectorGitHubService();
 
   fastify.get(
     "/auth/callback",

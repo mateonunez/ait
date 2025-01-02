@@ -35,7 +35,15 @@ export class ConnectorGitHubConnector implements IConnector {
     return this._retriever;
   }
 
+  set retriever(retriever: ConnectorGitHubRetriever | undefined) {
+    this._retriever = retriever;
+  }
+
   get normalizer(): ConnectorGitHubNormalizer {
     return this.normalizer;
+  }
+
+  set normalizer(normalizer: ConnectorGitHubNormalizer) {
+    this._normalizer = normalizer;
   }
 }

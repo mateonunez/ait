@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@octokit/types": "^13.6.2",
+    "@types/sinon": "^17.0.3",
     "sinon": "^19.0.2"
   }
 }

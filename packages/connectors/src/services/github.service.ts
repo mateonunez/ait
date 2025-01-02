@@ -4,8 +4,8 @@ import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
 
 dotenv.config();
 
-export class GitHubService {
-  private connector: ConnectorGitHubConnector;
+export class ConnectorGitHubService {
+  private _connector: ConnectorGitHubConnector;
 
   constructor() {
     const oauth = new ConnectorOAuth({
@@ -15,14 +15,22 @@ export class GitHubService {
       redirectUri: process.env.GITHUB_REDIRECT_URI!,
     });
 
-    this.connector = new ConnectorGitHubConnector(oauth);
+    this._connector = new ConnectorGitHubConnector(oauth);
   }
 
   async authenticate(code: string): Promise<void> {
-    await this.connector.connect(code);
+    await this._connector.connect(code);
   }
 
   async getRepositories(): Promise<any[]> {
-    return this.connector.retriever?.fetchRepositories() || [];
+    return this._connector.retriever?.fetchRepositories() || [];
+  }
+
+  get connector(): ConnectorGitHubConnector {
+    return this._connector;
+  }
+
+  set connector(connector: ConnectorGitHubConnector) {
+    this._connector = connector;
   }
 }
