@@ -31,6 +31,14 @@ export class ConnectorGitHubConnector implements IConnector {
     await this._store.save(normalizedRepos);
   }
 
+  get authenticator(): ConnectorGitHubAuthenticator {
+    return this._authenticator;
+  }
+
+  set authenticator(authenticator: ConnectorGitHubAuthenticator) {
+    this._authenticator = authenticator;
+  }
+
   get retriever(): ConnectorGitHubRetriever | undefined {
     return this._retriever;
   }
@@ -40,10 +48,18 @@ export class ConnectorGitHubConnector implements IConnector {
   }
 
   get normalizer(): ConnectorGitHubNormalizer {
-    return this.normalizer;
+    return this._normalizer;
   }
-
+  
   set normalizer(normalizer: ConnectorGitHubNormalizer) {
     this._normalizer = normalizer;
+  }
+
+  get store(): ConnectorGitHubStore {
+    return this._store;
+  }
+
+  set store(store: ConnectorGitHubStore) {
+    this._store = store;
   }
 }
