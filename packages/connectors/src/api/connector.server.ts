@@ -1,9 +1,11 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import githubRoutes from "./routes/connector.github.routes";
+import spotifyRoutes from "./routes/connector.spotify.routes";
 
 export function buildServer(): FastifyInstance {
   const server = Fastify({ logger: true, ignoreTrailingSlash: true });
   server.register(githubRoutes, { prefix: "/api/github" });
+  server.register(spotifyRoutes, { prefix: "/api/spotify" });
   return server;
 }
 

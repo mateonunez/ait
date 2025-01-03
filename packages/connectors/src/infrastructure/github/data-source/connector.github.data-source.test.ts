@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
-import { ConnectorGitHubRetriever } from "./connector.github.retriever";
-import type { ConnectorGitHubFetchRepositoriesResponse } from "./connector.github.retriever.interface";
+import { ConnectorGitHubDataSource } from "./connector.github.data-source";
+import type { ConnectorGitHubFetchRepositoriesResponse } from "./connector.github.data-source.interface";
 
-describe("ConnectorGitHubRetriever", () => {
+describe("ConnectorGitHubDataSource", () => {
   let agent: MockAgent;
-  let retriever: ConnectorGitHubRetriever;
+  let dataSource: ConnectorGitHubDataSource;
   let mockAccessToken: string;
 
   beforeEach(() => {
@@ -14,11 +14,11 @@ describe("ConnectorGitHubRetriever", () => {
     setGlobalDispatcher(agent);
 
     mockAccessToken = "test-access-token";
-    retriever = new ConnectorGitHubRetriever(mockAccessToken);
+    dataSource = new ConnectorGitHubDataSource(mockAccessToken);
   });
 
   it("should instantiate correctly", () => {
-    assert.ok(retriever);
+    assert.ok(dataSource);
   });
 
   it("should return a list of repositories", async () => {
@@ -39,7 +39,7 @@ describe("ConnectorGitHubRetriever", () => {
 
     agent.get("https://api.github.com").intercept({ path: "/user/repos", method: "GET" }).reply(200, mockResponse);
 
-    const result = await retriever.fetchRepositories();
+    const result = await dataSource.fetchRepositories();
     assert.deepEqual(result, JSON.stringify(mockResponse));
   });
 
@@ -49,7 +49,7 @@ describe("ConnectorGitHubRetriever", () => {
       .intercept({ path: "/user/repos", method: "GET" })
       .reply(500, { message: "kaboom" });
 
-    await assert.rejects(retriever.fetchRepositories(), {
+    await assert.rejects(dataSource.fetchRepositories(), {
       message: `Invalid fetch repositories: {"message":"kaboom"}`,
     });
   });

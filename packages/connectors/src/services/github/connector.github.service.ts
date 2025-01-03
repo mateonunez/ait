@@ -1,11 +1,14 @@
 import dotenv from "dotenv";
-import { ConnectorGitHubConnector } from "../../infrastructure/github/connector.github";
+import { ConnectorGitHub } from "../../infrastructure/github/connector.github";
 import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorService } from "../connector.service.interface";
+import type { IConnectorGitHubService } from "./connector.github.service.interface";
+import type { ConnectorGitHubFetchRepositoriesResponse } from "../../infrastructure/github/data-source/connector.github.data-source.interface";
 
 dotenv.config();
 
-export class ConnectorGitHubService {
-  private _connector: ConnectorGitHubConnector;
+export class ConnectorGitHubService implements IConnectorService<ConnectorGitHub>, IConnectorGitHubService {
+  private _connector: ConnectorGitHub;
 
   constructor() {
     const oauth = new ConnectorOAuth({
@@ -15,22 +18,22 @@ export class ConnectorGitHubService {
       redirectUri: process.env.GITHUB_REDIRECT_URI!,
     });
 
-    this._connector = new ConnectorGitHubConnector(oauth);
+    this._connector = new ConnectorGitHub(oauth);
   }
 
   async authenticate(code: string): Promise<void> {
     await this._connector.connect(code);
   }
 
-  async getRepositories(): Promise<any[]> {
-    return this._connector.retriever?.fetchRepositories() || [];
+  async getRepositories(): Promise<ConnectorGitHubFetchRepositoriesResponse> {
+    return this._connector.dataSource?.fetchRepositories() || [];
   }
 
-  get connector(): ConnectorGitHubConnector {
+  get connector(): ConnectorGitHub {
     return this._connector;
   }
 
-  set connector(connector: ConnectorGitHubConnector) {
+  set connector(connector: ConnectorGitHub) {
     this._connector = connector;
   }
 }

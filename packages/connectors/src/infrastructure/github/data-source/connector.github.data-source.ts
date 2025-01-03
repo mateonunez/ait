@@ -1,11 +1,11 @@
 import { Octokit } from "@octokit/rest";
 import type {
   ConnectorGitHubFetchRepositoriesResponse,
-  IConnectorGitHubRetriever,
-} from "./connector.github.retriever.interface";
-import { ConnectorGitHubRetrieverFetchRepositoriesError } from "./connector.github.retriever.errors";
+  IConnectorGitHubDataSource,
+} from "./connector.github.data-source.interface";
+import { ConnectorGitHubDataSourceFetchRepositoriesError } from "./connector.github.data-source.errors";
 
-export class ConnectorGitHubRetriever implements IConnectorGitHubRetriever {
+export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
   private octokit: Octokit;
 
   constructor(accessToken: string) {
@@ -18,7 +18,7 @@ export class ConnectorGitHubRetriever implements IConnectorGitHubRetriever {
       return data;
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Unknown error";
-      throw new ConnectorGitHubRetrieverFetchRepositoriesError(`Invalid fetch repositories: ${message}`, message);
+      throw new ConnectorGitHubDataSourceFetchRepositoriesError(`Invalid fetch repositories: ${message}`, message);
     }
   }
 }

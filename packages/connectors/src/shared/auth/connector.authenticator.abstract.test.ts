@@ -1,17 +1,16 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
-import { ConnectorGitHubAuthenticator } from "./connector.github.authenticator";
-import { ConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type {
-  IConnectorOAuthConfig,
-  IConnectorOAuthTokenResponse,
-} from "../../../shared/auth/lib/oauth/connector.oauth.interface";
+import { ConnectorAuthenticatorAbstract } from "./connector.authenticator.abstract";
+import { ConnectorOAuth } from "./lib/oauth/connector.oauth";
+import type { IConnectorOAuth, IConnectorOAuthConfig } from "./lib/oauth/connector.oauth.interface";
+import { beforeEach, describe, it } from "node:test";
 
-describe("ConnectorGitHubAuthenticator", { concurrency: true }, () => {
+class ConnectorAuthenticatorConcrete extends ConnectorAuthenticatorAbstract {}
+
+describe("ConnectorAuthenticatorAbstract", { concurrency: true }, () => {
   let agent: MockAgent;
-  let oauth: ConnectorOAuth;
-  let authenticator: ConnectorGitHubAuthenticator;
+  let oauth: IConnectorOAuth;
+  let authenticator: ConnectorAuthenticatorAbstract;
   let mockConfig: IConnectorOAuthConfig;
 
   beforeEach(() => {
@@ -26,7 +25,7 @@ describe("ConnectorGitHubAuthenticator", { concurrency: true }, () => {
     };
 
     oauth = new ConnectorOAuth(mockConfig);
-    authenticator = new ConnectorGitHubAuthenticator(oauth);
+    authenticator = new ConnectorAuthenticatorConcrete(oauth);
   });
 
   it("should instantiate correctly", () => {
@@ -39,7 +38,7 @@ describe("ConnectorGitHubAuthenticator", { concurrency: true }, () => {
       .intercept({ path: "/", method: "POST" })
       .reply(200, { access_token: "fake-access-token" });
 
-    const result = await authenticator.authenticate();
+    const result = await authenticator.authenticate("test-code");
     assert.equal(result.access_token, "fake-access-token");
   });
 
