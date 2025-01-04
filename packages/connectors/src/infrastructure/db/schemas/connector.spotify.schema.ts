@@ -15,13 +15,4 @@ export const spotifyTracks = pgTable("spotify_tracks", {
  * DATA TARGET
  * Represents how we store the domain entity in a data layer (DB)
  */
-export interface SpotifyTrackDataTarget {
-  id: string;
-  name: string;
-  artist: string;
-  album: string;
-  durationMs: number;
-  popularity: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type SpotifyTrackDataTarget = typeof spotifyTracks.$inferInsert;

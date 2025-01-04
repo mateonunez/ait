@@ -1,3 +1,6 @@
+/**
+ * Base interface for all Spotify entities
+ */
 export interface BaseSpotifyEntity {
   type: "track" | "album" | "artist" | "playlist";
 }
@@ -41,11 +44,15 @@ export interface SpotifyTrack extends BaseSpotifyEntity {
   updatedAt: Date;
 
   [key: string]: any;
-  type: "track"; // <- positionally dependent
+}
+
+export interface SpotifyTrackExternal extends SpotifyTrack, BaseSpotifyEntity {
+  type: "track";
 }
 
 /**
  * DOMAIN
+ * Represents a simplified domain entity
  */
 export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   id: string;
@@ -54,9 +61,17 @@ export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   album: string;
   durationMs: number;
   popularity: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string | null;
+  updatedAt: string | null;
+  type: "track";
 }
 
+/**
+ * Union type for any Spotify domain entity
+ */
 export type SpotifyEntity = SpotifyTrackEntity; // | SpotifyAlbumEntity | SpotifyArtistEntity | SpotifyPlaylistEntity;
-export type SpotifyData = SpotifyTrack; // | SpotifyAlbum | SpotifyArtist | SpotifyPlaylist;
+
+/**
+ * Union type for any Spotify external data representation
+ */
+export type SpotifyData = SpotifyTrackExternal; // | SpotifyAlbum | SpotifyArtist | SpotifyPlaylist;

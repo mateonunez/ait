@@ -16,14 +16,4 @@ export const githubRepositories = pgTable("github_repositories", {
  * DATA TARGET
  * Represents how we store the domain entity in a data layer (DB)
  */
-export interface GitHubRepositoryDataTarget {
-  id: string;
-  name: string;
-  description: string;
-  stars: number;
-  forks: number;
-  language: string;
-  url: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type GitHubRepositoryDataTarget = typeof githubRepositories.$inferInsert;

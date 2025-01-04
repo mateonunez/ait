@@ -1,3 +1,6 @@
+/**
+ * Base interface for all GitHub entities
+ */
 export interface BaseGitHubEntity {
   type: "repository" | "issue" | "pullRequest";
 }
@@ -20,14 +23,6 @@ export interface GitHubRepository extends BaseGitHubEntity {
   watchers_count: number;
 
   [key: string]: any;
-  type: "repository"; // <- positionally dependent
-}
-
-/**
- * Base entity for GitHub domain objects
- */
-export interface BaseGitHubEntity {
-  type: "repository" | "issue" | "pullRequest";
 }
 
 /**
