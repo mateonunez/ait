@@ -1,2 +1,4 @@
 packages:
-  - "packages/connectors"
+  - 'packages/*'
+  - 'packages/internals/*'
+  - 'packages/connectors/*'
