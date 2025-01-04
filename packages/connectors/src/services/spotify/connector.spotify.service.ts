@@ -3,7 +3,9 @@ import { ConnectorSpotify } from "../../infrastructure/spotify/connector.spotify
 import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorService } from "../connector.service.interface";
 import type { IConnectorSpotifyService } from "./connector.spotify.service.interface";
-import type { SpotifyTrack } from "../../infrastructure/spotify/normalizer/connector.spotify.normalizer.interface";
+import type { SpotifyTrack } from "../../domain/entities/spotify/connector.spotify.entities";
+import type { SpotifyTrackEntity } from "../../domain/entities/spotify/connector.spotify.entities";
+import { connectorSpotifyTrackMapper } from "../../domain/mappers/spotify/connector.spotify.mapper";
 
 dotenv.config();
 
@@ -21,8 +23,13 @@ export class ConnectorSpotifyService implements IConnectorService<ConnectorSpoti
     this._connector = new ConnectorSpotify(oauth);
   }
 
-  async getTracks(): Promise<SpotifyTrack[]> {
-    return this._connector.dataSource?.fetchTopTracks() || [];
+  async getTracks(): Promise<SpotifyTrackEntity[]> {
+    const tracks = await this._connector.dataSource?.fetchTopTracks();
+    if (!tracks?.length) {
+      return [];
+    }
+
+    return tracks.map((track) => connectorSpotifyTrackMapper.externalToDomain(track));
   }
 
   async authenticate(code: string): Promise<void> {

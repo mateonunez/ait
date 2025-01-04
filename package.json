@@ -5,10 +5,13 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "main": "index.js",
   "scripts": {
+    "build": "pnpm run:recursive build",
     "lint": "pnpm run:recursive lint ",
     "lint:fix": "pnpm run:recursive lint:fix ",
     "test": "pnpm run:recursive test",
-    "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present"
+    "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present",
+    "start:services": "docker compose up -d",
+    "stop:services": "docker compose down"
   },
   "keywords": [],
   "license": "MIT",
@@ -19,6 +22,7 @@
     "c8": "^10.1.3",
     "glob": "^11.0.0",
     "husky": "^9.1.7",
+    "tsc": "^2.0.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

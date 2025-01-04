@@ -3,7 +3,8 @@ import { ConnectorGitHub } from "../../infrastructure/github/connector.github";
 import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorService } from "../connector.service.interface";
 import type { IConnectorGitHubService } from "./connector.github.service.interface";
-import type { ConnectorGitHubFetchRepositoriesResponse } from "../../infrastructure/github/data-source/connector.github.data-source.interface";
+import type { GitHubRepositoryEntity } from "../../domain/entities/github/connector.github.entities";
+import { connectorGithubMapper } from "../../domain/mappers/github/connector.github.mapper";
 
 dotenv.config();
 
@@ -25,8 +26,13 @@ export class ConnectorGitHubService implements IConnectorService<ConnectorGitHub
     await this._connector.connect(code);
   }
 
-  async getRepositories(): Promise<ConnectorGitHubFetchRepositoriesResponse> {
-    return this._connector.dataSource?.fetchRepositories() || [];
+  async getRepositories(): Promise<GitHubRepositoryEntity[]> {
+    const repositories = await this._connector.dataSource?.fetchRepositories();
+    if (!repositories?.length) {
+      return [];
+    }
+
+    return repositories.map((repository) => connectorGithubMapper.externalToDomain(repository));
   }
 
   get connector(): ConnectorGitHub {

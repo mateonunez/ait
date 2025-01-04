@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
-import { beforeEach, describe, it } from 'node:test';
-import { MockAgent, setGlobalDispatcher } from 'undici';
-import { ConnectorSpotifyDataSource } from './connector.spotify.data-source';
-import { ConnectorSpotifyDataSourceError } from './connector.spotify.data-source.errors';
+import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
+import { MockAgent, setGlobalDispatcher } from "undici";
+import { ConnectorSpotifyDataSource } from "./connector.spotify.data-source";
+import { ConnectorSpotifyDataSourceError } from "./connector.spotify.data-source.errors";
 
 describe("ConnectorSpotifyDataSource", () => {
   let agent: MockAgent;
@@ -21,8 +21,8 @@ describe("ConnectorSpotifyDataSource", () => {
     // TODO: add missing types
     const mockResponse = {
       items: [
-        { id: "1", name: "track1", artists: [{ name: "artist1" }] },
-        { id: "2", name: "track2", artists: [{ name: "artist2" }] },
+        { id: "1", name: "track1", artists: [{ name: "artist1" }], type: "track" },
+        { id: "2", name: "track2", artists: [{ name: "artist2" }], type: "track" },
       ],
     };
 
@@ -57,12 +57,9 @@ describe("ConnectorSpotifyDataSource", () => {
       (error) => {
         assert.ok(error instanceof ConnectorSpotifyDataSourceError);
         assert.strictEqual(error.message, "Spotify API error: 401 Unauthorized");
-        assert.strictEqual(
-          error.responseBody,
-          JSON.stringify({ error: { message: "Invalid access token" } })
-        );
+        assert.strictEqual(error.responseBody, JSON.stringify({ error: { message: "Invalid access token" } }));
         return true;
-      }
+      },
     );
   });
 });

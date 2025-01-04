@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ConnectorGitHubService } from "../../services/github/connector.github.service";
+import type { GitHubRepositoryEntity } from "../../domain/entities/github/connector.github.entities";
 
 interface AuthCallbackQuery {
   code: string;
@@ -18,7 +19,11 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
       try {
         await githubService.authenticate(code);
-        reply.send({ message: "Authentication successful." });
+
+        const repositories = await githubService.getRepositories();
+        await githubService.connector.store.save<GitHubRepositoryEntity>(repositories);
+
+        reply.send(repositories);
       } catch (err: any) {
         fastify.log.error(err);
         reply.status(500).send({ error: "Authentication failed." });
@@ -26,9 +31,11 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     },
   );
 
+  // TODO: not implemented yet
   fastify.get("/repositories", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const repositories = await githubService.getRepositories();
+      await githubService.connector.store.save<GitHubRepositoryEntity>(repositories);
       reply.send(repositories);
     } catch (err: any) {
       fastify.log.error(err);
