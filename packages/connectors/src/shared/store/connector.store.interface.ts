@@ -1,3 +1,3 @@
-export interface IConnectorStore<T> {
-  save(data: T): Promise<void>;
+export interface IConnectorStore {
+  save(data: any): Promise<void>;
 }

@@ -3,7 +3,10 @@ import { ConnectorSpotify } from "../../infrastructure/spotify/connector.spotify
 import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorService } from "../connector.service.interface";
 import type { IConnectorSpotifyService } from "./connector.spotify.service.interface";
-import type { SpotifyTrack } from "../../infrastructure/spotify/normalizer/connector.spotify.normalizer.interface";
+import type {
+  NormalizedSpotifyTrack,
+  SpotifyTrack,
+} from "../../infrastructure/spotify/normalizer/connector.spotify.normalizer.interface";
 
 dotenv.config();
 
@@ -21,8 +24,11 @@ export class ConnectorSpotifyService implements IConnectorService<ConnectorSpoti
     this._connector = new ConnectorSpotify(oauth);
   }
 
-  async getTracks(): Promise<SpotifyTrack[]> {
-    return this._connector.dataSource?.fetchTopTracks() || [];
+  async getTracks(): Promise<NormalizedSpotifyTrack[]> {
+    const tracks = await this._connector.dataSource?.fetchTopTracks();
+    const normalizedTracks = tracks?.map((track) => this._connector.normalizer.normalize(track)) || [];
+
+    return normalizedTracks;
   }
 
   async authenticate(code: string): Promise<void> {

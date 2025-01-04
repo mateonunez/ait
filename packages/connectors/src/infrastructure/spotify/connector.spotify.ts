@@ -27,17 +27,9 @@ export class ConnectorSpotify
   }
 
   async connect(code: string): Promise<void> {
-    const { access_token: accessToken } =
-      await this._authenticator.authenticate(code);
+    const { access_token: accessToken } = await this._authenticator.authenticate(code);
 
     this._dataSource = new ConnectorSpotifyDataSource(accessToken);
-
-    const tracks = await this._dataSource.fetchTopTracks();
-    const normalizedTrack = tracks.map((track) =>
-      this._normalizer.normalize(track)
-    );
-
-    await this._store.save(normalizedTrack);
   }
 
   get authenticator(): ConnectorSpotifyAuthenticator {

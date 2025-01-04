@@ -1,9 +1,7 @@
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorGitHubAuthenticator } from "./authenticator/connector.github.authenticator";
 import { ConnectorGitHubNormalizer } from "./normalizer/connector.github.normalizer";
 import { ConnectorGitHubDataSource } from "./data-source/connector.github.data-source";
 import { ConnectorGitHubStore } from "./store/connector.github.store";
-import type { GitHubRepository } from "./normalizer/connector.github.normalizer.interface";
 import type { IConnector } from "../connector.interface";
 import type { IConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth.interface";
 import type { IConnectorGitHubDataSource } from "./data-source/connector.github.data-source.interface";
@@ -29,17 +27,9 @@ export class ConnectorGitHub
   }
 
   async connect(code: string): Promise<void> {
-    const { access_token: accessToken } =
-      await this._authenticator.authenticate(code);
+    const { access_token: accessToken } = await this._authenticator.authenticate(code);
 
     this._dataSource = new ConnectorGitHubDataSource(accessToken);
-
-    const repositories = await this._dataSource.fetchRepositories();
-    const normalizedRepos = repositories.map((repo) =>
-      this._normalizer.normalize(repo as GitHubRepository)
-    );
-
-    await this._store.save(normalizedRepos);
   }
 
   get authenticator(): ConnectorGitHubAuthenticator {
@@ -54,7 +44,7 @@ export class ConnectorGitHub
     return this._dataSource;
   }
 
-  set dataSource(dataSource: ConnectorGitHubDataSource | undefined) {
+  set dataSource(dataSource: IConnectorGitHubDataSource | undefined) {
     this._dataSource = dataSource;
   }
 
