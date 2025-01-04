@@ -8,7 +8,9 @@
     "lint": "pnpm run:recursive lint ",
     "lint:fix": "pnpm run:recursive lint:fix ",
     "test": "pnpm run:recursive test",
-    "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present"
+    "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present",
+    "start:services": "docker compose up -d",
+    "stop:services": "docker compose down"
   },
   "keywords": [],
   "license": "MIT",
