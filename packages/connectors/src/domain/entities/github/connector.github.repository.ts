@@ -1,5 +1,4 @@
-import { db } from "../../../infrastructure/db/db.client";
-import { githubRepositories } from "../../../infrastructure/db/schemas/connector.github.schema";
+import { db, githubRepositories } from "@ait/database";
 import { connectorGithubMapper } from "../../mappers/github/connector.github.mapper";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
 import type { IConnectorGitHubRepositoryRepository } from "./connector.github.repository.interface";

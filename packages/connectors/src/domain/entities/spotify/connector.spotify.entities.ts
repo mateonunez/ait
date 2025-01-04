@@ -61,8 +61,8 @@ export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   album: string;
   durationMs: number;
   popularity: number;
-  createdAt: string | null;
-  updatedAt: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   type: "track";
 }
 

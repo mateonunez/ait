@@ -9,18 +9,15 @@
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
-    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx src/infrastructure/db/db.migrate.ts",
-    "db:studio": "drizzle-kit studio"
+    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/database": "workspace:*",
     "@octokit/rest": "^21.0.2",
     "dotenv": "^16.4.7",
-    "drizzle-orm": "^0.38.3",
     "fastify": "^5.2.0",
     "fastify-cors": "^6.1.0",
     "fastify-env": "^2.2.0",
@@ -32,7 +29,6 @@
     "@octokit/plugin-rest-endpoint-methods": "^13.2.6",
     "@octokit/types": "^13.6.2",
     "@types/sinon": "^17.0.3",
-    "drizzle-kit": "^0.30.1",
     "sinon": "^19.0.2",
     "typescript": "^5.7.2"
   }

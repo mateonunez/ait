@@ -1,6 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ConnectorGitHubService } from "../../services/github/connector.github.service";
-import type { GitHubRepositoryEntity } from "../../domain/entities/github/connector.github.entities";
 
 interface AuthCallbackQuery {
   code: string;
@@ -21,7 +20,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
         await githubService.authenticate(code);
 
         const repositories = await githubService.getRepositories();
-        await githubService.connector.store.save<GitHubRepositoryEntity>(repositories);
+        await githubService.connector.store.save(repositories);
 
         reply.send(repositories);
       } catch (err: any) {
@@ -35,7 +34,6 @@ export default async function githubRoutes(fastify: FastifyInstance) {
   fastify.get("/repositories", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const repositories = await githubService.getRepositories();
-      await githubService.connector.store.save<GitHubRepositoryEntity>(repositories);
       reply.send(repositories);
     } catch (err: any) {
       fastify.log.error(err);

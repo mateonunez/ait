@@ -1,8 +1,6 @@
-import { db } from "../../../infrastructure/db/db.client";
-import { spotifyTracks } from "../../../infrastructure/db/schemas/connector.spotify.schema";
+import { db, spotifyTracks } from "@ait/database";
 import { connectorSpotifyTrackMapper } from "../../mappers/spotify/connector.spotify.mapper";
 import type { SpotifyTrackEntity } from "./connector.spotify.entities";
-import type { SpotifyTrackDataTarget } from "../../../infrastructure/db/schemas/connector.spotify.schema";
 import type {
   IConnectorSpotifyRepository,
   IConnectorSpotifyTrackRepository,

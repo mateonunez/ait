@@ -1,10 +1,9 @@
 import { describe, it, beforeEach, afterEach, after } from "node:test";
 import assert from "node:assert/strict";
-import { db, dbClose } from "../../../infrastructure/db/db.client";
-import { eq } from "drizzle-orm";
+import { db, dbClose, orm } from "@ait/database";
 import { ConnectorGitHubRepository, ConnectorGitHubRepositoryRepository } from "./connector.github.repository";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
-import { githubRepositories } from "../../../infrastructure/db/schemas/connector.github.schema";
+import { githubRepositories } from "@ait/database";
 
 describe("ConnectorGitHubRepository", () => {
   let repository: ConnectorGitHubRepository;
@@ -40,7 +39,7 @@ describe("ConnectorGitHubRepository", () => {
 
         await repoRepository.saveRepository(repo);
 
-        const saved = await db.select().from(githubRepositories).where(eq(githubRepositories.id, repo.id)).execute();
+        const saved = await db.select().from(githubRepositories).where(orm.eq(githubRepositories.id, repo.id)).execute();
         assert.equal(saved.length, 1);
         assert(saved[0] !== undefined);
         assert.equal(saved[0].id, repo.id);
