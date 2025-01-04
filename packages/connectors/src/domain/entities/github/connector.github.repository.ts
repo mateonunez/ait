@@ -12,9 +12,7 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     }
 
     try {
-      console.log("domain", repository);
       const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
-      console.debug("datatarget", repositoryData);
 
       await db.transaction(async (tx) => {
         await tx.insert(githubRepositories).values(repositoryData).onConflictDoNothing().execute();

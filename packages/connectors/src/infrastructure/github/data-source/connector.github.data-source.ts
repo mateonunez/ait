@@ -16,7 +16,6 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
   async fetchRepositories(): Promise<GitHubRepository[]> {
     try {
       const { data } = (await this.octokit.repos.listForAuthenticatedUser()) as unknown as { data: GitHubRepository[] };
-      console.log("data", data);
       return data;
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Unknown error";
