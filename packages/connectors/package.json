@@ -11,7 +11,7 @@
     "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
     "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "npx tsx src/infrastructure/db/migrate.ts",
+    "db:migrate": "npx tsx src/infrastructure/db/db.migrate.ts",
     "db:studio": "drizzle-kit studio"
   },
   "keywords": [],

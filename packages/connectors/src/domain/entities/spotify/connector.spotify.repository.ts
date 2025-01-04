@@ -1,7 +1,8 @@
 import { db } from "../../../infrastructure/db/db.client";
 import { spotifyTracks } from "../../../infrastructure/db/schemas/connector.spotify.schema";
 import { connectorSpotifyTrackMapper } from "../../mappers/spotify/connector.spotify.mapper";
-import type { SpotifyTrackDataTarget, SpotifyTrackEntity } from "./connector.spotify.entities";
+import type { SpotifyTrackEntity } from "./connector.spotify.entities";
+import type { SpotifyTrackDataTarget } from "../../../infrastructure/db/schemas/connector.spotify.schema";
 import type {
   IConnectorSpotifyRepository,
   IConnectorSpotifyTrackRepository,

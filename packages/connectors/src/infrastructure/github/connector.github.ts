@@ -1,23 +1,24 @@
 import { ConnectorGitHubAuthenticator } from "./authenticator/connector.github.authenticator";
-import { ConnectorGitHubNormalizer } from "./normalizer/connector.github.normalizer";
 import { ConnectorGitHubDataSource } from "./data-source/connector.github.data-source";
 import { ConnectorGitHubStore } from "./store/connector.github.store";
 import type { IConnector } from "../connector.interface";
 import type { IConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth.interface";
 import type { IConnectorGitHubDataSource } from "./data-source/connector.github.data-source.interface";
+import type { IConnectorGitHubRepository } from "../../domain/entities/github/connector.github.repository.interface";
+import { ConnectorGitHubRepository } from "../../domain/entities/github/connector.github.repository";
 
 export class ConnectorGitHub
   implements IConnector<ConnectorGitHubAuthenticator, IConnectorGitHubDataSource, ConnectorGitHubStore>
 {
   private _authenticator: ConnectorGitHubAuthenticator;
   private _dataSource?: IConnectorGitHubDataSource;
-  private _normalizer: ConnectorGitHubNormalizer;
   private _store: ConnectorGitHubStore;
+  private _repository: IConnectorGitHubRepository;
 
   constructor(oauth: IConnectorOAuth) {
     this._authenticator = new ConnectorGitHubAuthenticator(oauth);
-    this._normalizer = new ConnectorGitHubNormalizer();
-    this._store = new ConnectorGitHubStore();
+    this._repository = new ConnectorGitHubRepository();
+    this._store = new ConnectorGitHubStore(this._repository);
   }
 
   async connect(code: string): Promise<void> {
@@ -40,14 +41,6 @@ export class ConnectorGitHub
 
   set dataSource(dataSource: IConnectorGitHubDataSource | undefined) {
     this._dataSource = dataSource;
-  }
-
-  get normalizer(): ConnectorGitHubNormalizer {
-    return this._normalizer;
-  }
-
-  set normalizer(normalizer: ConnectorGitHubNormalizer) {
-    this._normalizer = normalizer;
   }
 
   get store(): ConnectorGitHubStore {

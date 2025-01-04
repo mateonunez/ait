@@ -39,7 +39,9 @@ export interface SpotifyTrack extends BaseSpotifyEntity {
   popularity: number;
   createdAt: Date;
   updatedAt: Date;
-  type: "track";
+
+  [key: string]: any;
+  type: "track"; // <- positionally dependent
 }
 
 /**
@@ -56,19 +58,5 @@ export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   updatedAt: Date;
 }
 
-/**
- * DATA TARGET
- */
-export interface SpotifyTrackDataTarget {
-  id: string;
-  name: string;
-  artist: string;
-  album: string;
-  durationMs: number;
-  popularity: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export type SpotifyEntity = SpotifyTrackEntity;
-export type SpotifyData = SpotifyTrack;
+export type SpotifyEntity = SpotifyTrackEntity; // | SpotifyAlbumEntity | SpotifyArtistEntity | SpotifyPlaylistEntity;
+export type SpotifyData = SpotifyTrack; // | SpotifyAlbum | SpotifyArtist | SpotifyPlaylist;

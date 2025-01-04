@@ -1,0 +1,1 @@
+ALTER TABLE "github_repositories" ALTER COLUMN "id" SET DATA TYPE varchar(255);

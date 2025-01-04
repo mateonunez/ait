@@ -1,5 +1,5 @@
-import type { NormalizedGitHubRepository } from "../../infrastructure/github/normalizer/connector.github.normalizer.interface";
+import type { GitHubRepositoryEntity } from "../../domain/entities/github/connector.github.entities";
 
 export interface IConnectorGitHubService {
-  getRepositories(): Promise<NormalizedGitHubRepository[]>;
+  getRepositories(): Promise<GitHubRepositoryEntity[]>;
 }
