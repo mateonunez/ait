@@ -1,11 +1,11 @@
-import dotenv from 'dotenv';
-import { defineConfig } from 'drizzle-kit';
+import dotenv from "dotenv";
+import { defineConfig } from "drizzle-kit";
 
 dotenv.config();
 
-export const databaseSchemaPath = './src/infrastructure/db/schema.ts';
-export const migrationsPath = './src/infrastructure/db/migrations';
-export const dialect = 'postgresql';
+export const databaseSchemaPath = "./src/infrastructure/db/schemas";
+export const migrationsPath = "./src/infrastructure/db/migrations";
+export const dialect = "postgresql";
 
 export default defineConfig({
   schema: databaseSchemaPath,

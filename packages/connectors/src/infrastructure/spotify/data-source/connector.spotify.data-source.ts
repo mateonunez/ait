@@ -2,7 +2,7 @@ import { fetch } from "undici";
 import { ConnectorSpotifyDataSourceError } from "./connector.spotify.data-source.errors";
 import type { IConnectorSpotifyDataSource } from "./connector.spotify.data-source.interface";
 import dotenv from "dotenv";
-import type { SpotifyTrack } from "../normalizer/connector.spotify.normalizer.interface";
+import type { SpotifyTrack } from "../../../domain/entities/spotify/connector.spotify.entities";
 
 dotenv.config();
 
@@ -18,7 +18,10 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
   async fetchTopTracks(): Promise<SpotifyTrack[]> {
     const response = await this._fetchFromSpotify<{ items: SpotifyTrack[] }>("/me/top/tracks");
 
-    return response.items;
+    return response.items.map((track) => ({
+      ...track,
+      type: "track",
+    }));
   }
 
   private async _fetchFromSpotify<T>(

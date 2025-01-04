@@ -21,8 +21,8 @@ describe("ConnectorSpotifyDataSource", () => {
     // TODO: add missing types
     const mockResponse = {
       items: [
-        { id: "1", name: "track1", artists: [{ name: "artist1" }] },
-        { id: "2", name: "track2", artists: [{ name: "artist2" }] },
+        { id: "1", name: "track1", artists: [{ name: "artist1" }], type: "track" },
+        { id: "2", name: "track2", artists: [{ name: "artist2" }], type: "track" },
       ],
     };
 

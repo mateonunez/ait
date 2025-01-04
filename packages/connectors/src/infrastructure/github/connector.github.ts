@@ -7,13 +7,7 @@ import type { IConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oaut
 import type { IConnectorGitHubDataSource } from "./data-source/connector.github.data-source.interface";
 
 export class ConnectorGitHub
-  implements
-    IConnector<
-      ConnectorGitHubAuthenticator,
-      IConnectorGitHubDataSource,
-      ConnectorGitHubNormalizer,
-      ConnectorGitHubStore
-    >
+  implements IConnector<ConnectorGitHubAuthenticator, IConnectorGitHubDataSource, ConnectorGitHubStore>
 {
   private _authenticator: ConnectorGitHubAuthenticator;
   private _dataSource?: IConnectorGitHubDataSource;

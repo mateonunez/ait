@@ -1,7 +1,6 @@
-export interface IConnector<T, U, V, W> {
+export interface IConnector<T, U, W> {
   connect(code: string): Promise<void>;
   authenticator: T;
   dataSource: U | undefined;
-  normalizer: V;
   store: W;
 }

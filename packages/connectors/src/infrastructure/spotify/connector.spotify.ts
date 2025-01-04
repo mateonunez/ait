@@ -1,29 +1,24 @@
+import { ConnectorSpotifyRepository } from "../../domain/entities/spotify/connector.spotify.repository";
+import type { IConnectorSpotifyRepository } from "../../domain/entities/spotify/connector.spotify.repository.interface";
 import type { IConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth.interface";
 import type { IConnector } from "../connector.interface";
 import { ConnectorSpotifyAuthenticator } from "./authenticator/connector.spotify.authenticator";
 import { ConnectorSpotifyDataSource } from "./data-source/connector.spotify.data-source";
 import type { IConnectorSpotifyDataSource } from "./data-source/connector.spotify.data-source.interface";
-import { ConnectorSpotifyNormalizer } from "./normalizer/connector.spotify.normalizer";
 import { ConnectorSpotifyStore } from "./store/connector.spotify.store";
 
 export class ConnectorSpotify
-  implements
-    IConnector<
-      ConnectorSpotifyAuthenticator,
-      IConnectorSpotifyDataSource,
-      ConnectorSpotifyNormalizer,
-      ConnectorSpotifyStore
-    >
+  implements IConnector<ConnectorSpotifyAuthenticator, IConnectorSpotifyDataSource, ConnectorSpotifyStore>
 {
   private _authenticator: ConnectorSpotifyAuthenticator;
   private _dataSource?: IConnectorSpotifyDataSource;
-  private _normalizer: ConnectorSpotifyNormalizer;
   private _store: ConnectorSpotifyStore;
+  private _repository: IConnectorSpotifyRepository;
 
   constructor(oauth: IConnectorOAuth) {
     this._authenticator = new ConnectorSpotifyAuthenticator(oauth);
-    this._normalizer = new ConnectorSpotifyNormalizer();
-    this._store = new ConnectorSpotifyStore();
+    this._repository = new ConnectorSpotifyRepository();
+    this._store = new ConnectorSpotifyStore(this._repository);
   }
 
   async connect(code: string): Promise<void> {
@@ -46,14 +41,6 @@ export class ConnectorSpotify
 
   set dataSource(dataSource: ConnectorSpotifyDataSource | undefined) {
     this._dataSource = dataSource;
-  }
-
-  get normalizer(): ConnectorSpotifyNormalizer {
-    return this._normalizer;
-  }
-
-  set normalizer(normalizer: ConnectorSpotifyNormalizer) {
-    this._normalizer = normalizer;
   }
 
   get store(): ConnectorSpotifyStore {

@@ -1,5 +1,5 @@
-import type { NormalizedSpotifyTrack } from "../../infrastructure/spotify/normalizer/connector.spotify.normalizer.interface";
+import type { SpotifyTrackEntity } from "../../domain/entities/spotify/connector.spotify.entities";
 
 export interface IConnectorSpotifyService {
-  getTracks(): Promise<NormalizedSpotifyTrack[]>;
+  getTracks(): Promise<SpotifyTrackEntity[]>;
 }

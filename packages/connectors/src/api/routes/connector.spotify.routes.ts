@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ConnectorSpotifyService } from "../../services/spotify/connector.spotify.service";
-import type { NormalizedSpotifyTrack } from "../../infrastructure/spotify/normalizer/connector.spotify.normalizer.interface";
+import type { SpotifyTrackEntity } from "../../domain/entities/spotify/connector.spotify.entities";
 
 interface AuthCallbackQuery {
   code: string;
@@ -21,7 +21,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
         await spotifyService.authenticate(code);
 
         const tracks = await spotifyService.getTracks();
-        await spotifyService.connector.store.save<NormalizedSpotifyTrack[]>(tracks);
+        await spotifyService.connector.store.save<SpotifyTrackEntity>(tracks);
 
         reply.send(tracks);
       } catch (err: any) {

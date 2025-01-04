@@ -1,4 +1,6 @@
 node_modules/
 coverage/
 .env
+.env.test
 .stuff
+dist/
