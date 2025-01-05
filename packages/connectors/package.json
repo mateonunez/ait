@@ -15,7 +15,7 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@ait/database": "workspace:*",
+    "@ait/postgres": "workspace:*",
     "@octokit/rest": "^21.0.2",
     "dotenv": "^16.4.7",
     "fastify": "^5.2.0",

@@ -1,10 +1,12 @@
-import { db, githubRepositories } from "@ait/database";
+import { getPostgresClient, githubRepositories } from "@ait/postgres";
 import { connectorGithubMapper } from "../../mappers/github/connector.github.mapper";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
 import type { IConnectorGitHubRepositoryRepository } from "./connector.github.repository.interface";
 
 // I'm so sorry for the name of this class
 export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepositoryRepository {
+  private _pgClient = getPostgresClient();
+
   async saveRepository(repository: GitHubRepositoryEntity): Promise<void> {
     if (!repository?.id) {
       throw new Error("Invalid repository: missing repository ID");
@@ -13,7 +15,7 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     try {
       const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
 
-      await db.transaction(async (tx) => {
+      await this._pgClient.db.transaction(async (tx) => {
         await tx.insert(githubRepositories).values(repositoryData).onConflictDoNothing().execute();
       });
 
@@ -52,7 +54,7 @@ export class ConnectorGitHubRepository
   extends ConnectorGitHubRepositoryRepository
   implements IConnectorGitHubRepositoryRepository
 {
-  private _gitHubRepositoryRepository: IConnectorGitHubRepositoryRepository;
+  private _gitHubRepositoryRepository: ConnectorGitHubRepositoryRepository;
 
   constructor() {
     super();

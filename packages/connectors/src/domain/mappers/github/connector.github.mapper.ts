@@ -1,5 +1,5 @@
 import type { GitHubRepository, GitHubRepositoryEntity } from "../../entities/github/connector.github.entities";
-import type { GitHubRepositoryDataTarget } from "@ait/database";
+import type { GitHubRepositoryDataTarget } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import type { ConnectorMapperDefinition } from "../connector.mapper.interface";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";

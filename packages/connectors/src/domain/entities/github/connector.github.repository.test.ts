@@ -1,13 +1,14 @@
 import { describe, it, beforeEach, afterEach, after } from "node:test";
 import assert from "node:assert/strict";
-import { db, dbClose, orm } from "@ait/database";
+import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
 import { ConnectorGitHubRepository, ConnectorGitHubRepositoryRepository } from "./connector.github.repository";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
-import { githubRepositories } from "@ait/database";
+import { githubRepositories } from "@ait/postgres";
 
 describe("ConnectorGitHubRepository", () => {
   let repository: ConnectorGitHubRepository;
   let repoRepository: ConnectorGitHubRepositoryRepository;
+  const { db } = getPostgresClient();
 
   beforeEach(async () => {
     // Clean up existing data
@@ -18,7 +19,7 @@ describe("ConnectorGitHubRepository", () => {
   });
 
   after(async () => {
-    await dbClose();
+    await closePostgresConnection();
   });
 
   describe("ConnectorGitHubRepositoryRepository", () => {
@@ -39,7 +40,7 @@ describe("ConnectorGitHubRepository", () => {
 
         await repoRepository.saveRepository(repo);
 
-        const saved = await db.select().from(githubRepositories).where(orm.eq(githubRepositories.id, repo.id)).execute();
+        const saved = await db.select().from(githubRepositories).where(drizzleOrm.eq(githubRepositories.id, repo.id)).execute();
         assert.equal(saved.length, 1);
         assert(saved[0] !== undefined);
         assert.equal(saved[0].id, repo.id);

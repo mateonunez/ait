@@ -1,13 +1,14 @@
 import { describe, it, beforeEach, afterEach, after } from "node:test";
 import assert from "node:assert/strict";
-import { db, dbClose, orm } from "@ait/database";
+import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
 import { ConnectorSpotifyRepository, ConnectorSpotifyTrackRepository } from "./connector.spotify.repository";
 import type { SpotifyTrackEntity } from "./connector.spotify.entities";
-import { spotifyTracks } from "@ait/database";
+import { spotifyTracks } from "@ait/postgres";
 
 describe("ConnectorSpotifyRepository", () => {
   let repository: ConnectorSpotifyRepository;
   let trackRepository: ConnectorSpotifyTrackRepository;
+  const { db } = getPostgresClient();
 
   beforeEach(async () => {
     // Clean up existing data
@@ -18,7 +19,7 @@ describe("ConnectorSpotifyRepository", () => {
   });
 
   after(async () => {
-    await dbClose();
+    await closePostgresConnection();
   });
 
   describe("ConnectorSpotifyTrackRepository", () => {
@@ -38,7 +39,7 @@ describe("ConnectorSpotifyRepository", () => {
 
         await trackRepository.saveTrack(track);
 
-        const saved = await db.select().from(spotifyTracks).where(orm.eq(spotifyTracks.id, track.id)).execute();
+        const saved = await db.select().from(spotifyTracks).where(drizzleOrm.eq(spotifyTracks.id, track.id)).execute();
         assert.equal(saved.length, 1);
         assert(saved[0] !== undefined);
         assert.equal(saved[0].id, track.id);
