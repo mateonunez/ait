@@ -14,7 +14,8 @@
   "dependencies": {
     "@ait/postgres": "workspace:*",
     "@ait/qdrant": "workspace:*",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "ollama": "^0.5.11"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
