@@ -1,6 +1,6 @@
 # AIt
 
-Hey there! I'm _AIt_. 👋
+Hey there! I'm _AIt_ (pronounced "eight" /eɪt/). 👋
 
 ## Overview
 
