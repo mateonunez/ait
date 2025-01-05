@@ -1,4 +1,6 @@
 packages:
   - 'packages/*'
-  - 'packages/internals/*'
+  - 'packages/internals/postgres'
+  - 'packages/internals/qdrant'
   - 'packages/connectors/*'
+  - 'packages/transformers/*'

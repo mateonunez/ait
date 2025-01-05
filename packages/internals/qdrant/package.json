@@ -1,0 +1,26 @@
+{
+  "name": "@ait/qdrant",
+  "version": "1.0.0",
+  "description": "AIt's internal qdrant database client and utils",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
+    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
+  },
+  "keywords": [],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@qdrant/js-client-rest": "^1.12.0",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.3",
+    "@types/sinon": "^17.0.3",
+    "sinon": "^19.0.2",
+    "typescript": "^5.7.2"
+  }
+}
