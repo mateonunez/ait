@@ -2,14 +2,16 @@
 
 import sys
 import json
-import numpy as np
-from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModel
 
 model_name = "sentence-transformers/all-MiniLM-L6-v2"
-model = SentenceTransformer(model_name)
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModel.from_pretrained(model_name)
 
 def generate_embedding(text: str):
-    embedding = model.encode(text)
+    inputs = tokenizer(text, return_tensors="pt")
+    outputs = model(**inputs)
+    embedding = outputs.last_hidden_state.mean(dim=1).squeeze().tolist()
     return embedding
 
 def main():
@@ -20,7 +22,7 @@ def main():
     text = sys.argv[1]
     embedding = generate_embedding(text)
 
-    print(json.dumps(embedding.tolist()))  # Convert to list for JSON output
+    print(json.dumps(embedding))  # Convert to list for JSON output
 
 if __name__ == "__main__":
     main()

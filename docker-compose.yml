@@ -1,9 +1,9 @@
 version: "3.9"
-
+name: ait
 services:
-  postgres:
+  ait_postgres:
     image: postgres:latest
-    container_name: ait
+    container_name: ait_postgres
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: toor
@@ -11,23 +11,61 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - ./packages/internals/postgres/data:/var/lib/postgresql/data
     networks:
       - app-network
 
-  qdrant:
+  ait_qdrant:
     image: qdrant/qdrant:latest
-    container_name: qdrant
+    container_name: ait_qdrant
     ports:
       - "6333:6333"
     volumes:
-      - qdrant_storage:/qdrant/storage
+      - ait_qdrant_storage:/qdrant/storage
+    networks:
+      - app-network
+
+  ait_ollama:
+    image: ollama/ollama:latest
+    container_name: ait_ollama
+    volumes:
+      - ./packages/internals/ollama/data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: always
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - app-network
+
+  ait_open_webui:
+    image: ghcr.io/open-webui/open-webui:ollama
+    container_name: ait_open_webui
+    ports:
+      - "8434:8080"
+    volumes:
+      - ./packages/internals/ollama/data:/root/.ollama
+      - ./packages/internals/open-webui/data:/app/backend/data
+    depends_on:
+      - ait_ollama
+    restart: always
+    environment:
+      - "OLLAMA_BASE_URLS=http://ait_ollama:11434"
+      - "WEBUI_AUTH=false"
+      - "WEBUI_NAME=AIt Open WebUI"
+      - "WEBUI_URL=http://localhost:8434"
+      - "WEBUI_SECRET=ai-openwebui-secret"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-network
 
 volumes:
-  pgdata:
-  qdrant_storage:
+  ait_pgdata:
+  ait_qdrant_storage:
+  ait_ollama:
+  ait_open_webui:
 
 networks:
   app-network:
