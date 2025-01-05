@@ -1,7 +1,7 @@
 {
-  "name": "@ait/database",
+  "name": "@ait/postgres",
   "version": "1.0.0",
-  "description": "AIt's internal database client and utils",
+  "description": "AIt's internal postgres database client and utils",
   "main": "index.js",
   "scripts": {
     "build": "tsc",
