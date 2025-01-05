@@ -1,7 +1,7 @@
 import type { getPostgresClient, SpotifyTrackDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { spotifyTracks } from "@ait/postgres";
-import { generateEmbeddings } from "../../infrastructure/embeddings/etl.embeddings.service";
+import { ETLEmbeddingsService, type IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
 
 interface VectorPoint {
   id: number;
@@ -34,7 +34,8 @@ export class SpotifyTrackETL implements IBasicETL {
       maxRetries: 3,
       initialDelay: 1000,
       maxDelay: 5000,
-    }
+    },
+    private readonly _embeddingsService: IEmbeddingsService = new ETLEmbeddingsService("gemma:2b", this._vectorSize)
   ) {}
 
   public async run(limit: number): Promise<void> {
@@ -128,7 +129,7 @@ export class SpotifyTrackETL implements IBasicETL {
       const points: VectorPoint[] = [];
 
       for (const [index, track] of tracks.entries()) {
-        const vector = await generateEmbeddings(
+        const vector = await this._embeddingsService.generateEmbeddings(
           `${track.name} ${track.artist}`
         );
 

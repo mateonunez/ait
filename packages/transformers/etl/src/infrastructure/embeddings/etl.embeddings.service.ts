@@ -1,65 +1,36 @@
-import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import ollama from "ollama";
+import { OllamaEmbeddings } from "@langchain/ollama";
 
-/**
- * This generates an embedding for the given text using a Python script.
- * Size: 384
- */
-export function generateEmbeddingWithPython(text: string): number[] {
-  const scriptPath = join(__dirname, "../../scripts/generate_embeddings/generate_embeddings.py");
-
-  if (!existsSync(scriptPath)) {
-    throw new Error(`Python script not found: ${scriptPath}`);
-  }
-
-  const pythonProcess = spawnSync("python", [scriptPath, text]);
-
-  if (pythonProcess.error) {
-    throw new Error(`Failed to run Python script: ${pythonProcess.error.message}`);
-  }
-
-  const result = pythonProcess.stdout.toString();
-  console.log(`Generated raw embedding JSON for "${text}": ${result}`);
-
-  let embedding: number[];
-  try {
-    embedding = JSON.parse(result);
-  } catch (error: any) {
-    console.debug(result);
-    throw new Error(`Failed to parse JSON: ${error.message}`);
-  }
-
-  if (embedding.length !== 384) {
-    throw new Error(`Embedding dimension mismatch: expected 384, got ${embedding.length}`);
-  }
-
-  return embedding;
+export interface IEmbeddingsService {
+  generateEmbeddings(text: string): Promise<number[]>;
 }
 
-/**
- * This generates an embedding for the given text using a Python script.
- * Size: 2048
- */
-export async function generateEmbeddings(text: string): Promise<number[]> {
-  try {
-    const response = await ollama.embed({
-      model: "gemma:2b",
-      input: text,
-    });
+export class ETLEmbeddingsService implements IEmbeddingsService {
+  private readonly model?: string;
+  private readonly expectedVectorSize?: number;
 
-    const embeddingsFlattened = response.embeddings.flat();
+  constructor(model: string, expectedVectorSize: number) {
+    this.model = model ?? "gemma:2b";
+    this.expectedVectorSize = expectedVectorSize ?? 2048;
+  }
 
-    console.log(`Generated embeddings for text "${text}" size:`, embeddingsFlattened.length);
+  public async generateEmbeddings(text: string): Promise<number[]> {
+    try {
+      const embeddings = new OllamaEmbeddings({
+        model: this.model,
+      });
 
-    if (!embeddingsFlattened || embeddingsFlattened.length !== 2048) {
-      throw new Error(`Unexpected embeddings size: ${embeddingsFlattened?.length}`);
+      const vectors = await embeddings.embedQuery(text);
+
+      console.log(`Generated Langchain embeddings for text "${text}" size:`, vectors.length);
+
+      if (!vectors || vectors.length !== this.expectedVectorSize) {
+        throw new Error(`Unexpected embeddings size: ${vectors?.length}`);
+      }
+
+      return vectors;
+    } catch (error) {
+      console.error(`Failed to generate Langchain embeddings for text "${text}":`, error);
+      throw error;
     }
-
-    return embeddingsFlattened;
-  } catch (error) {
-    console.error(`Failed to generate embeddings for text "${text}":`, error);
-    throw error;
   }
 }
