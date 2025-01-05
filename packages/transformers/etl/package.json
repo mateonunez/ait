@@ -1,0 +1,26 @@
+{
+  "name": "@ait/etl",
+  "version": "1.0.0",
+  "description": "AIt's etl",
+  "main": "index.js",
+  "scripts": {
+    "etl": "tsx src/etl.entrypoint.ts",
+    "example:etl": "tsx src/etl/example.etl.ts",
+    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'"
+  },
+  "keywords": [],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@ait/postgres": "workspace:*",
+    "@ait/qdrant": "workspace:*",
+    "dotenv": "^16.4.7",
+    "ollama": "^0.5.11"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.3",
+    "@types/sinon": "^17.0.3",
+    "sinon": "^19.0.2",
+    "typescript": "^5.7.2"
+  }
+}

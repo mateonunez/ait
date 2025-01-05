@@ -1,10 +1,9 @@
 {
-  "name": "@ait/connectors",
+  "name": "@ait/qdrant",
   "version": "1.0.0",
-  "description": "AIt's connectors",
+  "description": "AIt's internal qdrant database client and utils",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx src/api/connector.server.ts",
     "build": "tsc",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
@@ -15,19 +14,11 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@ait/postgres": "workspace:*",
-    "@octokit/rest": "^21.0.2",
-    "dotenv": "^16.4.7",
-    "fastify": "^5.2.0",
-    "fastify-cors": "^6.1.0",
-    "fastify-env": "^2.2.0",
-    "postgres": "^3.4.5",
-    "undici": "^7.2.0"
+    "@qdrant/js-client-rest": "^1.12.0",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
-    "@octokit/plugin-paginate-rest": "^11.3.6",
-    "@octokit/plugin-rest-endpoint-methods": "^13.2.6",
-    "@octokit/types": "^13.6.2",
+    "@types/dotenv": "^8.2.3",
     "@types/sinon": "^17.0.3",
     "sinon": "^19.0.2",
     "typescript": "^5.7.2"

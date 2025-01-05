@@ -1,14 +1,14 @@
-import { db } from "../../../infrastructure/db/db.client";
-import { spotifyTracks } from "../../../infrastructure/db/schemas/connector.spotify.schema";
+import { getPostgresClient, spotifyTracks } from "@ait/postgres";
 import { connectorSpotifyTrackMapper } from "../../mappers/spotify/connector.spotify.mapper";
 import type { SpotifyTrackEntity } from "./connector.spotify.entities";
-import type { SpotifyTrackDataTarget } from "../../../infrastructure/db/schemas/connector.spotify.schema";
 import type {
   IConnectorSpotifyRepository,
   IConnectorSpotifyTrackRepository,
 } from "./connector.spotify.repository.interface";
 
 export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRepository {
+  private _pgClient = getPostgresClient();
+
   async saveTrack(track: SpotifyTrackEntity): Promise<void> {
     if (!track?.id) {
       throw new Error("Invalid track: missing track ID");
@@ -17,7 +17,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     try {
       const tracks = connectorSpotifyTrackMapper.domainToDataTarget(track);
 
-      await db.transaction(async (tx) => {
+      await this._pgClient.db.transaction(async (tx) => {
         await tx.insert(spotifyTracks).values(tracks).onConflictDoNothing().execute();
       });
 
@@ -53,7 +53,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
 }
 
 export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository implements IConnectorSpotifyRepository {
-  private _spotifyTrackRepository: IConnectorSpotifyTrackRepository;
+  private _spotifyTrackRepository: ConnectorSpotifyTrackRepository;
 
   constructor() {
     super();

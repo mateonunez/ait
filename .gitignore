@@ -4,3 +4,4 @@ coverage/
 .env.test
 .stuff
 dist/
+.venv/

@@ -3,8 +3,8 @@ import { defineConfig } from "drizzle-kit";
 
 dotenv.config();
 
-export const databaseSchemaPath = "./src/infrastructure/db/schemas";
-export const migrationsPath = "./src/infrastructure/db/migrations";
+export const databaseSchemaPath = "./src/schemas";
+export const migrationsPath = "./src/migrations";
 export const dialect = "postgresql";
 
 export default defineConfig({
