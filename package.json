@@ -1,7 +1,7 @@
 {
   "name": "@ait/ait",
   "version": "1.0.0",
-  "description": "Hey there! I'm AIt, Mateo's personal assistant",
+  "description": "Hey there! I'm AIt.",
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "main": "index.js",
   "scripts": {
@@ -15,7 +15,6 @@
   },
   "keywords": [],
   "license": "MIT",
-  "packageManager": "pnpm@9.13.2+sha512.88c9c3864450350e65a33587ab801acf946d7c814ed1134da4a924f6df5a2120fd36b46aab68f7cd1d413149112d53c7db3a4136624cfd00ff1846a0c6cef48a",
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.10.3",
@@ -25,5 +24,6 @@
     "tsc": "^2.0.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
-  }
+  },
+  "packageManager": "pnpm@9.13.2+sha512.88c9c3864450350e65a33587ab801acf946d7c814ed1134da4a924f6df5a2120fd36b46aab68f7cd1d413149112d53c7db3a4136624cfd00ff1846a0c6cef48a"
 }
