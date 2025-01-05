@@ -40,7 +40,11 @@ describe("ConnectorGitHubRepository", () => {
 
         await repoRepository.saveRepository(repo);
 
-        const saved = await db.select().from(githubRepositories).where(drizzleOrm.eq(githubRepositories.id, repo.id)).execute();
+        const saved = await db
+          .select()
+          .from(githubRepositories)
+          .where(drizzleOrm.eq(githubRepositories.id, repo.id))
+          .execute();
         assert.equal(saved.length, 1);
         assert(saved[0] !== undefined);
         assert.equal(saved[0].id, repo.id);

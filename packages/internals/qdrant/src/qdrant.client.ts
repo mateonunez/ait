@@ -24,7 +24,7 @@ export interface IQdrantConfig {
 function buildQdrantClient(config: IQdrantConfig): QdrantClient {
   return new QdrantClient({
     url: config.url,
-    timeout: config.timeout ?? 60000
+    timeout: config.timeout ?? 60000,
   });
 }
 

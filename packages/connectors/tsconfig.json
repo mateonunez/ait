@@ -24,9 +24,6 @@
     "incremental": true,
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*",
-    "src/shared/auth/lib/oauth/connector.oauth.test.ts",
-  ],
+  "include": ["src/**/*", "src/shared/auth/lib/oauth/connector.oauth.test.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }
