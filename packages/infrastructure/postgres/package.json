@@ -8,7 +8,7 @@
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "db:generate": "drizzle-kit generate --config src/drizzle.config.ts",
-    "db:migrate": "npx tsx src/db.migrate.ts",
+    "db:migrate": "test -f .env || cp .env.example .env && npx tsx src/db.migrate.ts",
     "db:studio": "drizzle-kit studio"
   },
   "keywords": [],

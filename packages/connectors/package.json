@@ -8,6 +8,7 @@
     "build": "tsc",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "pretest": "test -f .env.test || cp .env.example .env.test",
     "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
     "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
   },

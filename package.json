@@ -8,6 +8,7 @@
     "lint": "pnpm run:recursive lint ",
     "lint:fix": "pnpm run:recursive lint:fix ",
     "test": "pnpm run:recursive test",
+    "migrate": "pnpm run --filter @ait/postgres db:migrate",
     "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present",
     "start:services": "docker compose up -d",
     "stop:services": "docker compose down"
