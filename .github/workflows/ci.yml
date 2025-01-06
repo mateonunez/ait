@@ -43,7 +43,6 @@ jobs:
       fail-fast: false
       matrix:
         node: [20, 22]
-        package: [connectors, infrastructure, transformers]
     services:
       postgres:
         image: postgres:latest
@@ -53,13 +52,11 @@ jobs:
           POSTGRES_USER: root
           POSTGRES_PASSWORD: toor
           POSTGRES_DB: ait
-        options: --health-cmd="pg_isready -U root" --health-interval=10s --health-timeout=5s --health-retries=5
 
       qdrant:
         image: qdrant/qdrant:latest
         ports:
           - 6333:6333
-        options: --health-cmd="curl -f http://localhost:6333/health || exit 1" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
       - name: Checkout Repository
@@ -79,6 +76,12 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Lint the Project
+        run: pnpm lint
+
+      - name: Build the Project
+        run: pnpm build
+
       - name: Start Services
         run: docker-compose -f docker-compose.ci.yml up -d
 
@@ -95,10 +98,8 @@ jobs:
           done
           echo "Qdrant is healthy."
 
-      - name: Run Tests for ${{ matrix.package }}
-        run: |
-          cd packages/${{ matrix.package }}
-          pnpm test
+      - name: Run Tests
+        run: pnpm test
 
       - name: Tear Down Services
         if: always()
