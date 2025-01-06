@@ -67,9 +67,11 @@ jobs:
       - name: Start Services
         run: docker compose -f docker-compose.ci.yml up -d
 
-      # Remove this as soon as possible
       - name: Wait for few secs for services to start
         run: sleep 10
+
+      - name: Migrate the Database
+        run: pnpm migrate
 
       - name: Run Tests
         run: pnpm test
