@@ -67,6 +67,9 @@ jobs:
       - name: Start Services
         run: docker compose -f docker-compose.ci.yml up -d
 
+      - name: Wait for few secs for services to start
+        run: sleep 5
+
       - name: Wait for PostgreSQL to be Healthy
         run: |
           docker compose -f docker-compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do echo 'Waiting for PostgreSQL to be healthy...'; sleep 5; done"

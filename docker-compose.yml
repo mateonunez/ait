@@ -39,27 +39,27 @@ services:
     networks:
       - app-network
 
-  ait_open_webui:
-    image: ghcr.io/open-webui/open-webui:ollama
-    container_name: ait_open_webui
-    ports:
-      - "8434:8080"
-    volumes:
-      - ./packages/infrastructure/ollama/data:/root/.ollama
-      - ./packages/infrastructure/open-webui/data:/app/backend/data
-    depends_on:
-      - ait_ollama
-    restart: always
-    environment:
-      - "OLLAMA_BASE_URLS=http://ait_ollama:11434"
-      - "WEBUI_AUTH=false"
-      - "WEBUI_NAME=AIt Open WebUI"
-      - "WEBUI_URL=http://localhost:8434"
-      - "WEBUI_SECRET=ai-openwebui-secret"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - app-network
+  # ait_open_webui:
+  #   image: ghcr.io/open-webui/open-webui:ollama
+  #   container_name: ait_open_webui
+  #   ports:
+  #     - "8434:8080"
+  #   volumes:
+  #     - ./packages/infrastructure/ollama/data:/root/.ollama
+  #     - ./packages/infrastructure/open-webui/data:/app/backend/data
+  #   depends_on:
+  #     - ait_ollama
+  #   restart: always
+  #   environment:
+  #     - "OLLAMA_BASE_URLS=http://ait_ollama:11434"
+  #     - "WEBUI_AUTH=false"
+  #     - "WEBUI_NAME=AIt Open WebUI"
+  #     - "WEBUI_URL=http://localhost:8434"
+  #     - "WEBUI_SECRET=ai-openwebui-secret"
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   networks:
+  #     - app-network
 
   ait_redis:
     image: redis:latest
