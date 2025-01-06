@@ -37,8 +37,8 @@ export abstract class AbstractETL implements IETL {
 
   protected abstract ensureCollectionExists(): Promise<void>;
   protected abstract extract(limit: number): Promise<unknown[]>;
-  protected abstract transform(data: unknown[]): Promise<unknown[]>;
-  protected abstract load(data: unknown[]): Promise<void>;
+  protected abstract transform<T>(data: T[]): Promise<BaseVectorPoint[]>;
+  protected abstract load<T>(data: T[]): Promise<void>;
 
   protected async retry<T>(operation: () => Promise<T>, attempt = 0): Promise<T> {
     try {
@@ -47,12 +47,17 @@ export abstract class AbstractETL implements IETL {
       if (attempt >= this.retryOptions.maxRetries) {
         throw error;
       }
-      const delay = Math.min(
-        this.retryOptions.initialDelay * 2 ** attempt,
-        this.retryOptions.maxDelay
-      );
+      // Calculate next delay using exponential backoff with a maximum delay threshold
+      // Formula: min(initialDelay * 2^attempt, maxDelay)
+      // - min(1000 * 2^1 = 2000ms, 5000ms) = 2000ms
+      // - min(1000 * 2^2 = 4000ms, 5000ms) = 4000ms
+      // - min(1000 * 2^3 = 8000ms, 5000ms) = 5000ms
+      const delay = Math.min(this.retryOptions.initialDelay * 2 ** attempt, this.retryOptions.maxDelay);
+
       console.log(`Retry ${attempt + 1}/${this.retryOptions.maxRetries} after ${delay}ms`);
+
       await new Promise((resolve) => setTimeout(resolve, delay));
+
       return this.retry(operation, attempt + 1);
     }
   }

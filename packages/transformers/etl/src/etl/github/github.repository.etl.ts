@@ -1,9 +1,15 @@
-import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTarget } from "@ait/postgres";
+import {
+  type getPostgresClient,
+  githubRepositories,
+  type GitHubRepositoryDataTarget,
+} from "@ait/postgres";
 import { ETLBase } from "../etl.base";
 import type { qdrant } from "@ait/qdrant";
 import type { RetryOptions } from "../etl.abstract";
 import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
 import type { GitHubRepositoryVectorPoint } from "./github.etl.interface";
+
+const defaultCollectionName = "github_repositories_collection";
 
 export class GitHubRepositoryETL extends ETLBase {
   constructor(
@@ -12,7 +18,7 @@ export class GitHubRepositoryETL extends ETLBase {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, "github_repositories_collection", retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, defaultCollectionName, retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<GitHubRepositoryDataTarget[]> {
@@ -28,9 +34,7 @@ export class GitHubRepositoryETL extends ETLBase {
   protected getPayload(repository: GitHubRepositoryDataTarget): GitHubRepositoryVectorPoint["payload"] {
     return {
       type: "repository",
-      name: repository.name,
-      description: repository.description,
-      language: repository.language,
+      ...repository,
     };
   }
 }

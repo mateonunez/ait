@@ -6,14 +6,22 @@ import type { RetryOptions } from "../etl.abstract";
 import type { SpotifyTrackVectorPoint } from "./spotify.etl.interface";
 import { ETLBase } from "../etl.base";
 
+const defaultCollectionName = "spotify_tracks_collection";
+
 export class SpotifyTrackETL extends ETLBase {
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
     qdrantClient: qdrant.QdrantClient,
     retryOptions?: RetryOptions,
-    embeddingsService?: IEmbeddingsService,
+    embeddingsService?: IEmbeddingsService
   ) {
-    super(pgClient, qdrantClient, "spotify_tracks_collection", retryOptions, embeddingsService);
+    super(
+      pgClient,
+      qdrantClient,
+      defaultCollectionName,
+      retryOptions,
+      embeddingsService
+    );
   }
 
   protected async extract(limit: number): Promise<SpotifyTrackDataTarget[]> {
@@ -26,11 +34,12 @@ export class SpotifyTrackETL extends ETLBase {
     return `${track.name} ${track.artist}`;
   }
 
-  protected getPayload(track: SpotifyTrackDataTarget): SpotifyTrackVectorPoint["payload"] {
+  protected getPayload(
+    track: SpotifyTrackDataTarget
+  ): SpotifyTrackVectorPoint["payload"] {
     return {
       type: "track",
-      name: track.name,
-      artist: track.artist,
+      ...track,
     };
   }
 }
