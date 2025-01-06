@@ -3,7 +3,7 @@ import type { qdrant } from "@ait/qdrant";
 import { spotifyTracks } from "@ait/postgres";
 import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
 import type { RetryOptions } from "../etl.abstract";
-import type { SpotifyTrackVectorPoint, SpotifyVectorPoint } from "./spotify.etl.interface";
+import type { SpotifyTrackVectorPoint } from "./spotify.etl.interface";
 import { ETLBase } from "../etl.base";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/spotify/etl.spotify.descriptor";
@@ -32,7 +32,7 @@ export class SpotifyTrackETL extends ETLBase {
     return this._descriptor.getEmbeddingText(track);
   }
 
-  protected getPayload(track: SpotifyTrackDataTarget): SpotifyVectorPoint["payload"] {
+  protected getPayload(track: SpotifyTrackDataTarget): SpotifyTrackVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(track);
   }
 }
