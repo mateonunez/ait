@@ -1,7 +1,7 @@
 import type { getPostgresClient, SpotifyTrackDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { spotifyTracks } from "@ait/postgres";
-import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
+import type { IEmbeddingsService } from "@ait/langchain";
 import { BaseETLAbstract, type RetryOptions } from "../etl.base.abstract";
 import type { SpotifyTrackVectorPoint } from "./spotify.etl.interface";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
