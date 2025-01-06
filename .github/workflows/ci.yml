@@ -53,7 +53,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Start Services
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Wait for Services to be Healthy
         run: |
@@ -70,4 +70,4 @@ jobs:
 
       - name: Tear Down Services
         if: always()
-        run: docker-compose down
+        run: docker compose down
