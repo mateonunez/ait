@@ -1,8 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import type {
-  ConnectorGitHubFetchRepositoriesResponse,
-  IConnectorGitHubDataSource,
-} from "./connector.github.data-source.interface";
+import type { IConnectorGitHubDataSource } from "./connector.github.data-source.interface";
 import { ConnectorGitHubDataSourceFetchRepositoriesError } from "./connector.github.data-source.errors";
 import type { GitHubRepository } from "../../../domain/entities/github/connector.github.entities";
 

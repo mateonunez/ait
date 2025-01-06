@@ -1,3 +1,4 @@
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type { GitHubEntity } from "../../../domain/entities/github/connector.github.entities";
 import type { IConnectorGitHubRepository } from "../../../domain/entities/github/connector.github.repository.interface";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
@@ -26,6 +27,10 @@ export class ConnectorGitHubStore implements IConnectorStore {
 
   async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
     await this._connectorGitHubRepository.saveAuthenticationData(data);
+  }
+
+  async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
+    return this._connectorGitHubRepository.getAuthenticationData();
   }
 
   private _resolveItems<T extends GitHubEntity>(data: T | T[]): T[] {

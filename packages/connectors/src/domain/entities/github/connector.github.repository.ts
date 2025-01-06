@@ -1,4 +1,4 @@
-import { getPostgresClient, githubRepositories, oauthTokens, OAuthTokenDataTarget } from "@ait/postgres";
+import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
 import { connectorGithubMapper } from "../../mappers/github/connector.github.mapper";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
 import type {
@@ -6,8 +6,7 @@ import type {
   IConnectorGitHubRepositoryRepository,
 } from "./connector.github.repository.interface";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
-import { randomUUID } from "node:crypto";
-import { saveOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
 
 const _pgClient = getPostgresClient();
 
@@ -69,6 +68,10 @@ export class ConnectorGitHubRepository
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
     saveOAuthData(data, "github");
+  }
+
+  public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
+    return getOAuthData("github");
   }
 
   get repo(): ConnectorGitHubRepositoryRepository {

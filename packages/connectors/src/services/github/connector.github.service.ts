@@ -27,6 +27,8 @@ export class ConnectorGitHubService implements IConnectorService<ConnectorGitHub
   }
 
   async getRepositories(): Promise<GitHubRepositoryEntity[]> {
+    await this._connector.connect(); // <- Required, always.
+
     const repositories = await this._connector.dataSource?.fetchRepositories();
     if (!repositories?.length) {
       return [];

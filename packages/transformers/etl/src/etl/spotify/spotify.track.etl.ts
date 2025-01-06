@@ -2,15 +2,14 @@ import type { getPostgresClient, SpotifyTrackDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { spotifyTracks } from "@ait/postgres";
 import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
-import type { RetryOptions } from "../etl.abstract";
+import { BaseETLAbstract, type RetryOptions } from "../etl.base.abstract";
 import type { SpotifyTrackVectorPoint } from "./spotify.etl.interface";
-import { ETLBase } from "../etl.base";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/spotify/etl.spotify.descriptor";
 
 const defaultCollectionName = "spotify_tracks_collection";
 
-export class SpotifyTrackETL extends ETLBase {
+export class SpotifyTrackETL extends BaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
 
   constructor(

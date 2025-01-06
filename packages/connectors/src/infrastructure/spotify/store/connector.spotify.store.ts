@@ -28,6 +28,10 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     await this._connectorSpotifyRepository.saveAuthenticationData(data);
   }
 
+  async getAuthenticationData(): Promise<any> {
+    return this._connectorSpotifyRepository.getAuthenticationData();
+  }
+
   private _resolveItems<T extends SpotifyEntity>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }

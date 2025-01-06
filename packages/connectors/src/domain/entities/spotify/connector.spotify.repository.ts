@@ -1,4 +1,4 @@
-import { getPostgresClient, oauthTokens, spotifyTracks } from "@ait/postgres";
+import { getPostgresClient, type OAuthTokenDataTarget, spotifyTracks } from "@ait/postgres";
 import { connectorSpotifyTrackMapper } from "../../mappers/spotify/connector.spotify.mapper";
 import type { SpotifyTrackEntity } from "./connector.spotify.entities";
 import type {
@@ -6,7 +6,7 @@ import type {
   IConnectorSpotifyTrackRepository,
 } from "./connector.spotify.repository.interface";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
-import { saveOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { getOAuthData, saveOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
 
 const _pgClient = getPostgresClient();
 
@@ -66,6 +66,10 @@ export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository 
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
     saveOAuthData(data, "spotify");
+  }
+
+  public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
+    return getOAuthData("spotify");
   }
 
   get track(): ConnectorSpotifyTrackRepository {
