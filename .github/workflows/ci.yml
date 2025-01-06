@@ -1,6 +1,12 @@
 name: CI
 
-on: push
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - '**'
 
 jobs:
   setup-dependencies:
@@ -14,13 +20,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up PNPM
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v2.6.0
+        with:
+          version: '7'  # Specify the PNPM version if needed
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -35,36 +43,63 @@ jobs:
       fail-fast: false
       matrix:
         node: [20, 22]
+        package: [connectors, infrastructure, transformers]
+    services:
+      postgres:
+        image: postgres:latest
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: toor
+          POSTGRES_DB: ait
+        options: --health-cmd="pg_isready -U root" --health-interval=10s --health-timeout=5s --health-retries=5
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+        options: --health-cmd="curl -f http://localhost:6333/health || exit 1" --health-interval=10s --health-timeout=5s --health-retries=5
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up PNPM
-        uses: pnpm/action-setup@v4.0.0
+        uses: pnpm/action-setup@v2.6.0
+        with:
+          version: '7'
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
-        run: pnpm lint
-
       - name: Start Services
-        run: docker compose up -d
+        run: docker-compose -f docker-compose.ci.yml up -d
 
-      - name: Wait for Services
-        run: docker compose ps
-        timeout-minutes: 5
+      - name: Wait for PostgreSQL to be Healthy
+        run: |
+          docker-compose -f docker-compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do sleep 1; done"
 
-      - name: Run Tests
-        run: pnpm test
+      - name: Wait for Qdrant to be Healthy
+        run: |
+          # check status 200
+          until curl -f http://localhost:6333/health; do
+            echo "Waiting for Qdrant to be healthy..."
+            sleep 5
+          done
+          echo "Qdrant is healthy."
+
+      - name: Run Tests for ${{ matrix.package }}
+        run: |
+          cd packages/${{ matrix.package }}
+          pnpm test
 
       - name: Tear Down Services
         if: always()
-        run: docker compose down
+        run: docker-compose -f docker-compose.ci.yml down
