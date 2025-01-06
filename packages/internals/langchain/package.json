@@ -1,0 +1,23 @@
+{
+  "name": "@ait/langchain",
+  "version": "1.0.0",
+  "description": "AIt's internal langchain client and utils",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe"
+  },
+  "keywords": [],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@langchain/core": "^0.3.27",
+    "@langchain/ollama": "^0.1.4",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.3",
+    "typescript": "^5.7.2"
+  }
+}
