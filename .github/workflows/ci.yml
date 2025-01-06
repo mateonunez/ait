@@ -41,20 +41,6 @@ jobs:
       fail-fast: false
       matrix:
         node: [20, 22]
-    # services:
-    #   postgres:
-    #     image: postgres:latest
-    #     ports:
-    #       - 5432:5432
-    #     env:
-    #       POSTGRES_USER: root
-    #       POSTGRES_PASSWORD: toor
-    #       POSTGRES_DB: ait
-
-    #   qdrant:
-    #     image: qdrant/qdrant:latest
-    #     ports:
-    #       - 6333:6333
 
     steps:
       - name: Checkout Repository
@@ -83,7 +69,7 @@ jobs:
 
       - name: Wait for PostgreSQL to be Healthy
         run: |
-          docker compose -f docker-compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do sleep 1; done"
+          docker compose -f docker-compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do echo 'Waiting for PostgreSQL to be healthy...'; sleep 5; done"
 
       - name: Wait for Qdrant to be Healthy
         run: |
