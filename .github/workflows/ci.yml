@@ -58,11 +58,9 @@ jobs:
       - name: Start Services
         run: docker compose up -d
 
-      - name: Wait for Services to be Healthy
-        run: |
-          while [ "$(docker compose ps ait_postgres | grep -c healthy)" -ne 1 ]; do
-            sleep 1
-          done
+      - name: Wait for Services
+        run: docker compose ps
+        timeout-minutes: 5
 
       - name: Run Tests
         run: pnpm test
