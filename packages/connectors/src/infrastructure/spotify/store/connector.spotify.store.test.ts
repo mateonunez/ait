@@ -10,7 +10,9 @@ describe("ConnectorSpotifyStore", () => {
 
   beforeEach(() => {
     mockRepository = {
-      saveTrack: async (_track: SpotifyTrackEntity) => {},
+      track: {
+        saveTrack: async (_track: SpotifyTrackEntity) => {},
+      },
     } as unknown as IConnectorSpotifyRepository;
 
     store = new ConnectorSpotifyStore(mockRepository);
@@ -20,7 +22,7 @@ describe("ConnectorSpotifyStore", () => {
     it("should call saveTrack for a single track item", async () => {
       let saveTrackCalledWith: SpotifyTrackEntity;
 
-      mockRepository.saveTrack = async (track: SpotifyTrackEntity) => {
+      mockRepository.track.saveTrack = async (track: SpotifyTrackEntity) => {
         saveTrackCalledWith = track;
       };
 
@@ -45,7 +47,7 @@ describe("ConnectorSpotifyStore", () => {
 
     it("should call saveTrack for multiple track items", async () => {
       const spotifyTracks: SpotifyTrackEntity[] = [];
-      mockRepository.saveTrack = async (track: SpotifyTrackEntity) => {
+      mockRepository.track.saveTrack = async (track: SpotifyTrackEntity) => {
         spotifyTracks.push(track);
       };
 

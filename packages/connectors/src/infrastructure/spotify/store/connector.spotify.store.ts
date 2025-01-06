@@ -1,5 +1,6 @@
 import type { SpotifyEntity } from "../../../domain/entities/spotify/connector.spotify.entities";
 import type { IConnectorSpotifyRepository } from "../../../domain/entities/spotify/connector.spotify.repository.interface";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
 import type { IConnectorStore } from "../../../shared/store/connector.store.interface";
 
 export class ConnectorSpotifyStore implements IConnectorStore {
@@ -15,12 +16,16 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     for (const item of items) {
       switch (item.type) {
         case "track":
-          await this._connectorSpotifyRepository.saveTrack(item);
+          await this._connectorSpotifyRepository.track.saveTrack(item);
           break;
         default:
           throw new Error(`Type ${item.type} is not supported`);
       }
     }
+  }
+
+  async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
+    await this._connectorSpotifyRepository.saveAuthenticationData(data);
   }
 
   private _resolveItems<T extends SpotifyEntity>(data: T | T[]): T[] {

@@ -1,3 +1,4 @@
+import type { IConnectorRepository } from "../connector.repository.interface";
 import type { SpotifyTrackEntity } from "./connector.spotify.entities";
 
 export interface IConnectorSpotifyTrackRepository {
@@ -8,4 +9,6 @@ export interface IConnectorSpotifyTrackRepository {
   getTracks(): Promise<SpotifyTrackEntity[]>;
 }
 
-export interface IConnectorSpotifyRepository extends IConnectorSpotifyTrackRepository {}
+export interface IConnectorSpotifyRepository extends IConnectorRepository {
+  track: IConnectorSpotifyTrackRepository;
+}

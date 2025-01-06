@@ -10,7 +10,9 @@ describe("ConnectorGitHubStore", () => {
 
   beforeEach(() => {
     mockRepository = {
-      saveRepository: async (_repo: GitHubRepositoryEntity) => {},
+      repo: {
+        saveRepository: async (_repo: GitHubRepositoryEntity) => {},
+      },
     } as unknown as IConnectorGitHubRepository;
 
     store = new ConnectorGitHubStore(mockRepository);
@@ -20,7 +22,7 @@ describe("ConnectorGitHubStore", () => {
     it("should call saveRepository for a single repository item", async () => {
       let saveRepoCalledWith: GitHubRepositoryEntity;
 
-      mockRepository.saveRepository = async (repo: GitHubRepositoryEntity) => {
+      mockRepository.repo.saveRepository = async (repo: GitHubRepositoryEntity) => {
         saveRepoCalledWith = repo;
       };
 
@@ -46,7 +48,7 @@ describe("ConnectorGitHubStore", () => {
 
     it("should call saveRepository for multiple repository items", async () => {
       const githubRepos: GitHubRepositoryEntity[] = [];
-      mockRepository.saveRepository = async (repo: GitHubRepositoryEntity) => {
+      mockRepository.repo.saveRepository = async (repo: GitHubRepositoryEntity) => {
         githubRepos.push(repo);
       };
 

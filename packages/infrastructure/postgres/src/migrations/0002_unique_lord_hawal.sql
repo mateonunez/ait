@@ -1,0 +1,1 @@
+ALTER TABLE "oauth_tokens" ALTER COLUMN "expires_in" SET DATA TYPE varchar(255);

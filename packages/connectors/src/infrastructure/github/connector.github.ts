@@ -13,7 +13,7 @@ export class ConnectorGitHub
   private _authenticator: ConnectorGitHubAuthenticator;
   private _dataSource?: IConnectorGitHubDataSource;
   private _store: ConnectorGitHubStore;
-  private _repository: IConnectorGitHubRepository;
+  public _repository: IConnectorGitHubRepository;
 
   constructor(oauth: IConnectorOAuth) {
     this._authenticator = new ConnectorGitHubAuthenticator(oauth);
@@ -22,9 +22,11 @@ export class ConnectorGitHub
   }
 
   async connect(code: string): Promise<void> {
-    const { access_token: accessToken } = await this._authenticator.authenticate(code);
+    const response = await this._authenticator.authenticate(code);
 
-    this._dataSource = new ConnectorGitHubDataSource(accessToken);
+    this._dataSource = new ConnectorGitHubDataSource(response.access_token);
+
+    await this._store.saveAuthenticationData(response);
   }
 
   get authenticator(): ConnectorGitHubAuthenticator {
