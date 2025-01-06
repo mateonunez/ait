@@ -79,11 +79,11 @@ jobs:
         run: pnpm build
 
       - name: Start Services
-        run: docker compose -f docker compose.ci.yml up -d
+        run: docker compose -f docker-compose.ci.yml up -d
 
       - name: Wait for PostgreSQL to be Healthy
         run: |
-          docker compose -f docker compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do sleep 1; done"
+          docker compose -f docker-compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do sleep 1; done"
 
       - name: Wait for Qdrant to be Healthy
         run: |
@@ -99,4 +99,4 @@ jobs:
 
       - name: Tear Down Services
         if: always()
-        run: docker compose -f docker compose.ci.yml down
+        run: docker compose -f docker-compose.ci.yml down
