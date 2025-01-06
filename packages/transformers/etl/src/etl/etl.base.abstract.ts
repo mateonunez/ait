@@ -1,6 +1,6 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { ETLEmbeddingsService, type IEmbeddingsService } from "../infrastructure/embeddings/etl.embeddings.service";
+import { ETLEmbeddingsService, type IEmbeddingsService } from "@ait/langchain";
 
 export interface BaseVectorPoint {
   id: number;

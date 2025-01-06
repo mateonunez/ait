@@ -2,7 +2,7 @@ import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTa
 import { BaseETLAbstract } from "../etl.base.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { RetryOptions } from "../etl.base.abstract";
-import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
+import type { IEmbeddingsService } from "@ait/langchain";
 import type { GitHubRepositoryVectorPoint } from "./github.etl.interface";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/descriptors/github/etl.github.descriptor";
