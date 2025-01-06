@@ -60,12 +60,8 @@ jobs:
 
       - name: Wait for Services to be Healthy
         run: |
-          for service in postgres qdrant redis ollama; do
-            echo "Waiting for $service to be healthy..."
-            until docker inspect --format='{{.State.Health.Status}}' ait_$service | grep "healthy"; do
-              sleep 5
-            done
-            echo "$service is healthy."
+          while [ "$(docker compose ps postgres | grep -c healthy)" -ne 1 ]; do
+            sleep 1
           done
 
       - name: Run Tests
