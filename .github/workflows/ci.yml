@@ -67,21 +67,9 @@ jobs:
       - name: Start Services
         run: docker compose -f docker-compose.ci.yml up -d
 
+      # Remove this as soon as possible
       - name: Wait for few secs for services to start
-        run: sleep 5
-
-      - name: Wait for PostgreSQL to be Healthy
-        run: |
-          docker compose -f docker-compose.ci.yml exec -T ait_postgres_ci sh -c "until pg_isready -U root; do echo 'Waiting for PostgreSQL to be healthy...'; sleep 5; done"
-
-      - name: Wait for Qdrant to be Healthy
-        run: |
-          # check status 200
-          until curl -f http://localhost:6333; do
-            echo "Waiting for Qdrant to be healthy..."
-            sleep 5
-          done
-          echo "Qdrant is healthy."
+        run: sleep 10
 
       - name: Run Tests
         run: pnpm test
