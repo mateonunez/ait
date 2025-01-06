@@ -1,3 +1,4 @@
+import type { IConnectorRepository } from "../connector.repository.interface";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
 
 export interface IConnectorGitHubRepositoryRepository {
@@ -11,4 +12,6 @@ export interface IConnectorGitHubRepositoryRepository {
 /**
  * Union of all GitHub repositories
  */
-export interface IConnectorGitHubRepository extends IConnectorGitHubRepositoryRepository {}
+export interface IConnectorGitHubRepository extends IConnectorRepository {
+  repo: IConnectorGitHubRepositoryRepository;
+}

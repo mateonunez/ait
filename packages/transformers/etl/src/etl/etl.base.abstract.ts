@@ -1,9 +1,21 @@
 import type { getPostgresClient } from "@ait/postgres";
-import { AbstractETL, type BaseVectorPoint, type RetryOptions } from "./etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import { ETLEmbeddingsService, type IEmbeddingsService } from "../infrastructure/embeddings/etl.embeddings.service";
 
-export class ETLBase extends AbstractETL {
+export interface BaseVectorPoint {
+  id: number;
+  vector: number[];
+  payload: Record<string, unknown>;
+}
+
+export interface RetryOptions {
+  maxRetries: number;
+  initialDelay: number;
+  maxDelay: number;
+}
+
+export abstract class BaseETLAbstract {
+  protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 100;
   private readonly _vectorSize = 2048;
 
@@ -11,10 +23,28 @@ export class ETLBase extends AbstractETL {
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
     protected readonly _qdrantClient: qdrant.QdrantClient,
     private readonly _collectionName: string,
-    retryOptions: RetryOptions = { maxRetries: 3, initialDelay: 1000, maxDelay: 5000 },
+    retryOptions: RetryOptions = {
+      maxRetries: 3,
+      initialDelay: 1000,
+      maxDelay: 5000,
+    },
     private readonly _embeddingsService: IEmbeddingsService = new ETLEmbeddingsService("gemma:2b", 2048),
   ) {
-    super(retryOptions);
+    this.retryOptions = retryOptions;
+  }
+
+  public async run(limit: number): Promise<void> {
+    try {
+      console.log(`Starting ETL process. Limit: ${limit}`);
+      await this.ensureCollectionExists();
+      const data = await this.extract(limit);
+      const transformedData = await this.transform(data);
+      await this.load(transformedData);
+      console.log("ETL process completed successfully");
+    } catch (error) {
+      console.error("ETL process failed:", error);
+      throw error;
+    }
   }
 
   protected async ensureCollectionExists(): Promise<void> {
@@ -47,8 +77,8 @@ export class ETLBase extends AbstractETL {
 
     for (const [index, item] of items.entries()) {
       const text = this.getTextForEmbedding(item);
-      const vector = await this._embeddingsService.generateEmbeddings(text);
 
+      const vector = await this._embeddingsService.generateEmbeddings(text);
       if (vector.length !== this._vectorSize) {
         throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
       }
@@ -57,7 +87,7 @@ export class ETLBase extends AbstractETL {
         id: index + 1,
         vector,
         payload: this.getPayload(item),
-      } as BaseVectorPoint);
+      });
     }
 
     return points;
@@ -65,6 +95,7 @@ export class ETLBase extends AbstractETL {
 
   protected async load(data: unknown[]): Promise<void> {
     const points = data as BaseVectorPoint[];
+
     for (let i = 0; i < points.length; i += this._batchSize) {
       const batch = points.slice(i, i + this._batchSize);
       const upsertPoints = batch.map((point) => ({
@@ -82,15 +113,24 @@ export class ETLBase extends AbstractETL {
     }
   }
 
-  protected getTextForEmbedding(item: Record<string, unknown>): string {
-    throw new Error("getTextForEmbedding must be implemented by subclass");
+  protected async retry<T>(operation: () => Promise<T>, attempt = 0): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attempt >= this.retryOptions.maxRetries) {
+        throw error;
+      }
+      // Calculate the next delay using exponential backoff, capping at maxDelay.
+      const delay = Math.min(this.retryOptions.initialDelay * 2 ** attempt, this.retryOptions.maxDelay);
+
+      console.log(`Retry ${attempt + 1}/${this.retryOptions.maxRetries} after ${delay}ms`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+
+      return this.retry(operation, attempt + 1);
+    }
   }
 
-  protected getPayload(item: Record<string, unknown>): Record<string, unknown> {
-    throw new Error("getPayload must be implemented by subclass");
-  }
-
-  protected async extract(limit: number): Promise<unknown[]> {
-    throw new Error("Extract method must be implemented by subclass");
-  }
+  protected abstract extract(limit: number): Promise<unknown[]>;
+  protected abstract getTextForEmbedding(item: Record<string, unknown>): string;
+  protected abstract getPayload(item: Record<string, unknown>): Record<string, unknown>;
 }

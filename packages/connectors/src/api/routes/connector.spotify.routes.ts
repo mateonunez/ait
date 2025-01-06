@@ -5,6 +5,8 @@ interface AuthCallbackQuery {
   code: string;
 }
 
+const defaultProvider = "spotify";
+
 export default async function githubRoutes(fastify: FastifyInstance) {
   const spotifyService = new ConnectorSpotifyService();
 

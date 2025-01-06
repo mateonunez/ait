@@ -3,7 +3,6 @@ import { ConnectorSpotify } from "../../infrastructure/spotify/connector.spotify
 import { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorService } from "../connector.service.interface";
 import type { IConnectorSpotifyService } from "./connector.spotify.service.interface";
-import type { SpotifyTrack } from "../../domain/entities/spotify/connector.spotify.entities";
 import type { SpotifyTrackEntity } from "../../domain/entities/spotify/connector.spotify.entities";
 import { connectorSpotifyTrackMapper } from "../../domain/mappers/spotify/connector.spotify.mapper";
 
@@ -24,6 +23,8 @@ export class ConnectorSpotifyService implements IConnectorService<ConnectorSpoti
   }
 
   async getTracks(): Promise<SpotifyTrackEntity[]> {
+    await this._connector.connect(); // <- Required, always.
+
     const tracks = await this._connector.dataSource?.fetchTopTracks();
     if (!tracks?.length) {
       return [];

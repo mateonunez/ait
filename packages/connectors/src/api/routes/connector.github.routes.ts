@@ -8,6 +8,7 @@ interface AuthCallbackQuery {
 export default async function githubRoutes(fastify: FastifyInstance) {
   const githubService = new ConnectorGitHubService();
 
+  // TODO: not implemented yet
   fastify.get(
     "/auth/callback",
     async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
@@ -19,10 +20,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       try {
         await githubService.authenticate(code);
 
-        const repositories = await githubService.getRepositories();
-        await githubService.connector.store.save(repositories);
-
-        reply.send(repositories);
+        reply.send({ message: "Authenticated successfully." });
       } catch (err: any) {
         fastify.log.error(err);
         reply.status(500).send({ error: "Authentication failed." });
@@ -30,7 +28,6 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // TODO: not implemented yet
   fastify.get("/repositories", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const repositories = await githubService.getRepositories();

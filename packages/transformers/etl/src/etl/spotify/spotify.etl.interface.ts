@@ -1,5 +1,5 @@
 import type { SpotifyTrackDataTarget } from "@ait/postgres";
-import type { BaseVectorPoint } from "../etl.abstract";
+import type { BaseVectorPoint } from "../etl.base.abstract";
 
 export interface SpotifyTrackVectorPoint extends BaseVectorPoint {
   payload: {

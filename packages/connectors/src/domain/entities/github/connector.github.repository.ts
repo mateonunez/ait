@@ -1,12 +1,17 @@
-import { getPostgresClient, githubRepositories } from "@ait/postgres";
+import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
 import { connectorGithubMapper } from "../../mappers/github/connector.github.mapper";
 import type { GitHubRepositoryEntity } from "./connector.github.entities";
-import type { IConnectorGitHubRepositoryRepository } from "./connector.github.repository.interface";
+import type {
+  IConnectorGitHubRepository,
+  IConnectorGitHubRepositoryRepository,
+} from "./connector.github.repository.interface";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
+import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+
+const _pgClient = getPostgresClient();
 
 // I'm so sorry for the name of this class
 export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepositoryRepository {
-  private _pgClient = getPostgresClient();
-
   async saveRepository(repository: GitHubRepositoryEntity): Promise<void> {
     if (!repository?.id) {
       throw new Error("Invalid repository: missing repository ID");
@@ -15,7 +20,7 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     try {
       const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
 
-      await this._pgClient.db.transaction(async (tx) => {
+      await _pgClient.db.transaction(async (tx) => {
         await tx.insert(githubRepositories).values(repositoryData).onConflictDoNothing().execute();
       });
 
@@ -52,7 +57,7 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
 
 export class ConnectorGitHubRepository
   extends ConnectorGitHubRepositoryRepository
-  implements IConnectorGitHubRepositoryRepository
+  implements IConnectorGitHubRepository
 {
   private _gitHubRepositoryRepository: ConnectorGitHubRepositoryRepository;
 
@@ -61,11 +66,19 @@ export class ConnectorGitHubRepository
     this._gitHubRepositoryRepository = new ConnectorGitHubRepositoryRepository();
   }
 
-  get repositoryRepository(): ConnectorGitHubRepositoryRepository {
+  public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
+    saveOAuthData(data, "github");
+  }
+
+  public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
+    return getOAuthData("github");
+  }
+
+  get repo(): ConnectorGitHubRepositoryRepository {
     return this._gitHubRepositoryRepository;
   }
 
-  set repositoryRepository(repositoryRepository: ConnectorGitHubRepositoryRepository) {
-    this._gitHubRepositoryRepository = repositoryRepository;
+  set repo(repo: ConnectorGitHubRepositoryRepository) {
+    this._gitHubRepositoryRepository = repo;
   }
 }

@@ -1,7 +1,7 @@
 import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTarget } from "@ait/postgres";
-import { ETLBase } from "../etl.base";
+import { BaseETLAbstract } from "../etl.base.abstract";
 import type { qdrant } from "@ait/qdrant";
-import type { RetryOptions } from "../etl.abstract";
+import type { RetryOptions } from "../etl.base.abstract";
 import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
 import type { GitHubRepositoryVectorPoint } from "./github.etl.interface";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
@@ -9,7 +9,7 @@ import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/d
 
 const defaultCollectionName = "github_repositories_collection";
 
-export class GitHubRepositoryETL extends ETLBase {
+export class GitHubRepositoryETL extends BaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> =
     new ETLGitHubRepositoryDescriptor();
 
