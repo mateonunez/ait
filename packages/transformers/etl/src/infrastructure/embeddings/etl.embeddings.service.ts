@@ -6,7 +6,7 @@ export interface IEmbeddingsService {
 
 const ollamaBaseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
-initLangChainClient({ baseUrl: process.env.OLLAMA_BASE_URL });
+initLangChainClient({ baseUrl: ollamaBaseURL });
 
 export class ETLEmbeddingsService implements IEmbeddingsService {
   private readonly model?: string;
