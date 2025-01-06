@@ -1,11 +1,10 @@
 {
-  "name": "@ait/etl",
+  "name": "@ait/langchain",
   "version": "1.0.0",
-  "description": "AIt's etl",
+  "description": "AIt's internal langchain client and utils",
   "main": "index.js",
   "scripts": {
-    "etl": "tsx src/etl.entrypoint.ts",
-    "example:etl": "tsx src/etl/example.etl.ts",
+    "build": "tsc",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"
   },
@@ -13,14 +12,12 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@ait/langchain": "workspace:*",
-    "@ait/postgres": "workspace:*",
-    "@ait/qdrant": "workspace:*",
+    "@langchain/core": "^0.3.27",
+    "@langchain/ollama": "^0.1.4",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

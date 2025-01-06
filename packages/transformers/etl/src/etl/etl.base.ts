@@ -18,8 +18,8 @@ export class ETLBase extends AbstractETL {
   }
 
   protected async ensureCollectionExists(): Promise<void> {
-    const collections = await this.retry(() => this._qdrantClient.getCollections());
-    const collectionExists = collections.collections.some((collection) => collection.name === this._collectionName);
+    const response = await this.retry(() => this._qdrantClient.getCollections());
+    const collectionExists = response.collections.some((collection) => collection.name === this._collectionName);
 
     if (collectionExists) {
       console.log(`Deleting existing collection: ${this._collectionName}`);
@@ -41,12 +41,7 @@ export class ETLBase extends AbstractETL {
     );
   }
 
-  protected async extract(limit: number): Promise<unknown[]> {
-    // This should be overridden by specific ETL implementations
-    throw new Error("Extract method must be implemented by subclass");
-  }
-
-  protected async transform(data: unknown[]): Promise<BaseVectorPoint[]> {
+  protected async transform<T>(data: T[]): Promise<BaseVectorPoint[]> {
     const items = data as Record<string, unknown>[];
     const points: BaseVectorPoint[] = [];
 
@@ -93,5 +88,9 @@ export class ETLBase extends AbstractETL {
 
   protected getPayload(item: Record<string, unknown>): Record<string, unknown> {
     throw new Error("getPayload must be implemented by subclass");
+  }
+
+  protected async extract(limit: number): Promise<unknown[]> {
+    throw new Error("Extract method must be implemented by subclass");
   }
 }

@@ -1,4 +1,4 @@
-import { OllamaEmbeddings } from "@langchain/ollama";
+import { getLangChainClient } from "@ait/langchain";
 
 export interface IEmbeddingsService {
   generateEmbeddings(text: string): Promise<number[]>;
@@ -15,12 +15,10 @@ export class ETLEmbeddingsService implements IEmbeddingsService {
 
   public async generateEmbeddings(text: string): Promise<number[]> {
     try {
-      const embeddings = new OllamaEmbeddings({
-        model: this.model,
-      });
+      const langChainClient = getLangChainClient();
+      const embeddings = langChainClient.createEmbeddings(this.model);
 
       const vectors = await embeddings.embedQuery(text);
-
       console.log(`Generated Langchain embeddings for text "${text}" size:`, vectors.length);
 
       if (!vectors || vectors.length !== this.expectedVectorSize) {

@@ -1,8 +1,12 @@
-import type { db } from "../../postgres.client";
+import type { getPostgresClient } from "../../postgres.client";
 import { spotifyTracks } from "../../schemas/connector.spotify.schema";
 
-export function getSpotifyTracksQuery(_db: typeof db, options?: { limit?: number }) {
-  return _db
+export function getSpotifyTracksQuery(
+  _postgresClient: ReturnType<typeof getPostgresClient>,
+  options?: { limit?: number },
+) {
+  const { db } = _postgresClient;
+  return db
     .select({
       id: spotifyTracks.id,
       name: spotifyTracks.name,

@@ -5,15 +5,21 @@ import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.emb
 import type { RetryOptions } from "../etl.abstract";
 import type { SpotifyTrackVectorPoint } from "./spotify.etl.interface";
 import { ETLBase } from "../etl.base";
+import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/spotify/etl.spotify.descriptor";
+
+const defaultCollectionName = "spotify_tracks_collection";
 
 export class SpotifyTrackETL extends ETLBase {
+  private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
+
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
     qdrantClient: qdrant.QdrantClient,
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, "spotify_tracks_collection", retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, defaultCollectionName, retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<SpotifyTrackDataTarget[]> {
@@ -23,14 +29,10 @@ export class SpotifyTrackETL extends ETLBase {
   }
 
   protected getTextForEmbedding(track: SpotifyTrackDataTarget): string {
-    return `${track.name} ${track.artist}`;
+    return this._descriptor.getEmbeddingText(track);
   }
 
   protected getPayload(track: SpotifyTrackDataTarget): SpotifyTrackVectorPoint["payload"] {
-    return {
-      type: "track",
-      name: track.name,
-      artist: track.artist,
-    };
+    return this._descriptor.getEmbeddingPayload(track);
   }
 }
