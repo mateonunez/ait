@@ -2,9 +2,9 @@
   "name": "@ait/langchain",
   "version": "1.0.0",
   "description": "AIt's internal langchain client and utils",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p ./tsconfig.build.json",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"
   },

@@ -143,6 +143,28 @@ pnpm start
 
 The scheduler will start and manage ETL tasks based on the configured cron expressions.
 
+### 🧠 Ollama
+
+Ollama is used for local LLM processing. Here is how to set it up:
+
+1. Start the Ollama service:
+
+```bash
+docker-compose up -d ait_ollama
+```
+
+2. Access the Ollama container:
+
+```bash
+docker exec -it ait_ollama sh
+```
+
+3. Install the model:
+
+```bash
+ollama pull gemma:2b
+```
+
 ### Development
 
 #### Testing

@@ -2,8 +2,9 @@
   "name": "@ait/etl",
   "version": "1.0.0",
   "description": "AIt's ETL",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc -p ./tsconfig.build.json",
     "etl": "tsx src/etl.entrypoint.ts",
     "example:etl": "tsx src/etl/example.etl.ts",
     "lint": "biome format && biome lint",

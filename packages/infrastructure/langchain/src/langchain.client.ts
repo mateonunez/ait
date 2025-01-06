@@ -15,6 +15,11 @@ export const LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "gemma:2b";
 export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "2048");
 
 /**
+ * Default base URL for the Ollama server.
+ */
+export const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+
+/**
  * Configuration interface for LangChain-related clients.
  */
 export interface ILangChainConfig {
@@ -32,6 +37,10 @@ export interface ILangChainConfig {
    * Whether to enable logging or not.
    */
   logger?: boolean;
+  /**
+   * Base URL for the Ollama server.
+   */
+  baseUrl?: string;
 }
 
 /**
@@ -46,7 +55,7 @@ function buildLangChainClient(config: ILangChainConfig) {
     if (config.logger) {
       console.log(`[LangChainClient] Creating embeddings with model: ${modelToUse}`);
     }
-    return new OllamaEmbeddings({ model: modelToUse });
+    return new OllamaEmbeddings({ model: modelToUse, baseUrl: OLLAMA_BASE_URL });
   }
 
   return {
@@ -65,6 +74,7 @@ let _config: ILangChainConfig = {
   model: LANGCHAIN_MODEL,
   expectedVectorSize: LANGCHAIN_VECTOR_SIZE,
   logger: true,
+  baseUrl: OLLAMA_BASE_URL,
 };
 
 /**

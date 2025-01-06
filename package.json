@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "Hey there! I'm AIt.",
   "author": "@mateonunez <mateonunez95@gmail.com>",
-  "main": "index.js",
   "scripts": {
+    "build": "pnpm run:recursive build",
     "lint": "pnpm run:recursive lint ",
     "lint:fix": "pnpm run:recursive lint:fix ",
     "test": "pnpm run:recursive test",
