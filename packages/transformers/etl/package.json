@@ -6,22 +6,21 @@
   "scripts": {
     "etl": "tsx src/etl.entrypoint.ts",
     "example:etl": "tsx src/etl/example.etl.ts",
-    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'"
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/langchain": "workspace:*",
     "@ait/postgres": "workspace:*",
     "@ait/qdrant": "workspace:*",
-    "@langchain/core": "^0.3.27",
-    "@langchain/ollama": "^0.1.4",
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
-    "@types/sinon": "^17.0.3",
-    "sinon": "^19.0.2",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }
