@@ -41,20 +41,20 @@ jobs:
       fail-fast: false
       matrix:
         node: [20, 22]
-    services:
-      postgres:
-        image: postgres:latest
-        ports:
-          - 5432:5432
-        env:
-          POSTGRES_USER: root
-          POSTGRES_PASSWORD: toor
-          POSTGRES_DB: ait
+    # services:
+    #   postgres:
+    #     image: postgres:latest
+    #     ports:
+    #       - 5432:5432
+    #     env:
+    #       POSTGRES_USER: root
+    #       POSTGRES_PASSWORD: toor
+    #       POSTGRES_DB: ait
 
-      qdrant:
-        image: qdrant/qdrant:latest
-        ports:
-          - 6333:6333
+    #   qdrant:
+    #     image: qdrant/qdrant:latest
+    #     ports:
+    #       - 6333:6333
 
     steps:
       - name: Checkout Repository
