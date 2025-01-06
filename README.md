@@ -8,25 +8,27 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
 
 ### Key Features
 
-- 🔌 **Smart Connectors**:
+- **Smart Connectors**:
   - GitHub integration for repository analysis
   - Spotify integration for music insights
   - OAuth 2.0 secure authentication
 
-- 🔄 **ETL Pipeline**:
+- **ETL Pipeline**:
   - Extract data from multiple sources
   - Transform using LangChain and embeddings
   - Load into vector databases for semantic search
 
-- 💾 **Storage Solutions**:
+- **Storage Solutions**:
   - PostgreSQL for structured data
   - Qdrant for vector similarity search
   - Ollama for local LLM processing
 
-- ⏰ **Scheduler**:
+- **Scheduler**:
   - Schedule and manage ETL tasks
   - Uses BullMQ for job queue management
-  - Supports cron expressions for periodic tasks## 🚀 Getting Started
+  - Supports cron expressions for periodic tasks
+  
+## Getting Started
 
 ### Prerequisites
 
@@ -68,7 +70,7 @@ pnpm db:generate  # Generates the database schema
 pnpm db:migrate   # Migrates the database schema
 ```
 
-### 🏃 Running
+### 🚀 Running
 
 1. Development mode:
 
