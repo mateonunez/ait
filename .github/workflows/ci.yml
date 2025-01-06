@@ -88,7 +88,7 @@ jobs:
       - name: Wait for Qdrant to be Healthy
         run: |
           # check status 200
-          until curl -f http://localhost:6333/health; do
+          until curl -f http://localhost:6333; do
             echo "Waiting for Qdrant to be healthy..."
             sleep 5
           done
