@@ -23,15 +23,18 @@ async function main() {
   }
 }
 
-async function runSpotifyETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
+/**
+ * TODO: refactor this is not maintainable and scalable
+ */
+
+export async function runSpotifyETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const spotifyETL = new SpotifyTrackETL(pgClient, qdrantClient);
 
   console.log("🔍 Running SpotifyTrackETL with limit of 100...");
   await spotifyETL.run(100);
   console.log("✅ SpotifyTrackETL process completed successfully!");
 }
-
-async function runGitHubETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
+export async function runGitHubETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const githubETL = new GitHubRepositoryETL(pgClient, qdrantClient);
 
   console.log("🔍 Running GitHubRepositoryETL with limit of 100...");
