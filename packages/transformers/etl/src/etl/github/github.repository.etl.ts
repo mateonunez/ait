@@ -1,17 +1,18 @@
-import {
-  type getPostgresClient,
-  githubRepositories,
-  type GitHubRepositoryDataTarget,
-} from "@ait/postgres";
+import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTarget } from "@ait/postgres";
 import { ETLBase } from "../etl.base";
 import type { qdrant } from "@ait/qdrant";
 import type { RetryOptions } from "../etl.abstract";
 import type { IEmbeddingsService } from "../../infrastructure/embeddings/etl.embeddings.service";
 import type { GitHubRepositoryVectorPoint } from "./github.etl.interface";
+import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/descriptors/github/etl.github.descriptor";
 
 const defaultCollectionName = "github_repositories_collection";
 
 export class GitHubRepositoryETL extends ETLBase {
+  private readonly _descriptor: IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> =
+    new ETLGitHubRepositoryDescriptor();
+
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
     qdrantClient: qdrant.QdrantClient,
@@ -28,13 +29,10 @@ export class GitHubRepositoryETL extends ETLBase {
   }
 
   protected getTextForEmbedding(repository: GitHubRepositoryDataTarget): string {
-    return `${repository.name} ${repository.description} ${repository.language}`;
+    return this._descriptor.getEmbeddingText(repository);
   }
 
   protected getPayload(repository: GitHubRepositoryDataTarget): GitHubRepositoryVectorPoint["payload"] {
-    return {
-      type: "repository",
-      ...repository,
-    };
+    return this._descriptor.getEmbeddingPayload(repository);
   }
 }
