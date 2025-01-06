@@ -60,7 +60,7 @@ jobs:
 
       - name: Wait for Services to be Healthy
         run: |
-          while [ "$(docker compose ps postgres | grep -c healthy)" -ne 1 ]; do
+          while [ "$(docker compose ps ait_postgres | grep -c healthy)" -ne 1 ]; do
             sleep 1
           done
 
