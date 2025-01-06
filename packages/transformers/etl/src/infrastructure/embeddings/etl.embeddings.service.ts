@@ -1,8 +1,12 @@
-import { getLangChainClient } from "@ait/langchain";
+import { getLangChainClient, initLangChainClient } from "@ait/langchain";
 
 export interface IEmbeddingsService {
   generateEmbeddings(text: string): Promise<number[]>;
 }
+
+const ollamaBaseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+
+initLangChainClient({ baseUrl: ollamaBaseURL });
 
 export class ETLEmbeddingsService implements IEmbeddingsService {
   private readonly model?: string;

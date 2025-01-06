@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { migrationsPath } from "../drizzle.config";
+import { migrationsPath } from "./drizzle.config";
 import { getPostgresClient, closePostgresConnection } from "./postgres.client";
 
 dotenv.config();

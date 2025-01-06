@@ -2,13 +2,11 @@
   "name": "@ait/qdrant",
   "version": "1.0.0",
   "description": "AIt's internal qdrant database client and utils",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p ./tsconfig.build.json",
     "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe",
-    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
-    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
+    "lint:fix": "biome format --write && biome lint --write --unsafe"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",

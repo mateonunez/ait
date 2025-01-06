@@ -1,0 +1,32 @@
+{
+  "name": "@ait/scheduler",
+  "version": "1.0.0",
+  "description": "AIt's schedluer",
+  "main": "dist/scheduler.entrypoint.js",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.build.json",
+    "start": "node ./dist/scheduler.entrypoint.js",
+    "dev": "tsx src/scheduler.entrypoint.ts",
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
+    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
+  },
+  "keywords": [],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@ait/etl": "workspace:*",
+    "@ait/langchain": "workspace:*",
+    "@ait/postgres": "workspace:*",
+    "@ait/qdrant": "workspace:*",
+    "bullmq": "^5.34.6",
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.3",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.3+sha512.1f79bc245a66eb0b07c5d4d83131240774642caaa86ef7d0434ab47c0d16f66b04e21e0c086eb61e62c77efc4d7f7ec071afad3796af64892fae66509173893a"
+}
