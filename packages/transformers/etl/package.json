@@ -1,7 +1,7 @@
 {
   "name": "@ait/etl",
   "version": "1.0.0",
-  "description": "AIt's etl",
+  "description": "AIt's ETL",
   "main": "index.js",
   "scripts": {
     "etl": "tsx src/etl.entrypoint.ts",

@@ -6,9 +6,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe",
-    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
-    "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
+    "lint:fix": "biome format --write && biome lint --write --unsafe"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",

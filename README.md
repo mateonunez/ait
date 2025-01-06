@@ -23,7 +23,10 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
   - Qdrant for vector similarity search
   - Ollama for local LLM processing
 
-## 🚀 Getting Started
+- ⏰ **Scheduler**:
+  - Schedule and manage ETL tasks
+  - Uses BullMQ for job queue management
+  - Supports cron expressions for periodic tasks## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -57,7 +60,7 @@ SPOTIFY_CLIENT_SECRET=your_spotify_secret
 2. Initialize the database:
 
 ```bash
-cd packages/internals/postgres
+cd packages/infrastructure/postgres
 
 # Ensure you have set the required environment variables
 
@@ -108,18 +111,37 @@ You can follow the steps below to set up your own OAuth applications:
 
 Once authenticated, AIt can fetch and process your data while maintaining secure access tokens.
 
-### Collecting for Knowledge
+### ⏰ Scheduler
 
-After authentication, AIt will:
-1. 📝 Log the process in your terminal
-2. 📡 Fetch repositories data from your GitHub account, or Spotify Account
-3. 💾 Store the collected data in the PostgreSQL database
-4. 🔍 Make it available for vector search through Qdrant
+The Scheduler is responsible for managing ETL tasks. It uses BullMQ for job queue management and supports cron expressions for periodic tasks.
 
-This data is then used for:
-- Semantic search across your repositories
-- Repository analysis and insights
-- Integration with AI-powered features
+#### Configuration
+
+Ensure the following environment variables are set in `packages/infrastructure/scheduler/.env`:
+
+```env
+POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
+QDRANT_URL=http://127.0.0.1:6333
+REDIS_HOST=0.0.0.0
+REDIS_PORT=6379
+```
+
+#### Running the Scheduler
+
+1. Build the scheduler:
+
+```bash
+cd packages/infrastructure/scheduler
+pnpm build
+```
+
+2. Start the scheduler:
+
+```bash
+pnpm start
+```
+
+The scheduler will start and manage ETL tasks based on the configured cron expressions.
 
 ### Development
 

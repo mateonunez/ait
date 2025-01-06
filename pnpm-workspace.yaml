@@ -1,7 +1,5 @@
 packages:
   - 'packages/*'
-  - 'packages/internals/langchain'
-  - 'packages/internals/postgres'
-  - 'packages/internals/qdrant'
+  - 'packages/infrastructure/*'
   - 'packages/connectors/*'
   - 'packages/transformers/*'
