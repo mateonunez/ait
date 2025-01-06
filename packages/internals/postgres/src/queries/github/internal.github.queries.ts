@@ -1,8 +1,12 @@
-import type { db } from "../../postgres.client";
+import type { getPostgresClient } from "../../postgres.client";
 import { githubRepositories } from "../../schemas/connector.github.schema";
 
-export function getGitHubRepositoriesQuery(_db: typeof db, options?: { limit?: number }) {
-  return _db
+export function getGitHubRepositoriesQuery(
+  _postgresClient: ReturnType<typeof getPostgresClient>,
+  options?: { limit?: number },
+) {
+  const { db } = _postgresClient;
+  return db
     .select({
       id: githubRepositories.id,
       name: githubRepositories.name,
