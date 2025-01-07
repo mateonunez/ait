@@ -78,4 +78,4 @@ jobs:
 
       - name: Tear Down Services
         if: always()
-        run: docker compose -f docker-compose.ci.yml down
+        run: docker compose -f docker-compose.test.yml down
