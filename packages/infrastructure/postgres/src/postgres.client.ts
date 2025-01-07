@@ -3,8 +3,11 @@ import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as drizzleOrm from "drizzle-orm";
 
-// Responsible for reading environment variables
 dotenv.config();
+
+if (process.env.NODE_ENV === "test") {
+  dotenv.config({ path: ".env.test", override: true });
+}
 
 const defaultPostgresUrl = process.env.POSTGRES_URL;
 if (!defaultPostgresUrl) {
