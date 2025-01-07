@@ -150,9 +150,6 @@ importers:
 
   packages/infrastructure/scheduler:
     dependencies:
-      '@ait/etl':
-        specifier: workspace:*
-        version: link:../../transformers/etl
       '@ait/langchain':
         specifier: workspace:*
         version: link:../langchain
@@ -162,6 +159,9 @@ importers:
       '@ait/qdrant':
         specifier: workspace:*
         version: link:../qdrant
+      '@ait/retove':
+        specifier: workspace:*
+        version: link:../../transformers/retove
       bullmq:
         specifier: ^5.34.6
         version: 5.34.6
@@ -179,7 +179,7 @@ importers:
         specifier: ^5.7.2
         version: 5.7.2
 
-  packages/transformers/etl:
+  packages/transformers/retove:
     dependencies:
       '@ait/langchain':
         specifier: workspace:*

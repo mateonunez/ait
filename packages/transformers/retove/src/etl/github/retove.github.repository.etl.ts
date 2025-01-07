@@ -1,15 +1,15 @@
 import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTarget } from "@ait/postgres";
-import { BaseETLAbstract } from "../etl.base.abstract";
+import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
-import type { RetryOptions } from "../etl.base.abstract";
+import type { RetryOptions } from "../retove.base-etl.abstract";
 import type { IEmbeddingsService } from "@ait/langchain";
-import type { GitHubRepositoryVectorPoint } from "./github.etl.interface";
+import type { RetoveGitHubRepositoryVectorPoint } from "./retove.github.etl.interface";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/descriptors/github/etl.github.descriptor";
 
 const defaultCollectionName = "github_repositories_collection";
 
-export class GitHubRepositoryETL extends BaseETLAbstract {
+export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> =
     new ETLGitHubRepositoryDescriptor();
 
@@ -32,7 +32,7 @@ export class GitHubRepositoryETL extends BaseETLAbstract {
     return this._descriptor.getEmbeddingText(repository);
   }
 
-  protected getPayload(repository: GitHubRepositoryDataTarget): GitHubRepositoryVectorPoint["payload"] {
+  protected getPayload(repository: GitHubRepositoryDataTarget): RetoveGitHubRepositoryVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(repository);
   }
 }

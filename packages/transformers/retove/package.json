@@ -1,7 +1,7 @@
 {
-  "name": "@ait/etl",
+  "name": "@ait/retove",
   "version": "1.0.0",
-  "description": "AIt's ETL",
+  "description": "AIt's Relational to Vector DB ETL",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",

@@ -89,7 +89,7 @@ Ensure the Scheduler is properly configured by setting the necessary environment
 If you prefer to run the ETL process manually, you can do so by following these steps:
 
 ```bash
-cd packages/transformers/etl
+cd packages/transformers/retove
 
 # Ensure you have set the required environment variables
 
@@ -156,13 +156,9 @@ To run tests within an isolated test environment using [./docker-compose.test.ym
 pnpm start:services:test
 ```
 
-2. Run the database migrations for testing:
-
-```bash
-pnpm migrate:test
-```
-
 3. Run the tests:
+
+ℹ️ The npm `pretest` script will automatically run the migrations and seed the test database before running the tests. _This may change in the future._
 
 ```bash
 pnpm test

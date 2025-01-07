@@ -13,8 +13,8 @@ const etlScheduler = new Scheduler("etl-scheduler", {
 });
 
 async function main() {
-  await etlScheduler.scheduleJob("SpotifyTrackETL", {}, "*/5 * * * *");
-  await etlScheduler.scheduleJob("GitHubRepositoryETL", {}, "*/5 * * * *");
+  await etlScheduler.scheduleJob("RetoveSpotifyTrackETL", {}, "*/5 * * * *");
+  await etlScheduler.scheduleJob("RetoveGitHubRepositoryETL", {}, "*/5 * * * *");
 
   await etlScheduler.start();
   console.log("🚀 ETL Scheduler started");

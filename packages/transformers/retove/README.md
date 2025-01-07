@@ -1,9 +1,10 @@
-# ETL
+# Relational to Vector DB ETL (RetoVe)
 
 ## Overview
 
-### Generating Embeddings
+> Names might change in the future.
 
+### Generating Embeddings
 
 #### With Python
 
