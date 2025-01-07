@@ -5,6 +5,10 @@ import { getPostgresClient, closePostgresConnection } from "./postgres.client";
 
 dotenv.config();
 
+if (process.env.NODE_ENV === "test") {
+  dotenv.config({ path: ".env.test" });
+}
+
 async function runMigration() {
   try {
     console.log("⏳ Running migrations...");

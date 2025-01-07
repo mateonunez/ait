@@ -65,13 +65,13 @@ jobs:
         run: pnpm build
 
       - name: Start Services
-        run: docker compose -f docker-compose.ci.yml up -d
+        run: docker compose -f docker-compose.test.yml up -d
 
       - name: Wait for few secs for services to start
         run: sleep 10
 
       - name: Migrate the Database
-        run: pnpm migrate
+        run: pnpm migrate:test
 
       - name: Run Tests
         run: pnpm test

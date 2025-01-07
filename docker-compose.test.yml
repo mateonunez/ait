@@ -1,12 +1,13 @@
-version: "3.9"
+name: ait_testing
+
 services:
   ait_postgres:
     image: postgres:latest
-    container_name: ait_postgres_ci
+    container_name: ait_postgres_test
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: toor
-      POSTGRES_DB: ait
+      POSTGRES_DB: ait_testing
     ports:
       - "5432:5432"
     volumes:
@@ -16,7 +17,7 @@ services:
 
   ait_qdrant:
     image: qdrant/qdrant:latest
-    container_name: ait_qdrant_ci
+    container_name: ait_qdrant_test
     ports:
       - "6333:6333"
     volumes:

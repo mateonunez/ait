@@ -9,9 +9,12 @@
     "lint:fix": "pnpm run:recursive lint:fix ",
     "test": "pnpm run:recursive test",
     "migrate": "pnpm run --filter @ait/postgres db:migrate",
+    "migrate:test": "pnpm run --filter @ait/postgres db:migrate:test",
     "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present",
     "start:services": "docker compose up -d",
-    "stop:services": "docker compose down"
+    "start:services:test": "docker compose -f docker-compose.test.yml up -d",
+    "stop:services": "docker compose down",
+    "stop:services:test": "docker compose -f docker-compose.test.yml down"
   },
   "keywords": [],
   "license": "MIT",
