@@ -8,9 +8,9 @@
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "db:generate": "drizzle-kit generate --config src/drizzle.config.ts",
-    "db:generate:test": "NODE_ENV=test && pnpm run --filter @ait/postgres db:generate",
     "db:migrate": "test -f .env || cp .env.example .env && npx tsx src/db.migrate.ts",
-    "db:migrate:test": "NODE_ENV=test && pnpm run --filter @ait/postgres db:migrate",
+    "db:generate:test": "NODE_ENV=test pnpm run --filter @ait/postgres db:generate",
+    "db:migrate:test": "NODE_ENV=test pnpm run --filter @ait/postgres db:migrate",
     "db:studio": "drizzle-kit studio"
   },
   "keywords": [],

@@ -6,7 +6,7 @@ import { getPostgresClient, closePostgresConnection } from "./postgres.client";
 dotenv.config();
 
 if (process.env.NODE_ENV === "test") {
-  dotenv.config({ path: ".env.test" });
+  dotenv.config({ path: ".env.test", override: true });
 }
 
 async function runMigration() {

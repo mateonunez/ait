@@ -68,9 +68,9 @@ jobs:
         run: pnpm start:services:test
 
       - name: Wait for few secs for services to start
-        run: sleep 10
+        run: sleep 5
 
-      - name: Migrate the Database
+      - name: Migrate the Database for Testing
         run: pnpm migrate:test
 
       - name: Run Tests
