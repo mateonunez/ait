@@ -28,7 +28,7 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
   - Uses BullMQ for job queue management
   - Supports cron expressions for periodic tasks
   
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -62,17 +62,45 @@ SPOTIFY_CLIENT_SECRET=your_spotify_secret
 2. Initialize the database:
 
 ```bash
-cd packages/infrastructure/postgres
-
 # Ensure you have set the required environment variables
 
-pnpm db:generate  # Generates the database schema
-pnpm db:migrate   # Migrates the database schema
+pnpm migrate
 ```
 
 ### 🚀 Running
 
-1. Development mode:
+AIt provides flexibility in running the ETL process either automatically through the Scheduler or manually as needed.
+
+#### 1. Automated ETL via Scheduler
+
+The Scheduler manages also the ETL process. It uses BullMQ for job queue management and supports cron expressions for periodic tasks.
+
+```bash
+docker compose build ait_scheduler && docker compose up -d ait_scheduler
+```
+
+Ensure the Scheduler is properly configured by setting the necessary environment variables in `.env`, and the following services are running:
+- ait_postgres
+- ait_qdrant
+- ait_redis
+
+#### 2. Manual ETL
+
+If you prefer to run the ETL process manually, you can do so by following these steps:
+
+```bash
+cd packages/transformers/etl
+
+# Ensure you have set the required environment variables
+
+pnpm etl
+```
+
+### 🌐 Connectors
+
+AIt provides smart connectors for GitHub and Spotify. Here's how to get started:
+
+#### 1. Development mode:
 
 ```bash
 cd packages/connectors # <- The webserver will move out of this folder soon
@@ -82,68 +110,18 @@ cd packages/connectors # <- The webserver will move out of this folder soon
 pnpm dev
 ```
 
-2. Run ETL process:
-
-```bash
-cd packages/transformers/etl # <- Will be scheduled by jobs soon
-
-# Ensure you have set the required environment variables
-
-pnpm etl
-```
-
-### Authentication
+#### 2. Authentication
 
 AIt securely connects to GitHub and Spotify using OAuth 2.0. Here's how to get started:
 
-1. Start the connector service:
-
-```bash
-cd packages/connectors
-
-pnpm dev
-```
-
-You can follow the steps below to set up your own OAuth applications:
+After running the connectors in development mode, you should be able to access the authentication URLs:
 
 2. Visit the authentication URLs:
-  - GitHub: [https://github.com/login/oauth/authorize?client_id=Ov23liPVDFK2UZgKcv7E&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo](https://github.com/login/oauth/authorize?client_id=Ov23liPVDFK2UZgKcv7E&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo)
-  - Spotify: [https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read](https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read)
+  - GitHub: [Authenticate with GitHub](https://github.com/login/oauth/authorize?client_id=Ov23liPVDFK2UZgKcv7E&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo)
+  - Spotify: [Authenticate with Spotify](https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read)
 3. Allow the requested permissions when prompted.
 
-Once authenticated, AIt can fetch and process your data while maintaining secure access tokens.
-
-### ⏰ Scheduler
-
-The Scheduler is responsible for managing ETL tasks. It uses BullMQ for job queue management and supports cron expressions for periodic tasks.
-
-#### Configuration
-
-Ensure the following environment variables are set in `packages/infrastructure/scheduler/.env`:
-
-```env
-POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
-QDRANT_URL=http://127.0.0.1:6333
-REDIS_HOST=0.0.0.0
-REDIS_PORT=6379
-```
-
-#### Running the Scheduler
-
-1. Build the scheduler:
-
-```bash
-cd packages/infrastructure/scheduler
-pnpm build
-```
-
-2. Start the scheduler:
-
-```bash
-pnpm start
-```
-
-The scheduler will start and manage ETL tasks based on the configured cron expressions.
+Once authenticated, AIt can fetch and process your data while maintaining secure access tokens, the OAuth information is stored in the database to be used for future requests.
 
 ### 🧠 Ollama
 
@@ -167,7 +145,7 @@ docker exec -it ait_ollama sh
 ollama pull gemma:2b
 ```
 
-### Development
+### 🛠️ Development
 
 #### Testing
 
