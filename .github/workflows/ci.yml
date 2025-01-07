@@ -65,7 +65,7 @@ jobs:
         run: pnpm build
 
       - name: Start Services
-        run: docker compose -f docker-compose.test.yml up -d
+        run: pnpm start:services:test
 
       - name: Wait for few secs for services to start
         run: sleep 10
@@ -78,4 +78,4 @@ jobs:
 
       - name: Tear Down Services
         if: always()
-        run: docker compose -f docker-compose.test.yml down
+        run: pnpm stop:services:test
