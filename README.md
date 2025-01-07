@@ -148,10 +148,33 @@ ollama pull gemma:2b
 
 #### Testing
 
+To run tests within an isolated test environment using [./docker-compose.test.yml](./docker-compose.test.yml), follow these steps:
+
+1. Start the required services:
+
 ```bash
-pnpm test       # Run all tests
-pnpm test:watch # Watch mode
+pnpm start:services:test
 ```
+
+2. Run the database migrations for testing:
+
+```bash
+pnpm migrate:test
+```
+
+3. Run the tests:
+
+```bash
+pnpm test
+```
+
+4. Stop the services:
+
+```bash
+pnpm stop:services:test
+```
+
+> Note: Ensure that the `ait_testing` database is correctly initialized and that all migration scripts have been successfully applied before running tests, the `.env.test` is used for testing purposes.
 
 #### Linting
 
