@@ -3,8 +3,8 @@ import { defineConfig } from "drizzle-kit";
 
 dotenv.config();
 
-if (process.env.NODE_ENV === 'test') {
-  dotenv.config({ path: '.env.test' });
+if (process.env.NODE_ENV === "test") {
+  dotenv.config({ path: ".env.test" });
 }
 
 export const databaseSchemaPath = "./src/schemas";
