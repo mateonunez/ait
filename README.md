@@ -67,7 +67,7 @@ SPOTIFY_CLIENT_SECRET=your_spotify_secret
 pnpm migrate
 ```
 
-### 🚀 Running
+### 🎬 Action
 
 AIt provides flexibility in running the ETL process either automatically through the Scheduler or manually as needed.
 
@@ -114,12 +114,11 @@ pnpm dev
 
 AIt securely connects to GitHub and Spotify using OAuth 2.0. Here's how to get started:
 
-After running the connectors in development mode, you should be able to access the authentication URLs:
-
-2. Visit the authentication URLs:
+1. Visit the authentication URLs:
   - GitHub: [Authenticate with GitHub](https://github.com/login/oauth/authorize?client_id=Ov23liPVDFK2UZgKcv7E&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo)
   - Spotify: [Authenticate with Spotify](https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read)
-3. Allow the requested permissions when prompted.
+
+2. Allow the requested permissions when prompted.
 
 Once authenticated, AIt can fetch and process your data while maintaining secure access tokens, the OAuth information is stored in the database to be used for future requests.
 
