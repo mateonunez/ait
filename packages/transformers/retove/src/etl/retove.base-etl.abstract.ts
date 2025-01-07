@@ -14,7 +14,7 @@ export interface RetryOptions {
   maxDelay: number;
 }
 
-export abstract class BaseETLAbstract {
+export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 100;
   private readonly _vectorSize = 2048;

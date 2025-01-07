@@ -2,14 +2,14 @@ import type { getPostgresClient, SpotifyTrackDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { spotifyTracks } from "@ait/postgres";
 import type { IEmbeddingsService } from "@ait/langchain";
-import { BaseETLAbstract, type RetryOptions } from "../etl.base.abstract";
-import type { SpotifyTrackVectorPoint } from "./spotify.etl.interface";
+import { RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
+import type { RetoveSpotifyTrackVectorPoint } from "./retove.spotify.etl.interface";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/spotify/etl.spotify.descriptor";
 
 const defaultCollectionName = "spotify_tracks_collection";
 
-export class SpotifyTrackETL extends BaseETLAbstract {
+export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
 
   constructor(
@@ -31,7 +31,7 @@ export class SpotifyTrackETL extends BaseETLAbstract {
     return this._descriptor.getEmbeddingText(track);
   }
 
-  protected getPayload(track: SpotifyTrackDataTarget): SpotifyTrackVectorPoint["payload"] {
+  protected getPayload(track: SpotifyTrackDataTarget): RetoveSpotifyTrackVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(track);
   }
 }
