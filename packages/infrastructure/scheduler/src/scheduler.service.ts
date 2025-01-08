@@ -37,7 +37,10 @@ export class Scheduler implements IScheduler {
     this._worker.on("completed", (job) => {
       console.log(`[Worker] Job completed: ${job.name}`);
     });
+
     this._worker.on("failed", (job, err) => {
+      console.warn(JSON.stringify(job));
+
       if (job) {
         console.error(`[Worker] Job failed: ${job.name}`, err);
       } else {

@@ -1,6 +1,7 @@
 import { Scheduler } from "./scheduler.service";
 import dotenv from "dotenv";
 import "./tasks/scheduler.etl.task";
+import { GitHubETLs, SpotifyETLs } from "@ait/retove";
 
 dotenv.config();
 
@@ -13,8 +14,8 @@ const etlScheduler = new Scheduler("etl-scheduler", {
 });
 
 async function main() {
-  await etlScheduler.scheduleJob("RetoveSpotifyTrackETL", {}, "*/5 * * * *");
-  await etlScheduler.scheduleJob("RetoveGitHubRepositoryETL", {}, "*/5 * * * *");
+  await etlScheduler.scheduleJob(SpotifyETLs.track, {}, "*/5 * * * *");
+  await etlScheduler.scheduleJob(GitHubETLs.repository, {}, "*/5 * * * *");
 
   await etlScheduler.start();
   console.log("🚀 ETL Scheduler started");

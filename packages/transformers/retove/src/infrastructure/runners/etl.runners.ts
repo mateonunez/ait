@@ -3,6 +3,16 @@ import { RetoveSpotifyTrackETL } from "../../etl/spotify/retove.spotify.track.et
 import { RetoveGitHubRepositoryETL } from "../../etl/github/retove.github.repository.etl";
 import type { getPostgresClient } from "@ait/postgres";
 
+// Refactor this as soon as possible
+
+export const SpotifyETLs = {
+  track: "RetoveSpotifyTrackETL",
+};
+
+export const GitHubETLs = {
+  repository: "RetoveGitHubRepositoryETL",
+};
+
 export async function runSpotifyETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const spotifyETL = new RetoveSpotifyTrackETL(pgClient, qdrantClient);
 

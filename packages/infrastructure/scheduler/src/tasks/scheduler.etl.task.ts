@@ -1,9 +1,9 @@
-import { runSpotifyETL, runGitHubETL } from "@ait/retove";
+import { runSpotifyETL, runGitHubETL, SpotifyETLs, GitHubETLs } from "@ait/retove";
 import { getQdrantClient } from "@ait/qdrant";
 import { getPostgresClient, closePostgresConnection } from "@ait/postgres";
 import { SchedulerTaskRegistry } from "../registry/scheduler.etl.registry";
 
-SchedulerTaskRegistry.register("RetoveSpotifyTrackETL", async (data) => {
+SchedulerTaskRegistry.register(SpotifyETLs.track, async (data) => {
   const qdrantClient = getQdrantClient();
   const pgClient = getPostgresClient();
   try {
@@ -14,11 +14,11 @@ SchedulerTaskRegistry.register("RetoveSpotifyTrackETL", async (data) => {
   }
 });
 
-SchedulerTaskRegistry.register("RetoveGitHubRepositoryETL", async (data) => {
+SchedulerTaskRegistry.register(GitHubETLs.repository, async (data) => {
   const qdrantClient = getQdrantClient();
   const pgClient = getPostgresClient();
   try {
-    console.log("[RetoveGitHubRepositoryETL] Running...");
+    console.log(`[${GitHubETLs.repository}] Running...`);
     await runGitHubETL(qdrantClient, pgClient);
   } finally {
     await closePostgresConnection();
