@@ -27,7 +27,7 @@ export const SchedulerTaskRegistry: ISchedulerRegistry = {
   get(name: string): (data: Record<string, unknown>) => Promise<void> {
     const handler = this.tasks.get(name);
     if (!handler) {
-      console.warn('tasks', this.tasks);
+      console.warn("tasks", this.tasks);
       throw new Error(`Handler not found for task: ${name}`);
     }
 
