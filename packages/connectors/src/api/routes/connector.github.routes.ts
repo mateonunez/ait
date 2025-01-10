@@ -5,10 +5,11 @@ interface AuthCallbackQuery {
   code: string;
 }
 
-export default async function githubRoutes(fastify: FastifyInstance) {
+const defaultProvider = "github";
+
+export default async function spotifyRoutes(fastify: FastifyInstance) {
   const githubService = new ConnectorGitHubService();
 
-  // TODO: not implemented yet
   fastify.get(
     "/auth/callback",
     async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
@@ -20,7 +21,10 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       try {
         await githubService.authenticate(code);
 
-        reply.send({ message: "Authenticated successfully." });
+        const repositories = await githubService.getRepositories();
+        await githubService.connector.store.save(repositories);
+
+        reply.send(repositories);
       } catch (err: any) {
         fastify.log.error(err);
         reply.status(500).send({ error: "Authentication failed." });

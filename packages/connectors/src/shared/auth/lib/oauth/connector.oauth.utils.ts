@@ -5,22 +5,38 @@ import type { IConnectorOAuthTokenResponse } from "./connector.oauth.interface";
 const _pgClient = getPostgresClient();
 
 export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider: string): Promise<void> {
-  const id = randomUUID();
+  const ouathData = await getOAuthData(provider);
+  const randomId = randomUUID();
+  const now = new Date();
 
   await _pgClient.db.transaction(async (tx) => {
-    const tokenData = {
-      id: id,
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      tokenType: data.token_type,
-      scope: data.scope,
-      expiresIn: data.expires_in?.toString(),
-      provider: provider,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    await tx.insert(oauthTokens).values(tokenData).onConflictDoNothing().execute();
+    if (ouathData) {
+      await tx
+        .update(oauthTokens)
+        .set({
+          accessToken: data.access_token || ouathData.accessToken,
+          refreshToken: data.refresh_token || ouathData.refreshToken,
+          tokenType: data.token_type || ouathData.tokenType,
+          scope: data.scope || ouathData.scope,
+          expiresIn: data.expires_in ? data.expires_in.toString() : ouathData.expiresIn,
+          updatedAt: now,
+        })
+        .where(drizzleOrm.eq(oauthTokens.provider, provider))
+        .execute();
+    } else {
+      const tokenData = {
+        id: randomId,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        tokenType: data.token_type,
+        scope: data.scope,
+        expiresIn: data.expires_in?.toString(),
+        provider: provider,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await tx.insert(oauthTokens).values(tokenData).onConflictDoNothing().execute();
+    }
   });
 }
 

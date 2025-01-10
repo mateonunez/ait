@@ -27,6 +27,10 @@ export class ConnectorSpotify extends BaseConnectorAbstract<
     return this._authenticator.authenticate(code);
   }
 
+  protected async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
+    return this._authenticator.refreshToken(refreshToken);
+  }
+
   protected createDataSource(accessToken: string): ConnectorSpotifyDataSource {
     return new ConnectorSpotifyDataSource(accessToken);
   }
