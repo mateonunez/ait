@@ -1,7 +1,8 @@
 import { pgTable, varchar, timestamp } from "drizzle-orm/pg-core";
+import { randomUUID } from "node:crypto";
 
 export const oauthTokens = pgTable("oauth_tokens", {
-  id: varchar("id", { length: 255 }).primaryKey(),
+  id: varchar("id", { length: 255 }).primaryKey().default(randomUUID()),
   accessToken: varchar("access_token", { length: 255 }),
   tokenType: varchar("token_type", { length: 255 }),
   expiresIn: varchar("expires_in", { length: 255 }),
