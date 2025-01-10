@@ -1,5 +1,4 @@
 import { getLangChainClient } from "../../langchain.client";
-import { EmbeddingsService, type IEmbeddingsService } from "../embeddings/embeddings.service";
 
 export class TextGenerationError extends Error {
   constructor(message: string) {
@@ -13,17 +12,18 @@ export interface ITextGenerationService {
 }
 
 export class TextGenerationService implements ITextGenerationService {
-  private readonly _embeddingsService: IEmbeddingsService;
+  private _model: string;
 
-  constructor(
-    private readonly _model = "gemma:2b",
-    private readonly _expectedVectorSize = 2048,
-  ) {
-    this._embeddingsService = new EmbeddingsService(this._model, this._expectedVectorSize);
+  constructor(model = "gemma:2b", private _expectedVectorSize = 2048) {
+    this._model = model;
   }
 
   async generateText(prompt: string): Promise<string> {
     try {
+      if (!prompt?.trim()) {
+        throw new TextGenerationError("Prompt cannot be empty");
+      }
+
       const langChainClient = getLangChainClient();
       const llm = langChainClient.createLLM(this._model);
       const generatedText = await llm.invoke(prompt);
