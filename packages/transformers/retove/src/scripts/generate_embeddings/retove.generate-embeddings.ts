@@ -7,7 +7,7 @@ import { join } from "node:path";
  * Size: 384
  */
 export function generateEmbeddingWithPython(text: string): number[] {
-  const scriptPath = join(__dirname, "../../scripts/generate_embeddings/generate_embeddings.py");
+  const scriptPath = join(__dirname, "./generate_embeddings.py");
 
   if (!existsSync(scriptPath)) {
     throw new Error(`Python script not found: ${scriptPath}`);
