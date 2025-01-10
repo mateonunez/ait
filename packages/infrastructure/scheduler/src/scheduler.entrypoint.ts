@@ -26,8 +26,8 @@ async function main() {
     });
 
     await Promise.all([
-      etlScheduler.scheduleJob(GitHubETLs.repository, { limit: 10 }, "*/5 * * * *"),
-      etlScheduler.scheduleJob(SpotifyETLs.track, { limit: 10 }, "*/5 * * * *"),
+      etlScheduler.scheduleJob(GitHubETLs.repository, { limit: 10 }, "0 0 * * *"),
+      etlScheduler.scheduleJob(SpotifyETLs.track, { limit: 10 }, "0 0 * * *"),
     ]);
 
     // Start the scheduler
