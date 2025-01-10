@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { OllamaEmbeddings } from "@langchain/ollama";
+import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 
 // 1. Load environment variables.
 dotenv.config();
@@ -45,11 +45,9 @@ export interface ILangChainConfig {
 
 /**
  * Builds and returns a reusable LangChain client with various helpers.
- * You could extend this to include chat models, text splitters, PDF loaders, etc.
  */
 function buildLangChainClient(config: ILangChainConfig) {
-  // Example method that returns an Ollama embeddings instance
-  // configured with the default model (or an override).
+  // Function to create the embeddings
   function createEmbeddings(modelOverride?: string): OllamaEmbeddings {
     const modelToUse = modelOverride || config.model;
     if (config.logger) {
@@ -58,9 +56,23 @@ function buildLangChainClient(config: ILangChainConfig) {
     return new OllamaEmbeddings({ model: modelToUse, baseUrl: OLLAMA_BASE_URL });
   }
 
+  // Function to create the LLM
+  function createLLM(modelOverride?: string, temperature = 0.5): Ollama {
+    const modelToUse = modelOverride || config.model;
+    if (config.logger) {
+      console.log(`[LangChainClient] Creating LLM with model: ${modelToUse}`);
+    }
+    return new Ollama({
+      model: modelToUse,
+      baseUrl: OLLAMA_BASE_URL,
+      temperature,
+    });
+  }
+
   return {
     config,
     createEmbeddings,
+    createLLM,
   };
 }
 

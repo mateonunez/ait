@@ -4,11 +4,11 @@ const ollamaBaseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
 initLangChainClient({ baseUrl: ollamaBaseURL });
 
-interface IEmbeddingsService {
+export interface IEmbeddingsService {
   generateEmbeddings(text: string): Promise<number[]>;
 }
 
-export class ETLEmbeddingsService implements IEmbeddingsService {
+export class EmbeddingsService implements IEmbeddingsService {
   private readonly model?: string;
   private readonly expectedVectorSize?: number;
 
