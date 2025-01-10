@@ -1,6 +1,6 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { ETLEmbeddingsService, type IEmbeddingsService } from "@ait/langchain";
+import { EmbeddingsService, type IEmbeddingsService } from "@ait/langchain";
 
 export interface BaseVectorPoint {
   id: number;
@@ -28,7 +28,7 @@ export abstract class RetoveBaseETLAbstract {
       initialDelay: 1000,
       maxDelay: 5000,
     },
-    private readonly _embeddingsService: IEmbeddingsService = new ETLEmbeddingsService("gemma:2b", 2048),
+    private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService("gemma:2b", 2048),
   ) {
     this.retryOptions = retryOptions;
   }
