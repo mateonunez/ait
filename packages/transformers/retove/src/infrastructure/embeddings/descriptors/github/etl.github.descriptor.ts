@@ -3,7 +3,7 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
 
 export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> {
   public getEmbeddingText(repository: GitHubRepositoryDataTarget): string {
-    return `${repository.name} ${repository.description ?? ""}`;
+    return `${repository.name} ${repository.description} ${repository.language}`;
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubRepositoryDataTarget): U {
