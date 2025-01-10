@@ -1,22 +1,56 @@
-export interface ISchedulerRegistry {
-  tasks: Map<string, (data: Record<string, any>) => Promise<void>>;
-  register(name: string, handler: (data: Record<string, any>) => Promise<void>): void;
-  get(name: string): (data: Record<string, any>) => Promise<void>;
+type TaskHandler = (data: Record<string, unknown>) => Promise<void>;
+
+export class TaskRegistryError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TaskRegistryError";
+  }
 }
 
-export const SchedulerTaskRegistry: ISchedulerRegistry = {
-  tasks: new Map<string, (data: Record<string, any>) => Promise<void>>(),
+export class SchedulerTaskRegistry {
+  private static instance: SchedulerTaskRegistry;
+  private readonly _tasks: Map<string, TaskHandler>;
 
-  register(name: string, handler: (data: Record<string, any>) => Promise<void>): void {
-    this.tasks.set(name, handler);
-  },
+  private constructor() {
+    this._tasks = new Map();
+  }
 
-  get(name: string): (data: Record<string, any>) => Promise<void> {
-    const handler = this.tasks.get(name);
-    if (!handler) {
-      throw new Error(`Handler not found for task: ${name}`);
+  public static getInstance(): SchedulerTaskRegistry {
+    if (!SchedulerTaskRegistry.instance) {
+      SchedulerTaskRegistry.instance = new SchedulerTaskRegistry();
+    }
+    return SchedulerTaskRegistry.instance;
+  }
+
+  public register(name: string, handler: TaskHandler): void {
+    if (!name?.trim()) {
+      throw new TaskRegistryError("Task name is required");
     }
 
+    if (!handler || typeof handler !== "function") {
+      throw new TaskRegistryError("Task handler must be a function");
+    }
+
+    this._tasks.set(name, handler);
+    console.info(`Task registered: ${name}`);
+    console.debug("Available tasks:", Array.from(this._tasks.keys()));
+  }
+
+  public get(name: string): TaskHandler {
+    const handler = this._tasks.get(name);
+    if (!handler) {
+      throw new TaskRegistryError(`Handler not found for task: ${name}`);
+    }
     return handler;
-  },
-};
+  }
+
+  public has(name: string): boolean {
+    return this._tasks.has(name);
+  }
+
+  public list(): string[] {
+    return Array.from(this._tasks.keys());
+  }
+}
+
+export const schedulerRegistry = SchedulerTaskRegistry.getInstance();

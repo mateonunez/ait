@@ -148,6 +148,31 @@ importers:
         specifier: ^5.7.2
         version: 5.7.2
 
+  packages/infrastructure/redis:
+    dependencies:
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.4.7
+      ioredis:
+        specifier: ^5.4.2
+        version: 5.4.2
+    devDependencies:
+      '@types/dotenv':
+        specifier: ^8.2.3
+        version: 8.2.3
+      '@types/sinon':
+        specifier: ^17.0.3
+        version: 17.0.3
+      redis:
+        specifier: link:@@types/redis
+        version: link:@@types/redis
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+
   packages/infrastructure/scheduler:
     dependencies:
       '@ait/langchain':
@@ -159,6 +184,9 @@ importers:
       '@ait/qdrant':
         specifier: workspace:*
         version: link:../qdrant
+      '@ait/redis':
+        specifier: workspace:*
+        version: link:../redis
       '@ait/retove':
         specifier: workspace:*
         version: link:../../transformers/retove

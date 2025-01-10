@@ -16,6 +16,7 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/redis": "workspace:*",
     "@ait/retove": "workspace:*",
     "@ait/langchain": "workspace:*",
     "@ait/postgres": "workspace:*",

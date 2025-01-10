@@ -81,9 +81,8 @@ services:
     environment:
       - POSTGRES_URL=postgresql://root:toor@ait_postgres:5432/ait
       - QDRANT_URL=http://ait_qdrant:6333
+      - REDIS_URL=redis://ait_redis:6379
       - OLLAMA_BASE_URL=http://ait_ollama:11434
-      - REDIS_HOST=ait_redis
-      - REDIS_PORT=6379
     depends_on:
       - ait_postgres
       - ait_qdrant

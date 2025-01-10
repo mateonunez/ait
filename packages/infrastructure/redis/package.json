@@ -1,0 +1,25 @@
+{
+  "name": "@ait/redis",
+  "version": "1.0.0",
+  "description": "AIt's internal postgres database client and utils",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p ./tsconfig.build.json",
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe"
+  },
+  "keywords": [],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ioredis": "^5.4.2"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^8.2.3",
+    "@types/sinon": "^17.0.3",
+    "redis": "link:@@types/redis",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
