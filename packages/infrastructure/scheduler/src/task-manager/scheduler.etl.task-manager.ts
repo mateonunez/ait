@@ -12,6 +12,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
     // Register Spotify Track ETL
     schedulerRegistry.register(SpotifyETLs.track, async (data) => {
       console.info(`[${SpotifyETLs.track}] Starting...`);
+
       await this._withConnections(async ({ qdrant, postgres }) => {
         await runSpotifyETL(qdrant, postgres);
         console.info(`[${SpotifyETLs.track}] Completed`);
@@ -21,6 +22,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
     // Register GitHub Repository ETL
     schedulerRegistry.register(GitHubETLs.repository, async (data) => {
       console.info(`[${GitHubETLs.repository}] Starting...`);
+
       await this._withConnections(async ({ qdrant, postgres }) => {
         await runGitHubETL(qdrant, postgres);
         console.info(`[${GitHubETLs.repository}] Completed`);
