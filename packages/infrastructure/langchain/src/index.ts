@@ -1,2 +1,2 @@
 export * from "./langchain.client";
-export * from "./embeddings";
+export * from "./services";

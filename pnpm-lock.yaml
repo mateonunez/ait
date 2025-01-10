@@ -94,6 +94,12 @@ importers:
       '@types/dotenv':
         specifier: ^8.2.3
         version: 8.2.3
+      '@types/sinon':
+        specifier: ^17.0.3
+        version: 17.0.3
+      sinon:
+        specifier: ^19.0.2
+        version: 19.0.2
       typescript:
         specifier: ^5.7.2
         version: 5.7.2

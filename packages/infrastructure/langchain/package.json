@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
     "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe"
+    "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "pretest": "test -f .env.test || cp .env.example .env.test",
+    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",
@@ -18,6 +20,8 @@
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
+    "@types/sinon": "^17.0.3",
+    "sinon": "^19.0.2",
     "typescript": "^5.7.2"
   }
 }
