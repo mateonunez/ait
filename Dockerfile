@@ -33,4 +33,5 @@ COPY --from=build /app/ait/packages/infrastructure/postgres /app/ait/packages/in
 FROM base AS ait_scheduler
 COPY --from=build /app/ait/packages/infrastructure/scheduler /app/ait/packages/infrastructure/scheduler
 WORKDIR /app/ait/packages/infrastructure/scheduler
+
 CMD ["pnpm", "start"]
