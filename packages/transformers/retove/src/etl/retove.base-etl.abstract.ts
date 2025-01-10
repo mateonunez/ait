@@ -83,12 +83,21 @@ export abstract class RetoveBaseETLAbstract {
         throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
       }
 
+      const payload = this.getPayload(item);
+
       points.push({
         id: index + 1,
         vector,
-        payload: this.getPayload(item),
+        payload: {
+          content: `${payload.name} ${payload.description} ${payload.language}`,
+          metadata: {
+            source: "retove",
+          },
+        },
       });
     }
+
+    console.log("from transform", points);
 
     return points;
   }

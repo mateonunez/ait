@@ -91,6 +91,9 @@ importers:
         specifier: ^16.4.7
         version: 16.4.7
     devDependencies:
+      '@langchain/qdrant':
+        specifier: ^0.1.1
+        version: 0.1.1(@langchain/core@0.3.27)(typescript@5.7.2)
       '@types/dotenv':
         specifier: ^8.2.3
         version: 8.2.3
@@ -774,6 +777,12 @@ packages:
 
   '@langchain/ollama@0.1.4':
     resolution: {integrity: sha512-olHPViUurGcmOI3IbhIGK/EJ7QxDlZru4j98V269PiEFTIVlciRULltgI/t3voHYTdvB8R+HV8pMo/Y3UVzvzA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@langchain/core': '>=0.2.21 <0.4.0'
+
+  '@langchain/qdrant@0.1.1':
+    resolution: {integrity: sha512-v0A8wMO6x1XnYKgaXoqWUQAkeOvwcUIQPc1tM5sDTuU3JdQrhZDfuaSg7LJAh0wXJ9Eud7MwpkjYHWUiuE17/A==}
     engines: {node: '>=18'}
     peerDependencies:
       '@langchain/core': '>=0.2.21 <0.4.0'
@@ -2023,6 +2032,14 @@ snapshots:
       '@langchain/core': 0.3.27
       ollama: 0.5.11
       uuid: 10.0.0
+
+  '@langchain/qdrant@0.1.1(@langchain/core@0.3.27)(typescript@5.7.2)':
+    dependencies:
+      '@langchain/core': 0.3.27
+      '@qdrant/js-client-rest': 1.12.0(typescript@5.7.2)
+      uuid: 10.0.0
+    transitivePeerDependencies:
+      - typescript
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true

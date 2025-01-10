@@ -31,7 +31,7 @@ describe("TextGenerationService", () => {
     // @ts-expect-error - Stubbing constructor
     sinon.stub(EmbeddingsService.prototype, "constructor").returns(mockEmbeddingsService);
 
-    service = new TextGenerationService(model, expectedVectorSize);
+    service = new TextGenerationService(model);
   });
 
   afterEach(() => {

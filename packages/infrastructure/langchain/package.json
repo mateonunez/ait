@@ -19,6 +19,7 @@
     "dotenv": "^16.4.7"
   },
   "devDependencies": {
+    "@langchain/qdrant": "^0.1.1",
     "@types/dotenv": "^8.2.3",
     "@types/sinon": "^17.0.3",
     "sinon": "^19.0.2",
