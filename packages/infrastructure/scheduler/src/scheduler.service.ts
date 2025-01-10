@@ -34,14 +34,10 @@ export class Scheduler implements IScheduler {
     this._setupEventHandlers();
   }
 
-  public async scheduleJob(
-    jobName: string,
-    data: Record<string, unknown>,
-    cronExpression: string
-  ): Promise<void> {
+  public async scheduleJob(jobName: string, data: Record<string, unknown>, cronExpression: string): Promise<void> {
     if (!schedulerRegistry.has(jobName)) {
       throw new SchedulerError(
-        `Cannot schedule unknown task: ${jobName}. Available tasks: ${schedulerRegistry.list().join(", ")}`
+        `Cannot schedule unknown task: ${jobName}. Available tasks: ${schedulerRegistry.list().join(", ")}`,
       );
     }
 
@@ -53,14 +49,10 @@ export class Scheduler implements IScheduler {
     console.info(`[Scheduler] Job "${jobName}" scheduled with cron: ${cronExpression}`);
   }
 
-  public async addJob(
-    jobName: string,
-    data: Record<string, unknown>,
-    options?: JobsOptions
-  ): Promise<void> {
+  public async addJob(jobName: string, data: Record<string, unknown>, options?: JobsOptions): Promise<void> {
     if (!schedulerRegistry.has(jobName)) {
       throw new SchedulerError(
-        `Cannot add unknown task: ${jobName}. Available tasks: ${schedulerRegistry.list().join(", ")}`
+        `Cannot add unknown task: ${jobName}. Available tasks: ${schedulerRegistry.list().join(", ")}`,
       );
     }
 
@@ -71,7 +63,7 @@ export class Scheduler implements IScheduler {
 
     console.info(
       `[Scheduler] One-time job "${jobName}" added`,
-      options ? `with options: ${JSON.stringify(options)}` : ""
+      options ? `with options: ${JSON.stringify(options)}` : "",
     );
   }
 
@@ -83,11 +75,7 @@ export class Scheduler implements IScheduler {
   public async stop(): Promise<void> {
     console.info("[Scheduler] Stopping scheduler...");
 
-    await Promise.all([
-      this._worker.close(),
-      this._queue.close(),
-      this._queueEvents.close()
-    ]);
+    await Promise.all([this._worker.close(), this._queue.close(), this._queueEvents.close()]);
 
     console.info("[Scheduler] Scheduler stopped");
   }
@@ -126,7 +114,7 @@ export class Scheduler implements IScheduler {
           throw error;
         }
       },
-      { connection: this._client }
+      { connection: this._client },
     );
   }
 
@@ -145,9 +133,12 @@ export class Scheduler implements IScheduler {
         if (job) {
           console.error(
             `[Worker] Job failed: ${job.name}`,
-            "\nError:", error,
-            "\nAttempt:", job.attemptsMade,
-            "\nData:", job.data
+            "\nError:",
+            error,
+            "\nAttempt:",
+            job.attemptsMade,
+            "\nData:",
+            job.data,
           );
         } else {
           console.error("[Worker] Job failed: unknown job", error);

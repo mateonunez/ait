@@ -15,7 +15,6 @@ schedulerETLTaskManager.registerTasks();
 
 async function main() {
   try {
-
     const redisConfig: IRedisConfig = {
       url: process.env.REDIS_URL || "redis://localhost:6379",
       maxRetriesPerRequest: null,
@@ -25,7 +24,7 @@ async function main() {
       queueName: "etl-scheduler",
       redisConfig,
     });
- 
+
     await Promise.all([
       etlScheduler.scheduleJob(GitHubETLs.repository, { limit: 10 }, "*/5 * * * *"),
       etlScheduler.scheduleJob(SpotifyETLs.track, { limit: 10 }, "*/5 * * * *"),
