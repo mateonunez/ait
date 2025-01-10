@@ -6,17 +6,11 @@ describe("TextGenerationService", () => {
   const model = "gemma:2b";
   const expectedVectorSize = 2048;
   const prompt = "test prompt";
-  const generatedText = "generated response";
 
   let service: TextGenerationService;
 
   beforeEach(() => {
     service = new TextGenerationService(model, expectedVectorSize);
-  });
-
-  after(() => {
-    // close
-    
   });
 
   describe("generateText", () => {
