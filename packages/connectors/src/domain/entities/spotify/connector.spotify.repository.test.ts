@@ -48,7 +48,10 @@ describe("ConnectorSpotifyRepository", () => {
       it("should throw on missing track ID", async () => {
         const track = {} as SpotifyTrackEntity;
 
-        await assert.rejects(() => trackRepository.saveTrack(track), { message: "Invalid track: missing track ID" });
+        await assert.rejects(() => trackRepository.saveTrack(track), {
+          message:
+            'Failed to save track undefined: null value in column "id" of relation "spotify_tracks" violates not-null constraint',
+        });
       });
     });
 

@@ -122,7 +122,7 @@ export class TextGenerationService implements ITextGenerationService {
    * @returns A ChatPromptTemplate with system and user instructions.
    */
   private _getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
-    return ChatPromptTemplate.fromMessages([
+    return ChatPromptTemplate.fromMessages<Array<[string, string]>>([
       [
         "system",
         `You are a specialized assistant with access to a specific database of information.
@@ -152,14 +152,14 @@ export class TextGenerationService implements ITextGenerationService {
    * @returns A single string containing context from the documents.
    */
   private _buildContextFromDocs(documents: { pageContent: string }[]): string {
-    const validDocs = documents.filter((doc) => {
+    const documentsFiltered = documents.filter((doc) => {
       const content = doc.pageContent?.trim();
       return content && content.length > 0;
     });
 
-    return validDocs
+    return documentsFiltered
       .map((document, index) => {
-        return `--- Document ${index + 1} ---\n${document.pageContent.trim()}\n`;
+        return `--- Document ${index + 1} ---\n${document.pageContent}`;
       })
       .join("\n");
   }
