@@ -95,7 +95,9 @@ export abstract class RetoveBaseETLAbstract {
           originalText: text,
         };
 
-        const content = Object.entries(payloadObj).map(([key, value]) => `${key}: ${value}`).join("\n");
+        const content = Object.entries(payloadObj)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n");
 
         console.log(`Transformed item ${idx + 1}/${items.length}:`, { text, vector, payload: payloadObj, content });
 
