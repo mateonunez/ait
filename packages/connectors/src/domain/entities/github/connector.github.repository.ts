@@ -4,30 +4,35 @@ import type { GitHubRepositoryEntity } from "./connector.github.entities";
 import type {
   IConnectorGitHubRepository,
   IConnectorGitHubRepositoryRepository,
+  IConnectorGitHubRepositoryRepositoryOptions,
 } from "./connector.github.repository.interface";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
 import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { randomUUID } from "node:crypto";
 
 const _pgClient = getPostgresClient();
 
 // I'm so sorry for the name of this class
 export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepositoryRepository {
-  async saveRepository(repository: GitHubRepositoryEntity): Promise<void> {
-    if (!repository?.id) {
-      throw new Error("Invalid repository: missing repository ID");
-    }
+  async saveRepository(
+    repository: GitHubRepositoryEntity,
+    options: IConnectorGitHubRepositoryRepositoryOptions = { incremental: false },
+  ): Promise<void> {
+    const { incremental } = options;
+    const repositoryId = incremental ? randomUUID() : repository.id;
 
     try {
       const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
+      repositoryData.id = repositoryId;
 
       await _pgClient.db.transaction(async (tx) => {
         await tx.insert(githubRepositories).values(repositoryData).onConflictDoNothing().execute();
       });
 
-      console.debug("Repository saved successfully:", { repoId: repository.id });
+      console.debug("Repository saved successfully:", { repoId: repositoryId });
     } catch (error: any) {
-      console.error("Failed to save repository:", { repoId: repository.id, error });
-      throw new Error(`Failed to save repository ${repository.id}: ${error.message}`);
+      console.error("Failed to save repository:", { repoId: repositoryId, error });
+      throw new Error(`Failed to save repository ${repositoryId}: ${error.message}`);
     }
   }
 

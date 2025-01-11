@@ -93,19 +93,23 @@ export abstract class RetoveBaseETLAbstract {
 
       const payload = this.getPayload(item);
 
+      // serialize the payload to a string to avoid issues with nested objects
+      const content = Object.entries(payload)
+        .map(([key, value]) => `${key}:${value}`)
+        .join(" ");
+      const metadata = {
+        source: "retove",
+      };
+
       points.push({
         id: index + 1,
         vector,
         payload: {
-          content: `${payload.name} ${payload.description} ${payload.language}`,
-          metadata: {
-            source: "retove",
-          },
+          content,
+          metadata,
         },
       });
     }
-
-    console.log("from transform", points);
 
     return points;
   }

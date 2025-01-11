@@ -7,11 +7,20 @@ import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manag
 interface JobConfig {
   name: string;
   options: Record<string, unknown>;
+  cronExpression: string;
 }
 
 const SCHEDULED_JOBS: JobConfig[] = [
-  { name: GitHubETLs.repository, options: { limit: 10 } },
-  { name: SpotifyETLs.track, options: { limit: 10 } },
+  {
+    name: GitHubETLs.repository,
+    options: { limit: 10 },
+    cronExpression: "0 */12 * * *", // Every 12 hours
+  },
+  {
+    name: SpotifyETLs.track,
+    options: { limit: 10 },
+    cronExpression: "0 * * * *", // Every hour
+  },
 ];
 
 class SchedulerEntrypoint {
@@ -25,9 +34,13 @@ class SchedulerEntrypoint {
   }
 
   async scheduleJobs(): Promise<void> {
-    const cronExpression = "0 0 * * *"; // Daily at midnight
+    const defaultCronExpression = "0 0 * * *"; // Daily at midnight
 
-    await Promise.all(SCHEDULED_JOBS.map((job) => this.scheduler.scheduleJob(job.name, job.options, cronExpression)));
+    await Promise.all(
+      SCHEDULED_JOBS.map((job) =>
+        this.scheduler.scheduleJob(job.name, job.options, job.cronExpression || defaultCronExpression),
+      ),
+    );
   }
 
   async runJobsManually(): Promise<void> {
