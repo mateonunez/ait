@@ -57,7 +57,7 @@ function buildLangChainClient(config: ILangChainConfig) {
   }
 
   // Function to create the LLM
-  function createLLM(modelOverride?: string, temperature = 0.5): Ollama {
+  function createLLM(modelOverride?: string, temperature = 0.7): Ollama {
     const modelToUse = modelOverride || config.model;
     if (config.logger) {
       console.log(`[LangChainClient] Creating LLM with model: ${modelToUse}`);

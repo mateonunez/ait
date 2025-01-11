@@ -21,7 +21,7 @@ export interface RetryOptions {
 
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
-  private readonly _batchSize = 100;
+  private readonly _batchSize = 1000;
   private readonly _vectorSize = LANGCHAIN_VECTOR_SIZE;
 
   constructor(

@@ -60,7 +60,7 @@ describe("LangChain Client", () => {
       mockLLM = {
         model: DEFAULT_LANGCHAIN_MODEL,
         baseUrl: OLLAMA_BASE_URL,
-        temperature: 0.5,
+        temperature: 0.7,
         invoke: sinon.stub().resolves(""),
       } as unknown as sinon.SinonStubbedInstance<Ollama>;
 
@@ -83,7 +83,7 @@ describe("LangChain Client", () => {
       const llm = client.createLLM();
       assert.strictEqual(llm.model, DEFAULT_LANGCHAIN_MODEL);
       assert.strictEqual(llm.baseUrl, OLLAMA_BASE_URL);
-      assert.strictEqual(llm.temperature, 0.5);
+      assert.strictEqual(llm.temperature, 0.7);
     });
 
     it("should create LLM with model override", () => {
@@ -93,7 +93,7 @@ describe("LangChain Client", () => {
       const llm = client.createLLM(overrideModel);
       assert.strictEqual(llm.model, overrideModel);
       assert.strictEqual(llm.baseUrl, OLLAMA_BASE_URL);
-      assert.strictEqual(llm.temperature, 0.5);
+      assert.strictEqual(llm.temperature, 0.7);
     });
 
     it("should create LLM with temperature override", () => {

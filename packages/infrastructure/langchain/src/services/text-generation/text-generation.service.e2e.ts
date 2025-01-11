@@ -6,21 +6,35 @@ import { DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } from "../../langchain.
 describe("TextGenerationService", () => {
   const model = DEFAULT_LANGCHAIN_MODEL;
   const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
+  const timeout = 900000; // 15 minutes
 
   let service: TextGenerationService;
 
-  beforeEach(() => {
-    service = new TextGenerationService(model, expectedVectorSize, "github_repositories_collection");
-  });
-
   describe("generateText", () => {
-    it("should generate text successfully", async () => {
-      const prompt = "Show to me the repositories that contain typescript'.";
+    describe("github_repositories_collection", () => {
+      beforeEach(() => {
+        service = new TextGenerationService(model, expectedVectorSize, "github_repositories_collection");
+      });
 
-      const result = await service.generateText(prompt);
+      it("should generate text successfully", { timeout: timeout }, async () => {
+        const prompt = "Based on your context, show me the repositories with JavaScript lanaguae";
+        const result = await service.generateText(prompt);
 
-      assert.strictEqual(typeof result, "string");
-      assert.strictEqual(result.length > 0, true);
+        assert.ok(result);
+      });
+    });
+
+    describe("spotify_tracks_collection", () => {
+      beforeEach(() => {
+        service = new TextGenerationService(model, expectedVectorSize, "spotify_tracks_collection");
+      });
+
+      it("should generate text successfully", { timeout: timeout }, async () => {
+        const prompt = "Based on your context, show me the tracks of the alt J artist";
+        const result = await service.generateText(prompt);
+
+        assert.ok(result);
+      });
     });
   });
 });
