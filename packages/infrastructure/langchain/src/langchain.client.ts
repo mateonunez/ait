@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 
-// 1. Load environment variables.
+// 1. Load environment variables
 dotenv.config();
 
 /**
@@ -37,6 +37,7 @@ export interface ILangChainConfig {
    * Whether to enable logging or not.
    */
   logger?: boolean;
+
   /**
    * Base URL for the Ollama server.
    */
@@ -47,13 +48,13 @@ export interface ILangChainConfig {
  * Builds and returns a reusable LangChain client with various helpers.
  */
 function buildLangChainClient(config: ILangChainConfig) {
-  // Function to create the embeddings
+  // Function to create embeddings
   function createEmbeddings(modelOverride?: string): OllamaEmbeddings {
     const modelToUse = modelOverride || config.model;
     if (config.logger) {
       console.log(`[LangChainClient] Creating embeddings with model: ${modelToUse}`);
     }
-    return new OllamaEmbeddings({ model: modelToUse, baseUrl: OLLAMA_BASE_URL });
+    return new OllamaEmbeddings({ model: modelToUse, baseUrl: config.baseUrl ?? OLLAMA_BASE_URL });
   }
 
   // Function to create the LLM
@@ -64,7 +65,7 @@ function buildLangChainClient(config: ILangChainConfig) {
     }
     return new Ollama({
       model: modelToUse,
-      baseUrl: OLLAMA_BASE_URL,
+      baseUrl: config.baseUrl ?? OLLAMA_BASE_URL,
       temperature,
     });
   }
@@ -80,7 +81,7 @@ function buildLangChainClient(config: ILangChainConfig) {
 let _instance: ReturnType<typeof buildLangChainClient> | null = null;
 
 /**
- * Default config derived from environment vars or set to safe defaults.
+ * Default config derived from environment or safe defaults.
  */
 let _config: ILangChainConfig = {
   model: DEFAULT_LANGCHAIN_MODEL,

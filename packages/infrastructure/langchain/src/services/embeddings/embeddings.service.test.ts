@@ -17,10 +17,12 @@ describe("EmbeddingsService", () => {
   const text = "sample text";
   let embeddingsService: EmbeddingsService;
   let langChainClientStub: sinon.SinonStub;
+
   before(() => {
     // Initialize the LangChain client
     initLangChainClient({ baseUrl: ollamaBaseURL });
   });
+
   beforeEach(() => {
     langChainClientStub = sinon.stub(getLangChainClient(), "createEmbeddings").returns({
       model: model,
@@ -33,13 +35,16 @@ describe("EmbeddingsService", () => {
     } as unknown as OllamaEmbeddings);
     embeddingsService = new EmbeddingsService(model, expectedVectorSize);
   });
+
   afterEach(() => {
     sinon.restore();
   });
+
   it("should generate embeddings of expected size", async () => {
     const vectors = await embeddingsService.generateEmbeddings(text);
     assert.strictEqual(vectors.length, expectedVectorSize);
   });
+
   it("should throw an error if embeddings size is unexpected", async () => {
     langChainClientStub.returns({
       ...langChainClientStub,
@@ -47,11 +52,11 @@ describe("EmbeddingsService", () => {
     } as unknown as OllamaEmbeddings);
     try {
       await embeddingsService.generateEmbeddings(text);
-      throw new Error("Test failed");
     } catch (error: any) {
       assert.strictEqual(error.message, `Unexpected embeddings size: ${expectedVectorSize - 1}`);
     }
   });
+
   it.skip("should throw an error if embedding generation fails", async () => {
     langChainClientStub.returns({
       ...langChainClientStub,

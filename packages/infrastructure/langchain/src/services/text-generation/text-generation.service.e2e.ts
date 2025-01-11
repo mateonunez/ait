@@ -17,7 +17,7 @@ describe("TextGenerationService", () => {
       });
 
       it("should generate text successfully", { timeout: timeout }, async () => {
-        const prompt = "Based on your context, show me the repositories with JavaScript lanaguae";
+        const prompt = "Based on your context, show me some repositories with TypeScript lanaguae";
         const result = await service.generateText(prompt);
 
         assert.ok(result);
@@ -30,7 +30,7 @@ describe("TextGenerationService", () => {
       });
 
       it("should generate text successfully", { timeout: timeout }, async () => {
-        const prompt = "Based on your context, show me the tracks of the alt J artist";
+        const prompt = "Based on your context, show some tracks of the alt-J artist";
         const result = await service.generateText(prompt);
 
         assert.ok(result);
