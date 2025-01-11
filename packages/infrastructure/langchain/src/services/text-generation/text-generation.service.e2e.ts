@@ -17,7 +17,7 @@ describe("TextGenerationService", () => {
       });
 
       it("should generate text successfully", { timeout: timeout }, async () => {
-        const prompt = "Based on your context, show me some repositories with TypeScript lanaguae";
+        const prompt = "Based on your context, show me some repositories with TypeScript language";
         const result = await service.generateText(prompt);
 
         assert.ok(result);

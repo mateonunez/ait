@@ -87,7 +87,7 @@ export class TextGenerationService implements ITextGenerationService {
       const similarDocs = await vectorStore.similaritySearch(prompt, this._maxSearchSimilarDocs);
 
       // Build context from the retrieved documents
-      const context = this._buildContextFromDocs(similarDocs);
+      const context = this._buildContextFromDocuments(similarDocs);
 
       // Confirm length and content for debugging
       console.debug(`Context Length: ${context.length}`);
@@ -100,6 +100,9 @@ export class TextGenerationService implements ITextGenerationService {
       // Build our prompt template with system instructions and user message
       const promptTemplate = this._getPromptTemplate(prompt, context);
       const chain = promptTemplate.pipe(llm);
+
+      console.debug("Prompt template:", promptTemplate);
+      console.debug("Chain:", chain);
 
       // Invoke the chain with the context and user prompt
       const generatedText = await chain.invoke({ context, prompt });
@@ -122,25 +125,36 @@ export class TextGenerationService implements ITextGenerationService {
    * @returns A ChatPromptTemplate with system and user instructions.
    */
   private _getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
+    // A clearer, more prescriptive system message:
+    const systemMessage = `
+    You are a specialized assistant with exclusive access to a specific database of information.
+
+    CONTEXT:
+    ${context}
+
+    INSTRUCTIONS:
+    1. Carefully analyze the provided CONTEXT.
+    2. Answer ONLY with information from the CONTEXT; do NOT use outside information.
+    3. If the user's question is addressed in the CONTEXT, provide a detailed and accurate response using the exact data where possible.
+    4. If the requested information is not found in the CONTEXT, reply with:
+       "Based on the provided context, I cannot find information about [requested topic]."
+    5. When returning structured data (e.g., repository or track information), format it neatly and clearly.
+
+    ADDITIONAL NOTE: 
+    - Pay attention to lines containing repository metadata such as "type:repository", "language:TypeScript", etc.
+    - If the user asks for repositories in a certain language, extract and list them from the CONTEXT if they exist.
+
+    Remember: 
+    - Restrict your answer to information from the CONTEXT.
+    - Do NOT infer or fabricate information that is not explicitly stated.
+    - Maintain clarity and precision in your responses.
+    `;
+
     return ChatPromptTemplate.fromMessages<Array<[string, string]>>([
-      [
-        "system",
-        `You are a specialized assistant with access to a specific database of information.
-  
-  CONTEXT:
-  ${context}
-  
-  INSTRUCTIONS:
-  1. Analyze the provided context carefully
-  2. Answer questions using ONLY information found in the context
-  3. If specific information is found, provide detailed responses with exact data
-  4. If the requested information is not in the context, respond with: "Based on the provided context, I cannot find information about [requested topic]"
-  5. Format structured data (like repository or track information) in a clear, readable way
-  
-  Remember: Only use information from the context. Do not make assumptions or provide information from outside the context.`,
-      ],
+      ["system", systemMessage.trim()],
       ["user", prompt],
-      ["system", "Your response:"],
+      // Prompt the assistant to provide the final answer based on the instructions:
+      ["assistant", "Please provide your answer below, strictly following the above instructions."],
     ]);
   }
 
@@ -151,16 +165,16 @@ export class TextGenerationService implements ITextGenerationService {
    * @param documents - Array of documents from similarity search.
    * @returns A single string containing context from the documents.
    */
-  private _buildContextFromDocs(documents: { pageContent: string }[]): string {
-    const documentsFiltered = documents.filter((doc) => {
-      const content = doc.pageContent?.trim();
-      return content && content.length > 0;
-    });
+  private _buildContextFromDocuments(documents: { pageContent: string }[]): string {
+    const validDocs = documents.filter((doc) => doc.pageContent?.trim().length > 0);
 
-    return documentsFiltered
-      .map((document, index) => {
-        return `--- Document ${index + 1} ---\n${document.pageContent}`;
+    const docs = validDocs
+      .map((doc, index) => {
+        return [`--- Document ${index + 1} ---`, doc.pageContent.trim(), "-----------------------------"].join("\n");
       })
-      .join("\n");
+      .join("\n\n");
+
+    console.log("Context:", docs);
+    return docs;
   }
 }

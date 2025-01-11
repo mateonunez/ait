@@ -81,35 +81,36 @@ export abstract class RetoveBaseETLAbstract {
 
   protected async transform<T>(data: T[]): Promise<BaseVectorPoint[]> {
     const items = data as Record<string, unknown>[];
-    const points: BaseVectorPoint[] = [];
 
-    for (const [index, item] of items.entries()) {
-      const text = this.getTextForEmbedding(item);
+    const points = await Promise.all(
+      items.map(async (item, idx) => {
+        const text = this.getTextForEmbedding(item);
+        const vector = await this._embeddingsService.generateEmbeddings(text);
+        if (vector.length !== this._vectorSize) {
+          throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
+        }
 
-      const vector = await this._embeddingsService.generateEmbeddings(text);
-      if (vector.length !== this._vectorSize) {
-        throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
-      }
+        const payloadObj = {
+          ...this.getPayload(item),
+          originalText: text,
+        };
 
-      const payload = this.getPayload(item);
+        const content = Object.entries(payloadObj).map(([key, value]) => `${key}: ${value}`).join("\n");
 
-      // serialize the payload to a string to avoid issues with nested objects
-      const content = Object.entries(payload)
-        .map(([key, value]) => `${key}:${value}`)
-        .join(" ");
-      const metadata = {
-        source: "retove",
-      };
+        console.log(`Transformed item ${idx + 1}/${items.length}:`, { text, vector, payload: payloadObj, content });
 
-      points.push({
-        id: index + 1,
-        vector,
-        payload: {
-          content,
-          metadata,
-        },
-      });
-    }
+        return {
+          id: idx + 1,
+          vector,
+          payload: {
+            content,
+            metadata: {
+              source: "retove",
+            },
+          },
+        } as BaseVectorPoint;
+      }),
+    );
 
     return points;
   }

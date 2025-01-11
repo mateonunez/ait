@@ -3,7 +3,7 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
 
 export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<SpotifyTrackDataTarget> {
   public getEmbeddingText(track: SpotifyTrackDataTarget): string {
-    return `${track.name} ${track.artist} ${track.album ?? ""}`;
+    return JSON.stringify(track, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
