@@ -7,7 +7,7 @@ dotenv.config();
 /**
  * Default model name, e.g., "gemma:2b".
  */
-export const LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "gemma:2b";
+export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "gemma:2b";
 
 /**
  * Default vector size for embeddings.
@@ -83,7 +83,7 @@ let _instance: ReturnType<typeof buildLangChainClient> | null = null;
  * Default config derived from environment vars or set to safe defaults.
  */
 let _config: ILangChainConfig = {
-  model: LANGCHAIN_MODEL,
+  model: DEFAULT_LANGCHAIN_MODEL,
   expectedVectorSize: LANGCHAIN_VECTOR_SIZE,
   logger: true,
   baseUrl: OLLAMA_BASE_URL,
@@ -104,4 +104,11 @@ export function getLangChainClient() {
     _instance = buildLangChainClient(_config);
   }
   return _instance;
+}
+
+/**
+ * Resets the singleton instance, e.g., for testing purposes.
+ */
+export function resetLangChainClientInstance() {
+  _instance = null;
 }

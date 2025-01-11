@@ -1,4 +1,4 @@
-import { getLangChainClient } from "../../langchain.client";
+import { getLangChainClient, DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } from "../../langchain.client";
 import { EmbeddingsService, type IEmbeddingsService } from "../embeddings/embeddings.service";
 import { QdrantVectorStore } from "@langchain/qdrant";
 
@@ -17,8 +17,8 @@ export class TextGenerationService implements ITextGenerationService {
   private _embeddingService: IEmbeddingsService;
 
   constructor(
-    private readonly _model = "gemma:2b",
-    private readonly _expectedVectorSize = 2048,
+    private readonly _model = DEFAULT_LANGCHAIN_MODEL,
+    private readonly _expectedVectorSize = LANGCHAIN_VECTOR_SIZE,
     private readonly _collectionName: string = "langchain",
   ) {
     this._embeddingService = new EmbeddingsService(this._model, this._expectedVectorSize);

@@ -1,10 +1,11 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { TextGenerationService } from "./text-generation.service";
+import { DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } from "../../langchain.client";
 
 describe("TextGenerationService", () => {
-  const model = "gemma:2b";
-  const expectedVectorSize = 2048;
+  const model = DEFAULT_LANGCHAIN_MODEL;
+  const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
 
   let service: TextGenerationService;
 

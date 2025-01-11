@@ -1,4 +1,9 @@
-import { getLangChainClient, initLangChainClient } from "../../langchain.client";
+import {
+  getLangChainClient,
+  initLangChainClient,
+  DEFAULT_LANGCHAIN_MODEL,
+  LANGCHAIN_VECTOR_SIZE,
+} from "../../langchain.client";
 
 const ollamaBaseURL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
@@ -13,8 +18,8 @@ export class EmbeddingsService implements IEmbeddingsService {
   private readonly expectedVectorSize?: number;
 
   constructor(model: string, expectedVectorSize: number) {
-    this.model = model ?? "gemma:2b";
-    this.expectedVectorSize = expectedVectorSize ?? 2048;
+    this.model = model ?? DEFAULT_LANGCHAIN_MODEL;
+    this.expectedVectorSize = expectedVectorSize ?? LANGCHAIN_VECTOR_SIZE;
   }
 
   public async generateEmbeddings(text: string): Promise<number[]> {

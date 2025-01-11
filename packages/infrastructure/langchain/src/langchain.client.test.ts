@@ -1,7 +1,13 @@
 import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import sinon from "sinon";
-import { getLangChainClient, initLangChainClient, OLLAMA_BASE_URL, LANGCHAIN_MODEL } from "./langchain.client";
+import {
+  getLangChainClient,
+  initLangChainClient,
+  OLLAMA_BASE_URL,
+  DEFAULT_LANGCHAIN_MODEL,
+  LANGCHAIN_VECTOR_SIZE,
+} from "./langchain.client";
 import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 
 describe("LangChain Client", () => {
@@ -10,7 +16,7 @@ describe("LangChain Client", () => {
 
     beforeEach(() => {
       mockEmbeddings = {
-        model: LANGCHAIN_MODEL,
+        model: DEFAULT_LANGCHAIN_MODEL,
         baseUrl: OLLAMA_BASE_URL,
         embedQuery: sinon.stub().resolves([]),
         embedDocuments: sinon.stub().resolves([]),
@@ -20,8 +26,8 @@ describe("LangChain Client", () => {
       sinon.stub(OllamaEmbeddings.prototype, "constructor").returns(mockEmbeddings);
 
       initLangChainClient({
-        model: LANGCHAIN_MODEL,
-        expectedVectorSize: 2048,
+        model: DEFAULT_LANGCHAIN_MODEL,
+        expectedVectorSize: LANGCHAIN_VECTOR_SIZE,
         baseUrl: OLLAMA_BASE_URL,
       });
     });
@@ -33,7 +39,7 @@ describe("LangChain Client", () => {
     it("should create embeddings with default model", () => {
       const client = getLangChainClient();
       const embeddings = client.createEmbeddings();
-      assert.strictEqual(embeddings.model, LANGCHAIN_MODEL);
+      assert.strictEqual(embeddings.model, DEFAULT_LANGCHAIN_MODEL);
       assert.strictEqual(embeddings.baseUrl, OLLAMA_BASE_URL);
     });
 
@@ -52,7 +58,7 @@ describe("LangChain Client", () => {
 
     beforeEach(() => {
       mockLLM = {
-        model: LANGCHAIN_MODEL,
+        model: DEFAULT_LANGCHAIN_MODEL,
         baseUrl: OLLAMA_BASE_URL,
         temperature: 0.5,
         invoke: sinon.stub().resolves(""),
@@ -62,8 +68,8 @@ describe("LangChain Client", () => {
       sinon.stub(Ollama.prototype, "constructor").returns(mockLLM);
 
       initLangChainClient({
-        model: LANGCHAIN_MODEL,
-        expectedVectorSize: 2048,
+        model: DEFAULT_LANGCHAIN_MODEL,
+        expectedVectorSize: LANGCHAIN_VECTOR_SIZE,
         baseUrl: OLLAMA_BASE_URL,
       });
     });
@@ -75,7 +81,7 @@ describe("LangChain Client", () => {
     it("should create LLM with default model", () => {
       const client = getLangChainClient();
       const llm = client.createLLM();
-      assert.strictEqual(llm.model, LANGCHAIN_MODEL);
+      assert.strictEqual(llm.model, DEFAULT_LANGCHAIN_MODEL);
       assert.strictEqual(llm.baseUrl, OLLAMA_BASE_URL);
       assert.strictEqual(llm.temperature, 0.5);
     });
@@ -94,7 +100,7 @@ describe("LangChain Client", () => {
       const overrideTemperature = 0.75;
       const client = getLangChainClient();
       const llm = client.createLLM(undefined, overrideTemperature);
-      assert.strictEqual(llm.model, LANGCHAIN_MODEL);
+      assert.strictEqual(llm.model, DEFAULT_LANGCHAIN_MODEL);
       assert.strictEqual(llm.baseUrl, OLLAMA_BASE_URL);
       assert.strictEqual(llm.temperature, overrideTemperature);
     });

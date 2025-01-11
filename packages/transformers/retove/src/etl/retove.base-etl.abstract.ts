@@ -1,6 +1,11 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { EmbeddingsService, type IEmbeddingsService } from "@ait/langchain";
+import {
+  EmbeddingsService,
+  DEFAULT_LANGCHAIN_MODEL,
+  LANGCHAIN_VECTOR_SIZE,
+  type IEmbeddingsService,
+} from "@ait/langchain";
 
 export interface BaseVectorPoint {
   id: number;
@@ -17,7 +22,7 @@ export interface RetryOptions {
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 100;
-  private readonly _vectorSize = 2048;
+  private readonly _vectorSize = LANGCHAIN_VECTOR_SIZE;
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -28,7 +33,10 @@ export abstract class RetoveBaseETLAbstract {
       initialDelay: 1000,
       maxDelay: 5000,
     },
-    private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService("gemma:2b", 2048),
+    private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService(
+      DEFAULT_LANGCHAIN_MODEL,
+      LANGCHAIN_VECTOR_SIZE,
+    ),
   ) {
     this.retryOptions = retryOptions;
   }

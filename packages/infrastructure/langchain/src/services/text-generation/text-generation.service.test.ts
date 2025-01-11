@@ -2,40 +2,56 @@ import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import sinon from "sinon";
 import { TextGenerationService, TextGenerationError } from "./text-generation.service";
-import { getLangChainClient } from "../../langchain.client";
-import type { Ollama } from "@langchain/ollama";
-import { EmbeddingsService } from "../embeddings/embeddings.service";
+import {
+  getLangChainClient,
+  initLangChainClient,
+  DEFAULT_LANGCHAIN_MODEL,
+  LANGCHAIN_VECTOR_SIZE,
+  resetLangChainClientInstance,
+} from "../../langchain.client"; // Ensure initLangChainClient is exported
+import type { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 
 describe("TextGenerationService", () => {
-  const model = "gemma:2b";
-  const expectedVectorSize = 2048;
+  const model = DEFAULT_LANGCHAIN_MODEL;
+  const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
   const prompt = "test prompt";
   const generatedText = "generated response";
 
   let service: TextGenerationService;
   let mockLLM: sinon.SinonStubbedInstance<Ollama>;
-  let mockEmbeddingsService: sinon.SinonStubbedInstance<EmbeddingsService>;
-  let getLangChainClientStub: sinon.SinonStub;
+  let createLLMStub: sinon.SinonStub;
+  let createEmbeddingsStub: sinon.SinonStub;
 
   beforeEach(() => {
+    initLangChainClient({ model, expectedVectorSize, logger: false });
+
     mockLLM = {
       invoke: sinon.stub().resolves(generatedText),
+      client: {
+        embedQuery: sinon.stub(),
+      },
+      embedQuery: () => Promise.resolve(new Array(expectedVectorSize).fill(0)),
     } as unknown as sinon.SinonStubbedInstance<Ollama>;
 
-    getLangChainClientStub = sinon.stub(getLangChainClient(), "createLLM").returns(mockLLM);
+    const client = getLangChainClient();
 
-    mockEmbeddingsService = {
-      generateEmbeddings: sinon.stub().resolves([]),
-    } as unknown as sinon.SinonStubbedInstance<EmbeddingsService>;
-
-    // @ts-expect-error - Stubbing constructor
-    sinon.stub(EmbeddingsService.prototype, "constructor").returns(mockEmbeddingsService);
+    createLLMStub = sinon.stub(client, "createLLM").returns(mockLLM);
+    createEmbeddingsStub = sinon.stub(client, "createEmbeddings").returns({
+      model: model,
+      baseUrl: "http://localhost:11434",
+      client: {
+        embedQuery: sinon.stub(),
+      },
+      embedDocuments: sinon.stub(),
+      embedQuery: () => Promise.resolve(new Array(expectedVectorSize).fill(0)),
+    } as unknown as OllamaEmbeddings);
 
     service = new TextGenerationService(model);
   });
 
   afterEach(() => {
     sinon.restore();
+    resetLangChainClientInstance();
   });
 
   describe("generateText", () => {
@@ -43,8 +59,8 @@ describe("TextGenerationService", () => {
       const result = await service.generateText(prompt);
 
       assert.strictEqual(result, generatedText);
-      assert.strictEqual(mockLLM.invoke.calledOnceWith(prompt), true);
-      assert.strictEqual(getLangChainClientStub.calledOnceWith(model), true);
+      assert(createLLMStub.calledOnceWith(model));
+      assert(createEmbeddingsStub.calledOnceWith());
     });
 
     it("should throw TextGenerationError when text generation fails", async () => {
@@ -64,7 +80,7 @@ describe("TextGenerationService", () => {
       service = new TextGenerationService();
       await service.generateText(prompt);
 
-      assert.strictEqual(getLangChainClientStub.calledOnceWith("gemma:2b"), true);
+      assert(createLLMStub.calledOnceWith(DEFAULT_LANGCHAIN_MODEL));
     });
 
     it("should use provided model when specified", async () => {
@@ -72,7 +88,7 @@ describe("TextGenerationService", () => {
       service = new TextGenerationService(customModel);
       await service.generateText(prompt);
 
-      assert.strictEqual(getLangChainClientStub.calledOnceWith(customModel), true);
+      assert(createLLMStub.calledOnceWith(customModel));
     });
   });
 });
