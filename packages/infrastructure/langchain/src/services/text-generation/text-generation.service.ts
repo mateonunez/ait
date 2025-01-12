@@ -169,38 +169,36 @@ export class TextGenerationService implements ITextGenerationService {
    *
    * @param documents - Array of documents from similarity search.
    * @returns A single string containing context from the documents.
-   */ 
+   */
   private _buildContextFromDocuments(documents: Document[]): string {
     // Filter out empty documents
-    const validDocs = documents.filter(doc => 
-      doc?.pageContent?.trim().length > 0
-    );
-  
+    const validDocs = documents.filter((doc) => doc?.pageContent?.trim().length > 0);
+
     if (!validDocs.length) {
-      console.debug('No valid documents found for context building');
-      return '';
+      console.debug("No valid documents found for context building");
+      return "";
     }
-  
+
     // Format documents with metadata
     return validDocs
       .map((doc, index) => {
-        const metadata = doc.metadata 
+        const metadata = doc.metadata
           ? Object.entries(doc.metadata)
               .map(([key, value]) => `${key}: ${value}`)
-              .join('\n  ')
-          : 'No metadata';
-  
+              .join("\n  ")
+          : "No metadata";
+
         return [
           `📄 Document ${index + 1}`,
-          '-------------------',
+          "-------------------",
           "Metadata:",
           `  ${metadata}`,
-          '',
-          'Content:',
+          "",
+          "Content:",
           doc.pageContent.trim(),
-          '-------------------'
-        ].join('\n');
+          "-------------------",
+        ].join("\n");
       })
-      .join('\n\n');
+      .join("\n\n");
   }
 }
