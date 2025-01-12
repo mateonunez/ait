@@ -18,6 +18,14 @@ export class TextGenerationError extends Error {
 }
 
 /**
+ * Defines the structure of a document with page content and optional metadata.
+ */
+interface Document {
+  pageContent: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Defines the interface for a text generation service.
  */
 export interface ITextGenerationService {
@@ -101,9 +109,6 @@ export class TextGenerationService implements ITextGenerationService {
       const promptTemplate = this._getPromptTemplate(prompt, context);
       const chain = promptTemplate.pipe(llm);
 
-      console.debug("Prompt template:", promptTemplate);
-      console.debug("Chain:", chain);
-
       // Invoke the chain with the context and user prompt
       const generatedText = await chain.invoke({ context, prompt });
 
@@ -164,17 +169,38 @@ export class TextGenerationService implements ITextGenerationService {
    *
    * @param documents - Array of documents from similarity search.
    * @returns A single string containing context from the documents.
-   */
-  private _buildContextFromDocuments(documents: { pageContent: string }[]): string {
-    const validDocs = documents.filter((doc) => doc.pageContent?.trim().length > 0);
-
-    const docs = validDocs
+   */ 
+  private _buildContextFromDocuments(documents: Document[]): string {
+    // Filter out empty documents
+    const validDocs = documents.filter(doc => 
+      doc?.pageContent?.trim().length > 0
+    );
+  
+    if (!validDocs.length) {
+      console.debug('No valid documents found for context building');
+      return '';
+    }
+  
+    // Format documents with metadata
+    return validDocs
       .map((doc, index) => {
-        return [`--- Document ${index + 1} ---`, doc.pageContent.trim(), "-----------------------------"].join("\n");
+        const metadata = doc.metadata 
+          ? Object.entries(doc.metadata)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join('\n  ')
+          : 'No metadata';
+  
+        return [
+          `📄 Document ${index + 1}`,
+          '-------------------',
+          "Metadata:",
+          `  ${metadata}`,
+          '',
+          'Content:',
+          doc.pageContent.trim(),
+          '-------------------'
+        ].join('\n');
       })
-      .join("\n\n");
-
-    console.log("Context:", docs);
-    return docs;
+      .join('\n\n');
   }
 }

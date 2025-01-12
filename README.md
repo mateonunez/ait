@@ -96,6 +96,22 @@ cd packages/transformers/retove
 pnpm etl
 ```
 
+#### 3. Text Generation
+
+After the ETL process, you can generate text using the `TextGeneration` service. Here's how to get started:
+
+```bash
+cd packages/infrastructure/langchain # <- The service will move out of this folder soon
+npx tsx src/services/text-generation/text-generation.service.e2e.ts
+```
+
+The E2E tests will:
+
+- Connect to your Qdrant collections (_github_repositories_collection_ and _spotify_tracks_collection_)
+- Generate embeddings for test prompts
+- Perform similarity searches
+- Generate responses using Ollama (gemma:2b)
+
 ### 🌐 Connectors
 
 AIt provides smart connectors for GitHub and Spotify. Here's how to get started:
