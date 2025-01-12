@@ -54,7 +54,8 @@ describe("ConnectorGitHubRepository", () => {
         const repo = {} as GitHubRepositoryEntity;
 
         await assert.rejects(() => repoRepository.saveRepository(repo), {
-          message: "Invalid repository: missing repository ID",
+          message:
+            'Failed to save repository undefined: null value in column "id" of relation "github_repositories" violates not-null constraint',
         });
       });
     });

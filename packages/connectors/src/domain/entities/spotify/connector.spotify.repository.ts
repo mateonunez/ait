@@ -4,25 +4,30 @@ import type { SpotifyTrackEntity } from "./connector.spotify.entities";
 import type {
   IConnectorSpotifyRepository,
   IConnectorSpotifyTrackRepository,
+  IConnectorSpotifyTrackRepositoryOptions,
 } from "./connector.spotify.repository.interface";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth.interface";
 import { getOAuthData, saveOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { randomUUID } from "node:crypto";
 
 const _pgClient = getPostgresClient();
 
 export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRepository {
   private _pgClient = getPostgresClient();
 
-  async saveTrack(track: SpotifyTrackEntity): Promise<void> {
-    if (!track?.id) {
-      throw new Error("Invalid track: missing track ID");
-    }
+  async saveTrack(
+    track: SpotifyTrackEntity,
+    options: IConnectorSpotifyTrackRepositoryOptions = { incremental: false },
+  ): Promise<void> {
+    const { incremental } = options;
+    const trackId = incremental ? randomUUID() : track.id;
 
     try {
-      const tracks = connectorSpotifyTrackMapper.domainToDataTarget(track);
+      const trackDataTarget = connectorSpotifyTrackMapper.domainToDataTarget(track);
+      trackDataTarget.id = trackId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(spotifyTracks).values(tracks).onConflictDoNothing().execute();
+        await tx.insert(spotifyTracks).values(trackDataTarget).onConflictDoNothing().execute();
       });
 
       console.debug("Track saved successfully:", { trackId: track.id });

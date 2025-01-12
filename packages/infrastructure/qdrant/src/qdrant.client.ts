@@ -53,3 +53,10 @@ export function getQdrantClient(): QdrantClient {
   }
   return _instance;
 }
+
+/**
+ * Resets the Qdrant client instance.
+ */
+export function resetQdrantClient(): void {
+  _instance = null;
+}

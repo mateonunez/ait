@@ -1,6 +1,11 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { ETLEmbeddingsService, type IEmbeddingsService } from "@ait/langchain";
+import {
+  EmbeddingsService,
+  DEFAULT_LANGCHAIN_MODEL,
+  LANGCHAIN_VECTOR_SIZE,
+  type IEmbeddingsService,
+} from "@ait/langchain";
 
 export interface BaseVectorPoint {
   id: number;
@@ -16,8 +21,8 @@ export interface RetryOptions {
 
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
-  private readonly _batchSize = 100;
-  private readonly _vectorSize = 2048;
+  private readonly _batchSize = 1000;
+  private readonly _vectorSize = LANGCHAIN_VECTOR_SIZE;
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -28,7 +33,10 @@ export abstract class RetoveBaseETLAbstract {
       initialDelay: 1000,
       maxDelay: 5000,
     },
-    private readonly _embeddingsService: IEmbeddingsService = new ETLEmbeddingsService("gemma:2b", 2048),
+    private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService(
+      DEFAULT_LANGCHAIN_MODEL,
+      LANGCHAIN_VECTOR_SIZE,
+    ),
   ) {
     this.retryOptions = retryOptions;
   }
@@ -73,22 +81,38 @@ export abstract class RetoveBaseETLAbstract {
 
   protected async transform<T>(data: T[]): Promise<BaseVectorPoint[]> {
     const items = data as Record<string, unknown>[];
-    const points: BaseVectorPoint[] = [];
 
-    for (const [index, item] of items.entries()) {
-      const text = this.getTextForEmbedding(item);
+    const points = await Promise.all(
+      items.map(async (item, idx) => {
+        const text = this.getTextForEmbedding(item);
+        const vector = await this._embeddingsService.generateEmbeddings(text);
+        if (vector.length !== this._vectorSize) {
+          throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
+        }
 
-      const vector = await this._embeddingsService.generateEmbeddings(text);
-      if (vector.length !== this._vectorSize) {
-        throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
-      }
+        const payloadObj = {
+          ...this.getPayload(item),
+          originalText: text,
+        };
 
-      points.push({
-        id: index + 1,
-        vector,
-        payload: this.getPayload(item),
-      });
-    }
+        const content = Object.entries(payloadObj)
+          .map(([key, value]) => `${key}: ${value}`)
+          .join("\n");
+
+        console.log(`Transformed item ${idx + 1}/${items.length}:`, { text, vector, payload: payloadObj, content });
+
+        return {
+          id: idx + 1,
+          vector,
+          payload: {
+            content,
+            metadata: {
+              source: "retove",
+            },
+          },
+        } as BaseVectorPoint;
+      }),
+    );
 
     return points;
   }

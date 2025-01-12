@@ -7,7 +7,14 @@ export class TaskRegistryError extends Error {
   }
 }
 
-export class SchedulerTaskRegistry {
+export interface ISchedulerTaskRegistry {
+  register(name: string, handler: TaskHandler): void;
+  get(name: string): TaskHandler;
+  has(name: string): boolean;
+  list(): string[];
+}
+
+export class SchedulerTaskRegistry implements ISchedulerTaskRegistry {
   private static instance: SchedulerTaskRegistry;
   private readonly _tasks: Map<string, TaskHandler>;
 

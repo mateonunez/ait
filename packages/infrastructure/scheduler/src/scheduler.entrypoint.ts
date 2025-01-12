@@ -4,40 +4,93 @@ import type { IRedisConfig } from "@ait/redis";
 import { GitHubETLs, SpotifyETLs } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
 
-// Load environment variables
-dotenv.config();
-
-if (process.env.NODE_ENV === "test") {
-  dotenv.config({ path: ".env.test", override: true });
+interface JobConfig {
+  name: string;
+  options: Record<string, unknown>;
+  cronExpression: string;
 }
 
-schedulerETLTaskManager.registerTasks();
+const SCHEDULED_JOBS: JobConfig[] = [
+  {
+    name: GitHubETLs.repository,
+    options: { limit: 10 },
+    cronExpression: "0 */12 * * *", // Every 12 hours
+  },
+  {
+    name: SpotifyETLs.track,
+    options: { limit: 10 },
+    cronExpression: "0 * * * *", // Every hour
+  },
+];
+
+class SchedulerEntrypoint {
+  private scheduler: Scheduler;
+
+  constructor(redisConfig: IRedisConfig) {
+    this.scheduler = new Scheduler({
+      queueName: "etl-scheduler",
+      redisConfig,
+    });
+  }
+
+  async scheduleJobs(): Promise<void> {
+    const defaultCronExpression = "0 0 * * *"; // Daily at midnight
+
+    await Promise.all(
+      SCHEDULED_JOBS.map((job) =>
+        this.scheduler.scheduleJob(job.name, job.options, job.cronExpression || defaultCronExpression),
+      ),
+    );
+  }
+
+  async runJobsManually(): Promise<void> {
+    await Promise.all(SCHEDULED_JOBS.map((job) => this.scheduler.addJob(job.name, job.options)));
+  }
+
+  async start(): Promise<void> {
+    await this.scheduler.start();
+    console.info("🚀 ETL Scheduler started successfully");
+  }
+
+  async stop(): Promise<void> {
+    await this.scheduler.stop();
+    console.info("👋 ETL Scheduler stopped successfully");
+  }
+}
 
 async function main() {
   try {
+    dotenv.config();
+    if (process.env.NODE_ENV === "test") {
+      dotenv.config({ path: ".env.test", override: true });
+    }
+
+    schedulerETLTaskManager.registerTasks();
+
     const redisConfig: IRedisConfig = {
       url: process.env.REDIS_URL || "redis://localhost:6379",
       maxRetriesPerRequest: null,
     };
 
-    const etlScheduler = new Scheduler({
-      queueName: "etl-scheduler",
-      redisConfig,
-    });
+    const schedulerEntrypoint = new SchedulerEntrypoint(redisConfig);
 
-    await Promise.all([
-      etlScheduler.scheduleJob(GitHubETLs.repository, { limit: 10 }, "*/5 * * * *"),
-      etlScheduler.scheduleJob(SpotifyETLs.track, { limit: 10 }, "*/5 * * * *"),
-    ]);
+    // Handle command line arguments
+    const args = process.argv.slice(2);
+    const isManualRun = args.includes("--manual");
 
-    // Start the scheduler
-    await etlScheduler.start();
-    console.info("🚀 ETL Scheduler started successfully");
+    if (isManualRun) {
+      await schedulerEntrypoint.runJobsManually();
+      process.exit(0);
+    }
+
+    // Schedule and start regular jobs
+    await schedulerEntrypoint.scheduleJobs();
+    await schedulerEntrypoint.start();
 
     // Handle graceful shutdown
     const shutdown = async (signal: string) => {
       console.info(`📥 Received ${signal}. Shutting down...`);
-      await etlScheduler.stop();
+      await schedulerEntrypoint.stop();
       process.exit(0);
     };
 
@@ -49,5 +102,9 @@ async function main() {
   }
 }
 
-// Start the application
-main();
+// Allow both manual and scheduled execution
+if (require.main === module) {
+  main();
+}
+
+export { SchedulerEntrypoint };

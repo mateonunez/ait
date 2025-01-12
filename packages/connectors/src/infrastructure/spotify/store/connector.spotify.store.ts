@@ -16,7 +16,7 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     for (const item of items) {
       switch (item.type) {
         case "track":
-          await this._connectorSpotifyRepository.track.saveTrack(item);
+          await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: true });
           break;
         default:
           throw new Error(`Type ${item.type} is not supported`);

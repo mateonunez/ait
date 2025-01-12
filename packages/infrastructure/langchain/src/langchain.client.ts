@@ -1,13 +1,13 @@
 import dotenv from "dotenv";
-import { OllamaEmbeddings } from "@langchain/ollama";
+import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 
-// 1. Load environment variables.
+// 1. Load environment variables
 dotenv.config();
 
 /**
  * Default model name, e.g., "gemma:2b".
  */
-export const LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "gemma:2b";
+export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "gemma:2b";
 
 /**
  * Default vector size for embeddings.
@@ -37,6 +37,7 @@ export interface ILangChainConfig {
    * Whether to enable logging or not.
    */
   logger?: boolean;
+
   /**
    * Base URL for the Ollama server.
    */
@@ -45,22 +46,34 @@ export interface ILangChainConfig {
 
 /**
  * Builds and returns a reusable LangChain client with various helpers.
- * You could extend this to include chat models, text splitters, PDF loaders, etc.
  */
 function buildLangChainClient(config: ILangChainConfig) {
-  // Example method that returns an Ollama embeddings instance
-  // configured with the default model (or an override).
+  // Function to create embeddings
   function createEmbeddings(modelOverride?: string): OllamaEmbeddings {
     const modelToUse = modelOverride || config.model;
     if (config.logger) {
       console.log(`[LangChainClient] Creating embeddings with model: ${modelToUse}`);
     }
-    return new OllamaEmbeddings({ model: modelToUse, baseUrl: OLLAMA_BASE_URL });
+    return new OllamaEmbeddings({ model: modelToUse, baseUrl: config.baseUrl ?? OLLAMA_BASE_URL });
+  }
+
+  // Function to create the LLM
+  function createLLM(modelOverride?: string, temperature = 0.7): Ollama {
+    const modelToUse = modelOverride || config.model;
+    if (config.logger) {
+      console.log(`[LangChainClient] Creating LLM with model: ${modelToUse}`);
+    }
+    return new Ollama({
+      model: modelToUse,
+      baseUrl: config.baseUrl ?? OLLAMA_BASE_URL,
+      temperature,
+    });
   }
 
   return {
     config,
     createEmbeddings,
+    createLLM,
   };
 }
 
@@ -68,10 +81,10 @@ function buildLangChainClient(config: ILangChainConfig) {
 let _instance: ReturnType<typeof buildLangChainClient> | null = null;
 
 /**
- * Default config derived from environment vars or set to safe defaults.
+ * Default config derived from environment or safe defaults.
  */
 let _config: ILangChainConfig = {
-  model: LANGCHAIN_MODEL,
+  model: DEFAULT_LANGCHAIN_MODEL,
   expectedVectorSize: LANGCHAIN_VECTOR_SIZE,
   logger: true,
   baseUrl: OLLAMA_BASE_URL,
@@ -92,4 +105,11 @@ export function getLangChainClient() {
     _instance = buildLangChainClient(_config);
   }
   return _instance;
+}
+
+/**
+ * Resets the singleton instance, e.g., for testing purposes.
+ */
+export function resetLangChainClientInstance() {
+  _instance = null;
 }
