@@ -179,20 +179,12 @@ export class TextGenerationService implements ITextGenerationService {
       return "";
     }
 
-    // Format documents with metadata
+    // Format documents
     return validDocs
       .map((doc, index) => {
-        const metadata = doc.metadata
-          ? Object.entries(doc.metadata)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join("\n  ")
-          : "No metadata";
-
         return [
           `📄 Document ${index + 1}`,
           "-------------------",
-          "Metadata:",
-          `  ${metadata}`,
           "",
           "Content:",
           doc.pageContent.trim(),
