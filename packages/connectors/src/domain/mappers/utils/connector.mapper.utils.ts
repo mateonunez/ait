@@ -1,4 +1,4 @@
-import type { ConnectorLevels } from "../connector.mapper.interface";
+import type { ConnectorLevels } from "../connector.mapper";
 
 interface PassThroughLevelOptions<T> {
   fallback?: T;

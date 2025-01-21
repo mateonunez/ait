@@ -9,7 +9,7 @@ docker exec -it ait_ollama sh
 **Install the model**:
 
 ```bash
-ollama pull gemma:2b
+ollama pull llama3.1:8b
 ```
 
 ### License

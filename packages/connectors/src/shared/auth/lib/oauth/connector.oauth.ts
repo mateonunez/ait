@@ -1,6 +1,4 @@
 import { request } from "undici";
-import type { IConnectorOAuth, IConnectorOAuthConfig, IConnectorOAuthTokenResponse } from "./connector.oauth.interface";
-import { ConnectorOAuthJsonParseError, ConnectorOAuthRequestError } from "./connector.oauth.errors";
 
 export class ConnectorOAuth implements IConnectorOAuth {
   public readonly config: IConnectorOAuthConfig;
@@ -68,4 +66,50 @@ export class ConnectorOAuth implements IConnectorOAuth {
 
     return parsedBody as T;
   }
+}
+
+export class ConnectorOAuthRequestError extends Error {
+  public statusCode: number;
+  public responseBody: string;
+
+  constructor(statusCode: number, message: string, responseBody: string) {
+    super(message);
+    this.name = "ConnectorOAuthRequestError";
+    this.statusCode = statusCode;
+    this.responseBody = responseBody;
+    Object.setPrototypeOf(this, ConnectorOAuthRequestError.prototype);
+  }
+}
+
+export class ConnectorOAuthJsonParseError extends Error {
+  public responseBody: string;
+
+  constructor(message: string, responseBody: string) {
+    super(message);
+    this.name = "ConnectorOAuthJsonParseError";
+    this.responseBody = responseBody;
+    Object.setPrototypeOf(this, ConnectorOAuthJsonParseError.prototype);
+  }
+}
+export interface IConnectorOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+  endpoint: string;
+  redirectUri?: string;
+}
+
+export interface IConnectorOAuthTokenResponse {
+  access_token: string;
+  token_type?: string;
+  expires_in?: number;
+  refresh_token?: string;
+  scope?: string;
+  [key: string]: unknown;
+}
+
+export interface IConnectorOAuth {
+  getAccessToken(code: string): Promise<IConnectorOAuthTokenResponse>;
+  refreshAccessToken(refreshToken: string): Promise<IConnectorOAuthTokenResponse>;
+  revokeAccessToken(accessToken: string): Promise<void>;
+  readonly config: IConnectorOAuthConfig;
 }

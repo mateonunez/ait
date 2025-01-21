@@ -4,11 +4,11 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
 
 ## Overview
 
-> Wait for it.
+> Thinking... 🤔
 
 ### Key Features
 
-- **Smart Connectors**:
+- **Connectors**:
   - GitHub integration for repository analysis
   - Spotify integration for music insights
   - OAuth 2.0 secure authentication
@@ -110,7 +110,7 @@ The E2E tests will:
 - Connect to your Qdrant collections (_github_repositories_collection_ and _spotify_tracks_collection_)
 - Generate embeddings for test prompts
 - Perform similarity searches
-- Generate responses using Ollama (gemma:2b)
+- Generate responses using Ollama (llama3.1:8b)
 
 ### 🌐 Connectors
 
@@ -157,7 +157,7 @@ docker exec -it ait_ollama sh
 3. Install the model:
 
 ```bash
-ollama pull gemma:2b
+ollama pull llama3.1:8b
 ```
 
 ### 🛠️ Development

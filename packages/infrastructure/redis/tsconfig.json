@@ -22,6 +22,10 @@
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": false,
     "incremental": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src/**/*"],

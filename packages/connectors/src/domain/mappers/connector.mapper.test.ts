@@ -1,37 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { ConnectorMapper } from "./connector.mapper";
-import type { ConnectorMapperDefinition } from "./connector.mapper.interface";
-import { connectorMapperPassThrough } from "./utils/connector.mapper.utils";
-
-interface ExternalEntity {
-  id: string;
-  name: string;
-  externalField: string;
-}
-
-interface DomainEntity {
-  id: string;
-  name: string;
-  domainField: string;
-}
-
-interface DataTargetEntity {
-  id: string;
-  name: string;
-  dataTargetField: string;
-}
-
-const mapperConfig: ConnectorMapperDefinition<ExternalEntity, DomainEntity, DataTargetEntity> = {
-  id: connectorMapperPassThrough<"id", string>("id"),
-  name: connectorMapperPassThrough<"name", string>("name"),
-
-  domainField: {
-    external: (ext) => ext.externalField,
-    domain: (dom) => dom.domainField,
-    dataTarget: (dt) => dt.dataTargetField,
-  },
-};
+import { ConnectorMapper, mapperConfig } from "./connector.mapper";
+import type { DataTargetEntity, DomainEntity, ExternalEntity } from "./connector.mapper";
 
 describe("ConnectorMapper", () => {
   const domainDefaults: Partial<DomainEntity> = {

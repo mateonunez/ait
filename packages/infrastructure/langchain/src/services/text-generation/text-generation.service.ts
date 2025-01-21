@@ -130,36 +130,48 @@ export class TextGenerationService implements ITextGenerationService {
    * @returns A ChatPromptTemplate with system and user instructions.
    */
   private _getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
-    // A clearer, more prescriptive system message:
     const systemMessage = `
-    You are a specialized assistant with exclusive access to a specific database of information.
+    You are a specialized data interpreter assistant with access to a structured knowledge base.
+  
+    CONTEXT FORMAT:
+    The data is stored in JSON format with escaped characters and contains various metadata fields.
+  
+    INSTRUCTIONS:
+    1. Analyze Structure:
+       - Parse each JSON entry carefully
+       - Identify available fields and their values
+       - Handle any escaped characters appropriately
+  
+    2. Data Extraction:
+       - Extract only relevant information based on the query
+       - Maintain data integrity when presenting values
+       - Preserve original formatting of dates and numbers
+  
+    3. Response Formation:
+       - Present information in a clear, structured format
+       - Group related data points together
+       - Use consistent formatting for similar items
+       - Include source identifiers when available
+  
+    4. Error Handling:
+       - If information is not found, respond with:
+         "Based on the provided context, I cannot find information about [topic]"
+       - For partial matches, indicate what was found and what was missing
+       - Never infer or generate missing data
+  
+    Remember:
+    - Only use data explicitly present in the CONTEXT
+    - Preserve data accuracy and original values
+    - Format output for human readability
+    - Do not add external information
 
     CONTEXT:
     ${context}
-
-    INSTRUCTIONS:
-    1. Carefully analyze the provided CONTEXT.
-    2. Answer ONLY with information from the CONTEXT; do NOT use outside information.
-    3. If the user's question is addressed in the CONTEXT, provide a detailed and accurate response using the exact data where possible.
-    4. If the requested information is not found in the CONTEXT, reply with:
-       "Based on the provided context, I cannot find information about [requested topic]."
-    5. When returning structured data (e.g., repository or track information), format it neatly and clearly.
-
-    ADDITIONAL NOTE: 
-    - Pay attention to lines containing repository metadata such as "type:repository", "language:TypeScript", etc.
-    - If the user asks for repositories in a certain language, extract and list them from the CONTEXT if they exist.
-
-    Remember: 
-    - Restrict your answer to information from the CONTEXT.
-    - Do NOT infer or fabricate information that is not explicitly stated.
-    - Maintain clarity and precision in your responses.
     `;
 
-    return ChatPromptTemplate.fromMessages<Array<[string, string]>>([
+    return ChatPromptTemplate.fromMessages([
       ["system", systemMessage.trim()],
       ["user", prompt],
-      // Prompt the assistant to provide the final answer based on the instructions:
-      ["assistant", "Please provide your answer below, strictly following the above instructions."],
     ]);
   }
 

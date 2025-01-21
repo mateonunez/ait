@@ -1,2 +1,2 @@
-export * from "./github/internal.github.queries";
-export * from "./spotify/internal.spotify.queries";
+export * from "./vendors/pg.github.queries";
+export * from "./vendors/pg.spotify.queries";

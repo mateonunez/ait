@@ -1,4 +1,4 @@
-import type { ConnectorLevels, ConnectorMapperDefinition, IConnectorMapper } from "./connector.mapper.interface";
+import { connectorMapperPassThrough } from "./utils/connector.mapper.utils";
 
 export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
   implements IConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
@@ -60,3 +60,41 @@ export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
     return sourceField;
   }
 }
+
+export interface ConnectorMapperDefinition<ExternalEntity, DomainEntity, DataTargetEntity> {
+  [key: string]: {
+    [level in ConnectorLevels]: (entity: any) => any;
+  };
+}
+
+export interface IConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity> {
+  externalToDomain(external: ExternalEntity): DomainEntity;
+  domainToDataTarget(domain: DomainEntity): DataTargetEntity;
+  dataTargetToDomain(dataTarget: DataTargetEntity): DomainEntity;
+}
+export type ConnectorLevels = "external" | "domain" | "dataTarget";
+export interface ExternalEntity {
+  id: string;
+  name: string;
+  externalField: string;
+}
+export interface DomainEntity {
+  id: string;
+  name: string;
+  domainField: string;
+}
+export interface DataTargetEntity {
+  id: string;
+  name: string;
+  dataTargetField: string;
+}
+export const mapperConfig: ConnectorMapperDefinition<ExternalEntity, DomainEntity, DataTargetEntity> = {
+  id: connectorMapperPassThrough<"id", string>("id"),
+  name: connectorMapperPassThrough<"name", string>("name"),
+
+  domainField: {
+    external: (ext) => ext.externalField,
+    domain: (dom) => dom.domainField,
+    dataTarget: (dt) => dt.dataTargetField,
+  },
+};

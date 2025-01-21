@@ -1,6 +1,6 @@
 import type { qdrant } from "@ait/qdrant";
-import { RetoveSpotifyTrackETL } from "../../etl/spotify/retove.spotify.track.etl";
-import { RetoveGitHubRepositoryETL } from "../../etl/github/retove.github.repository.etl";
+import { RetoveSpotifyTrackETL } from "../../etl/vendors/retove.spotify.track.etl";
+import { RetoveGitHubRepositoryETL } from "../../etl/vendors/retove.github.repository.etl";
 import type { getPostgresClient } from "@ait/postgres";
 
 // Refactor this as soon as possible
