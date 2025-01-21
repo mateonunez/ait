@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { MockAgent, setGlobalDispatcher } from "undici";
 import { ConnectorAuthenticatorAbstract } from "./connector.authenticator.abstract";
 import { ConnectorOAuth } from "./lib/oauth/connector.oauth";
-import type { IConnectorOAuth, IConnectorOAuthConfig } from "./lib/oauth/connector.oauth.interface";
+import type { IConnectorOAuth, IConnectorOAuthConfig } from "./lib/oauth/connector.oauth";
 import { beforeEach, describe, it } from "node:test";
 
 class ConnectorAuthenticatorConcrete extends ConnectorAuthenticatorAbstract {}

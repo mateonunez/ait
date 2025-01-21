@@ -5,14 +5,14 @@ import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 dotenv.config();
 
 /**
- * Default model name, e.g., "gemma:2b".
+ * Default model name, e.g., "llama3.1:8b".
  */
-export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "gemma:2b";
+export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "llama3.1:8b";
 
 /**
  * Default vector size for embeddings.
  */
-export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "2048");
+export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "4096");
 
 /**
  * Default base URL for the Ollama server.
@@ -24,7 +24,7 @@ export const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:
  */
 export interface ILangChainConfig {
   /**
-   * Default model name, e.g., "gemma:2b".
+   * Default model name, e.g., "llama3.1:8b".
    */
   model: string;
 
@@ -48,7 +48,6 @@ export interface ILangChainConfig {
  * Builds and returns a reusable LangChain client with various helpers.
  */
 function buildLangChainClient(config: ILangChainConfig) {
-  // Function to create embeddings
   function createEmbeddings(modelOverride?: string): OllamaEmbeddings {
     const modelToUse = modelOverride || config.model;
     if (config.logger) {
@@ -57,7 +56,6 @@ function buildLangChainClient(config: ILangChainConfig) {
     return new OllamaEmbeddings({ model: modelToUse, baseUrl: config.baseUrl ?? OLLAMA_BASE_URL });
   }
 
-  // Function to create the LLM
   function createLLM(modelOverride?: string, temperature = 0.7): Ollama {
     const modelToUse = modelOverride || config.model;
     if (config.logger) {

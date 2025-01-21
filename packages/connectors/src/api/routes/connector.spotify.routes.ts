@@ -1,5 +1,11 @@
+import { ConnectorSpotifyService } from "@/services/vendors/connector.spotify.service";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { ConnectorSpotifyService } from "../../services/spotify/connector.spotify.service";
+
+declare module "fastify" {
+  interface FastifyInstance {
+    spotifyService: ConnectorSpotifyService;
+  }
+}
 
 interface AuthCallbackQuery {
   code: string;
@@ -8,7 +14,10 @@ interface AuthCallbackQuery {
 const defaultProvider = "spotify";
 
 export default async function githubRoutes(fastify: FastifyInstance) {
-  const spotifyService = new ConnectorSpotifyService();
+  const spotifyService = fastify.spotifyService;
+  if (!spotifyService) {
+    fastify.decorate("spotifyService", new ConnectorSpotifyService());
+  }
 
   fastify.get(
     "/auth/callback",

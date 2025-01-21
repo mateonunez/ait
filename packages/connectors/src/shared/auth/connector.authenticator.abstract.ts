@@ -1,5 +1,10 @@
-import type { IConnectorAuthenticator } from "./connector.authenticator.interface";
-import type { IConnectorOAuth, IConnectorOAuthTokenResponse } from "./lib/oauth/connector.oauth.interface";
+import type { IConnectorOAuth, IConnectorOAuthTokenResponse } from "./lib/oauth/connector.oauth";
+
+export interface IConnectorAuthenticator {
+  authenticate(code: string): Promise<IConnectorOAuthTokenResponse>;
+  refreshToken(refreshToken: string): Promise<IConnectorOAuthTokenResponse>;
+  revoke(refreshToken: string): Promise<void>;
+}
 
 export abstract class ConnectorAuthenticatorAbstract implements IConnectorAuthenticator {
   protected oauth: IConnectorOAuth;
