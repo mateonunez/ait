@@ -1,13 +1,22 @@
 import type { SpotifyTrackEntity } from "@/domain/entities/vendors/connector.spotify.repository";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
-import { connectorSpotifyTrackMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
 import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
 import { connectorConfigs } from "../connector.service.config";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { connectorEntityConfigs } from "./entities/connector.entity.config";
 
-export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyTrackEntity> {
+export interface SpotifyServiceEntityMap {
+  track: SpotifyTrackEntity;
+}
+
+export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
   constructor() {
     super(connectorConfigs.spotify!);
+
+    this.registerEntityConfig("track", {
+      fetcher: () => connectorEntityConfigs.spotify.track.fetcher(this._connector),
+      mapper: connectorEntityConfigs.spotify.track.mapper,
+    });
   }
 
   protected createConnector(oauth: ConnectorOAuth): ConnectorSpotify {
@@ -15,9 +24,6 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
   }
 
   async getTracks(): Promise<SpotifyTrackEntity[]> {
-    return this.fetchEntities(
-      () => this._connector.dataSource?.fetchTopTracks() || Promise.resolve([]),
-      (track) => connectorSpotifyTrackMapper.externalToDomain(track),
-    );
+    return this.fetchEntities("track");
   }
 }

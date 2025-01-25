@@ -29,7 +29,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await spotifyService.authenticate(code);
+        await spotifyService.connector.authenticator.authenticate(code);
 
         const tracks = await spotifyService.getTracks();
         await spotifyService.connector.store.save(tracks);
