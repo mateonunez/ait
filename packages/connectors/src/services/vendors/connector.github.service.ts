@@ -1,49 +1,23 @@
 import type { GitHubRepositoryEntity } from "@/domain/entities/vendors/connector.github.repository";
-import type { IConnectorService } from "@/services/connector.service.interface";
+import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { connectorGithubMapper } from "@/domain/mappers/vendors/connector.github.mapper";
 import { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
-import { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
-import dotenv from "dotenv";
+import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { connectorConfigs } from "../connector.service.config";
 
-dotenv.config();
-
-export class ConnectorGitHubService implements IConnectorService<ConnectorGitHub>, IConnectorGitHubService {
-  private _connector: ConnectorGitHub;
-
+export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub, GitHubRepositoryEntity> {
   constructor() {
-    const oauth = new ConnectorOAuth({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-      endpoint: process.env.GITHUB_ENDPOINT!,
-      redirectUri: process.env.GITHUB_REDIRECT_URI!,
-    });
-
-    this._connector = new ConnectorGitHub(oauth);
+    super(connectorConfigs.github!);
   }
 
-  async authenticate(code: string): Promise<void> {
-    await this._connector.connect(code);
+  protected createConnector(oauth: ConnectorOAuth): ConnectorGitHub {
+    return new ConnectorGitHub(oauth);
   }
 
   async getRepositories(): Promise<GitHubRepositoryEntity[]> {
-    await this._connector.connect(); // <- Required, always.
-
-    const repositories = await this._connector.dataSource?.fetchRepositories();
-    if (!repositories?.length) {
-      return [];
-    }
-
-    return repositories.map((repository) => connectorGithubMapper.externalToDomain(repository));
+    return this.fetchEntities(
+      () => this._connector.dataSource?.fetchRepositories() || Promise.resolve([]),
+      (repository) => connectorGithubMapper.externalToDomain(repository),
+    );
   }
-
-  get connector(): ConnectorGitHub {
-    return this._connector;
-  }
-
-  set connector(connector: ConnectorGitHub) {
-    this._connector = connector;
-  }
-}
-export interface IConnectorGitHubService {
-  getRepositories(): Promise<GitHubRepositoryEntity[]>;
 }

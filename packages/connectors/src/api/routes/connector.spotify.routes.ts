@@ -1,4 +1,5 @@
-import { ConnectorSpotifyService } from "@/services/vendors/connector.spotify.service";
+import { connectorServiceFactory } from "@/services/connector.service.factory";
+import type { ConnectorSpotifyService } from "@/services/vendors/connector.spotify.service";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -11,12 +12,12 @@ interface AuthCallbackQuery {
   code: string;
 }
 
-const defaultProvider = "spotify";
+const connectorType = "spotify";
 
 export default async function githubRoutes(fastify: FastifyInstance) {
   const spotifyService = fastify.spotifyService;
   if (!spotifyService) {
-    fastify.decorate("spotifyService", new ConnectorSpotifyService());
+    fastify.decorate("spotifyService", connectorServiceFactory.getService<ConnectorSpotifyService>(connectorType));
   }
 
   fastify.get(
