@@ -47,7 +47,7 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
       console.debug("Saving repositories to GitHub repository:", { repos });
 
       for (const repo of repos) {
-        await this.saveRepository(repo, { incremental: true });
+        await this.saveRepository(repo);
       }
 
       console.debug("Repositories saved successfully:", { repos });

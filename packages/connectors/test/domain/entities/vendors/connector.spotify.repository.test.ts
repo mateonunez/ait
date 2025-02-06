@@ -34,7 +34,7 @@ describe("ConnectorSpotifyRepository", () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           type: "track",
-        };
+        } as SpotifyTrackEntity;
 
         await trackRepository.saveTrack(track);
 
@@ -57,6 +57,7 @@ describe("ConnectorSpotifyRepository", () => {
         const now = new Date();
         const tracks: SpotifyTrackEntity[] = [
           {
+            id: "track-1",
             name: "Track 1",
             type: "track",
             artist: "Artist 1",
@@ -67,6 +68,7 @@ describe("ConnectorSpotifyRepository", () => {
             updatedAt: now,
           },
           {
+            id: "track-2",
             name: "Track 2",
             type: "track",
             artist: "Artist 2",
@@ -76,12 +78,11 @@ describe("ConnectorSpotifyRepository", () => {
             createdAt: now,
             updatedAt: now,
           },
-        ] as unknown as SpotifyTrackEntity[];
+        ] as SpotifyTrackEntity[];
 
         await trackRepository.saveTracks(tracks);
 
         const saved = await db.select().from(spotifyTracks).execute();
-        console.log("papaya", saved);
         assert.equal(saved.length, 2, "Expected two tracks to be saved");
       });
 
@@ -102,13 +103,14 @@ describe("ConnectorSpotifyRepository", () => {
       it("should save artist successfully", async () => {
         const now = new Date();
         const artist: SpotifyArtistEntity = {
+          id: "test-id",
           name: "Artist One",
           popularity: 70,
           genres: ["Pop", "Rock"],
           createdAt: now,
           updatedAt: now,
           type: "artist",
-        } as unknown as SpotifyArtistEntity;
+        } as SpotifyArtistEntity;
 
         await artistRepository.saveArtist(artist);
 
@@ -136,6 +138,7 @@ describe("ConnectorSpotifyRepository", () => {
         const now = new Date();
         const artists: SpotifyArtistEntity[] = [
           {
+            id: "artist-1",
             name: "Artist One",
             popularity: 70,
             genres: ["Pop", "Rock"],
@@ -144,6 +147,7 @@ describe("ConnectorSpotifyRepository", () => {
             type: "artist",
           },
           {
+            id: "artist-2",
             name: "Artist Two",
             popularity: 80,
             genres: ["Hip Hop"],
@@ -151,11 +155,10 @@ describe("ConnectorSpotifyRepository", () => {
             updatedAt: now,
             type: "artist",
           },
-        ] as unknown as SpotifyArtistEntity[];
+        ] as SpotifyArtistEntity[];
 
         await artistRepository.saveArtists(artists);
         const saved = await db.select().from(spotifyArtists).execute();
-        console.log("papaya", saved);
         assert.equal(saved.length, 2, "Expected two artists to be saved");
       });
 

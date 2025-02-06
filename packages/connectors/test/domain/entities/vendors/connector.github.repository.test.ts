@@ -21,6 +21,7 @@ describe("ConnectorGitHubRepository", () => {
     describe("saveRepository", () => {
       it("should save repository successfully", async () => {
         const repo: GitHubRepositoryEntity = {
+          id: "test-id",
           name: "Test Repository",
           description: "Test Description",
           stars: 100,
@@ -30,7 +31,7 @@ describe("ConnectorGitHubRepository", () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           type: "repository",
-        } as unknown as GitHubRepositoryEntity;
+        } as GitHubRepositoryEntity;
 
         await repoRepository.saveRepository(repo);
 
@@ -57,6 +58,7 @@ describe("ConnectorGitHubRepository", () => {
       it("should save multiple repositories", async () => {
         const repos: GitHubRepositoryEntity[] = [
           {
+            id: "repo-1",
             name: "Repository 1",
             description: "Description 1",
             stars: 100,
@@ -68,6 +70,7 @@ describe("ConnectorGitHubRepository", () => {
             type: "repository",
           },
           {
+            id: "repo-2",
             name: "Repository 2",
             description: "Description 2",
             stars: 200,
@@ -78,7 +81,7 @@ describe("ConnectorGitHubRepository", () => {
             updatedAt: new Date().toISOString(),
             type: "repository",
           },
-        ] as unknown as GitHubRepositoryEntity[];
+        ] as GitHubRepositoryEntity[];
 
         await repoRepository.saveRepositories(repos);
 
