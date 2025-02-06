@@ -1,9 +1,9 @@
-import type { GitHubRepositoryEntity } from "@/domain/entities/vendors/connector.github.repository";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { connectorConfigs } from "../connector.service.config";
 import { connectorEntityConfigs } from "./entities/connector.entity.config";
+import type { GitHubRepositoryEntity } from "@/types/domain/entities/vendors/connector.github.repository.types";
 
 export interface GitHubServiceEntityMap {
   repository: GitHubRepositoryEntity;

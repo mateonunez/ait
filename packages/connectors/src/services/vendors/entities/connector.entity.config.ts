@@ -1,9 +1,15 @@
 import { connectorGithubMapper } from "@/domain/mappers/vendors/connector.github.mapper";
 import { connectorSpotifyTrackMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
 import type { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
-import type { GitHubRepository, GitHubRepositoryEntity } from "@/domain/entities/vendors/connector.github.repository";
 import type { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
-import type { SpotifyTrack, SpotifyTrackEntity } from "@/domain/entities/vendors/connector.spotify.repository";
+import type {
+  GitHubRepository,
+  GitHubRepositoryEntity,
+} from "@/types/domain/entities/vendors/connector.github.repository.types";
+import type {
+  SpotifyTrack,
+  SpotifyTrackEntity,
+} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 
 export interface ConnectorEntityMap {
   github: {

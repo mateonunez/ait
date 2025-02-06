@@ -1,6 +1,9 @@
-import type { GitHubEntity, IConnectorGitHubRepository } from "@/domain/entities/vendors/connector.github.repository";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "@/shared/store/connector.store.interface";
+import type { IConnectorStore } from "@/types/shared/store/connector.store.interface";
+import type {
+  GitHubEntity,
+  IConnectorGitHubRepository,
+} from "@/types/domain/entities/vendors/connector.github.repository.types";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 
 export class ConnectorGitHubStore implements IConnectorStore {

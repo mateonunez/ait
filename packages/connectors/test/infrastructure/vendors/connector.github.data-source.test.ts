@@ -1,8 +1,10 @@
+import {
+  ConnectorGitHubDataSource,
+  type ConnectorGitHubFetchRepositoriesResponse,
+} from "@/infrastructure/vendors/github/connector.github.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
-import { ConnectorGitHubDataSource } from "./connector.github.data-source";
-import type { ConnectorGitHubFetchRepositoriesResponse } from "./connector.github.data-source";
 
 describe("ConnectorGitHubDataSource", () => {
   let agent: MockAgent;

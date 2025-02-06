@@ -1,6 +1,6 @@
 import { fetch } from "undici";
 import dotenv from "dotenv";
-import type { SpotifyTrack } from "@/domain/entities/vendors/connector.spotify.repository";
+import type { SpotifyTrack } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 
 dotenv.config();
 

@@ -1,8 +1,10 @@
+import {
+  ConnectorSpotifyDataSource,
+  ConnectorSpotifyDataSourceError,
+} from "@/infrastructure/vendors/spotify/connector.spotify.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
-import { ConnectorSpotifyDataSource } from "./connector.spotify.data-source";
-import { ConnectorSpotifyDataSourceError } from "./connector.spotify.data-source";
 
 describe("ConnectorSpotifyDataSource", () => {
   let agent: MockAgent;

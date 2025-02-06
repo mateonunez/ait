@@ -1,5 +1,5 @@
 import type { IConnectorOAuthConfig } from "@/shared/auth/lib/oauth/connector.oauth";
-import type { ConnectorType } from "./connector.service.factory";
+import type { ConnectorType } from "@/types/infrastructure/connector.interface";
 
 const CONFIG_SUFFIXES = ["CLIENT_ID", "CLIENT_SECRET", "ENDPOINT", "REDIRECT_URI"] as const;
 
@@ -32,6 +32,6 @@ function createConnectorConfigs<T extends string>(services: T[]): Record<T, ICon
   );
 }
 
-const connectors: Array<ConnectorType> = ["github", "spotify"];
+const connectors: ConnectorType[] = ["github", "spotify"];
 export const connectorConfigs = createConnectorConfigs(connectors);
 export type ValidConnectorConfig = keyof typeof connectorConfigs;

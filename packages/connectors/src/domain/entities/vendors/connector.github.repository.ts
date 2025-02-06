@@ -3,97 +3,12 @@ import { connectorGithubMapper } from "../../mappers/vendors/connector.github.ma
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
 import { saveOAuthData, getOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
 import { randomUUID } from "node:crypto";
-import type { IConnectorRepository } from "../connector.repository.interface";
-
-/**
- * Options for saving a repository
- */
-export interface IConnectorGitHubRepositoryRepositoryOptions {
-  incremental: boolean;
-}
-
-/**
- * Repository interface for GitHub repositories
- */
-export interface IConnectorGitHubRepositoryRepository {
-  saveRepository(
-    repository: Partial<GitHubRepositoryEntity>,
-    options?: IConnectorGitHubRepositoryRepositoryOptions,
-  ): Promise<void>;
-  saveRepositories(repositories: Partial<GitHubRepositoryEntity>[]): Promise<void>;
-  getRepository(id: string): Promise<GitHubRepositoryEntity | null>;
-  getRepositories(): Promise<GitHubRepositoryEntity[]>;
-}
-
-/**
- * Union of all GitHub repositories
- */
-export interface IConnectorGitHubRepository extends IConnectorRepository {
-  repo: IConnectorGitHubRepositoryRepository;
-}
-
-/**
- * Base interface for all GitHub entities
- */
-export interface BaseGitHubEntity {
-  type: "repository" | "issue" | "pullRequest";
-}
-
-/**
- * EXTERNAL
- */
-export interface GitHubRepository extends BaseGitHubEntity {
-  id: number;
-  name: string;
-  full_name: string;
-  private: boolean;
-  description: string | null;
-  fork: boolean;
-  url: string;
-  homepage: string | null;
-  language: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  watchers_count: number;
-
-  [key: string]: any;
-}
-
-/**
- * EXTERNAL
- * Represents the raw data from GitHub
- */
-export interface GitHubRepositoryExternal extends GitHubRepository, BaseGitHubEntity {
-  type: "repository";
-}
-
-/**
- * DOMAIN
- * Represents a simplified domain entity
- */
-export interface GitHubRepositoryEntity extends BaseGitHubEntity {
-  id: string;
-  name: string;
-  description: string | null;
-  stars: number;
-  forks: number;
-  language: string | null;
-  url: string;
-  createdAt: string | null;
-  updatedAt: string | null;
-  type: "repository";
-}
-
-/**
- * Union type for any GitHub domain entity
- */
-export type GitHubEntity = GitHubRepositoryEntity;
-
-/**
- * Union type for any GitHub external data representation
- */
-
-export type GitHubData = GitHubRepositoryExternal;
+import type {
+  IConnectorGitHubRepositoryRepository,
+  GitHubRepositoryEntity,
+  IConnectorGitHubRepositoryRepositoryOptions,
+  IConnectorGitHubRepository,
+} from "@/types/domain/entities/vendors/connector.github.repository.types";
 
 // I'm so sorry for the name of this class
 export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepositoryRepository {
@@ -107,7 +22,9 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     const repositoryId = incremental ? randomUUID() : repository.id;
 
     try {
+      console.debug("Before mapping repository to data target:", repository);
       const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
+      console.debug("After mapping repository to data target:", repositoryData);
       repositoryData.id = repositoryId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -127,7 +44,14 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     }
 
     try {
-      await Promise.all(repos.map((repository) => this.saveRepository(repository)));
+      console.log("Saving repositories to GitHub repository:", repos);
+      const repositoriesData = repos.map((repo) => connectorGithubMapper.domainToDataTarget(repo));
+
+      await this._pgClient.db.transaction(async (tx) => {
+        await tx.insert(githubRepositories).values(repositoriesData).onConflictDoNothing().execute();
+      });
+
+      console.debug("Repositories saved successfully:", { repos });
     } catch (error) {
       console.error("Error saving repositories:", error);
       throw new Error("Failed to save repositories to repository");

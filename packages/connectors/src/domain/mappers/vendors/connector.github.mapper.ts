@@ -1,8 +1,11 @@
-import type { GitHubRepository, GitHubRepositoryEntity } from "../../entities/vendors/connector.github.repository";
 import type { GitHubRepositoryDataTarget } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import type { ConnectorMapperDefinition } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
+import type {
+  GitHubRepository,
+  GitHubRepositoryEntity,
+} from "@/types/domain/entities/vendors/connector.github.repository.types";
 
 /**
  * Represents the mapping between the GitHub repository entity and the GitHub repository data target.
@@ -28,8 +31,6 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
   forks: connectorMapperPassThrough<"forks", number>("forks"),
   url: connectorMapperPassThrough<"url", string>("url"),
   language: connectorMapperPassThrough<"language", string>("language"),
-  createdAt: connectorMapperPassThrough<"created_at", string>("created_at"),
-  updatedAt: connectorMapperPassThrough<"updated_at", string>("updated_at"),
 };
 
 const domainDefaults = { type: "repository" as const };

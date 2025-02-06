@@ -1,4 +1,4 @@
-import type { SpotifyTrackEntity } from "@/domain/entities/vendors/connector.spotify.repository";
+import type { SpotifyTrackEntity } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
 import { connectorConfigs } from "../connector.service.config";
