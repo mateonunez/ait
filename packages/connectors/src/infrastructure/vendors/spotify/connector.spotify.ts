@@ -1,4 +1,4 @@
-import { ConnectorSpotifyRepository } from "@/domain/entities/vendors/connector.spotify.repository";
+import { ConnectorSpotifyRepository } from "@/domain/entities/vendors/spotify/connector.spotify.repository";
 import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { IConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { BaseConnectorAbstract } from "@/infrastructure/connector.base.abstract";

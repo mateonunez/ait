@@ -1,29 +1,35 @@
-import type { IConnectorRepository } from "@/types/domain/entities/connector.repository.interface";
+import type {
+  IConnectorRepository,
+  IConnectorRepositorySaveOptions,
+} from "@/types/domain/entities/connector.repository.interface";
 
-/**
- * Options for saving a track
- */
-
-export interface IConnectorSpotifyTrackRepositoryOptions {
-  incremental: boolean;
-}
 /**
  * Repository interface for Spotify tracks
  */
 
 export interface IConnectorSpotifyTrackRepository {
-  saveTrack(track: SpotifyTrackEntity, options?: IConnectorSpotifyTrackRepositoryOptions): Promise<void>;
+  saveTrack(track: SpotifyTrackEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
   saveTracks(tracks: SpotifyTrackEntity[]): Promise<void>;
 
   getTrack(id: string): Promise<SpotifyTrackEntity | null>;
   getTracks(): Promise<SpotifyTrackEntity[]>;
 }
+
+export interface IConnectorSpotifyArtistRepository {
+  saveArtist(artist: SpotifyArtistEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveArtists(artists: SpotifyArtistEntity[]): Promise<void>;
+
+  getArtist(id: string): Promise<SpotifyArtistEntity | null>;
+  getArtists(): Promise<SpotifyArtistEntity[]>;
+}
+
 /**
  * Repository interface for Spotify tracks
  */
 
 export interface IConnectorSpotifyRepository extends IConnectorRepository {
   track: IConnectorSpotifyTrackRepository;
+  artist: IConnectorSpotifyArtistRepository;
 }
 /**
  * Base interface for all Spotify entities
@@ -35,16 +41,33 @@ export interface BaseSpotifyEntity {
 /**
  * EXTERNAL
  */
+
+export interface SpotifyImage {
+  url: string;
+  height: number;
+  width: number;
+}
+
+export interface SpotifyFollowers {
+  href: string | null;
+  total: number;
+}
+
 /**
  * Represents a Spotify artist
  */
-
-export interface SpotifyArtist {
+export interface SpotifyArtist extends BaseSpotifyEntity {
   id: string;
   name: string;
-  href: string;
-  type: string;
+  popularity: number;
   uri: string;
+  external_urls: { [key: string]: string };
+  followers: SpotifyFollowers;
+  genres: string[];
+  href: string;
+  images: SpotifyImage[];
+
+  [key: string]: any;
 }
 /**
  * Represents a Spotify album
@@ -86,10 +109,14 @@ export interface SpotifyTrack extends BaseSpotifyEntity {
  * EXTERNAL
  * Represents the raw data from Spotify with the type of the entity
  */
-
 export interface SpotifyTrackExternal extends SpotifyTrack, BaseSpotifyEntity {
   type: "track";
 }
+
+export interface SpotifyArtistExternal extends SpotifyArtist, BaseSpotifyEntity {
+  type: "artist";
+}
+
 /**
  * DOMAIN
  * Represents a simplified domain entity
@@ -106,13 +133,24 @@ export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   updatedAt: Date;
   type: "track";
 }
+
+export interface SpotifyArtistEntity extends BaseSpotifyEntity {
+  id: string;
+  name: string;
+  popularity: number;
+  genres: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  type: "artist";
+}
+
 /**
  * Union type for any Spotify domain entity
  */
 
-export type SpotifyEntity = SpotifyTrackEntity; // | SpotifyAlbumEntity | SpotifyArtistEntity | SpotifyPlaylistEntity;
+export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity; // | SpotifyAlbumEntity | SpotifyPlaylistEntity;
 
 /**
  * Union type for any Spotify external data representation
  */
-export type SpotifyData = SpotifyTrackExternal; // | SpotifyAlbum | SpotifyArtist | SpotifyPlaylist;
+export type SpotifyData = SpotifyTrackExternal | SpotifyArtistExternal; // | SpotifyAlbum | SpotifyPlaylist;
