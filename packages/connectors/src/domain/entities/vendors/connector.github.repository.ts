@@ -44,12 +44,11 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     }
 
     try {
-      console.log("Saving repositories to GitHub repository:", repos);
-      const repositoriesData = repos.map((repo) => connectorGithubMapper.domainToDataTarget(repo));
+      console.debug("Saving repositories to GitHub repository:", { repos });
 
-      await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(githubRepositories).values(repositoriesData).onConflictDoNothing().execute();
-      });
+      for (const repo of repos) {
+        await this.saveRepository(repo);
+      }
 
       console.debug("Repositories saved successfully:", { repos });
     } catch (error) {

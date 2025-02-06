@@ -1,5 +1,8 @@
 import { connectorGithubMapper } from "@/domain/mappers/vendors/connector.github.mapper";
-import { connectorSpotifyTrackMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
+import {
+  connectorSpotifyArtistMapper,
+  connectorSpotifyTrackMapper,
+} from "@/domain/mappers/vendors/connector.spotify.mapper";
 import type { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
 import type { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
 import type {
@@ -7,6 +10,8 @@ import type {
   GitHubRepositoryEntity,
 } from "@/types/domain/entities/vendors/connector.github.repository.types";
 import type {
+  SpotifyArtist,
+  SpotifyArtistEntity,
   SpotifyTrack,
   SpotifyTrackEntity,
 } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
@@ -17,6 +22,7 @@ export interface ConnectorEntityMap {
   };
   spotify: {
     track: SpotifyTrackEntity;
+    artist: SpotifyArtistEntity;
   };
 }
 
@@ -31,6 +37,10 @@ export const connectorEntityConfigs = {
     track: {
       fetcher: (connector: ConnectorSpotify) => connector.dataSource?.fetchTopTracks() || Promise.resolve([]),
       mapper: (entity: SpotifyTrack) => connectorSpotifyTrackMapper.externalToDomain(entity),
+    },
+    artist: {
+      fetcher: (connector: ConnectorSpotify) => connector.dataSource?.fetchTopArtists() || Promise.resolve([]),
+      mapper: (entity: SpotifyArtist) => connectorSpotifyArtistMapper.externalToDomain(entity),
     },
   },
 } as const;

@@ -18,7 +18,11 @@ export class ConnectorSpotifyStore implements IConnectorStore {
         case "track":
           await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: true });
           break;
+        case "artist":
+          await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: true });
+          break;
         default:
+          // @ts-ignore: Unreachable code error
           throw new Error(`Type ${item.type} is not supported`);
       }
     }

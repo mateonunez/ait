@@ -1,4 +1,4 @@
-import { integer, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const spotifyTracks = pgTable("spotify_tracks", {
   id: varchar("id", { length: 255 }).primaryKey(),
@@ -16,3 +16,12 @@ export const spotifyTracks = pgTable("spotify_tracks", {
  * Represents how we store the domain entity in a data layer (DB)
  */
 export type SpotifyTrackDataTarget = typeof spotifyTracks.$inferInsert;
+
+export const spotifyArtists = pgTable("spotify_artists", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  popularity: integer("popularity"),
+  genres: text("genres").array(),
+});
+
+export type SpotifyArtistDataTarget = typeof spotifyArtists.$inferInsert;

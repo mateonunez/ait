@@ -1,6 +1,7 @@
 import { fetch } from "undici";
 import dotenv from "dotenv";
-import type { SpotifyTrack } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import type { SpotifyArtist, SpotifyTrack } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import type { IConnectorSpotifyDataSource } from "@/types/infrastructure/connector.spotify.data-source.interface";
 
 dotenv.config();
 
@@ -19,6 +20,15 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     return response.items.map((track) => ({
       ...track,
       type: "track",
+    }));
+  }
+
+  async fetchTopArtists(): Promise<SpotifyArtist[]> {
+    const response = await this._fetchFromSpotify<{ items: SpotifyArtist[] }>("/me/top/artists");
+
+    return response.items.map((artist) => ({
+      ...artist,
+      type: "artist",
     }));
   }
 
@@ -66,7 +76,4 @@ export class ConnectorSpotifyDataSourceError extends Error {
     this.responseBody = responseBody;
     Object.setPrototypeOf(this, ConnectorSpotifyDataSourceError.prototype);
   }
-}
-export interface IConnectorSpotifyDataSource {
-  fetchTopTracks(): Promise<SpotifyTrack[]>;
 }

@@ -88,6 +88,7 @@ export interface DataTargetEntity {
   name: string;
   dataTargetField: string;
 }
+
 export const mapperConfig: ConnectorMapperDefinition<ExternalEntity, DomainEntity, DataTargetEntity> = {
   id: connectorMapperPassThrough<"id", string>("id"),
   name: connectorMapperPassThrough<"name", string>("name"),

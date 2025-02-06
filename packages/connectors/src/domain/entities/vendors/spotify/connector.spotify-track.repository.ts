@@ -1,24 +1,18 @@
-import { getPostgresClient, type OAuthTokenDataTarget, spotifyTracks } from "@ait/postgres";
-import { connectorSpotifyTrackMapper } from "../../mappers/vendors/connector.spotify.mapper";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import { getOAuthData, saveOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
-import { randomUUID } from "node:crypto";
+import { connectorSpotifyTrackMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
+import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
 import type {
   IConnectorSpotifyTrackRepository,
   SpotifyTrackEntity,
-  IConnectorSpotifyTrackRepositoryOptions,
-  IConnectorSpotifyRepository,
 } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import { getPostgresClient, spotifyTracks } from "@ait/postgres";
+import { randomUUID } from "node:crypto";
 
-/**
- * Base interface for all Spotify entities
- */
 export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRepository {
   private _pgClient = getPostgresClient();
 
   async saveTrack(
     track: SpotifyTrackEntity,
-    options: IConnectorSpotifyTrackRepositoryOptions = { incremental: false },
+    options: IConnectorRepositorySaveOptions = { incremental: false },
   ): Promise<void> {
     const { incremental } = options;
     const trackId = incremental ? randomUUID() : track.id;
@@ -44,9 +38,13 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     }
 
     try {
+      console.debug("Saving tracks to Spotify repository:", { tracks });
+
       for (const track of tracks) {
-        await this.saveTrack(track);
+        await this.saveTrack(track, { incremental: true });
       }
+
+      console.debug("Tracks saved successfully:", { tracks: tracks.length });
     } catch (error) {
       console.error("Error saving tracks:", error);
       throw new Error("Failed to save tracks to repository");
@@ -61,33 +59,5 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
   async getTracks(): Promise<SpotifyTrackEntity[]> {
     console.log("Getting tracks from Spotify repository");
     return [];
-  }
-}
-
-/**
- * Connector for Spotify Repository: tracks, albums, artists, playlists, etc
- */
-export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository implements IConnectorSpotifyRepository {
-  private _spotifyTrackRepository: ConnectorSpotifyTrackRepository;
-
-  constructor() {
-    super();
-    this._spotifyTrackRepository = new ConnectorSpotifyTrackRepository();
-  }
-
-  public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    saveOAuthData(data, "spotify");
-  }
-
-  public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("spotify");
-  }
-
-  get track(): ConnectorSpotifyTrackRepository {
-    return this._spotifyTrackRepository;
-  }
-
-  set track(trackRepository: ConnectorSpotifyTrackRepository) {
-    this._spotifyTrackRepository = trackRepository;
   }
 }

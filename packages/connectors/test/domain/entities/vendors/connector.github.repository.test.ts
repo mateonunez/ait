@@ -1,34 +1,24 @@
-import { describe, it, beforeEach, after, afterEach } from "node:test";
+import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
 import { githubRepositories } from "@ait/postgres";
-import {
-  ConnectorGitHubRepository,
-  ConnectorGitHubRepositoryRepository,
-} from "@/domain/entities/vendors/connector.github.repository";
+import { ConnectorGitHubRepositoryRepository } from "@/domain/entities/vendors/connector.github.repository";
 import type { GitHubRepositoryEntity } from "@/types/domain/entities/vendors/connector.github.repository.types";
 
 describe("ConnectorGitHubRepository", () => {
-  let repository: ConnectorGitHubRepository;
-  let repoRepository: ConnectorGitHubRepositoryRepository;
+  const repoRepository: ConnectorGitHubRepositoryRepository = new ConnectorGitHubRepositoryRepository();
   const { db } = getPostgresClient();
-
-  beforeEach(async () => {
-    repoRepository = new ConnectorGitHubRepositoryRepository();
-    repository = new ConnectorGitHubRepository();
-  });
-
-  afterEach(async () => {
-    //clean up data
-    await db.delete(githubRepositories).execute();
-  });
 
   after(async () => {
     await closePostgresConnection();
   });
 
   describe("ConnectorGitHubRepositoryRepository", () => {
-    describe.skip("saveRepository", () => {
+    beforeEach(async () => {
+      await db.delete(githubRepositories).execute();
+    });
+
+    describe("saveRepository", () => {
       it("should save repository successfully", async () => {
         const repo: GitHubRepositoryEntity = {
           id: "test-id",
@@ -41,7 +31,7 @@ describe("ConnectorGitHubRepository", () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           type: "repository",
-        };
+        } as GitHubRepositoryEntity;
 
         await repoRepository.saveRepository(repo);
 
@@ -68,7 +58,7 @@ describe("ConnectorGitHubRepository", () => {
       it("should save multiple repositories", async () => {
         const repos: GitHubRepositoryEntity[] = [
           {
-            id: "test-1",
+            id: "repo-1",
             name: "Repository 1",
             description: "Description 1",
             stars: 100,
@@ -80,7 +70,7 @@ describe("ConnectorGitHubRepository", () => {
             type: "repository",
           },
           {
-            id: "test-2",
+            id: "repo-2",
             name: "Repository 2",
             description: "Description 2",
             stars: 200,
@@ -91,7 +81,7 @@ describe("ConnectorGitHubRepository", () => {
             updatedAt: new Date().toISOString(),
             type: "repository",
           },
-        ];
+        ] as GitHubRepositoryEntity[];
 
         await repoRepository.saveRepositories(repos);
 
