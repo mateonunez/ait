@@ -12,8 +12,6 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrack, SpotifyEntity
   id: connectorMapperPassThrough<"id", string>("id"),
   name: connectorMapperPassThrough<"name", string>("name"),
   popularity: connectorMapperPassThrough<"popularity", number>("popularity"),
-  createdAt: connectorMapperPassThrough<"createdAt", Date>("createdAt"),
-  updatedAt: connectorMapperPassThrough<"updatedAt", Date>("updatedAt"),
 
   artist: {
     external: (external) => external.artists.map((artist: SpotifyArtist) => artist.name).join(", "),

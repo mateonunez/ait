@@ -22,9 +22,9 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     const repositoryId = incremental ? randomUUID() : repository.id;
 
     try {
-      console.log('Saving repository to GitHub repository:', repository);
+      console.debug("Before mapping repository to data target:", repository);
       const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
-      console.log('Repository data:', repositoryData);
+      console.debug("After mapping repository to data target:", repositoryData);
       repositoryData.id = repositoryId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -44,9 +44,14 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
     }
 
     try {
-      for (const repo of repos) {
-        await this.saveRepository(repo);
-      }
+      console.log("Saving repositories to GitHub repository:", repos);
+      const repositoriesData = repos.map((repo) => connectorGithubMapper.domainToDataTarget(repo));
+
+      await this._pgClient.db.transaction(async (tx) => {
+        await tx.insert(githubRepositories).values(repositoriesData).onConflictDoNothing().execute();
+      });
+
+      console.debug("Repositories saved successfully:", { repos });
     } catch (error) {
       console.error("Error saving repositories:", error);
       throw new Error("Failed to save repositories to repository");

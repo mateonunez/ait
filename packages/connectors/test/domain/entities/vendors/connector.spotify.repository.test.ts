@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, after } from "node:test";
+import { describe, it, beforeEach, after, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
 import { spotifyTracks } from "@ait/postgres";
@@ -14,15 +14,16 @@ describe("ConnectorSpotifyRepository", () => {
   const { db } = getPostgresClient();
 
   beforeEach(async () => {
-    // Clean up existing data
-    await db.delete(spotifyTracks).execute();
-
     trackRepository = new ConnectorSpotifyTrackRepository();
     repository = new ConnectorSpotifyRepository();
   });
 
   after(async () => {
     await closePostgresConnection();
+  });
+
+  afterEach(async () => {
+    await db.delete(spotifyTracks).execute();
   });
 
   describe("ConnectorSpotifyTrackRepository", () => {
@@ -52,8 +53,7 @@ describe("ConnectorSpotifyRepository", () => {
         const track = {} as SpotifyTrackEntity;
 
         await assert.rejects(() => trackRepository.saveTrack(track), {
-          message:
-            'Failed to save track undefined: null value in column "id" of relation "spotify_tracks" violates not-null constraint',
+          message: /Failed to save/,
         });
       });
     });

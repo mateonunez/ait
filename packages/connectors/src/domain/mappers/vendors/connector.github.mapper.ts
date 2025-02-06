@@ -31,8 +31,6 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
   forks: connectorMapperPassThrough<"forks", number>("forks"),
   url: connectorMapperPassThrough<"url", string>("url"),
   language: connectorMapperPassThrough<"language", string>("language"),
-  createdAt: connectorMapperPassThrough<"created_at", string>("created_at"),
-  updatedAt: connectorMapperPassThrough<"updated_at", string>("updated_at"),
 };
 
 const domainDefaults = { type: "repository" as const };
