@@ -4,6 +4,7 @@ import type { IConnectorOAuthTokenResponse } from "./connector.oauth";
 
 const _pgClient = getPostgresClient();
 
+// TODO: move this
 export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider: string): Promise<void> {
   const ouathData = await getOAuthData(provider);
   const randomId = randomUUID();
