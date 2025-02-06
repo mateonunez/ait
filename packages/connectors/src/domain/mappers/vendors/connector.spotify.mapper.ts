@@ -1,4 +1,8 @@
-import type { SpotifyArtist, SpotifyEntity, SpotifyTrack } from "../../entities/vendors/connector.spotify.repository";
+import type {
+  SpotifyArtist,
+  SpotifyEntity,
+  SpotifyTrack,
+} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { SpotifyTrackDataTarget } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import type { ConnectorMapperDefinition } from "../connector.mapper";

@@ -1,6 +1,6 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { AIT } from "../shared/constants/ait.constant";
-import type { IConnector } from "./connector.interface";
+import type { IConnector } from "../types/infrastructure/connector.interface";
 
 /**
  * Shared connector logic for authenticating and reusing
