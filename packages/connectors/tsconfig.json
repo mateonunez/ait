@@ -28,11 +28,6 @@
     },
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "include": [
-    "src/**/*",
-    "src/shared/auth/lib/oauth/connector.oauth.test.ts",
-    "src/types/domain/entities/connector.repository.interface.ts",
-    "src/types/domain/entities/vendors/connector.github.repository.types.ts"
-  ],
+  "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
 }

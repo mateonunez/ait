@@ -44,7 +44,9 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     }
 
     try {
-      await Promise.all(tracks.map((track) => this.saveTrack(track)));
+      for (const track of tracks) {
+        await this.saveTrack(track);
+      }
     } catch (error) {
       console.error("Error saving tracks:", error);
       throw new Error("Failed to save tracks to repository");

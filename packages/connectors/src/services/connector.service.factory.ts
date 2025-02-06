@@ -3,7 +3,7 @@ import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
 import { ConnectorSpotifyService } from "./vendors/connector.spotify.service";
 
-const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<ConnectorServiceBase<any, any>>> = {
+export const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<ConnectorServiceBase<any, any>>> = {
   github: ConnectorGitHubService,
   spotify: ConnectorSpotifyService,
 };
@@ -11,15 +11,15 @@ const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<Conne
 export class ConnectorServiceFactory {
   private services = new Map<ConnectorType, ConnectorServiceBase<any, any>>();
 
-  getService<T extends ConnectorServiceBase<any, any>>(type: ConnectorType): T {
-    if (!this.services.has(type)) {
-      const ServiceClass = connectorServices[type] as ConnectorServiceConstructor<T>;
-      if (!ServiceClass) {
-        throw new Error(`Unknown connector type: ${type}`);
+  getService<T extends ConnectorServiceBase<any, any>>(connectorType: ConnectorType): T {
+    if (!this.services.has(connectorType)) {
+      const ConnectorServiceClass = connectorServices[connectorType] as ConnectorServiceConstructor<T>;
+      if (!ConnectorServiceClass) {
+        throw new Error(`Unknown connector type: ${connectorType}`);
       }
-      this.services.set(type, new ServiceClass());
+      this.services.set(connectorType, new ConnectorServiceClass());
     }
-    return this.services.get(type) as T;
+    return this.services.get(connectorType) as T;
   }
 }
 

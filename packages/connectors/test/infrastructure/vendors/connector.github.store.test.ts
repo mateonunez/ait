@@ -1,11 +1,11 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { ConnectorGitHubStore } from "./connector.github.store";
 import type {
   GitHubEntity,
   GitHubRepositoryEntity,
   IConnectorGitHubRepository,
-} from "@/domain/entities/vendors/connector.github.repository";
+} from "@/types/domain/entities/vendors/connector.github.repository.types";
+import { ConnectorGitHubStore } from "@/infrastructure/vendors/github/connector.github.store";
 
 describe("ConnectorGitHubStore", () => {
   let mockRepository: IConnectorGitHubRepository;

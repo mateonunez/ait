@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { connectorMapperPassThrough } from "./connector.mapper.utils";
+import { connectorMapperPassThrough } from "@/domain/mappers/utils/connector.mapper.utils";
 
 describe("connectorMapperPassThrough", () => {
   it("should create pass-through mappings for all levels", () => {

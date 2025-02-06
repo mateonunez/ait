@@ -5,8 +5,8 @@ import { githubRepositories } from "@ait/postgres";
 import {
   ConnectorGitHubRepository,
   ConnectorGitHubRepositoryRepository,
-  type GitHubRepositoryEntity,
-} from "./connector.github.repository";
+} from "@/domain/entities/vendors/connector.github.repository";
+import type { GitHubRepositoryEntity } from "@/types/domain/entities/vendors/connector.github.repository.types";
 
 describe("ConnectorGitHubRepository", () => {
   let repository: ConnectorGitHubRepository;

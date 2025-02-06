@@ -5,8 +5,8 @@ import { spotifyTracks } from "@ait/postgres";
 import {
   ConnectorSpotifyRepository,
   ConnectorSpotifyTrackRepository,
-  type SpotifyTrackEntity,
-} from "./connector.spotify.repository";
+} from "@/domain/entities/vendors/connector.spotify.repository";
+import type { SpotifyTrackEntity } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 
 describe("ConnectorSpotifyRepository", () => {
   let repository: ConnectorSpotifyRepository;

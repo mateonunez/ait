@@ -1,9 +1,13 @@
+import {
+  ConnectorOAuth,
+  ConnectorOAuthJsonParseError,
+  ConnectorOAuthRequestError,
+  type IConnectorOAuthTokenResponse,
+  type IConnectorOAuthConfig,
+} from "@/shared/auth/lib/oauth/connector.oauth";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
-import { ConnectorOAuth } from "./connector.oauth";
-import type { IConnectorOAuthConfig, IConnectorOAuthTokenResponse } from "./connector.oauth";
-import { ConnectorOAuthRequestError, ConnectorOAuthJsonParseError } from "./connector.oauth";
 
 describe("ConnectorOAuth", { concurrency: true }, () => {
   let agent: MockAgent;
