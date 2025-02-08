@@ -17,12 +17,12 @@ export class ConnectorGitHubStore implements IConnectorStore {
     const items = this._resolveItems(data);
 
     for (const item of items) {
-      switch (item.type) {
+      switch (item.__type) {
         case "repository":
           await this._connectorGitHubRepository.repo.saveRepository(item);
           break;
         default:
-          throw new Error(`Type ${item.type} is not supported`);
+          throw new Error(`Type ${item.__type} is not supported`);
       }
     }
   }

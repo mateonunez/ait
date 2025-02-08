@@ -14,7 +14,7 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     const items = this._resolveItems(data);
 
     for (const item of items) {
-      switch (item.type) {
+      switch (item.__type) {
         case "track":
           await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: true });
           break;
@@ -22,6 +22,7 @@ export class ConnectorSpotifyStore implements IConnectorStore {
           await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: true });
           break;
         default:
+          console.debug(`Item: ${JSON.stringify(item)}`);
           // @ts-ignore: Unreachable code error
           throw new Error(`Type ${item.type} is not supported`);
       }

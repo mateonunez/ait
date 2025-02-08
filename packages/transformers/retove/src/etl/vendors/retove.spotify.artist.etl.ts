@@ -37,7 +37,7 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
 
 export interface RetoveSpotifyTrackVectorPoint extends BaseVectorPoint {
   payload: {
-    type: "track";
+    __type: "track";
   } & Partial<SpotifyArtistDataTarget>;
 }
 /**

@@ -1,7 +1,10 @@
 import { fetch } from "undici";
 import dotenv from "dotenv";
-import type { SpotifyArtist, SpotifyTrack } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { IConnectorSpotifyDataSource } from "@/types/infrastructure/connector.spotify.data-source.interface";
+import type {
+  SpotifyArtistExternal,
+  SpotifyTrackExternal,
+} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 
 dotenv.config();
 
@@ -14,22 +17,21 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     this.accessToken = accessToken;
   }
 
-  async fetchTopTracks(): Promise<SpotifyTrack[]> {
-    const response = await this._fetchFromSpotify<{ items: SpotifyTrack[] }>("/me/top/tracks");
+  async fetchTopTracks(): Promise<SpotifyTrackExternal[]> {
+    const response = await this._fetchFromSpotify<{
+      items: SpotifyTrackExternal[];
+    }>("/me/top/tracks");
 
-    return response.items.map((track) => ({
-      ...track,
-      type: "track",
-    }));
+    return response.items;
   }
 
-  async fetchTopArtists(): Promise<SpotifyArtist[]> {
-    const response = await this._fetchFromSpotify<{ items: SpotifyArtist[] }>("/me/top/artists");
+  async fetchTopArtists(): Promise<SpotifyArtistExternal[]> {
+    // Using the generated type for the /me/top/artists endpoint response
+    const response = await this._fetchFromSpotify<{
+      items: SpotifyArtistExternal[];
+    }>("/me/top/artists");
 
-    return response.items.map((artist) => ({
-      ...artist,
-      type: "artist",
-    }));
+    return response.items;
   }
 
   private async _fetchFromSpotify<T>(

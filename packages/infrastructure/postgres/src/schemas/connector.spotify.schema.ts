@@ -22,6 +22,8 @@ export const spotifyArtists = pgTable("spotify_artists", {
   name: varchar("name", { length: 255 }).notNull(),
   popularity: integer("popularity"),
   genres: text("genres").array(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type SpotifyArtistDataTarget = typeof spotifyArtists.$inferInsert;

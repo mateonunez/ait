@@ -37,7 +37,7 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
 }
 export interface RetoveGitHubRepositoryVectorPoint extends BaseVectorPoint {
   payload: {
-    type: "repository";
+    __type: "repository";
   } & Partial<GitHubRepositoryDataTarget>;
 }
 /**

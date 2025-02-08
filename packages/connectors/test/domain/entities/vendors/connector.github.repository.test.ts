@@ -30,7 +30,7 @@ describe("ConnectorGitHubRepository", () => {
           url: "https://github.com/mateonunez/ait",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          type: "repository",
+          __type: "repository",
         } as GitHubRepositoryEntity;
 
         await repoRepository.saveRepository(repo);
@@ -67,7 +67,7 @@ describe("ConnectorGitHubRepository", () => {
             url: "https://github.com/mateonunez/ait",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            type: "repository",
+            __type: "repository",
           },
           {
             id: "repo-2",
@@ -79,7 +79,7 @@ describe("ConnectorGitHubRepository", () => {
             url: "https://github.com/mateonunez/ait",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            type: "repository",
+            __type: "repository",
           },
         ] as GitHubRepositoryEntity[];
 

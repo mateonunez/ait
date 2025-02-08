@@ -10,7 +10,8 @@
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "pretest": "test -f .env.test || cp .env.example .env.test",
     "test": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --test-concurrency=1'",
-    "test:watch": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"
+    "test:watch": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'",
+    "generate:openapi": "tsx ./src/infrastructure/openapi-generator.ts"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",
@@ -30,6 +31,7 @@
     "@octokit/plugin-rest-endpoint-methods": "^13.2.6",
     "@octokit/types": "^13.6.2",
     "@types/sinon": "^17.0.3",
+    "openapi-typescript": "^7.6.1",
     "sinon": "^19.0.2",
     "typescript": "^5.7.2"
   }

@@ -16,7 +16,7 @@ export class ConnectorOAuth implements IConnectorOAuth {
       grant_type: "authorization_code",
     };
 
-    return this.postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData);
+    return this._postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData);
   }
 
   public async refreshAccessToken(refreshToken: string): Promise<IConnectorOAuthTokenResponse> {
@@ -27,17 +27,18 @@ export class ConnectorOAuth implements IConnectorOAuth {
       grant_type: "refresh_token",
     };
 
-    return this.postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData);
+    return this._postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData);
   }
 
   public async revokeAccessToken(accessToken: string): Promise<void> {
     const url = `${this.config.endpoint}/revoke`;
     const formData = { token: accessToken };
 
-    await this.postFormData<void>(url, formData);
+    await this._postFormData<void>(url, formData);
   }
 
-  private async postFormData<T>(url: string, formData: Record<string, string>): Promise<T> {
+  private async _postFormData<T>(url: string, formData: Record<string, string>): Promise<T> {
+    console.log("formData", formData);
     const response = await request(url, {
       method: "POST",
       headers: {

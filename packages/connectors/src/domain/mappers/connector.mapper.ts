@@ -1,3 +1,11 @@
+import type {
+  ConnectorLevels,
+  ConnectorMapperDefinition,
+  DataTargetEntity,
+  DomainEntity,
+  ExternalEntity,
+  IConnectorMapper,
+} from "@/types/domain/mappers/connector.mapper.interface";
 import { connectorMapperPassThrough } from "./utils/connector.mapper.utils";
 
 export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
@@ -15,15 +23,15 @@ export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
   }
 
   public externalToDomain(external: ExternalEntity): DomainEntity {
-    return this._mapEntity(external, "external", this.domainDefaults);
+    return this._mapEntity<ExternalEntity, DomainEntity>(external, "external");
   }
 
   public domainToDataTarget(domain: DomainEntity): DataTargetEntity {
-    return this._mapEntity(domain, "domain");
+    return this._mapEntity<DomainEntity, DataTargetEntity>(domain, "domain");
   }
 
   public dataTargetToDomain(dataTarget: DataTargetEntity): DomainEntity {
-    return this._mapEntity(dataTarget, "dataTarget", this.domainDefaults);
+    return this._mapEntity<DataTargetEntity, DomainEntity>(dataTarget, "dataTarget", this.domainDefaults);
   }
 
   private _mapEntity<Source, Target>(source: Source, level: ConnectorLevels, defaults: Partial<Target> = {}): Target {
@@ -33,13 +41,13 @@ export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
       const configField = this.config[field];
       if (configField) {
         const mapFn = configField[level];
-        const mappedValue = mapFn(source);
+        const mappedValue = mapFn(source as any);
 
         if (level === "domain" && typeof configField.dataTarget === "function") {
           const targetField = this._getTargetFieldName(field, configField);
-          target[targetField as keyof Target] = mappedValue as Target[keyof Target];
+          target[targetField as keyof Target] = mappedValue as unknown as Target[keyof Target];
         } else {
-          target[field as keyof Target] = mappedValue as Target[keyof Target];
+          target[field as unknown as keyof Target] = mappedValue as unknown as Target[keyof Target];
         }
       }
     }
@@ -61,38 +69,11 @@ export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>
   }
 }
 
-export interface ConnectorMapperDefinition<ExternalEntity, DomainEntity, DataTargetEntity> {
-  [key: string]: {
-    [level in ConnectorLevels]: (entity: any) => any;
-  };
-}
-
-export interface IConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity> {
-  externalToDomain(external: ExternalEntity): DomainEntity;
-  domainToDataTarget(domain: DomainEntity): DataTargetEntity;
-  dataTargetToDomain(dataTarget: DataTargetEntity): DomainEntity;
-}
-export type ConnectorLevels = "external" | "domain" | "dataTarget";
-export interface ExternalEntity {
-  id: string;
-  name: string;
-  externalField: string;
-}
-export interface DomainEntity {
-  id: string;
-  name: string;
-  domainField: string;
-}
-export interface DataTargetEntity {
-  id: string;
-  name: string;
-  dataTargetField: string;
-}
+export const connectorLevels: ConnectorLevels[] = ["external", "domain", "dataTarget"];
 
 export const mapperConfig: ConnectorMapperDefinition<ExternalEntity, DomainEntity, DataTargetEntity> = {
-  id: connectorMapperPassThrough<"id", string>("id"),
-  name: connectorMapperPassThrough<"name", string>("name"),
-
+  id: connectorMapperPassThrough<"id", string | undefined, ExternalEntity, DomainEntity, DataTargetEntity>("id"),
+  name: connectorMapperPassThrough<"name", string, ExternalEntity, DomainEntity, DataTargetEntity>("name"),
   domainField: {
     external: (ext) => ext.externalField,
     domain: (dom) => dom.domainField,

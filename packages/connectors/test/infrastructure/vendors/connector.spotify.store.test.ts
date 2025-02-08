@@ -32,7 +32,7 @@ describe("ConnectorSpotifyStore", () => {
       const track: SpotifyTrackEntity = {
         id: "track-1",
         name: "Track One",
-        type: "track",
+        __type: "track",
         artist: "An Artist",
         album: "An Album",
         durationMs: 180000,
@@ -58,7 +58,7 @@ describe("ConnectorSpotifyStore", () => {
         {
           id: "track-1",
           name: "Track One",
-          type: "track",
+          __type: "track",
           artist: "Artist One",
           album: "Album One",
           durationMs: 180000,
@@ -69,7 +69,7 @@ describe("ConnectorSpotifyStore", () => {
         {
           id: "track-2",
           name: "Track Two",
-          type: "track",
+          __type: "track",
           artist: "Artist Two",
           album: "Album Two",
           durationMs: 240000,
@@ -90,7 +90,7 @@ describe("ConnectorSpotifyStore", () => {
       const unsupportedItem = {
         id: "unsupported-1",
         name: "Some Entity",
-        type: "unsupported" as "track", // this generates a type error
+        __type: "unsupported", // this generates a type error
       } as unknown as SpotifyEntity;
 
       await assert.rejects(async () => {

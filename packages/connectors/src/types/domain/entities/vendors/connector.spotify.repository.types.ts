@@ -2,6 +2,7 @@ import type {
   IConnectorRepository,
   IConnectorRepositorySaveOptions,
 } from "@/types/domain/entities/connector.repository.interface";
+import type { components as SpotifyComponents } from "@/types/openapi/spotify.types";
 
 /**
  * Repository interface for Spotify tracks
@@ -36,7 +37,7 @@ export interface IConnectorSpotifyRepository extends IConnectorRepository {
  */
 
 export interface BaseSpotifyEntity {
-  type: "track" | "album" | "artist" | "playlist";
+  __type: "track" | "album" | "artist" | "playlist";
 }
 /**
  * EXTERNAL
@@ -56,23 +57,11 @@ export interface SpotifyFollowers {
 /**
  * Represents a Spotify artist
  */
-export interface SpotifyArtist extends BaseSpotifyEntity {
-  id: string;
-  name: string;
-  popularity: number;
-  uri: string;
-  external_urls: { [key: string]: string };
-  followers: SpotifyFollowers;
-  genres: string[];
-  href: string;
-  images: SpotifyImage[];
+type SpotifyArtist = SpotifyComponents["schemas"]["ArtistObject"];
 
-  [key: string]: any;
-}
 /**
  * Represents a Spotify album
  */
-
 export interface SpotifyAlbum {
   album_type: string;
   artists: SpotifyArtist[];
@@ -86,35 +75,25 @@ export interface SpotifyAlbum {
   release_date: string;
   release_date_precision: string;
   total_tracks: number;
-  type: string;
+  __type: string;
   uri: string;
 }
+
 /**
  * Represents a Spotify track
  */
+type SpotifyTrack = SpotifyComponents["schemas"]["TrackObject"];
 
-export interface SpotifyTrack extends BaseSpotifyEntity {
-  id: string;
-  name: string;
-  artists: SpotifyArtist[];
-  album: SpotifyAlbum;
-  duration_ms: number;
-  popularity: number;
-  createdAt: Date;
-  updatedAt: Date;
-
-  [key: string]: any;
-}
 /**
  * EXTERNAL
  * Represents the raw data from Spotify with the type of the entity
  */
-export interface SpotifyTrackExternal extends SpotifyTrack, BaseSpotifyEntity {
-  type: "track";
+export interface SpotifyTrackExternal extends Omit<SpotifyTrack, "type">, BaseSpotifyEntity {
+  __type: "track";
 }
 
-export interface SpotifyArtistExternal extends SpotifyArtist, BaseSpotifyEntity {
-  type: "artist";
+export interface SpotifyArtistExternal extends Omit<SpotifyArtist, "type">, BaseSpotifyEntity {
+  __type: "artist";
 }
 
 /**
@@ -131,7 +110,7 @@ export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   popularity: number;
   createdAt: Date;
   updatedAt: Date;
-  type: "track";
+  __type: "track";
 }
 
 export interface SpotifyArtistEntity extends BaseSpotifyEntity {
@@ -141,7 +120,7 @@ export interface SpotifyArtistEntity extends BaseSpotifyEntity {
   genres: string[];
   createdAt: Date;
   updatedAt: Date;
-  type: "artist";
+  __type: "artist";
 }
 
 /**
@@ -153,4 +132,4 @@ export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity; // | Spoti
 /**
  * Union type for any Spotify external data representation
  */
-export type SpotifyData = SpotifyTrackExternal | SpotifyArtistExternal; // | SpotifyAlbum | SpotifyPlaylist;
+export type SpotifyExternal = SpotifyTrackExternal | SpotifyArtistExternal; // | SpotifyAlbum | SpotifyPlaylist;

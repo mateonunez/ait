@@ -1,4 +1,4 @@
-import type { GitHubRepository } from "@/types/domain/entities/vendors/connector.github.repository.types";
+import type { GitHubRepositoryExternal } from "@/types/domain/entities/vendors/connector.github.repository.types";
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
 
 export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
@@ -8,9 +8,11 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
     this.octokit = new Octokit({ auth: accessToken });
   }
 
-  async fetchRepositories(): Promise<GitHubRepository[]> {
+  async fetchRepositories(): Promise<GitHubRepositoryExternal[]> {
     try {
-      const { data } = (await this.octokit.repos.listForAuthenticatedUser()) as unknown as { data: GitHubRepository[] };
+      const { data } = (await this.octokit.repos.listForAuthenticatedUser()) as unknown as {
+        data: GitHubRepositoryExternal[];
+      };
       return data;
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Unknown error";
@@ -33,5 +35,5 @@ export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];
 
 export interface IConnectorGitHubDataSource {
-  fetchRepositories(): Promise<GitHubRepository[]>;
+  fetchRepositories(): Promise<GitHubRepositoryExternal[]>;
 }

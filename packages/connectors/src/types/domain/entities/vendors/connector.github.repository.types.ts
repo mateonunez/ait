@@ -32,7 +32,7 @@ export interface IConnectorGitHubRepository extends IConnectorRepository {
  */
 
 export interface BaseGitHubEntity {
-  type: "repository" | "issue" | "pullRequest";
+  __type: "repository" | "issue" | "pullRequest";
 }
 /**
  * EXTERNAL
@@ -60,7 +60,7 @@ export interface GitHubRepository extends BaseGitHubEntity {
  */
 
 export interface GitHubRepositoryExternal extends GitHubRepository, BaseGitHubEntity {
-  type: "repository";
+  __type: "repository";
 }
 /**
  * DOMAIN
@@ -77,7 +77,7 @@ export interface GitHubRepositoryEntity extends BaseGitHubEntity {
   url: string;
   createdAt: string | null;
   updatedAt: string | null;
-  type: "repository";
+  __type: "repository";
 }
 /**
  * Union type for any GitHub domain entity

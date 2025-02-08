@@ -1,5 +1,6 @@
 import { ConnectorOAuth, type IConnectorOAuthConfig } from "@/shared/auth/lib/oauth/connector.oauth";
 import type { BaseConnectorAbstract } from "@/infrastructure/connector.base.abstract";
+// import { AIT } from "@/shared/constants/ait.constant";
 
 interface EntityConfig<TEntityMap, K extends keyof TEntityMap, E> {
   fetcher: () => Promise<E[]>;
@@ -20,9 +21,15 @@ export abstract class ConnectorServiceBase<
 
   protected registerEntityConfig<K extends keyof TEntityMap, E>(
     entityType: K,
-    config: EntityConfig<TEntityMap, K, E>,
+    config: {
+      fetcher: (connector: TConnector) => Promise<E[]>;
+      mapper: (external: E) => TEntityMap[K];
+    },
   ): void {
-    this.entityConfigs.set(entityType, config);
+    this.entityConfigs.set(entityType, {
+      fetcher: () => config.fetcher(this._connector),
+      mapper: config.mapper,
+    });
   }
 
   protected async fetchEntities<K extends keyof TEntityMap, E>(entityType: K): Promise<TEntityMap[K][]> {

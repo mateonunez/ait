@@ -8,7 +8,7 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubRepositoryDataTarget): U {
     return {
-      type: "repository",
+      __type: "repository",
       ...entity,
     } as unknown as U;
   }
