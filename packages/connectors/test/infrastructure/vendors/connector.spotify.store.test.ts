@@ -90,12 +90,12 @@ describe("ConnectorSpotifyStore", () => {
       const unsupportedItem = {
         id: "unsupported-1",
         name: "Some Entity",
-        __type: "unsupported", // this generates a type error
+        __type: "unsupported",
       } as unknown as SpotifyEntity;
 
-      await assert.rejects(async () => {
-        await store.save(unsupportedItem);
-      }, /Type unsupported is not supported/);
+      await assert.rejects(() => store.save(unsupportedItem), {
+        message: "Type unsupported is not supported",
+      });
     });
   });
 });

@@ -22,9 +22,8 @@ export class ConnectorSpotifyStore implements IConnectorStore {
           await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: true });
           break;
         default:
-          console.debug(`Item: ${JSON.stringify(item)}`);
           // @ts-ignore: Unreachable code error
-          throw new Error(`Type ${item.type} is not supported`);
+          throw new Error(`Type ${item.__type} is not supported`);
       }
     }
   }
