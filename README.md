@@ -110,7 +110,7 @@ The E2E tests will:
 - Connect to your Qdrant collections (_github_repositories_collection_ and _spotify_tracks_collection_)
 - Generate embeddings for test prompts
 - Perform similarity searches
-- Generate responses using Ollama (llama3.1:8b)
+- Generate responses using Ollama (deepseek-r1:8b)
 
 ### 🌐 Connectors
 
@@ -157,7 +157,7 @@ docker exec -it ait_ollama sh
 3. Install the model:
 
 ```bash
-ollama pull llama3.1:8b
+ollama pull deepseek-r1:8b
 ```
 
 ### 🛠️ Development

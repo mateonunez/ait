@@ -39,7 +39,7 @@ describe("ConnectorGitHubStore", () => {
         url: "https://github.com/mateonunez/ait",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        type: "repository",
+        __type: "repository",
       };
 
       await store.save(repo);
@@ -66,7 +66,7 @@ describe("ConnectorGitHubStore", () => {
           url: "https://github.com/mateonunez/ait",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          type: "repository",
+          __type: "repository",
         },
         {
           id: "repo-2",
@@ -78,7 +78,7 @@ describe("ConnectorGitHubStore", () => {
           url: "https://github.com/mateonunez/ait",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          type: "repository",
+          __type: "repository",
         },
       ];
 
@@ -93,7 +93,7 @@ describe("ConnectorGitHubStore", () => {
       const unsupportedItem = {
         id: "unsupported-1",
         name: "Some Entity",
-        type: "unsupported" as "repository", // this generates a type error
+        __type: "unsupported" as "repository", // this generates a type error
       } as unknown as GitHubEntity;
 
       await assert.rejects(async () => {

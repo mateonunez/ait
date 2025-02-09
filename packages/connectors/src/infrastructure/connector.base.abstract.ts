@@ -98,10 +98,10 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
     this._authenticator = authenticator;
   }
 
-  get dataSource(): DataSourceType | undefined {
-    return this._dataSource;
+  get dataSource(): DataSourceType {
+    return this._dataSource!;
   }
-  set dataSource(ds: DataSourceType | undefined) {
+  set dataSource(ds: DataSourceType) {
     this._dataSource = ds;
   }
 

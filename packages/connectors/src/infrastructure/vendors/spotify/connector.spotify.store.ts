@@ -2,6 +2,7 @@ import type { SpotifyEntity } from "@/types/domain/entities/vendors/connector.sp
 import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorStore } from "@/types/shared/store/connector.store.interface";
+import { SPOTIFY_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";
 
 export class ConnectorSpotifyStore implements IConnectorStore {
   private _connectorSpotifyRepository: IConnectorSpotifyRepository;
@@ -14,16 +15,16 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     const items = this._resolveItems(data);
 
     for (const item of items) {
-      switch (item.type) {
-        case "track":
+      switch (item.__type) {
+        case SPOTIFY_ENTITY_TYPES_ENUM.TRACK:
           await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: true });
           break;
-        case "artist":
+        case SPOTIFY_ENTITY_TYPES_ENUM.ARTIST:
           await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: true });
           break;
         default:
           // @ts-ignore: Unreachable code error
-          throw new Error(`Type ${item.type} is not supported`);
+          throw new Error(`Type ${item.__type} is not supported`);
       }
     }
   }

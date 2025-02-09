@@ -2,18 +2,18 @@ import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
 import { githubRepositories } from "@ait/postgres";
-import { ConnectorGitHubRepositoryRepository } from "@/domain/entities/vendors/connector.github.repository";
+import { ConnectorGitHubRepoRepository } from "@/domain/entities/vendors/connector.github.repository";
 import type { GitHubRepositoryEntity } from "@/types/domain/entities/vendors/connector.github.repository.types";
 
 describe("ConnectorGitHubRepository", () => {
-  const repoRepository: ConnectorGitHubRepositoryRepository = new ConnectorGitHubRepositoryRepository();
+  const repoRepository: ConnectorGitHubRepoRepository = new ConnectorGitHubRepoRepository();
   const { db } = getPostgresClient();
 
   after(async () => {
     await closePostgresConnection();
   });
 
-  describe("ConnectorGitHubRepositoryRepository", () => {
+  describe("ConnectorGitHubRepoRepository", () => {
     beforeEach(async () => {
       await db.delete(githubRepositories).execute();
     });
@@ -30,7 +30,7 @@ describe("ConnectorGitHubRepository", () => {
           url: "https://github.com/mateonunez/ait",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          type: "repository",
+          __type: "repository",
         } as GitHubRepositoryEntity;
 
         await repoRepository.saveRepository(repo);
@@ -67,7 +67,7 @@ describe("ConnectorGitHubRepository", () => {
             url: "https://github.com/mateonunez/ait",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            type: "repository",
+            __type: "repository",
           },
           {
             id: "repo-2",
@@ -79,7 +79,7 @@ describe("ConnectorGitHubRepository", () => {
             url: "https://github.com/mateonunez/ait",
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            type: "repository",
+            __type: "repository",
           },
         ] as GitHubRepositoryEntity[];
 

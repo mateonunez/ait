@@ -33,7 +33,7 @@ describe("ConnectorSpotifyRepository", () => {
           popularity: 50,
           createdAt: new Date(),
           updatedAt: new Date(),
-          type: "track",
+          __type: "track",
         } as SpotifyTrackEntity;
 
         await trackRepository.saveTrack(track);
@@ -59,7 +59,7 @@ describe("ConnectorSpotifyRepository", () => {
           {
             id: "track-1",
             name: "Track 1",
-            type: "track",
+            __type: "track",
             artist: "Artist 1",
             album: "Album 1",
             durationMs: 60000,
@@ -70,7 +70,7 @@ describe("ConnectorSpotifyRepository", () => {
           {
             id: "track-2",
             name: "Track 2",
-            type: "track",
+            __type: "track",
             artist: "Artist 2",
             album: "Album 2",
             durationMs: 60000,
@@ -109,7 +109,7 @@ describe("ConnectorSpotifyRepository", () => {
           genres: ["Pop", "Rock"],
           createdAt: now,
           updatedAt: now,
-          type: "artist",
+          __type: "artist",
         } as SpotifyArtistEntity;
 
         await artistRepository.saveArtist(artist);
@@ -144,7 +144,7 @@ describe("ConnectorSpotifyRepository", () => {
             genres: ["Pop", "Rock"],
             createdAt: now,
             updatedAt: now,
-            type: "artist",
+            __type: "artist",
           },
           {
             id: "artist-2",
@@ -153,7 +153,7 @@ describe("ConnectorSpotifyRepository", () => {
             genres: ["Hip Hop"],
             createdAt: now,
             updatedAt: now,
-            type: "artist",
+            __type: "artist",
           },
         ] as SpotifyArtistEntity[];
 

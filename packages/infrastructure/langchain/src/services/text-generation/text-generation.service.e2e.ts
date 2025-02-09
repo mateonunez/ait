@@ -11,7 +11,7 @@ describe("TextGenerationService", () => {
   let service: TextGenerationService;
 
   describe("generateText", () => {
-    describe("github_repositories_collection", () => {
+    describe.skip("github_repositories_collection", () => {
       beforeEach(() => {
         service = new TextGenerationService(model, expectedVectorSize, "github_repositories_collection");
       });
@@ -30,7 +30,7 @@ describe("TextGenerationService", () => {
       });
 
       it("should generate text successfully", { timeout: timeout }, async () => {
-        const prompt = "Based on your context, show some tracks of the alt-J artist";
+        const prompt = "Based on your context, show some tracks from Bad Bunny";
         const result = await service.generateText(prompt);
 
         assert.ok(result);

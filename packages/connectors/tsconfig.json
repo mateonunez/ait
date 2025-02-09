@@ -28,6 +28,6 @@
     },
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": ["src/**/*", "test/**/*", "src/infrastructure/openapi.schemas.config.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }

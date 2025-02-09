@@ -1,6 +1,38 @@
-node_modules
+# Ignore source control folders and files
 .git
 .gitignore
-*.md
+.github
+
+# Ignore local dependency directories
+node_modules
+**/node_modules
+
+# Ignore build output and coverage directories
 dist
-data
+coverage
+
+# Ignore log and temporary files
+*.log
+*.tsbuildinfo
+npm-debug.log*
+
+# Ignore environment files
+.env
+.env.*
+.nvmrc
+
+# Ignore local IDE/editor configuration
+.vscode
+.husky
+.stuff
+
+# Ignore OS-specific files
+.DS_Store
+
+# Ignore Docker configuration files used only for development
+docker-compose.yml
+docker-compose.*.yml
+
+# Optionally ignore documentation if not needed in the image
+*.md
+LICENSE

@@ -2,7 +2,10 @@ import {
   ConnectorSpotifyDataSource,
   ConnectorSpotifyDataSourceError,
 } from "@/infrastructure/vendors/spotify/connector.spotify.data-source";
-import type { SpotifyArtist, SpotifyTrack } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import type {
+  SpotifyArtistExternal,
+  SpotifyTrackExternal,
+} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
@@ -24,9 +27,9 @@ describe("ConnectorSpotifyDataSource", () => {
     it("should return a list of top tracks", async () => {
       const mockResponse = {
         items: [
-          { id: "1", name: "track1", artists: [{ name: "artist1" }], type: "track" },
-          { id: "2", name: "track2", artists: [{ name: "artist2" }], type: "track" },
-        ] as SpotifyTrack[],
+          { id: "1", name: "track1", artists: [{ name: "artist1" }], __type: "track" },
+          { id: "2", name: "track2", artists: [{ name: "artist2" }], __type: "track" },
+        ] as unknown as SpotifyTrackExternal[],
       };
 
       agent
@@ -71,9 +74,9 @@ describe("ConnectorSpotifyDataSource", () => {
     it("should return a list of top artists", async () => {
       const mockResponse = {
         items: [
-          { id: "1", name: "artist1", type: "artist" },
-          { id: "2", name: "artist2", type: "artist" },
-        ] as SpotifyArtist[],
+          { id: "1", name: "artist1", __type: "artist" },
+          { id: "2", name: "artist2", __type: "artist" },
+        ] as unknown as SpotifyArtistExternal[],
       };
 
       agent

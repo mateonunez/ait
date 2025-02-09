@@ -29,6 +29,20 @@
       "when": 1738853877254,
       "tag": "0003_sad_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1739014719431,
+      "tag": "0004_free_valeria_richards",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1739019236292,
+      "tag": "0005_familiar_puff_adder",
+      "breakpoints": true
     }
   ]
 }

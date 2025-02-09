@@ -4,19 +4,18 @@ import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/conne
 import { saveOAuthData, getOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
 import { randomUUID } from "node:crypto";
 import type {
-  IConnectorGitHubRepositoryRepository,
+  IConnectorGitHubRepoRepository,
   GitHubRepositoryEntity,
-  IConnectorGitHubRepositoryRepositoryOptions,
   IConnectorGitHubRepository,
 } from "@/types/domain/entities/vendors/connector.github.repository.types";
+import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
 
-// I'm so sorry for the name of this class
-export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepositoryRepository {
+export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoRepository {
   private _pgClient = getPostgresClient();
 
   async saveRepository(
     repository: GitHubRepositoryEntity,
-    options: IConnectorGitHubRepositoryRepositoryOptions = { incremental: false },
+    options: IConnectorRepositorySaveOptions = { incremental: false },
   ): Promise<void> {
     const { incremental } = options;
     const repositoryId = incremental ? randomUUID() : repository.id;
@@ -71,15 +70,12 @@ export class ConnectorGitHubRepositoryRepository implements IConnectorGitHubRepo
 /**
  * Connector for GitHub repositories:
  */
-export class ConnectorGitHubRepository
-  extends ConnectorGitHubRepositoryRepository
-  implements IConnectorGitHubRepository
-{
-  private _gitHubRepositoryRepository: ConnectorGitHubRepositoryRepository;
+export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository implements IConnectorGitHubRepository {
+  private _gitHubRepositoryRepository: ConnectorGitHubRepoRepository;
 
   constructor() {
     super();
-    this._gitHubRepositoryRepository = new ConnectorGitHubRepositoryRepository();
+    this._gitHubRepositoryRepository = new ConnectorGitHubRepoRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
@@ -90,11 +86,11 @@ export class ConnectorGitHubRepository
     return getOAuthData("github");
   }
 
-  get repo(): ConnectorGitHubRepositoryRepository {
+  get repo(): ConnectorGitHubRepoRepository {
     return this._gitHubRepositoryRepository;
   }
 
-  set repo(repo: ConnectorGitHubRepositoryRepository) {
+  set repo(repo: ConnectorGitHubRepoRepository) {
     this._gitHubRepositoryRepository = repo;
   }
 }

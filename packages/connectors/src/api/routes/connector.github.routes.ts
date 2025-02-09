@@ -14,29 +14,34 @@ interface AuthCallbackQuery {
 
 const connectorType = "github";
 
-export default async function spotifyRoutes(fastify: FastifyInstance) {
-  const githubService = fastify.githubService;
-  if (!githubService) {
+export default async function githubRoutes(fastify: FastifyInstance) {
+  if (!fastify.githubService) {
     fastify.decorate("githubService", connectorServiceFactory.getService<ConnectorGitHubService>(connectorType));
   }
+
+  const githubService = fastify.githubService;
 
   fastify.get(
     "/auth/callback",
     async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
       const { code } = request.query;
+
       if (!code) {
+        fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
         return reply.status(400).send({ error: "Missing authorization code." });
       }
 
       try {
-        await githubService.connector.authenticator.authenticate(code);
+        await githubService.connector.connect(code);
 
         const repositories = await githubService.getRepositories();
         await githubService.connector.store.save(repositories);
 
-        reply.send(repositories);
+        reply.send({
+          repositories,
+        });
       } catch (err: any) {
-        fastify.log.error(err);
+        fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
         reply.status(500).send({ error: "Authentication failed." });
       }
     },
@@ -47,7 +52,7 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
       const repositories = await githubService.getRepositories();
       reply.send(repositories);
     } catch (err: any) {
-      fastify.log.error(err);
+      fastify.log.error({ err, route: "/repositories" }, "Failed to fetch repositories.");
       reply.status(500).send({ error: "Failed to fetch repositories." });
     }
   });

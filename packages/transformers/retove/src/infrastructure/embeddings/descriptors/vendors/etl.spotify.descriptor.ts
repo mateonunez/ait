@@ -8,7 +8,7 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
     return {
-      type: "track",
+      __type: "track",
       ...entity,
     } as unknown as U;
   }
@@ -21,7 +21,7 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyArtistDataTarget): U {
     return {
-      type: "artist",
+      __type: "artist",
       ...entity,
     } as unknown as U;
   }
