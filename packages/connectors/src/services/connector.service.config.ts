@@ -40,6 +40,6 @@ function createConnectorConfigs<T extends string>(services: T[]): Record<T, ICon
   );
 }
 
-const connectors: ConnectorType[] = ["github", "spotify"];
+const connectors: ConnectorType[] = ["github", "spotify", "x"];
 export const connectorConfigs = createConnectorConfigs(connectors);
 export type ValidConnectorConfig = keyof typeof connectorConfigs;

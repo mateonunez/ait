@@ -15,4 +15,9 @@ export const openApiSchemas: Record<string, OpenApiSchemaConfig> = {
     outputPath: "./src/types/openapi/openapi.github.types.ts",
     version: "1.1.4",
   },
+  x: {
+    url: "https://api.twitter.com/2/openapi.json", // Official Twitter API v2 OpenAPI spec
+    outputPath: "./src/types/openapi/openapi.x.types.ts",
+    version: "2.126",
+  },
 };

@@ -1,20 +1,34 @@
 import { request } from "undici";
 
 export class ConnectorOAuth implements IConnectorOAuth {
-  public readonly config: IConnectorOAuthConfig;
+  private _config: IConnectorOAuthConfig;
 
   constructor(config: IConnectorOAuthConfig) {
-    this.config = config;
+    this._config = config;
+  }
+
+  get config(): IConnectorOAuthConfig {
+    return this._config;
+  }
+
+  set config(config: IConnectorOAuthConfig) {
+    this._config = config;
   }
 
   public async getAccessToken(code: string): Promise<IConnectorOAuthTokenResponse> {
-    const formData = {
+    const formData: Record<string, string> = {
       client_id: this.config.clientId,
-      client_secret: this.config.clientSecret,
       code,
       redirect_uri: this.config.redirectUri ?? "",
       grant_type: "authorization_code",
     };
+
+    if (this.config.codeVerifier) {
+      formData.code_verifier = this.config.codeVerifier;
+    } else {
+      // Maintain backward compatibility
+      formData.client_secret = this.config.clientSecret;
+    }
 
     return this._postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData);
   }
@@ -38,11 +52,15 @@ export class ConnectorOAuth implements IConnectorOAuth {
   }
 
   private async _postFormData<T>(url: string, formData: Record<string, string>): Promise<T> {
+    console.log("formData", formData);
+    const basicAuth = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString("base64");
+
     const response = await request(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
         Accept: "application/json",
+        Authorization: `Basic ${basicAuth}`,
       },
       body: new URLSearchParams(formData).toString(),
     });
@@ -96,6 +114,9 @@ export interface IConnectorOAuthConfig {
   clientSecret: string;
   endpoint: string;
   redirectUri?: string;
+  codeVerifier?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
 }
 
 export interface IConnectorOAuthTokenResponse {
@@ -111,5 +132,6 @@ export interface IConnectorOAuth {
   getAccessToken(code: string): Promise<IConnectorOAuthTokenResponse>;
   refreshAccessToken(refreshToken: string): Promise<IConnectorOAuthTokenResponse>;
   revokeAccessToken(accessToken: string): Promise<void>;
-  readonly config: IConnectorOAuthConfig;
+  get config(): IConnectorOAuthConfig;
+  set config(config: IConnectorOAuthConfig);
 }

@@ -133,6 +133,8 @@ AIt securely connects to GitHub and Spotify using OAuth 2.0. Here's how to get s
 1. Visit the authentication URLs:
   - GitHub: [Authenticate with GitHub](https://github.com/login/oauth/authorize?client_id=Iv23liZi6U4SNA5ppud2&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo)
   - Spotify: [Authenticate with Spotify](https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read)
+  - X: [Authenticate with X](http://localhost:3000/api/x/auth)
+
 
 2. Allow the requested permissions when prompted.
 
