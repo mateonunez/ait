@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { TextGenerationService } from "./text-generation.service";
 import { DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } from "../../langchain.client";
+import { smoothStream } from "./utils/stream.utils";
 
 describe("TextGenerationService", () => {
   const model = DEFAULT_LANGCHAIN_MODEL;
@@ -47,6 +48,18 @@ describe("TextGenerationService", () => {
         const result = await service.generateText(prompt);
 
         assert.ok(result);
+      });
+
+      it("should generate stream text successfully", { timeout: timeout }, async () => {
+        const prompt = "Based on your context, show some tweets with retweetCount > 100";
+
+        const result = await smoothStream(service.generateTextStream(prompt), {
+          delay: 50,
+          prefix: "AI Response:",
+          cursor: "▌",
+        });
+
+        assert.ok(result.trim(), "Generated stream text should not be empty");
       });
     });
   });
