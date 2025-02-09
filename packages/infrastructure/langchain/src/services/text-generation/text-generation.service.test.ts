@@ -39,8 +39,15 @@ describe("TextGenerationService", () => {
 
     initLangChainClient({ model, expectedVectorSize, logger: false });
 
+    // Create a stubbed LLM with both invoke (non-streaming) and stream (streaming) methods.
     mockLLM = {
       invoke: sinon.stub().resolves(generatedText),
+      stream: sinon.stub().returns(
+        // Simulate an async iterator yielding a single chunk.
+        (async function* () {
+          yield generatedText;
+        })(),
+      ),
       pipe: sinon.stub().returnsThis(),
     } as unknown as sinon.SinonStubbedInstance<Ollama>;
 
@@ -59,6 +66,7 @@ describe("TextGenerationService", () => {
 
     mockPromptTemplate = {
       pipe: sinon.stub().returnsThis(),
+      format: sinon.stub().resolves(generatedText),
       invoke: sinon.stub().resolves(generatedText),
     } as unknown as sinon.SinonStubbedInstance<ChatPromptTemplate>;
     fromMessagesStub = sinon.stub(ChatPromptTemplate, "fromMessages").returns(mockPromptTemplate);
@@ -80,7 +88,6 @@ describe("TextGenerationService", () => {
       assert(fromExistingCollectionStub.calledOnce);
       assert(mockVectorStore.similaritySearch.calledOnce);
       assert(fromMessagesStub.calledOnce);
-      assert(mockPromptTemplate.pipe.calledOnce);
     });
 
     it("should throw error for empty prompt", async () => {
@@ -112,7 +119,7 @@ describe("TextGenerationService", () => {
     });
 
     it("should handle LLM or chain errors", async () => {
-      mockPromptTemplate.invoke.rejects(new Error("LLM error"));
+      mockPromptTemplate.format.rejects(new Error("LLM error"));
 
       await assert.rejects(
         async () => {
@@ -127,7 +134,7 @@ describe("TextGenerationService", () => {
     });
 
     it("should use default model when not provided", async () => {
-      service = new TextGenerationService(); // uses default
+      service = new TextGenerationService(); // uses default model
       await service.generateText(prompt);
       assert(createLLMStub.calledWith(DEFAULT_LANGCHAIN_MODEL));
     });
@@ -137,6 +144,54 @@ describe("TextGenerationService", () => {
       service = new TextGenerationService(customModel, expectedVectorSize, "langchain", mockEmbeddingsService);
       await service.generateText(prompt);
       assert(createLLMStub.calledWith(customModel));
+    });
+  });
+
+  describe("generateTextStream", () => {
+    it("should generate stream text successfully", async () => {
+      const streamIterator = service.generateTextStream(prompt);
+      let result = "";
+      for await (const chunk of streamIterator) {
+        result += chunk;
+      }
+      assert.strictEqual(result, generatedText);
+      // Ensure that createLLM and ChatPromptTemplate.fromMessages were called
+      assert(createLLMStub.called);
+      assert(fromMessagesStub.called);
+    });
+
+    it("should throw error for empty prompt in stream mode", async () => {
+      await assert.rejects(
+        async () => {
+          const streamIterator = service.generateTextStream("");
+          for await (const _chunk of streamIterator) {
+            // exhaust the iterator
+          }
+        },
+        (err: unknown) => {
+          assert(err instanceof TextGenerationError);
+          assert.strictEqual(err.message, "Failed to generate stream text: Prompt cannot be empty");
+          return true;
+        },
+      );
+    });
+
+    it("should handle errors during streaming", async () => {
+      // @ts-ignore - mock the stream method to throw an error
+      mockLLM.stream = sinon.stub().throws(new Error("Streaming error"));
+      await assert.rejects(
+        async () => {
+          const streamIterator = service.generateTextStream(prompt);
+          for await (const _chunk of streamIterator) {
+            // exhaust the iterator
+          }
+        },
+        (err: unknown) => {
+          assert(err instanceof TextGenerationError);
+          assert.strictEqual(err.message, "Failed to generate stream text: Streaming error");
+          return true;
+        },
+      );
     });
   });
 });

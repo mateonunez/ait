@@ -96,7 +96,7 @@ export class TextGenerationService implements ITextGenerationService {
       console.debug("Prompt:", preparedPrompt);
       const llm = this._getLLM();
       console.debug("LLM:", llm);
-      const promptTemplate = this.getPromptTemplate(preparedPrompt, context);
+      const promptTemplate = this._getPromptTemplate(preparedPrompt, context);
       console.debug("Prompt template:", promptTemplate);
       // Format the prompt via the template.
       const formattedPrompt = await promptTemplate.format({
@@ -128,7 +128,7 @@ export class TextGenerationService implements ITextGenerationService {
     try {
       const { context, prompt: preparedPrompt } = await this.prepareChainInput(prompt, "stream text generation");
       const llm = this._getLLM();
-      const promptTemplate = this.getPromptTemplate(preparedPrompt, context);
+      const promptTemplate = this._getPromptTemplate(preparedPrompt, context);
       const formattedPrompt = await promptTemplate.format({
         context,
         prompt: preparedPrompt,
@@ -155,7 +155,7 @@ export class TextGenerationService implements ITextGenerationService {
    * @param context The context built from similar documents.
    * @returns A ChatPromptTemplate instance.
    */
-  private getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
+  private _getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
     const systemMessage = `
 You are a specialized data interpreter assistant with access to a structured knowledge base.
 CONTEXT FORMAT:
