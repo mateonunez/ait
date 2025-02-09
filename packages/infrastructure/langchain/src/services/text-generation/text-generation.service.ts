@@ -4,12 +4,8 @@ import { getLangChainClient, DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } fr
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 
-// Optional: Constant for limiting number of similar documents
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
-/**
- * Custom error to handle text generation failures.
- */
 export class TextGenerationError extends Error {
   constructor(message: string) {
     super(message);
@@ -17,158 +13,162 @@ export class TextGenerationError extends Error {
   }
 }
 
-/**
- * Defines the structure of a document with page content and optional metadata.
- */
 interface Document {
   pageContent: string;
   metadata?: Record<string, unknown>;
 }
 
-/**
- * Defines the interface for a text generation service.
- */
 export interface ITextGenerationService {
-  /**
-   * Generates text from a given prompt.
-   *
-   * @param prompt - The user's prompt or question.
-   * @returns The generated text as a string.
-   */
   generateText(prompt: string): Promise<string>;
+  generateTextStream(prompt: string): AsyncGenerator<string>;
 }
 
-/**
- * TextGenerationService is responsible for:
- * 1. Validating and embedding the prompt.
- * 2. Fetching similar context documents from Qdrant.
- * 3. Creating and invoking a prompt chain via LangChain's LLM.
- */
 export class TextGenerationService implements ITextGenerationService {
-  private readonly _embeddingService: IEmbeddingsService;
-  private readonly _maxSearchSimilarDocs = MAX_SEARCH_SIMILAR_DOCS;
+  private readonly embeddingService: IEmbeddingsService;
+  private readonly maxSearchSimilarDocs = MAX_SEARCH_SIMILAR_DOCS;
 
   constructor(
     private readonly _model: string = DEFAULT_LANGCHAIN_MODEL,
     private readonly _expectedVectorSize: number = LANGCHAIN_VECTOR_SIZE,
     private readonly _collectionName: string = "langchain",
-    embeddingService?: IEmbeddingsService, // <-- optional injection
+    embeddingService?: IEmbeddingsService,
   ) {
-    // If an embeddings service is passed in, use it; otherwise instantiate the real one
-    this._embeddingService = embeddingService ?? new EmbeddingsService(this._model, this._expectedVectorSize);
+    this.embeddingService = embeddingService ?? new EmbeddingsService(this._model, this._expectedVectorSize);
   }
 
   /**
-   * Generates text from a given prompt using a context-aware chain.
+   * Prepares the common input for both streaming and non-streaming flows:
+   * - Validates the prompt.
+   * - Generates embeddings.
+   * - Loads the vector store and performs a similarity search.
+   * - Builds the context from similar documents.
    *
-   * @param prompt - The user's prompt or question.
-   * @returns The generated text as a string.
-   * @throws TextGenerationError if prompt is empty or an error occurs.
+   * @param prompt A user prompt.
+   * @param operation A label for logging purposes.
+   * @returns An object containing the original prompt and the built context.
+   * @throws TextGenerationError if the prompt is empty.
+   */
+  private async prepareChainInput(prompt: string, operation: string): Promise<{ context: string; prompt: string }> {
+    if (!prompt?.trim()) {
+      throw new TextGenerationError("Prompt cannot be empty");
+    }
+    console.info(`Starting ${operation} (prompt preview: "${prompt.slice(0, 50)}...")`);
+
+    const embedStart = Date.now();
+    const promptEmbeddings = await this.embeddingService.generateEmbeddings(prompt);
+    console.debug(`Prompt embeddings generated in ${Date.now() - embedStart}ms`);
+
+    const vectorStore = await QdrantVectorStore.fromExistingCollection(
+      {
+        embedQuery: async () => promptEmbeddings,
+        embedDocuments: async (documents: string[]) =>
+          Promise.all(documents.map((doc) => this.embeddingService.generateEmbeddings(doc))),
+      },
+      {
+        url: process.env.QDRANT_URL,
+        collectionName: this._collectionName,
+      },
+    );
+    console.debug("Vector store loaded");
+
+    const similarityStart = Date.now();
+    const similarDocs = await vectorStore.similaritySearch(prompt, this.maxSearchSimilarDocs);
+    console.info(`Found ${similarDocs.length} similar documents in ${Date.now() - similarityStart}ms`);
+
+    const context = this._buildContextFromDocuments(similarDocs);
+    console.debug(`Context length: ${context.length}`);
+    console.debug(`Context preview: ${context.slice(0, 100)}...`);
+
+    return { context, prompt };
+  }
+
+  /**
+   * Generates text in non-streaming mode.
+   *
+   * @param prompt The user prompt.
+   * @returns The generated text.
    */
   public async generateText(prompt: string): Promise<string> {
+    const overallStart = Date.now();
     try {
-      if (!prompt?.trim()) {
-        throw new TextGenerationError("Prompt cannot be empty");
-      }
-
-      // Generate embeddings for the query prompt (uses either real or mock embeddings service)
-      const promptEmbeddings = await this._embeddingService.generateEmbeddings(prompt);
-
-      // Create (or load) a Qdrant vector store referencing an existing collection
-      const vectorStore = await QdrantVectorStore.fromExistingCollection(
-        {
-          embedQuery: async () => promptEmbeddings,
-          embedDocuments: async (documents: string[]) => {
-            const embeddings = await Promise.all(
-              documents.map((doc) => this._embeddingService.generateEmbeddings(doc)),
-            );
-            return embeddings;
-          },
-        },
-        {
-          url: process.env.QDRANT_URL, // Or a fallback if undefined
-          collectionName: this._collectionName,
-        },
-      );
-
-      // Find top-N similar documents to build context
-      const similarDocs = await vectorStore.similaritySearch(prompt, this._maxSearchSimilarDocs);
-
-      // Build context from the retrieved documents
-      const context = this._buildContextFromDocuments(similarDocs);
-
-      // Confirm length and content for debugging
-      console.debug(`Context Length: ${context.length}`);
-      console.debug(`Context Preview:\n${JSON.stringify(context).slice(0, 100)}...`);
-
-      // Create an LLM instance and build a chain from the prompt template
-      const langChainClient = getLangChainClient();
-      const llm = langChainClient.createLLM(this._model);
-
-      // Build our prompt template with system instructions and user message
-      const promptTemplate = this._getPromptTemplate(prompt, context);
-      const chain = promptTemplate.pipe(llm);
-
-      // Invoke the chain with the context and user prompt
-      const generatedText = await chain.invoke({ context, prompt });
-
+      const { context, prompt: preparedPrompt } = await this.prepareChainInput(prompt, "text generation");
+      console.debug("Context:", context);
+      console.debug("Prompt:", preparedPrompt);
+      const llm = this._getLLM();
+      console.debug("LLM:", llm);
+      const promptTemplate = this.getPromptTemplate(preparedPrompt, context);
+      console.debug("Prompt template:", promptTemplate);
+      // Format the prompt via the template.
+      const formattedPrompt = await promptTemplate.format({
+        context,
+        prompt: preparedPrompt,
+      });
+      console.debug("Formatted prompt:", formattedPrompt);
+      console.info("Invoking LLM in non-streaming mode...");
+      const generatedText = await llm.invoke(formattedPrompt);
+      console.info(`Text generation completed in ${Date.now() - overallStart}ms`);
       console.debug("Generated text:", generatedText);
       return generatedText;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      const errorMessage = `Failed to generate text: ${message}`;
-      console.error(errorMessage);
-      throw new TextGenerationError(errorMessage);
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Text generation failed", { error: errMsg, prompt });
+      throw new TextGenerationError(`Failed to generate text: ${errMsg}`);
     }
   }
 
   /**
-   * Builds an LLM prompt template with a system and user message.
+   * Generates text in streaming mode.
+   * Returns an async iterator that yields text chunks as they are produced.
    *
-   * @param prompt - The user's prompt or question.
-   * @param context - Relevant context retrieved from similar docs.
-   * @returns A ChatPromptTemplate with system and user instructions.
+   * @param prompt The user prompt.
+   * @returns An async generator yielding text chunks.
    */
-  private _getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
+  public async *generateTextStream(prompt: string): AsyncGenerator<string> {
+    const overallStart = Date.now();
+    try {
+      const { context, prompt: preparedPrompt } = await this.prepareChainInput(prompt, "stream text generation");
+      const llm = this._getLLM();
+      const promptTemplate = this.getPromptTemplate(preparedPrompt, context);
+      const formattedPrompt = await promptTemplate.format({
+        context,
+        prompt: preparedPrompt,
+      });
+
+      console.info("Invoking LLM in streaming mode...");
+
+      const stream = await llm.stream(formattedPrompt);
+      for await (const chunk of stream) {
+        yield chunk;
+      }
+      console.info(`Stream text generation completed in ${Date.now() - overallStart}ms`);
+    } catch (error: unknown) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.error("Stream text generation failed", { error: errMsg, prompt });
+      throw new TextGenerationError(`Failed to generate stream text: ${errMsg}`);
+    }
+  }
+
+  /**
+   * Builds a prompt template using a system message with context and a user message.
+   *
+   * @param prompt The original user prompt.
+   * @param context The context built from similar documents.
+   * @returns A ChatPromptTemplate instance.
+   */
+  private getPromptTemplate(prompt: string, context: string): ChatPromptTemplate {
     const systemMessage = `
-    You are a specialized data interpreter assistant with access to a structured knowledge base.
-  
-    CONTEXT FORMAT:
-    The data is stored in JSON format with escaped characters and contains various metadata fields.
-  
-    INSTRUCTIONS:
-    1. Analyze Structure:
-       - Parse each JSON entry carefully
-       - Identify available fields and their values
-       - Handle any escaped characters appropriately
-  
-    2. Data Extraction:
-       - Extract only relevant information based on the query
-       - Maintain data integrity when presenting values
-       - Preserve original formatting of dates and numbers
-  
-    3. Response Formation:
-       - Present information in a clear, structured format
-       - Group related data points together
-       - Use consistent formatting for similar items
-       - Include source identifiers when available
-  
-    4. Error Handling:
-       - If information is not found, respond with:
-         "Based on the provided context, I cannot find information about [topic]"
-       - For partial matches, indicate what was found and what was missing
-       - Never infer or generate missing data
-  
-    Remember:
-    - Only use data explicitly present in the CONTEXT
-    - Preserve data accuracy and original values
-    - Format output for human readability
-    - Do not add external information
-
-    CONTEXT:
-    ${context}
+You are a specialized data interpreter assistant with access to a structured knowledge base.
+CONTEXT FORMAT:
+Data is stored in JSON format with escaped characters and includes various metadata.
+INSTRUCTIONS:
+1. Analyze each JSON entry, identify fields and values, and handle escaped characters.
+2. Extract only relevant information based on the query, preserving data integrity.
+3. Present the information clearly and in a structured format.
+4. If data is missing, respond with: "Based on the provided context, I cannot find information about [topic]."
+Remember: Use only the data from the CONTEXT without inferring or generating missing information.
+CONTEXT:
+${context}
     `;
-
     return ChatPromptTemplate.fromMessages([
       ["system", systemMessage.trim()],
       ["user", prompt],
@@ -176,33 +176,29 @@ export class TextGenerationService implements ITextGenerationService {
   }
 
   /**
-   * Safely constructs a context string by joining the 'pageContent' fields of
-   * the retrieved documents, separated by double newlines.
+   * Constructs a context string by joining valid documents.
    *
-   * @param documents - Array of documents from similarity search.
-   * @returns A single string containing context from the documents.
+   * @param documents An array of documents from the similarity search.
+   * @returns A single string representing the context.
    */
   private _buildContextFromDocuments(documents: Document[]): string {
-    // Filter out empty documents
-    const validDocs = documents.filter((doc) => doc?.pageContent?.trim().length > 0);
-
-    if (!validDocs.length) {
-      console.debug("No valid documents found for context building");
+    const validDocs = documents.filter((doc) => doc?.pageContent?.trim().length);
+    if (validDocs.length === 0) {
+      console.warn("No valid documents found for context building");
       return "";
     }
-
-    // Format documents
     return validDocs
-      .map((doc, index) => {
-        return [
-          `📄 Document ${index + 1}`,
-          "-------------------",
-          "",
-          "Content:",
-          doc.pageContent.trim(),
-          "-------------------",
-        ].join("\n");
-      })
+      .map(
+        (doc, index) => `##Document ${index + 1}\n-------------\nContent:\n${doc.pageContent.trim()}\n-------------\n`,
+      )
       .join("\n\n");
+  }
+
+  /**
+   * Returns an LLM instance from the shared LangChain client.
+   */
+  private _getLLM() {
+    const langChainClient = getLangChainClient();
+    return langChainClient.createLLM(this._model);
   }
 }
