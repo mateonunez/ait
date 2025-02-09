@@ -10,10 +10,20 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
   async fetchRepositories(): Promise<GitHubRepositoryExternal[]> {
     try {
-      const { data } = (await this.octokit.repos.listForAuthenticatedUser()) as unknown as {
-        data: GitHubRepositoryExternal[];
-      };
-      return data;
+      const response = await this.octokit.repos.listForAuthenticatedUser();
+      const data = response.data;
+
+      let parsedData = data;
+      if (typeof parsedData !== "object") {
+        parsedData = JSON.parse(parsedData);
+      }
+
+      const repositories = parsedData as GitHubRepositoryExternal[];
+
+      return repositories.map((repo) => ({
+        ...repo,
+        __type: "repository" as const,
+      }));
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Unknown error";
       throw new ConnectorGitHubDataSourceFetchRepositoriesError(`Invalid fetch repositories: ${message}`, message);

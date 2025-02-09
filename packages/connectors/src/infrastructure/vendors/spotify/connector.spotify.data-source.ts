@@ -26,7 +26,6 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
   }
 
   async fetchTopArtists(): Promise<SpotifyArtistExternal[]> {
-    // Using the generated type for the /me/top/artists endpoint response
     const response = await this._fetchFromSpotify<{
       items: SpotifyArtistExternal[];
     }>("/me/top/artists");

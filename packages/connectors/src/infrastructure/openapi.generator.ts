@@ -1,7 +1,7 @@
-import { schemas, type SchemaConfig } from "@/schemas.config";
 import { exec } from "node:child_process";
+import { openApiSchemas, type OpenApiSchemaConfig } from "./openapi.schemas.config";
 
-function generateTypesForSchema(schemaKey: string, config: SchemaConfig): Promise<void> {
+function generateTypesForSchema(schemaKey: string, config: OpenApiSchemaConfig): Promise<void> {
   return new Promise((resolve, reject) => {
     const command = `npx openapi-typescript ${config.url} --output ${config.outputPath}`;
     exec(command, (error, stdout, stderr) => {
@@ -15,8 +15,8 @@ function generateTypesForSchema(schemaKey: string, config: SchemaConfig): Promis
 }
 
 async function generateAllTypes(): Promise<void> {
-  for (const schemaKey of Object.keys(schemas)) {
-    const schema = schemas[schemaKey];
+  for (const schemaKey of Object.keys(openApiSchemas)) {
+    const schema = openApiSchemas[schemaKey];
     if (!schema) {
       throw new Error(`Schema configuration not found for key: ${schemaKey}`);
     }

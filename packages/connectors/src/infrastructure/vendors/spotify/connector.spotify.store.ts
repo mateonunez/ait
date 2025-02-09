@@ -2,6 +2,7 @@ import type { SpotifyEntity } from "@/types/domain/entities/vendors/connector.sp
 import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorStore } from "@/types/shared/store/connector.store.interface";
+import { SPOTIFY_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";
 
 export class ConnectorSpotifyStore implements IConnectorStore {
   private _connectorSpotifyRepository: IConnectorSpotifyRepository;
@@ -15,10 +16,10 @@ export class ConnectorSpotifyStore implements IConnectorStore {
 
     for (const item of items) {
       switch (item.__type) {
-        case "track":
+        case SPOTIFY_ENTITY_TYPES_ENUM.TRACK:
           await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: true });
           break;
-        case "artist":
+        case SPOTIFY_ENTITY_TYPES_ENUM.ARTIST:
           await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: true });
           break;
         default:

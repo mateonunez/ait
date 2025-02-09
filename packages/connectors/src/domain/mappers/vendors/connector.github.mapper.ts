@@ -2,13 +2,13 @@ import type { GitHubRepositoryDataTarget } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
 import type {
-  GitHubRepository,
+  GitHubRepositoryExternal,
   GitHubRepositoryEntity,
 } from "@/types/domain/entities/vendors/connector.github.repository.types";
 import type { ConnectorMapperDefinition } from "@/types/domain/mappers/connector.mapper.interface";
 
 const githubRepositoryMapping: ConnectorMapperDefinition<
-  GitHubRepository,
+  GitHubRepositoryExternal,
   GitHubRepositoryEntity,
   GitHubRepositoryDataTarget
 > = {
@@ -21,7 +21,7 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
   name: connectorMapperPassThrough<
     "name",
     string,
-    GitHubRepository,
+    GitHubRepositoryExternal,
     GitHubRepositoryEntity,
     GitHubRepositoryDataTarget
   >("name"),
@@ -29,7 +29,7 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
   description: connectorMapperPassThrough<
     "description",
     string | null,
-    GitHubRepository,
+    GitHubRepositoryExternal,
     GitHubRepositoryEntity,
     GitHubRepositoryDataTarget
   >("description"),
@@ -43,19 +43,23 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
   forks: connectorMapperPassThrough<
     "forks",
     number,
-    GitHubRepository,
+    GitHubRepositoryExternal,
     GitHubRepositoryEntity,
     GitHubRepositoryDataTarget
   >("forks"),
 
-  url: connectorMapperPassThrough<"url", string, GitHubRepository, GitHubRepositoryEntity, GitHubRepositoryDataTarget>(
+  url: connectorMapperPassThrough<
     "url",
-  ),
+    string,
+    GitHubRepositoryExternal,
+    GitHubRepositoryEntity,
+    GitHubRepositoryDataTarget
+  >("url"),
 
   language: connectorMapperPassThrough<
     "language",
     string | null,
-    GitHubRepository,
+    GitHubRepositoryExternal,
     GitHubRepositoryEntity,
     GitHubRepositoryDataTarget
   >("language"),
@@ -70,7 +74,7 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
 const domainDefaults = { __type: "repository" as const };
 
 export const connectorGithubMapper = new ConnectorMapper<
-  GitHubRepository,
+  GitHubRepositoryExternal,
   GitHubRepositoryEntity,
   GitHubRepositoryDataTarget
 >(githubRepositoryMapping, domainDefaults);

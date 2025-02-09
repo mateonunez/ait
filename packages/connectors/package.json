@@ -11,7 +11,8 @@
     "pretest": "test -f .env.test || cp .env.example .env.test",
     "test": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --test-concurrency=1'",
     "test:watch": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'",
-    "generate:openapi": "tsx ./src/infrastructure/openapi-generator.ts"
+    "preinstall": "pnpm generate:openapi",
+    "generate:openapi": "tsx ./src/infrastructure/openapi.generator.ts"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",

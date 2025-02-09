@@ -1,71 +1,31 @@
-import type { IConnectorRepository } from "@/types/domain/entities/connector.repository.interface";
+import type {
+  IConnectorRepository,
+  IConnectorRepositorySaveOptions,
+} from "@/types/domain/entities/connector.repository.interface";
+import type { components as GitHubComponents } from "@/types/openapi/openapi.github.types";
 
-/**
- * Options for saving a repository
- */
-
-export interface IConnectorGitHubRepositoryRepositoryOptions {
-  incremental: boolean;
-}
 /**
  * Repository interface for GitHub repositories
  */
-
-export interface IConnectorGitHubRepositoryRepository {
-  saveRepository(
-    repository: Partial<GitHubRepositoryEntity>,
-    options?: IConnectorGitHubRepositoryRepositoryOptions,
-  ): Promise<void>;
+export interface IConnectorGitHubRepoRepository {
+  saveRepository(repository: Partial<GitHubRepositoryEntity>, options?: IConnectorRepositorySaveOptions): Promise<void>;
   saveRepositories(repositories: Partial<GitHubRepositoryEntity>[]): Promise<void>;
   getRepository(id: string): Promise<GitHubRepositoryEntity | null>;
   getRepositories(): Promise<GitHubRepositoryEntity[]>;
 }
-/**
- * Union of all GitHub repositories
- */
 
 export interface IConnectorGitHubRepository extends IConnectorRepository {
-  repo: IConnectorGitHubRepositoryRepository;
+  repo: IConnectorGitHubRepoRepository;
 }
-/**
- * Base interface for all GitHub entities
- */
 
 export interface BaseGitHubEntity {
   __type: "repository" | "issue" | "pullRequest";
 }
-/**
- * EXTERNAL
- */
 
-export interface GitHubRepository extends BaseGitHubEntity {
-  id: number;
-  name: string;
-  full_name: string;
-  private: boolean;
-  description: string | null;
-  fork: boolean;
-  url: string;
-  homepage: string | null;
-  language: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-  watchers_count: number;
-
-  [key: string]: any;
-}
-/**
- * EXTERNAL
- * Represents the raw data from GitHub
- */
-
-export interface GitHubRepositoryExternal extends GitHubRepository, BaseGitHubEntity {
+type GitHubRepository = GitHubComponents["schemas"]["repository"];
+export interface GitHubRepositoryExternal extends Omit<GitHubRepository, "__type">, BaseGitHubEntity {
   __type: "repository";
 }
-/**
- * DOMAIN
- * Represents a simplified domain entity
- */
 
 export interface GitHubRepositoryEntity extends BaseGitHubEntity {
   id: string;
@@ -79,13 +39,6 @@ export interface GitHubRepositoryEntity extends BaseGitHubEntity {
   updatedAt: string | null;
   __type: "repository";
 }
-/**
- * Union type for any GitHub domain entity
- */
 
 export type GitHubEntity = GitHubRepositoryEntity;
-/**
- * Union type for any GitHub external data representation
- */
-
-export type GitHubData = GitHubRepositoryExternal;
+export type GitHubExternal = GitHubRepositoryExternal;

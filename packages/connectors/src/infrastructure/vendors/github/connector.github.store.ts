@@ -5,6 +5,7 @@ import type {
   IConnectorGitHubRepository,
 } from "@/types/domain/entities/vendors/connector.github.repository.types";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { GITHUB_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";
 
 export class ConnectorGitHubStore implements IConnectorStore {
   private _connectorGitHubRepository: IConnectorGitHubRepository;
@@ -18,7 +19,7 @@ export class ConnectorGitHubStore implements IConnectorStore {
 
     for (const item of items) {
       switch (item.__type) {
-        case "repository":
+        case GITHUB_ENTITY_TYPES_ENUM.REPOSITORY:
           await this._connectorGitHubRepository.repo.saveRepository(item);
           break;
         default:

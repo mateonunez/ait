@@ -6,3 +6,5 @@ coverage/
 dist/
 .venv/
 .DS_Store
+
+packages/connectors/src/types/openapi

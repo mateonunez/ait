@@ -4,7 +4,8 @@
     "enabled": true
   },
   "files": {
-    "ignore": ["node_modules", "dist", "coverage", ".venv", "data"]
+    "ignore": ["node_modules", "dist", "coverage", ".venv", "data"],
+    "maxSize": 31457280
   },
   "linter": {
     "enabled": true,

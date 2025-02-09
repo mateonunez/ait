@@ -41,6 +41,17 @@ SPOTIFY_CLIENT_SECRET=...
 
 ### Running Services
 
+**Generate OpenAPI Types**:
+
+This will generate the OpenAPI types for the connectors.
+
+```bash
+pnpm generate:openapi
+```
+
+> [!NOTE]
+> The generated types are not committed to the repository to avoid bloating the codebase.
+
 **Development**:
 
 Run the application in development mode:
