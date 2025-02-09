@@ -1,4 +1,4 @@
-import type { IConnectorOAuth, IConnectorOAuthTokenResponse } from "./lib/oauth/connector.oauth";
+import type { IConnectorOAuth, IConnectorOAuthConfig, IConnectorOAuthTokenResponse } from "./lib/oauth/connector.oauth";
 
 export interface IConnectorAuthenticator {
   authenticate(code: string): Promise<IConnectorOAuthTokenResponse>;
@@ -23,5 +23,13 @@ export abstract class ConnectorAuthenticatorAbstract implements IConnectorAuthen
 
   async revoke(refreshToken: string): Promise<void> {
     await this.oauth.revokeAccessToken(refreshToken);
+  }
+
+  public getOAuthConfig(): IConnectorOAuthConfig {
+    return this.oauth.config;
+  }
+
+  public getOAuth(): IConnectorOAuth {
+    return this.oauth;
   }
 }

@@ -1,5 +1,5 @@
 import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
-import { connectorGithubMapper } from "../../mappers/vendors/connector.github.mapper";
+import { connectorGithubRepositoryMapper } from "../../mappers/vendors/connector.github.mapper";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
 import { saveOAuthData, getOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
 import { randomUUID } from "node:crypto";
@@ -22,7 +22,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
 
     try {
       console.debug("Before mapping repository to data target:", repository);
-      const repositoryData = connectorGithubMapper.domainToDataTarget(repository);
+      const repositoryData = connectorGithubRepositoryMapper.domainToDataTarget(repository);
       console.debug("After mapping repository to data target:", repositoryData);
       repositoryData.id = repositoryId;
 
@@ -42,18 +42,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
       return;
     }
 
-    try {
-      console.debug("Saving repositories to GitHub repository:", { repos });
-
-      for (const repo of repos) {
-        await this.saveRepository(repo);
-      }
-
-      console.debug("Repositories saved successfully:", { repos });
-    } catch (error) {
-      console.error("Error saving repositories:", error);
-      throw new Error("Failed to save repositories to repository");
-    }
+    await Promise.all(repos.map((repo) => this.saveRepository(repo)));
   }
 
   async getRepository(id: string): Promise<GitHubRepositoryEntity | null> {

@@ -2,10 +2,12 @@ import type { ConnectorServiceConstructor, ConnectorType } from "@/types/infrast
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
 import { ConnectorSpotifyService } from "./vendors/connector.spotify.service";
+import { ConnectorXService } from "./vendors/connector.x.service";
 
 export const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<ConnectorServiceBase<any, any>>> = {
   github: ConnectorGitHubService,
   spotify: ConnectorSpotifyService,
+  x: ConnectorXService,
 };
 
 export class ConnectorServiceFactory {

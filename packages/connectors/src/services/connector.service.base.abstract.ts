@@ -32,13 +32,19 @@ export abstract class ConnectorServiceBase<
     });
   }
 
-  protected async fetchEntities<K extends keyof TEntityMap, E>(entityType: K): Promise<TEntityMap[K][]> {
+  protected async fetchEntities<K extends keyof TEntityMap, E>(
+    entityType: K,
+    shouldConnect = true,
+  ): Promise<TEntityMap[K][]> {
     const config = this.entityConfigs.get(entityType) as EntityConfig<TEntityMap, K, E>;
     if (!config) {
       throw new Error(`No configuration found for entity type: ${String(entityType)}`);
     }
 
-    await this._connector.connect();
+    if (shouldConnect) {
+      await this._connector.connect();
+    }
+
     const entities = await config.fetcher();
     return entities?.length ? entities.map(config.mapper) : [];
   }

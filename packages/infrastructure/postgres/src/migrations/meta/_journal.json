@@ -43,6 +43,13 @@
       "when": 1739019236292,
       "tag": "0005_familiar_puff_adder",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1739119511280,
+      "tag": "0006_talented_ravenous",
+      "breakpoints": true
     }
   ]
 }

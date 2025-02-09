@@ -73,7 +73,7 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
 
 const domainDefaults = { __type: "repository" as const };
 
-export const connectorGithubMapper = new ConnectorMapper<
+export const connectorGithubRepositoryMapper = new ConnectorMapper<
   GitHubRepositoryExternal,
   GitHubRepositoryEntity,
   GitHubRepositoryDataTarget
