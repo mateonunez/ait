@@ -11,7 +11,7 @@ describe("TextGenerationService", () => {
   let service: TextGenerationService;
 
   describe("generateText", () => {
-    describe.skip("github_repositories_collection", () => {
+    describe("github_repositories_collection", () => {
       beforeEach(() => {
         service = new TextGenerationService(model, expectedVectorSize, "github_repositories_collection");
       });
@@ -31,6 +31,19 @@ describe("TextGenerationService", () => {
 
       it("should generate text successfully", { timeout: timeout }, async () => {
         const prompt = "Based on your context, show some tracks from Bad Bunny";
+        const result = await service.generateText(prompt);
+
+        assert.ok(result);
+      });
+    });
+
+    describe("x_tweets_collection", () => {
+      beforeEach(() => {
+        service = new TextGenerationService(model, expectedVectorSize, "x_tweets_collection");
+      });
+
+      it("should generate text successfully", { timeout: timeout }, async () => {
+        const prompt = "Based on your context, show some tweets from with retweetCount greater than 100 or equal to 0";
         const result = await service.generateText(prompt);
 
         assert.ok(result);
