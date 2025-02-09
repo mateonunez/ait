@@ -17,6 +17,14 @@ const xTweetMapping: ConnectorMapperDefinition<XTweetExternal, XTweetEntity, XTw
 
   lang: connectorMapperPassThrough<"lang", string | null | undefined, XTweetExternal, XTweetEntity, XTweetDataTarget>(
     "lang",
+    {
+      external: {
+        fallback: () => "en",
+      },
+      domain: {
+        fallback: () => "en",
+      },
+    },
   ),
   jsonData: {
     external: (external) => external.entities ?? {},

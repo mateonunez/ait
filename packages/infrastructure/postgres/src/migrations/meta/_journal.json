@@ -50,6 +50,13 @@
       "when": 1739119511280,
       "tag": "0006_talented_ravenous",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1739127876653,
+      "tag": "0007_chemical_photon",
+      "breakpoints": true
     }
   ]
 }

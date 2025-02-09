@@ -88,7 +88,7 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
     method: "GET" | "POST",
     body?: Record<string, unknown>,
   ): Promise<T> {
-    const MINIMUM_DELAY_MS = 5000;
+    const MINIMUM_DELAY_MS = 1000;
     const LOG_INTERVAL_MS = 30000;
 
     const resetTime = this._parseRateLimitResetTime(response);
