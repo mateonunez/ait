@@ -1,9 +1,6 @@
-import type {
-  SpotifyArtistExternal,
-  SpotifyTrackExternal,
-} from "../domain/entities/vendors/connector.spotify.repository.types";
+import type { SpotifyArtistExternal, SpotifyTrackExternal } from "../domain/entities/vendors/connector.spotify.types";
 
 export interface IConnectorSpotifyDataSource {
-  fetchTopTracks(): Promise<SpotifyTrackExternal[]>;
+  fetchTracks(): Promise<SpotifyTrackExternal[]>;
   fetchTopArtists(): Promise<SpotifyArtistExternal[]>;
 }

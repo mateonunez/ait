@@ -3,7 +3,7 @@ import type {
   SpotifyArtistExternal,
   SpotifyTrackEntity,
   SpotifyTrackExternal,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
 import { getConnectorConfig } from "../connector.service.config";

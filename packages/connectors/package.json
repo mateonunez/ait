@@ -2,7 +2,7 @@
   "name": "@ait/connectors",
   "version": "1.0.0",
   "description": "AIt's connectors",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "scripts": {
     "dev": "tsx src/api/connector.server.ts",
     "build": "tsc && tsc-alias",

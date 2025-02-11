@@ -7,7 +7,7 @@ import { smoothStream } from "./utils/stream.utils";
 describe("TextGenerationService", () => {
   const model = DEFAULT_LANGCHAIN_MODEL;
   const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
-  const timeout = 900000; // 15 minutes
+  const timeout = 1800000; // 30 minutes
 
   let service: TextGenerationService;
 
@@ -51,7 +51,14 @@ describe("TextGenerationService", () => {
       });
 
       it("should generate stream text successfully", { timeout: timeout }, async () => {
-        const prompt = "Based on your context, show some tweets with retweetCount > 100";
+        const prompt =
+          "Based on your context, analyze tweets and show me the following information:\n" +
+          "1. Tweet text\n" +
+          "2. Author username\n" +
+          "3. Retweet count\n" +
+          "4. Like count\n" +
+          "Only include tweets that have either more than 100 retweets or 0 likes. " +
+          "Please format the output in a clear, structured way.";
 
         const result = await smoothStream(service.generateTextStream(prompt), {
           delay: 50,

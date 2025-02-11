@@ -16,7 +16,7 @@ import type {
   SpotifyArtistExternal,
   SpotifyTrackEntity,
   SpotifyTrackExternal,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { XTweetEntity, XTweetExternal } from "@/types/domain/entities/vendors/connector.x.repository.types";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {
@@ -59,7 +59,7 @@ const githubEntityConfigs = {
 
 const spotifyEntityConfigs = {
   [SPOTIFY_ENTITY_TYPES_ENUM.TRACK]: {
-    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchTopTracks(),
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchTracks(),
     mapper: (track: SpotifyTrackExternal) => connectorSpotifyTrackMapper.externalToDomain(track),
   } satisfies EntityConfig<ConnectorSpotify, SpotifyTrackExternal, SpotifyTrackEntity>,
 

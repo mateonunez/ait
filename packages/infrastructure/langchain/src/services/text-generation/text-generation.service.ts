@@ -37,77 +37,49 @@ export class TextGenerationService implements ITextGenerationService {
   }
 
   /**
-   * Prepares the common input for both streaming and non-streaming flows:
-   * - Validates the prompt.
-   * - Generates embeddings.
-   * - Loads the vector store and performs a similarity search.
-   * - Builds the context from similar documents.
-   *
-   * @param prompt A user prompt.
-   * @param operation A label for logging purposes.
-   * @returns An object containing the original prompt and the built context.
-   * @throws TextGenerationError if the prompt is empty.
-   */
-  private async prepareChainInput(prompt: string, operation: string): Promise<{ context: string; prompt: string }> {
-    if (!prompt?.trim()) {
-      throw new TextGenerationError("Prompt cannot be empty");
-    }
-    console.info(`Starting ${operation} (prompt preview: "${prompt.slice(0, 50)}...")`);
-
-    const embedStart = Date.now();
-    const promptEmbeddings = await this.embeddingService.generateEmbeddings(prompt);
-    console.debug(`Prompt embeddings generated in ${Date.now() - embedStart}ms`);
-
-    const vectorStore = await QdrantVectorStore.fromExistingCollection(
-      {
-        embedQuery: async () => promptEmbeddings,
-        embedDocuments: async (documents: string[]) =>
-          Promise.all(documents.map((doc) => this.embeddingService.generateEmbeddings(doc))),
-      },
-      {
-        url: process.env.QDRANT_URL,
-        collectionName: this._collectionName,
-      },
-    );
-    console.debug("Vector store loaded");
-
-    const similarityStart = Date.now();
-    const similarDocs = await vectorStore.similaritySearch(prompt, this.maxSearchSimilarDocs);
-    console.info(`Found ${similarDocs.length} similar documents in ${Date.now() - similarityStart}ms`);
-
-    const context = this._buildContextFromDocuments(similarDocs);
-    console.debug(`Context length: ${context.length}`);
-    console.debug(`Context preview: ${context.slice(0, 100)}...`);
-
-    return { context, prompt };
-  }
-
-  /**
    * Generates text in non-streaming mode.
    *
    * @param prompt The user prompt.
    * @returns The generated text.
    */
   public async generateText(prompt: string): Promise<string> {
+    if (!prompt || prompt.trim() === "") {
+      throw new TextGenerationError("Prompt cannot be empty");
+    }
+
     const overallStart = Date.now();
     try {
-      const { context, prompt: preparedPrompt } = await this.prepareChainInput(prompt, "text generation");
+      const { context, prompt: preparedPrompt } = await this._prepareChainInput(prompt, "text generation");
+
+      // Check if the prepared prompt is empty after processing
+      if (!preparedPrompt || preparedPrompt.trim() === "") {
+        throw new TextGenerationError("Prompt cannot be empty after preparation");
+      }
+
       console.debug("Context:", context);
       console.debug("Prompt:", preparedPrompt);
       const llm = this._getLLM();
       console.debug("LLM:", llm);
       const promptTemplate = this._getPromptTemplate(preparedPrompt, context);
       console.debug("Prompt template:", promptTemplate);
+
       // Format the prompt via the template.
       const formattedPrompt = await promptTemplate.format({
         context,
         prompt: preparedPrompt,
       });
+
+      // Optionally, check if formatting produced an empty prompt.
+      if (!formattedPrompt || formattedPrompt.trim() === "") {
+        throw new TextGenerationError("Formatted prompt cannot be empty");
+      }
+
       console.debug("Formatted prompt:", formattedPrompt);
       console.info("Invoking LLM in non-streaming mode...");
       const generatedText = await llm.invoke(formattedPrompt);
       console.info(`Text generation completed in ${Date.now() - overallStart}ms`);
       console.debug("Generated text:", generatedText);
+
       return generatedText;
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -124,9 +96,21 @@ export class TextGenerationService implements ITextGenerationService {
    * @returns An async generator yielding text chunks.
    */
   public async *generateTextStream(prompt: string): AsyncGenerator<string> {
+    if (!prompt || prompt.trim() === "") {
+      throw new TextGenerationError("Prompt cannot be empty");
+    }
+
     const overallStart = Date.now();
     try {
-      const { context, prompt: preparedPrompt } = await this.prepareChainInput(prompt, "stream text generation");
+      console.log("Starting stream text generation for prompt:", prompt);
+
+      const { context, prompt: preparedPrompt } = await this._prepareChainInput(prompt, "stream text generation");
+
+      // Check if the prepared prompt is empty after processing
+      if (!preparedPrompt || preparedPrompt.trim() === "") {
+        throw new TextGenerationError("Prompt cannot be empty after preparation");
+      }
+
       const llm = this._getLLM();
       const promptTemplate = this._getPromptTemplate(preparedPrompt, context);
       const formattedPrompt = await promptTemplate.format({
@@ -134,12 +118,18 @@ export class TextGenerationService implements ITextGenerationService {
         prompt: preparedPrompt,
       });
 
-      console.info("Invoking LLM in streaming mode...");
+      if (!formattedPrompt || formattedPrompt.trim() === "") {
+        throw new TextGenerationError("Formatted prompt cannot be empty");
+      }
 
+      console.debug("Formatted prompt for streaming:", formattedPrompt);
+      console.info("Invoking LLM in streaming mode...");
       const stream = await llm.stream(formattedPrompt);
+
       for await (const chunk of stream) {
         yield chunk;
       }
+
       console.info(`Stream text generation completed in ${Date.now() - overallStart}ms`);
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -187,9 +177,11 @@ ${context}
       console.warn("No valid documents found for context building");
       return "";
     }
+    // Rename the document
     return validDocs
       .map(
-        (doc, index) => `##Document ${index + 1}\n-------------\nContent:\n${doc.pageContent.trim()}\n-------------\n`,
+        (doc, index) =>
+          `## ${doc.metadata?.__type} ${index + 1}\n-------------\nContent:\n${doc.pageContent.trim()}\n-------------\n`,
       )
       .join("\n\n");
   }
@@ -200,5 +192,51 @@ ${context}
   private _getLLM() {
     const langChainClient = getLangChainClient();
     return langChainClient.createLLM(this._model);
+  }
+
+  /**
+   * Prepares the common input for both streaming and non-streaming flows:
+   * - Validates the prompt.
+   * - Generates embeddings.
+   * - Loads the vector store and performs a similarity search.
+   * - Builds the context from similar documents.
+   *
+   * @param prompt A user prompt.
+   * @param operation A label for logging purposes.
+   * @returns An object containing the original prompt and the built context.
+   * @throws TextGenerationError if the prompt is empty.
+   */
+  private async _prepareChainInput(prompt: string, operation: string): Promise<{ context: string; prompt: string }> {
+    if (!prompt?.trim()) {
+      throw new TextGenerationError("Prompt cannot be empty");
+    }
+    console.info(`Starting ${operation} (prompt preview: "${prompt.slice(0, 50)}...")`);
+
+    const embedStart = Date.now();
+    const promptEmbeddings = await this.embeddingService.generateEmbeddings(prompt);
+    console.debug(`Prompt embeddings generated in ${Date.now() - embedStart}ms`);
+
+    const vectorStore = await QdrantVectorStore.fromExistingCollection(
+      {
+        embedQuery: async () => promptEmbeddings,
+        embedDocuments: async (documents: string[]) =>
+          Promise.all(documents.map((doc) => this.embeddingService.generateEmbeddings(doc))),
+      },
+      {
+        url: process.env.QDRANT_URL,
+        collectionName: this._collectionName,
+      },
+    );
+    console.debug("Vector store loaded");
+
+    const similarityStart = Date.now();
+    const similarDocs = await vectorStore.similaritySearch(prompt, this.maxSearchSimilarDocs);
+    console.info(`Found ${similarDocs.length} similar documents in ${Date.now() - similarityStart}ms`);
+
+    const context = this._buildContextFromDocuments(similarDocs);
+    console.debug(`Context length: ${context.length}`);
+    console.debug(`Context preview: ${context.slice(0, 100)}...`);
+
+    return { context, prompt };
   }
 }

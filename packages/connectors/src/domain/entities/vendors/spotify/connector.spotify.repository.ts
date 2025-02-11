@@ -1,7 +1,7 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
 import { getOAuthData, saveOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
-import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.types";
 import { ConnectorSpotifyTrackRepository } from "./connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "./connector.spotify-artist.repository";
 

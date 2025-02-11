@@ -3,7 +3,7 @@ import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/co
 import type {
   IConnectorSpotifyArtistRepository,
   SpotifyArtistEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyArtists } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 

@@ -1,10 +1,7 @@
 import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm, spotifyTracks, spotifyArtists } from "@ait/postgres";
-import type {
-  SpotifyTrackEntity,
-  SpotifyArtistEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import type { SpotifyTrackEntity, SpotifyArtistEntity } from "@/types/domain/entities/vendors/connector.spotify.types";
 import { ConnectorSpotifyTrackRepository } from "@/domain/entities/vendors/spotify/connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-artist.repository";
 
@@ -31,10 +28,19 @@ describe("ConnectorSpotifyRepository", () => {
           album: "Test Album",
           durationMs: 60000,
           popularity: 50,
+          // New fields
+          explicit: false,
+          isPlayable: true,
+          previewUrl: "https://example.com/preview",
+          trackNumber: 1,
+          discNumber: 1,
+          uri: "spotify:track:test-id",
+          href: "https://api.spotify.com/v1/tracks/test-id",
+          isLocal: false,
           createdAt: new Date(),
           updatedAt: new Date(),
           __type: "track",
-        } as SpotifyTrackEntity;
+        };
 
         await trackRepository.saveTrack(track);
 
@@ -42,6 +48,14 @@ describe("ConnectorSpotifyRepository", () => {
         assert.equal(saved.length, 1);
         assert(saved[0] !== undefined);
         assert.equal(saved[0].id, track.id);
+        assert.equal(saved[0].explicit, track.explicit);
+        assert.equal(saved[0].isPlayable, track.isPlayable);
+        assert.equal(saved[0].previewUrl, track.previewUrl);
+        assert.equal(saved[0].trackNumber, track.trackNumber);
+        assert.equal(saved[0].discNumber, track.discNumber);
+        assert.equal(saved[0].uri, track.uri);
+        assert.equal(saved[0].href, track.href);
+        assert.equal(saved[0].isLocal, track.isLocal);
       });
 
       it("should throw on missing track ID", async () => {
@@ -59,26 +73,42 @@ describe("ConnectorSpotifyRepository", () => {
           {
             id: "track-1",
             name: "Track 1",
-            __type: "track",
             artist: "Artist 1",
             album: "Album 1",
             durationMs: 60000,
             popularity: 50,
+            explicit: true,
+            isPlayable: true,
+            previewUrl: "https://example.com/preview1",
+            trackNumber: 1,
+            discNumber: 1,
+            uri: "spotify:track:track-1",
+            href: "https://api.spotify.com/v1/tracks/track-1",
+            isLocal: false,
             createdAt: now,
             updatedAt: now,
+            __type: "track",
           },
           {
             id: "track-2",
             name: "Track 2",
-            __type: "track",
             artist: "Artist 2",
             album: "Album 2",
             durationMs: 60000,
             popularity: 60,
+            explicit: false,
+            isPlayable: true,
+            previewUrl: "https://example.com/preview2",
+            trackNumber: 2,
+            discNumber: 1,
+            uri: "spotify:track:track-2",
+            href: "https://api.spotify.com/v1/tracks/track-2",
+            isLocal: false,
             createdAt: now,
             updatedAt: now,
+            __type: "track",
           },
-        ] as SpotifyTrackEntity[];
+        ];
 
         await trackRepository.saveTracks(tracks);
 

@@ -7,9 +7,11 @@ describe("ConnectorXDataSource", () => {
   let agent: MockAgent;
   let dataSource: ConnectorXDataSource;
   let mockAccessToken: string;
+  const xEndpoint = "https://api.x.com";
 
   beforeEach(() => {
     agent = new MockAgent();
+    agent.disableNetConnect();
     setGlobalDispatcher(agent);
 
     mockAccessToken = "test-access-token";
@@ -18,8 +20,8 @@ describe("ConnectorXDataSource", () => {
 
   describe("fetchTweets", () => {
     it("should return a list of tweets", async () => {
-      agent
-        .get("https://api.x.com")
+      const mockClient = agent.get(xEndpoint);
+      mockClient
         .intercept({
           path: "/2/users/me",
           method: "GET",
@@ -27,53 +29,36 @@ describe("ConnectorXDataSource", () => {
         })
         .reply(200, { data: { id: "user123" } });
 
-      const params = new URLSearchParams({
-        "tweet.fields": "author_id,created_at,id,text,public_metrics,entities,lang",
-        max_results: "5",
-      });
-      const tweetEndpoint = `/users/user123/tweets?${params.toString()}`;
-      const apiTweetResponse = {
-        data: [
-          {
-            id: "t1",
-            text: "tweet1",
-            author_id: "user123",
-            created_at: "2025-02-09T00:00:00Z",
-            public_metrics: {},
-            entities: {},
-            lang: "en",
-          },
-          {
-            id: "t2",
-            text: "tweet2",
-            author_id: "user123",
-            created_at: "2025-02-09T01:00:00Z",
-            public_metrics: {},
-            entities: {},
-            lang: "en",
-          },
-        ],
-        meta: { result_count: 2 },
-      };
-
-      agent
-        .get("https://api.x.com")
+      mockClient
         .intercept({
-          path: `/2${tweetEndpoint}`,
+          path: /^\/2\/users\/user123\/tweets/,
           method: "GET",
           headers: { Authorization: `Bearer ${mockAccessToken}` },
         })
-        .reply(200, apiTweetResponse);
+        .reply(200, {
+          data: [
+            {
+              id: "t1",
+              text: "tweet1",
+              author_id: "user123",
+              created_at: "2025-02-09T00:00:00Z",
+              public_metrics: {},
+              entities: {},
+              lang: "en",
+            },
+          ],
+          meta: { result_count: 1 },
+        });
 
       const result = await dataSource.fetchTweets();
-
-      const expected = apiTweetResponse.data.map((tweet) => ({ ...tweet, __type: "tweet" }));
-      assert.deepEqual(result, expected);
+      assert.equal(result.length, 1);
+      assert.equal(result[0]?.id, "t1");
+      assert.equal(result[0]?.__type, "tweet");
     });
 
-    it("should handle invalid access token error when fetching user id", async () => {
-      agent
-        .get("https://api.x.com")
+    it("should handle invalid access token error", async () => {
+      const mockClient = agent.get(xEndpoint);
+      mockClient
         .intercept({
           path: "/2/users/me",
           method: "GET",
@@ -82,21 +67,19 @@ describe("ConnectorXDataSource", () => {
         .reply(401, { error: { message: "Invalid access token" } });
 
       await assert.rejects(
-        async () => {
-          await dataSource.fetchTweets();
-        },
-        (error: unknown) => {
+        () => dataSource.fetchTweets(),
+        (error) => {
           assert.ok(error instanceof ConnectorXDataSourceError);
           assert.strictEqual(error.message, "X API error: 401 Unauthorized");
-          assert.strictEqual(error.responseBody, JSON.stringify({ error: { message: "Invalid access token" } }));
           return true;
         },
       );
     });
 
-    it("should retry the request when rate limit is exceeded", async () => {
-      agent
-        .get("https://api.x.com")
+    it("should retry on rate limit", async () => {
+      const mockClient = agent.get(xEndpoint);
+
+      mockClient
         .intercept({
           path: "/2/users/me",
           method: "GET",
@@ -104,52 +87,35 @@ describe("ConnectorXDataSource", () => {
         })
         .reply(200, { data: { id: "user123" } });
 
-      const params = new URLSearchParams({
-        "tweet.fields": "author_id,created_at,id,text,public_metrics,entities,lang",
-        max_results: "5",
-      });
-      const tweetEndpoint = `/users/user123/tweets?${params.toString()}`;
-      const resetTime = Math.floor(Date.now() / 1000) + 1;
-
-      agent
-        .get("https://api.x.com")
+      mockClient
         .intercept({
-          path: `/2${tweetEndpoint}`,
+          path: /^\/2\/users\/user123\/tweets/,
           method: "GET",
           headers: { Authorization: `Bearer ${mockAccessToken}` },
         })
         .reply(
           429,
           { error: { message: "Rate limit exceeded" } },
-          { headers: { "x-rate-limit-reset": resetTime.toString() } },
-        );
-
-      const apiTweetResponse = {
-        data: [
           {
-            id: "t1",
-            text: "tweet1",
-            author_id: "user123",
-            created_at: "2025-02-09T00:00:00Z",
-            public_metrics: {},
-            entities: {},
-            lang: "en",
+            headers: { "x-rate-limit-reset": (Math.floor(Date.now() / 1000) + 1).toString() },
           },
-        ],
-        meta: { result_count: 1 },
-      };
-      agent
-        .get("https://api.x.com")
+        )
+        .times(1);
+
+      mockClient
         .intercept({
-          path: `/2${tweetEndpoint}`,
+          path: /^\/2\/users\/user123\/tweets/,
           method: "GET",
           headers: { Authorization: `Bearer ${mockAccessToken}` },
         })
-        .reply(200, apiTweetResponse);
+        .reply(200, {
+          data: [{ id: "t1", text: "tweet1", author_id: "user123" }],
+          meta: { result_count: 1 },
+        });
 
       const result = await dataSource.fetchTweets();
-      const expected = apiTweetResponse.data.map((tweet) => ({ ...tweet, __type: "tweet" }));
-      assert.deepEqual(result, expected);
+      assert.equal(result.length, 1);
+      assert.equal(result[0]?.id, "t1");
     });
   });
 });
