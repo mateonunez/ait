@@ -51,7 +51,8 @@ describe("TextGenerationService", () => {
       });
 
       it("should generate stream text successfully", { timeout: timeout }, async () => {
-        const prompt = "Based on your context, analyze tweets and show me the following information:\n" +
+        const prompt =
+          "Based on your context, analyze tweets and show me the following information:\n" +
           "1. Tweet text\n" +
           "2. Author username\n" +
           "3. Retweet count\n" +

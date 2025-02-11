@@ -180,7 +180,8 @@ ${context}
     // Rename the document
     return validDocs
       .map(
-        (doc, index) => `## ${doc.metadata?.__type} ${index + 1}\n-------------\nContent:\n${doc.pageContent.trim()}\n-------------\n`,
+        (doc, index) =>
+          `## ${doc.metadata?.__type} ${index + 1}\n-------------\nContent:\n${doc.pageContent.trim()}\n-------------\n`,
       )
       .join("\n\n");
   }
@@ -193,7 +194,7 @@ ${context}
     return langChainClient.createLLM(this._model);
   }
 
-    /**
+  /**
    * Prepares the common input for both streaming and non-streaming flows:
    * - Validates the prompt.
    * - Generates embeddings.
@@ -205,37 +206,37 @@ ${context}
    * @returns An object containing the original prompt and the built context.
    * @throws TextGenerationError if the prompt is empty.
    */
-    private async _prepareChainInput(prompt: string, operation: string): Promise<{ context: string; prompt: string }> {
-      if (!prompt?.trim()) {
-        throw new TextGenerationError("Prompt cannot be empty");
-      }
-      console.info(`Starting ${operation} (prompt preview: "${prompt.slice(0, 50)}...")`);
-  
-      const embedStart = Date.now();
-      const promptEmbeddings = await this.embeddingService.generateEmbeddings(prompt);
-      console.debug(`Prompt embeddings generated in ${Date.now() - embedStart}ms`);
-  
-      const vectorStore = await QdrantVectorStore.fromExistingCollection(
-        {
-          embedQuery: async () => promptEmbeddings,
-          embedDocuments: async (documents: string[]) =>
-            Promise.all(documents.map((doc) => this.embeddingService.generateEmbeddings(doc))),
-        },
-        {
-          url: process.env.QDRANT_URL,
-          collectionName: this._collectionName,
-        },
-      );
-      console.debug("Vector store loaded");
-  
-      const similarityStart = Date.now();
-      const similarDocs = await vectorStore.similaritySearch(prompt, this.maxSearchSimilarDocs);
-      console.info(`Found ${similarDocs.length} similar documents in ${Date.now() - similarityStart}ms`);
-  
-      const context = this._buildContextFromDocuments(similarDocs);
-      console.debug(`Context length: ${context.length}`);
-      console.debug(`Context preview: ${context.slice(0, 100)}...`);
-  
-      return { context, prompt };
+  private async _prepareChainInput(prompt: string, operation: string): Promise<{ context: string; prompt: string }> {
+    if (!prompt?.trim()) {
+      throw new TextGenerationError("Prompt cannot be empty");
     }
+    console.info(`Starting ${operation} (prompt preview: "${prompt.slice(0, 50)}...")`);
+
+    const embedStart = Date.now();
+    const promptEmbeddings = await this.embeddingService.generateEmbeddings(prompt);
+    console.debug(`Prompt embeddings generated in ${Date.now() - embedStart}ms`);
+
+    const vectorStore = await QdrantVectorStore.fromExistingCollection(
+      {
+        embedQuery: async () => promptEmbeddings,
+        embedDocuments: async (documents: string[]) =>
+          Promise.all(documents.map((doc) => this.embeddingService.generateEmbeddings(doc))),
+      },
+      {
+        url: process.env.QDRANT_URL,
+        collectionName: this._collectionName,
+      },
+    );
+    console.debug("Vector store loaded");
+
+    const similarityStart = Date.now();
+    const similarDocs = await vectorStore.similaritySearch(prompt, this.maxSearchSimilarDocs);
+    console.info(`Found ${similarDocs.length} similar documents in ${Date.now() - similarityStart}ms`);
+
+    const context = this._buildContextFromDocuments(similarDocs);
+    console.debug(`Context length: ${context.length}`);
+    console.debug(`Context preview: ${context.slice(0, 100)}...`);
+
+    return { context, prompt };
+  }
 }

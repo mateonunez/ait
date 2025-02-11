@@ -1,5 +1,5 @@
-import type { SpotifyEntity } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
-import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+import type { SpotifyEntity } from "@/types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorStore } from "@/types/shared/store/connector.store.interface";
 import { SPOTIFY_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";

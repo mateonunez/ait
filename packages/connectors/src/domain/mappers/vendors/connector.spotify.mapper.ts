@@ -3,7 +3,7 @@ import type {
   SpotifyArtistEntity,
   SpotifyTrackExternal,
   SpotifyTrackEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { SpotifyArtistDataTarget, SpotifyTrackDataTarget } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
@@ -14,11 +14,9 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, Spoti
     id: connectorMapperPassThrough<"id", string, SpotifyTrackExternal, SpotifyTrackEntity, SpotifyTrackDataTarget>(
       "id",
     ),
-
     name: connectorMapperPassThrough<"name", string, SpotifyTrackExternal, SpotifyTrackEntity, SpotifyTrackDataTarget>(
       "name",
     ),
-
     popularity: connectorMapperPassThrough<
       "popularity",
       number | null,
@@ -27,6 +25,54 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, Spoti
       SpotifyTrackDataTarget
     >("popularity"),
 
+    explicit: {
+      external: (external) => external.explicit ?? false,
+      domain: (domain) => domain.explicit,
+      dataTarget: (dataTarget) => dataTarget.explicit!,
+    },
+
+    isPlayable: {
+      external: (external) => external.is_playable ?? null,
+      domain: (domain) => domain.isPlayable,
+      dataTarget: (dataTarget) => dataTarget.isPlayable!,
+    },
+
+    previewUrl: {
+      external: (external) => external.preview_url ?? null,
+      domain: (domain) => domain.previewUrl,
+      dataTarget: (dataTarget) => dataTarget.previewUrl!,
+    },
+
+    trackNumber: {
+      external: (external) => external.track_number ?? null,
+      domain: (domain) => domain.trackNumber,
+      dataTarget: (dataTarget) => dataTarget.trackNumber!,
+    },
+
+    discNumber: {
+      external: (external) => external.disc_number ?? null,
+      domain: (domain) => domain.discNumber,
+      dataTarget: (dataTarget) => dataTarget.discNumber!,
+    },
+
+    uri: {
+      external: (external) => external.uri ?? null,
+      domain: (domain) => domain.uri,
+      dataTarget: (dataTarget) => dataTarget.uri!,
+    },
+
+    href: {
+      external: (external) => external.href ?? null,
+      domain: (domain) => domain.href,
+      dataTarget: (dataTarget) => dataTarget.href!,
+    },
+
+    isLocal: {
+      external: (external) => external.is_local ?? false,
+      domain: (domain) => domain.isLocal,
+      dataTarget: (dataTarget) => dataTarget.isLocal!,
+    },
+
     artist: {
       external: (external) => external.artists?.map((artist) => artist.name).join(", ") ?? "",
       domain: (domain) => domain.artist,
@@ -34,9 +80,9 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, Spoti
     },
 
     album: {
-      external: (external) => external.album?.name ?? "",
+      external: (external) => external.album?.name ?? null, // Changed to null to match entity type
       domain: (domain) => domain.album,
-      dataTarget: (dataTarget) => dataTarget.album || "",
+      dataTarget: (dataTarget) => dataTarget.album!,
     },
 
     durationMs: {
@@ -51,7 +97,6 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, Spoti
       dataTarget: () => "track" as const,
     },
   };
-
 const spotifyTrackDomainDefaults = { __type: "track" as const };
 
 export const connectorSpotifyTrackMapper = new ConnectorMapper<

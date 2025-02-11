@@ -4,7 +4,7 @@ import type { IConnectorSpotifyDataSource } from "@/types/infrastructure/connect
 import type {
   SpotifyArtistExternal,
   SpotifyTrackExternal,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 
 dotenv.config();
 
@@ -17,10 +17,10 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     this.accessToken = accessToken;
   }
 
-  async fetchTopTracks(): Promise<SpotifyTrackExternal[]> {
+  async fetchTracks(): Promise<SpotifyTrackExternal[]> {
     const response = await this._fetchFromSpotify<{
       items: SpotifyTrackExternal[];
-    }>("/me/top/tracks");
+    }>("/me/tracks");
 
     return response.items;
   }
@@ -41,6 +41,11 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     const url = `${this.apiUrl}${endpoint}`;
 
     try {
+      console.log("Fetching from Spotify:", url);
+      console.log("Access token:", this.accessToken);
+      console.log("Method:", method);
+      console.log("Body:", body);
+
       const response = await fetch(url, {
         method,
         headers: {

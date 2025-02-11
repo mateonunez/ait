@@ -1,11 +1,10 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { ConnectorSpotifyStore } from "@/infrastructure/vendors/spotify/connector.spotify.store";
 import type {
   IConnectorSpotifyRepository,
-  SpotifyEntity,
   SpotifyTrackEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.repository.types";
-import { ConnectorSpotifyStore } from "@/infrastructure/vendors/spotify/connector.spotify.store";
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 
 describe("ConnectorSpotifyStore", () => {
   let mockRepository: IConnectorSpotifyRepository;
@@ -39,7 +38,7 @@ describe("ConnectorSpotifyStore", () => {
         popularity: 42,
         createdAt: new Date(),
         updatedAt: new Date(),
-      };
+      } as unknown as SpotifyTrackEntity;
 
       await store.save(track);
 
@@ -77,7 +76,7 @@ describe("ConnectorSpotifyStore", () => {
           createdAt: new Date(),
           updatedAt: new Date(),
         },
-      ];
+      ] as unknown as SpotifyTrackEntity[];
 
       await store.save(tracks);
 
@@ -91,7 +90,7 @@ describe("ConnectorSpotifyStore", () => {
         id: "unsupported-1",
         name: "Some Entity",
         __type: "unsupported",
-      } as unknown as SpotifyEntity;
+      } as unknown as SpotifyTrackEntity;
 
       await assert.rejects(() => store.save(unsupportedItem), {
         message: "Type unsupported is not supported",

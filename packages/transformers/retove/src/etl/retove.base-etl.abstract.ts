@@ -57,7 +57,7 @@ export abstract class RetoveBaseETLAbstract {
 
   protected async ensureCollectionExists(): Promise<void> {
     const response = await this.retry(() => this._qdrantClient.getCollections());
-    
+
     // bruh...
     const collectionExists = response.collections.some((collection) => collection.name === this._collectionName);
     if (collectionExists) {
@@ -110,7 +110,7 @@ export abstract class RetoveBaseETLAbstract {
             content,
             metadata: {
               __source: "retove",
-              __type: payloadObj.__type
+              __type: payloadObj.__type,
             },
           },
         } as BaseVectorPoint;

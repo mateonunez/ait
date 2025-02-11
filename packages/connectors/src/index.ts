@@ -22,5 +22,5 @@ export * from "./shared/auth/connector.authenticator.abstract";
 
 // Repository Types
 export type * from "./types/domain/entities/vendors/connector.github.repository.types";
-export type * from "./types/domain/entities/vendors/connector.spotify.repository.types";
+export type * from "./types/domain/entities/vendors/connector.spotify.types";
 export type * from "./types/domain/entities/vendors/connector.x.repository.types";
