@@ -1,5 +1,4 @@
-import { connectorServiceFactory } from "@/services/connector.service.factory";
-import type { ConnectorGitHubService } from "@/services/vendors/connector.github.service";
+import { type ConnectorGitHubService, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {

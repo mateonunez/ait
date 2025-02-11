@@ -6,7 +6,7 @@ import type {
 } from "@/types/domain/entities/vendors/connector.spotify.repository.types";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
-import { connectorConfigs } from "../connector.service.config";
+import { getConnectorConfig } from "../connector.service.config";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import {
   connectorEntityConfigs,
@@ -16,7 +16,7 @@ import {
 
 export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
   constructor() {
-    super(connectorConfigs.spotify!);
+    super(getConnectorConfig("spotify"));
 
     this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.TRACK, SpotifyTrackExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.TRACK,
