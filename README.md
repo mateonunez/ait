@@ -9,24 +9,31 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
 ### Key Features
 
 - **Connectors**:
-  - GitHub integration for repository analysis
-  - Spotify integration for music insights
-  - OAuth 2.0 secure authentication
+  - GitHub integration for repository analysis and OAuth 2.0 authentication
+  - Spotify integration for music insights and playlist analysis
+  - X integration for tweets analysis
+  - Modular connector architecture with shared utilities
+  - Type-safe OpenAPI generated interfaces
+  - Automatic token refresh and persistence
 
 - **ETL Pipeline**:
-  - Extract data from multiple sources
-  - Transform using LangChain and embeddings
+  - Extract data from multiple sources using typed connectors
+  - Transform using LangChain and multiple embedding options
   - Load into vector databases for semantic search
+  - Support for both Python and Node.js embedding generation
+  - Flexible pipeline configuration
 
 - **Storage Solutions**:
-  - PostgreSQL for structured data
+  - PostgreSQL for structured data and OAuth tokens
   - Qdrant for vector similarity search
-  - Ollama for local LLM processing
+  - Ollama for local LLM processing (deepseek-r1:8b)
+  - Redis for job queue and caching
 
 - **Scheduler**:
-  - Schedule and manage ETL tasks
-  - Uses BullMQ for job queue management
+  - Schedule and manage ETL tasks with BullMQ
+  - Automated token refresh and data synchronization
   - Supports cron expressions for periodic tasks
+  - Configurable job priorities and retries
   
 ## 🚀 Getting Started
 
@@ -44,19 +51,29 @@ pnpm install
 
 ```bash
 pnpm start:services   # Starts PostgreSQL, Qdrant, Ollama, etc
-````
+```
 
 ### 🔧 Configuration
 
 1. Set up environment variables:
 
-> You can follow the `.env.example` file to create your own `.env` file, it accepts also `.env.test` for testing purposes.
+> You can follow the `.env.example` file to create your own `.env` file. The project also supports `.env.test` for testing purposes.
 
 ```bash
+# Database Configuration
+POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
+
+# GitHub OAuth
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_secret
+
+# Spotify OAuth
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_secret
+
+# X OAuth
+X_CLIENT_ID=your_x_client_id
+X_CLIENT_SECRET=your_x_secret
 ```
 
 2. Initialize the database:
@@ -112,83 +129,109 @@ The E2E tests will:
 - Perform similarity searches
 - Generate responses using Ollama (deepseek-r1:8b)
 
-### 🌐 Connectors
+### 🌐 Gateway & Connectors
 
-AIt provides smart connectors for GitHub and Spotify. Here's how to get started:
+The project provides smart connectors for GitHub, Spotify, X, and more through a unified gateway. Here's how to get started:
 
-#### 1. Development mode:
+#### 1. Generate OpenAPI Types
+
+First, generate the TypeScript interfaces from OpenAPI specifications:
 
 ```bash
-cd packages/connectors # <- The webserver will move out of this folder soon
+cd packages/connectors
+pnpm generate:openapi
+```
 
-# Ensure you have set the required environment variables
+> Note: Generated types are not committed to avoid repository bloat.
 
+#### 2. Development Mode
+
+```bash
+cd packages/gateway
 pnpm dev
 ```
 
-#### 2. Authentication
+#### 3. Authentication
 
-AIt securely connects to GitHub and Spotify using OAuth 2.0. Here's how to get started:
+AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenticate:
 
-1. Visit the authentication URLs:
-  - GitHub: [Authenticate with GitHub](https://github.com/login/oauth/authorize?client_id=Iv23liZi6U4SNA5ppud2&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo)
-  - Spotify: [Authenticate with Spotify](https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read)
-  - X: [Authenticate with X](http://localhost:3000/api/x/auth)
+1. GitHub:
+```
+https://github.com/login/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo
+```
 
+2. Spotify:
+```
+https://accounts.spotify.com/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read
+```
 
-2. Allow the requested permissions when prompted.
+3. X:
+```
+http://localhost:3000/api/x/auth
+```
 
-Once authenticated, AIt can fetch and process your data while maintaining secure access tokens, the OAuth information is stored in the database to be used for future requests.
+Once authenticated, AIt securely stores and manages OAuth tokens in the database for future requests.
 
-### 🧠 Ollama
+### 🧠 LLM Processing
 
-Ollama is used for local LLM processing. Here is how to set it up:
+AIt uses Ollama for local LLM processing. Here's how to set it up:
 
 1. Start the Ollama service:
 
 ```bash
-docker-compose up -d ait_ollama
+docker compose up -d ait_ollama
 ```
 
-2. Access the Ollama container:
+2. Install the model:
 
 ```bash
-docker exec -it ait_ollama sh
+docker exec -it ait_ollama sh -c "ollama pull deepseek-r1:8b"
 ```
 
-3. Install the model:
-
-```bash
-ollama pull deepseek-r1:8b
-```
+The model is used for:
+- Generating embeddings via LangChain
+- Text generation and analysis
+- Semantic search operations
 
 ### 🛠️ Development
 
 #### Testing
 
-To run tests within an isolated test environment using [./docker-compose.test.yml](./docker-compose.test.yml), follow these steps:
-
-1. Start the required services:
+Run tests in an isolated environment using Docker Compose:
 
 ```bash
+# Start test services
 pnpm start:services:test
-```
 
-3. Run the tests:
-
-ℹ️ The npm `pretest` script will automatically run the migrations and seed the test database before running the tests. _This may change in the future._
-
-```bash
+# Run tests (migrations and seeding happen automatically)
 pnpm test
-```
 
-4. Stop the services:
-
-```bash
+# Stop test services
 pnpm stop:services:test
 ```
 
-> Note: Ensure that the `ait_testing` database is correctly initialized and that all migration scripts have been successfully applied before running tests, the `.env.test` is used for testing purposes.
+> Note: Ensure the `ait_testing` database is properly initialized. The project uses `.env.test` for test configuration.
+
+#### Code Generation
+
+```bash
+# Generate OpenAPI types
+pnpm generate:openapi
+
+# Generate database types
+cd packages/infrastructure/postgres
+pnpm db:generate
+```
+
+#### Database Management
+
+```bash
+# Run migrations
+pnpm db:migrate
+
+# Access database UI
+pnpm db:studio
+```
 
 #### Linting
 
