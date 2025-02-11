@@ -46,7 +46,7 @@ describe("TextGenerationService", () => {
         // Simulate an async iterator yielding a single chunk.
         (async function* () {
           yield generatedText;
-        })(),
+        })()
       ),
       pipe: sinon.stub().returnsThis(),
     } as unknown as sinon.SinonStubbedInstance<Ollama>;
@@ -97,9 +97,9 @@ describe("TextGenerationService", () => {
         },
         (err: unknown) => {
           assert(err instanceof TextGenerationError);
-          assert.strictEqual(err.message, "Failed to generate text: Prompt cannot be empty");
+          assert.strictEqual(err.message, "Prompt cannot be empty");
           return true;
-        },
+        }
       );
     });
 
@@ -114,7 +114,7 @@ describe("TextGenerationService", () => {
           assert(err instanceof TextGenerationError);
           assert.strictEqual(err.message, "Failed to generate text: Vector store error");
           return true;
-        },
+        }
       );
     });
 
@@ -129,7 +129,7 @@ describe("TextGenerationService", () => {
           assert(err instanceof TextGenerationError);
           assert.strictEqual(err.message, "Failed to generate text: LLM error");
           return true;
-        },
+        }
       );
     });
 
@@ -170,9 +170,9 @@ describe("TextGenerationService", () => {
         },
         (err: unknown) => {
           assert(err instanceof TextGenerationError);
-          assert.strictEqual(err.message, "Failed to generate stream text: Prompt cannot be empty");
+          assert.strictEqual(err.message, "Prompt cannot be empty");
           return true;
-        },
+        }
       );
     });
 
@@ -190,7 +190,7 @@ describe("TextGenerationService", () => {
           assert(err instanceof TextGenerationError);
           assert.strictEqual(err.message, "Failed to generate stream text: Streaming error");
           return true;
-        },
+        }
       );
     });
   });

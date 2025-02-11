@@ -57,11 +57,13 @@ export abstract class RetoveBaseETLAbstract {
 
   protected async ensureCollectionExists(): Promise<void> {
     const response = await this.retry(() => this._qdrantClient.getCollections());
+    
+    // bruh...
     const collectionExists = response.collections.some((collection) => collection.name === this._collectionName);
-
     if (collectionExists) {
-      console.log(`Deleting existing collection: ${this._collectionName}`);
-      await this.retry(() => this._qdrantClient.deleteCollection(this._collectionName));
+      console.debug(`Collection ${this._collectionName} already exists`);
+      return;
+      // await this.retry(() => this._qdrantClient.deleteCollection(this._collectionName));
     }
 
     console.log(`Creating collection: ${this._collectionName}`);
@@ -93,7 +95,7 @@ export abstract class RetoveBaseETLAbstract {
         const payloadObj = {
           ...this.getPayload(item),
           originalText: text,
-        };
+        } as ReturnType<typeof this.getPayload> & { originalText: string };
 
         const content = Object.entries(payloadObj)
           .map(([key, value]) => `${key}: ${value}`)
@@ -107,7 +109,8 @@ export abstract class RetoveBaseETLAbstract {
           payload: {
             content,
             metadata: {
-              source: "retove",
+              __source: "retove",
+              __type: payloadObj.__type
             },
           },
         } as BaseVectorPoint;
