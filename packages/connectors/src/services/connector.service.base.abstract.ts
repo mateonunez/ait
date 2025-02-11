@@ -34,7 +34,7 @@ export abstract class ConnectorServiceBase<
 
   protected async fetchEntities<K extends keyof TEntityMap, E>(
     entityType: K,
-    shouldConnect = true,
+    shouldConnect = false,
   ): Promise<TEntityMap[K][]> {
     const config = this.entityConfigs.get(entityType) as EntityConfig<TEntityMap, K, E>;
     if (!config) {

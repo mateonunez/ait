@@ -19,10 +19,19 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
 
   async fetchTracks(): Promise<SpotifyTrackExternal[]> {
     const response = await this._fetchFromSpotify<{
-      items: SpotifyTrackExternal[];
+      items: {
+        added_at: string;
+        track: SpotifyTrackExternal;
+      }[];
     }>("/me/tracks");
 
-    return response.items;
+    return (
+      response?.items?.map((item) => ({
+        ...item.track,
+        addedAt: item.added_at,
+        __type: "track" as const,
+      })) ?? []
+    );
   }
 
   async fetchTopArtists(): Promise<SpotifyArtistExternal[]> {
