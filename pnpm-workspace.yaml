@@ -3,3 +3,4 @@ packages:
   - 'packages/infrastructure/*'
   - 'packages/connectors/*'
   - 'packages/transformers/*'
+  - 'packages/gateway/*'

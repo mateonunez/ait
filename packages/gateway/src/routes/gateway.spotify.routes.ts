@@ -1,5 +1,4 @@
-import { connectorServiceFactory } from "@/services/connector.service.factory";
-import type { ConnectorSpotifyService } from "@/services/vendors/connector.spotify.service";
+import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {

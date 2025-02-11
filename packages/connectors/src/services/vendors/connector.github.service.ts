@@ -1,7 +1,7 @@
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
-import { connectorConfigs } from "../connector.service.config";
+import { getConnectorConfig } from "../connector.service.config";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
@@ -14,7 +14,7 @@ import {
 
 export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap> {
   constructor() {
-    super(connectorConfigs.github!);
+    super(getConnectorConfig("github"));
 
     this.registerEntityConfig<GITHUB_ENTITY_TYPES_ENUM.REPOSITORY, GitHubRepositoryExternal>(
       GITHUB_ENTITY_TYPES_ENUM.REPOSITORY,

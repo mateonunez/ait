@@ -1,5 +1,5 @@
 import type { IConnectorOAuthConfig } from "@/shared/auth/lib/oauth/connector.oauth";
-import type { ConnectorType } from "@/types/infrastructure/connector.interface";
+import type { ConnectorType } from "./vendors/connector.vendors.config";
 
 const CONFIG_SUFFIXES = ["CLIENT_ID", "CLIENT_SECRET", "ENDPOINT", "REDIRECT_URI"] as const;
 
@@ -10,9 +10,15 @@ const keyMapping: Record<(typeof CONFIG_SUFFIXES)[number], keyof IConnectorOAuth
   REDIRECT_URI: "redirectUri",
 };
 
-function createConnectorConfig<T extends string>(serviceKey: T): Record<T, IConnectorOAuthConfig> {
+const configCache: Partial<Record<ConnectorType, IConnectorOAuthConfig>> = {};
+
+export function getConnectorConfig(serviceKey: ConnectorType): IConnectorOAuthConfig {
+  if (configCache[serviceKey]) {
+    return configCache[serviceKey]!;
+  }
+
   const prefix = serviceKey.toUpperCase();
-  const config = {} as IConnectorOAuthConfig;
+  const config: Partial<IConnectorOAuthConfig> = {};
 
   for (const suffix of CONFIG_SUFFIXES) {
     const envKey = `${prefix}_${suffix}`;
@@ -26,20 +32,6 @@ function createConnectorConfig<T extends string>(serviceKey: T): Record<T, IConn
     config[configKey] = value;
   }
 
-  return { [serviceKey]: config } as Record<T, IConnectorOAuthConfig>;
+  configCache[serviceKey] = config as IConnectorOAuthConfig;
+  return configCache[serviceKey]!;
 }
-
-function createConnectorConfigs<T extends string>(services: T[]): Record<T, IConnectorOAuthConfig> {
-  return services.reduce(
-    (acc, service) => ({
-      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
-      ...acc,
-      ...createConnectorConfig(service),
-    }),
-    {} as Record<T, IConnectorOAuthConfig>,
-  );
-}
-
-const connectors: ConnectorType[] = ["github", "spotify", "x"];
-export const connectorConfigs = createConnectorConfigs(connectors);
-export type ValidConnectorConfig = keyof typeof connectorConfigs;

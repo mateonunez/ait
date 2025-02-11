@@ -2,10 +2,10 @@
   "name": "@ait/connectors",
   "version": "1.0.0",
   "description": "AIt's connectors",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "tsx src/api/connector.server.ts",
-    "build": "tsc",
+    "build": "tsc && tsc-alias",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "pretest": "test -f .env.test || cp .env.example .env.test",
@@ -36,6 +36,7 @@
     "openapi-typescript": "^7.6.1",
     "pino-pretty": "^13.0.0",
     "sinon": "^19.0.2",
+    "tsc-alias": "^1.8.10",
     "typescript": "^5.7.2"
   }
 }

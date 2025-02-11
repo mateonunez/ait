@@ -1,10 +1,7 @@
 import Fastify, { type FastifyInstance } from "fastify";
-import githubRoutes from "./routes/connector.github.routes";
-import spotifyRoutes from "./routes/connector.spotify.routes";
-import xRoutes from "./routes/connector.x.routes";
 import fastifySecureSession from "@fastify/secure-session";
-import { ait } from "@/shared/constants/ait.constant";
 import { randomBytes } from "node:crypto";
+import { ait } from "@ait/connectors";
 
 export function buildServer(): FastifyInstance {
   const server = Fastify({
@@ -34,25 +31,5 @@ export function buildServer(): FastifyInstance {
     },
   });
 
-  server.register(githubRoutes, { prefix: "/api/github" });
-  server.register(spotifyRoutes, { prefix: "/api/spotify" });
-  server.register(xRoutes, { prefix: "/api/x" });
-
   return server;
 }
-
-export async function startServer(port = 3000): Promise<FastifyInstance> {
-  const server = buildServer();
-
-  try {
-    await server.listen({ port });
-    server.log.info(`Server running on port ${port}`);
-  } catch (err) {
-    server.log.error(err);
-    process.exit(1);
-  }
-  return server;
-}
-
-const PORT = Number(process.env.APP_PORT) || 3000;
-startServer(PORT);
