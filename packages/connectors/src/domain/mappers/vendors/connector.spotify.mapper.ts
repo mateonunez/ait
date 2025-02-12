@@ -5,8 +5,15 @@ import type {
   SpotifyTrackEntity,
   SpotifyPlaylistExternal,
   SpotifyPlaylistEntity,
+  SpotifyAlbumExternal,
+  SpotifyAlbumEntity,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
-import type { SpotifyArtistDataTarget, SpotifyTrackDataTarget, SpotifyPlaylistDataTarget } from "@ait/postgres";
+import type {
+  SpotifyArtistDataTarget,
+  SpotifyTrackDataTarget,
+  SpotifyPlaylistDataTarget,
+  SpotifyAlbumDataTarget,
+} from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
 import type { ConnectorMapperDefinition } from "@/types/domain/mappers/connector.mapper.interface";
@@ -288,3 +295,216 @@ export const connectorSpotifyPlaylistMapper = new ConnectorMapper<
   SpotifyPlaylistEntity,
   SpotifyPlaylistDataTarget
 >(spotifyPlaylistMapping, spotifyPlaylistDomainDefaults);
+
+const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, SpotifyAlbumEntity, SpotifyAlbumDataTarget> =
+  {
+    id: connectorMapperPassThrough<"id", string, SpotifyAlbumExternal, SpotifyAlbumEntity, SpotifyAlbumDataTarget>(
+      "id",
+    ),
+    name: connectorMapperPassThrough<"name", string, SpotifyAlbumExternal, SpotifyAlbumEntity, SpotifyAlbumDataTarget>(
+      "name",
+    ),
+
+    albumType: connectorMapperPassThrough<
+      "albumType",
+      string,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("albumType", {
+      external: {
+        fallback: () => "album",
+      },
+      dataTarget: {
+        fallback: () => "album",
+      },
+    }),
+
+    artists: {
+      external: (external) => external.artists?.map((artist) => artist.name ?? "") ?? "",
+      domain: (domain) => domain.artists,
+      dataTarget: (dataTarget) => dataTarget.artists ?? [],
+    },
+
+    tracks: {
+      external: (external) => external.tracks?.items?.map((track) => track.name ?? "") ?? [],
+      domain: (domain) => domain.tracks,
+      dataTarget: (dataTarget) => dataTarget.tracks ?? [],
+    },
+
+    totalTracks: connectorMapperPassThrough<
+      "totalTracks",
+      number,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("totalTracks", {
+      external: {
+        fallback: () => 0,
+      },
+      dataTarget: {
+        fallback: () => 0,
+      },
+    }),
+
+    releaseDate: connectorMapperPassThrough<
+      "releaseDate",
+      string | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("releaseDate", {
+      external: {
+        fallback: () => null,
+      },
+      dataTarget: {
+        fallback: () => null,
+      },
+    }),
+
+    releaseDatePrecision: connectorMapperPassThrough<
+      "releaseDatePrecision",
+      string | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("releaseDatePrecision", {
+      external: {
+        fallback: () => null,
+      },
+      dataTarget: {
+        fallback: () => null,
+      },
+    }),
+
+    isPlayable: connectorMapperPassThrough<
+      "isPlayable",
+      boolean,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("isPlayable", {
+      external: {
+        fallback: () => false,
+      },
+      dataTarget: {
+        fallback: () => false,
+      },
+    }),
+
+    uri: connectorMapperPassThrough<
+      "uri",
+      string | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("uri", {
+      external: {
+        fallback: () => null,
+      },
+      dataTarget: {
+        fallback: () => null,
+      },
+    }),
+
+    href: connectorMapperPassThrough<
+      "href",
+      string | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("href", {
+      external: {
+        fallback: () => null,
+      },
+      dataTarget: {
+        fallback: () => null,
+      },
+    }),
+
+    popularity: connectorMapperPassThrough<
+      "popularity",
+      number | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("popularity", {
+      external: {
+        fallback: () => null,
+      },
+      dataTarget: {
+        fallback: () => null,
+      },
+    }),
+
+    label: connectorMapperPassThrough<
+      "label",
+      string | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("label", {
+      external: {
+        fallback: () => null,
+      },
+      dataTarget: {
+        fallback: () => null,
+      },
+    }),
+
+    copyrights: {
+      external: (external) => external.copyrights?.map((copyright) => copyright.text ?? "") ?? [],
+      domain: (domain) => domain.copyrights,
+      dataTarget: (dataTarget) => dataTarget.copyrights ?? [],
+    },
+
+    externalIds: {
+      external: (external) => Object.values(external.external_ids ?? {}),
+      domain: (domain) => domain.externalIds,
+      dataTarget: (dataTarget) => Object.values(dataTarget.externalIds ?? {}),
+    },
+
+    genres: {
+      external: (external) => external.genres ?? [],
+      domain: (domain) => domain.genres,
+      dataTarget: (dataTarget) => dataTarget.genres ?? [],
+    },
+
+    createdAt: connectorMapperPassThrough<
+      "createdAt",
+      Date | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("createdAt", {
+      external: {
+        fallback: () => new Date(),
+      },
+    }),
+
+    updatedAt: connectorMapperPassThrough<
+      "updatedAt",
+      Date | null,
+      SpotifyAlbumExternal,
+      SpotifyAlbumEntity,
+      SpotifyAlbumDataTarget
+    >("updatedAt", {
+      external: {
+        fallback: () => new Date(),
+      },
+    }),
+
+    __type: {
+      external: () => "album" as const,
+      domain: (domain) => domain.__type,
+      dataTarget: () => "album" as const,
+    },
+  };
+
+const spotifyAlbumDomainDefaults = { __type: "album" as const };
+
+export const connectorSpotifyAlbumMapper = new ConnectorMapper<
+  SpotifyAlbumExternal,
+  SpotifyAlbumEntity,
+  SpotifyAlbumDataTarget
+>(spotifyAlbumMapping, spotifyAlbumDomainDefaults);

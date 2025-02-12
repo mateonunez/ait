@@ -25,6 +25,9 @@ export class ConnectorSpotifyStore implements IConnectorStore {
         case SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST:
           await this._connectorSpotifyRepository.playlist.savePlaylist(item, { incremental: true });
           break;
+        case SPOTIFY_ENTITY_TYPES_ENUM.ALBUM:
+          await this._connectorSpotifyRepository.album.saveAlbum(item, { incremental: true });
+          break;
         default:
           // @ts-ignore: Unreachable code error
           throw new Error(`Type ${item.__type} is not supported`);

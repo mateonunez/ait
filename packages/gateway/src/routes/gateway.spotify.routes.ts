@@ -42,10 +42,14 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
         const playlists = await spotifyService.getPlaylists();
         await spotifyService.connector.store.save(playlists);
 
+        const albums = await spotifyService.getAlbums();
+        await spotifyService.connector.store.save(albums);
+
         reply.send({
           tracks,
           artists,
           playlists,
+          albums,
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

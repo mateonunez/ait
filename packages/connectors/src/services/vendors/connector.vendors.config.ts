@@ -1,5 +1,6 @@
 import { connectorGithubRepositoryMapper } from "@/domain/mappers/vendors/connector.github.mapper";
 import {
+  connectorSpotifyAlbumMapper,
   connectorSpotifyArtistMapper,
   connectorSpotifyTrackMapper,
 } from "@/domain/mappers/vendors/connector.spotify.mapper";
@@ -18,9 +19,10 @@ import type {
   SpotifyTrackExternal,
   SpotifyPlaylistEntity,
   SpotifyPlaylistExternal,
+  SpotifyAlbumEntity,
+  SpotifyAlbumExternal,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { XTweetEntity, XTweetExternal } from "@/types/domain/entities/vendors/connector.x.repository.types";
-// import type { EntityConfig } from "@/types/domain/entities/connector.entity.interface";
 import { connectorSpotifyPlaylistMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {
@@ -40,12 +42,14 @@ export enum SPOTIFY_ENTITY_TYPES_ENUM {
   TRACK = "track",
   ARTIST = "artist",
   PLAYLIST = "playlist",
+  ALBUM = "album",
 }
 
 export interface SpotifyServiceEntityMap {
   [SPOTIFY_ENTITY_TYPES_ENUM.TRACK]: SpotifyTrackEntity;
   [SPOTIFY_ENTITY_TYPES_ENUM.ARTIST]: SpotifyArtistEntity;
   [SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST]: SpotifyPlaylistEntity;
+  [SPOTIFY_ENTITY_TYPES_ENUM.ALBUM]: SpotifyAlbumEntity;
 }
 
 export enum X_ENTITY_TYPES_ENUM {
@@ -78,6 +82,11 @@ const spotifyEntityConfigs = {
     fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchPlaylists(),
     mapper: (playlist: SpotifyPlaylistExternal) => connectorSpotifyPlaylistMapper.externalToDomain(playlist),
   } satisfies EntityConfig<ConnectorSpotify, SpotifyPlaylistExternal, SpotifyPlaylistEntity>,
+
+  [SPOTIFY_ENTITY_TYPES_ENUM.ALBUM]: {
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchAlbums(),
+    mapper: (album: SpotifyAlbumExternal) => connectorSpotifyAlbumMapper.externalToDomain(album),
+  } satisfies EntityConfig<ConnectorSpotify, SpotifyAlbumExternal, SpotifyAlbumEntity>,
 } as const;
 
 const xEntityConfigs = {

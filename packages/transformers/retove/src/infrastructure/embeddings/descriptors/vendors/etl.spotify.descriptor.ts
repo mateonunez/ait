@@ -1,4 +1,9 @@
-import type { SpotifyArtistDataTarget, SpotifyPlaylistDataTarget, SpotifyTrackDataTarget } from "@ait/postgres";
+import type {
+  SpotifyAlbumDataTarget,
+  SpotifyArtistDataTarget,
+  SpotifyPlaylistDataTarget,
+  SpotifyTrackDataTarget,
+} from "@ait/postgres";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<SpotifyTrackDataTarget> {
@@ -35,6 +40,19 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyPlaylistDataTarget): U {
     return {
       __type: "playlist",
+      ...entity,
+    } as unknown as U;
+  }
+}
+
+export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> {
+  public getEmbeddingText(album: SpotifyAlbumDataTarget): string {
+    return JSON.stringify(album, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
+  }
+
+  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyAlbumDataTarget): U {
+    return {
+      __type: "album",
       ...entity,
     } as unknown as U;
   }

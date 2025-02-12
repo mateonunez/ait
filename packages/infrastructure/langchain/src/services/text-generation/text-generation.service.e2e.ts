@@ -58,6 +58,15 @@ describe("TextGenerationService", () => {
           assert.ok(result);
         });
       });
+
+      describe("albums", () => {
+        it("should generate text successfully", { timeout: timeout }, async () => {
+          const prompt = "Based on your context, show some albums from Bad Bunny";
+          const result = await service.generateText(prompt);
+
+          assert.ok(result);
+        });
+      });
     });
 
     describe("x", () => {

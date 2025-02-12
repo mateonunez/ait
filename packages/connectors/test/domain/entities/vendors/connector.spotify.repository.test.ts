@@ -7,15 +7,18 @@ import {
   spotifyTracks,
   spotifyArtists,
   spotifyPlaylists,
+  spotifyAlbums,
 } from "@ait/postgres";
 import type {
   SpotifyTrackEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
+  SpotifyAlbumEntity,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 import { ConnectorSpotifyTrackRepository } from "@/domain/entities/vendors/spotify/connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-artist.repository";
 import { ConnectorSpotifyPlaylistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
+import { ConnectorSpotifyAlbumRepository } from "@/domain/entities/vendors/spotify/connector.spotify-album.repository";
 
 describe("ConnectorSpotifyRepository", () => {
   const trackRepository: ConnectorSpotifyTrackRepository = new ConnectorSpotifyTrackRepository();
@@ -315,6 +318,115 @@ describe("ConnectorSpotifyRepository", () => {
         await playlistRepository.savePlaylists([]);
         const saved = await db.select().from(spotifyPlaylists).execute();
         assert.equal(saved.length, 0, "No playlist should be saved for empty input");
+      });
+    });
+  });
+
+  describe("ConnectorSpotifyAlbumRepository", () => {
+    const albumRepository: ConnectorSpotifyAlbumRepository = new ConnectorSpotifyAlbumRepository();
+
+    beforeEach(async () => {
+      await db.delete(spotifyAlbums).execute();
+    });
+
+    describe("saveAlbum", () => {
+      it("should save album successfully", async () => {
+        const now = new Date();
+        const album: SpotifyAlbumEntity = {
+          id: "test-album-id",
+          name: "Test Album",
+          albumType: "album",
+          artists: [],
+          tracks: [],
+          totalTracks: 2,
+          releaseDate: "2024-03-15",
+          releaseDatePrecision: "day",
+          isPlayable: true,
+          uri: "spotify:album:test-album-id",
+          href: "https://api.spotify.com/v1/albums/test-album-id",
+          popularity: 75,
+          label: "Test Label",
+          copyrights: [],
+          genres: ["Pop", "Rock"],
+          createdAt: now,
+          updatedAt: now,
+          __type: "album",
+          externalIds: [],
+        };
+
+        await albumRepository.saveAlbum(album);
+
+        const saved = await db.select().from(spotifyAlbums).where(drizzleOrm.eq(spotifyAlbums.id, album.id)).execute();
+
+        assert.equal(saved.length, 1);
+      });
+
+      it("should throw on missing album ID", async () => {
+        const album = {} as SpotifyAlbumEntity;
+        await assert.rejects(() => albumRepository.saveAlbum(album), {
+          message: /Failed to save/,
+        });
+      });
+    });
+
+    describe("saveAlbums", () => {
+      it("should save multiple albums", async () => {
+        const now = new Date();
+        const albums: SpotifyAlbumEntity[] = [
+          {
+            id: "album-1",
+            name: "Album One",
+            albumType: "album",
+            artists: [],
+            tracks: [],
+            totalTracks: 1,
+            releaseDate: "2024-03-15",
+            releaseDatePrecision: "day",
+            isPlayable: true,
+            uri: "spotify:album:album-1",
+            href: "https://api.spotify.com/v1/albums/album-1",
+            popularity: 65,
+            label: "Label One",
+            copyrights: [],
+            externalIds: [],
+            genres: ["Pop"],
+            createdAt: now,
+            updatedAt: now,
+            __type: "album",
+          },
+          {
+            id: "album-2",
+            name: "Album Two",
+            albumType: "single",
+            artists: [],
+            tracks: [],
+            totalTracks: 1,
+            releaseDate: "2024-03-16",
+            releaseDatePrecision: "day",
+            isPlayable: true,
+            uri: "spotify:album:album-2",
+            href: "https://api.spotify.com/v1/albums/album-2",
+            popularity: 70,
+            label: "Label Two",
+            copyrights: [],
+            externalIds: [],
+            genres: ["Rock"],
+            createdAt: now,
+            updatedAt: now,
+            __type: "album",
+          },
+        ];
+
+        await albumRepository.saveAlbums(albums);
+
+        const saved = await db.select().from(spotifyAlbums).execute();
+        assert.equal(saved.length, 2, "Expected two albums to be saved");
+      });
+
+      it("should do nothing if empty array is provided", async () => {
+        await albumRepository.saveAlbums([]);
+        const saved = await db.select().from(spotifyAlbums).execute();
+        assert.equal(saved.length, 0, "No album should be saved for empty input");
       });
     });
   });
