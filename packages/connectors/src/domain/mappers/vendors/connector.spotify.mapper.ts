@@ -327,7 +327,22 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
     },
 
     tracks: {
-      external: (external) => external.tracks?.items?.map((track) => track.name ?? "") ?? [],
+      external: (external) =>
+        external.tracks?.items?.map((track) =>
+          JSON.stringify({
+            name: track.name,
+            artists: track.artists?.map((artist) => artist.name ?? ""),
+            durationMs: track.duration_ms,
+            uri: track.uri,
+            href: track.href,
+            isLocal: track.is_local,
+            isPlayable: track.is_playable,
+            discNumber: track.disc_number,
+            trackNumber: track.track_number,
+            explicit: track.explicit,
+            previewUrl: track.preview_url,
+          }),
+        ) ?? [],
       domain: (domain) => domain.tracks,
       dataTarget: (dataTarget) => dataTarget.tracks ?? [],
     },
