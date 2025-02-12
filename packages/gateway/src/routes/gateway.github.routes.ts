@@ -20,6 +20,22 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
   const githubService = fastify.githubService;
 
+  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const params = new URLSearchParams({
+        client_id: process.env.GITHUB_CLIENT_ID!,
+        redirect_uri: process.env.GITHUB_REDIRECT_URI!,
+        scope: "repo",
+      });
+
+      const authUrl = `${process.env.GITHUB_AUTH_URL}?${params}`;
+      reply.redirect(authUrl);
+    } catch (err: any) {
+      fastify.log.error({ err, route: "/auth" }, "Failed to initiate GitHub authentication.");
+      reply.status(500).send({ error: "Failed to initiate GitHub authentication." });
+    }
+  });
+
   fastify.get(
     "/auth/callback",
     async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
