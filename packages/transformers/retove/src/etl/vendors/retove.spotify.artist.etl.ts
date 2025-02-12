@@ -6,7 +6,7 @@ import { RetoveBaseETLAbstract, type BaseVectorPoint, type RetryOptions } from "
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyArtistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
 
-const defaultCollectionName = "spotify_tracks_collection";
+const defaultCollectionName = "spotify_artists_collection";
 
 export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyArtistDataTarget> = new ETLSpotifyArtistDescriptor();

@@ -20,9 +20,18 @@ export interface IConnectorSpotifyArtistRepository {
   getArtists(): Promise<SpotifyArtistEntity[]>;
 }
 
+export interface IConnectorSpotifyPlaylistRepository {
+  savePlaylist(playlist: SpotifyPlaylistEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  savePlaylists(playlists: SpotifyPlaylistEntity[]): Promise<void>;
+
+  getPlaylist(id: string): Promise<SpotifyPlaylistEntity | null>;
+  getPlaylists(): Promise<SpotifyPlaylistEntity[]>;
+}
+
 export interface IConnectorSpotifyRepository extends IConnectorRepository {
   track: IConnectorSpotifyTrackRepository;
   artist: IConnectorSpotifyArtistRepository;
+  playlist: IConnectorSpotifyPlaylistRepository;
 }
 
 export interface BaseSpotifyEntity {
@@ -99,5 +108,28 @@ export interface SpotifyArtistEntity extends BaseSpotifyEntity {
   __type: "artist";
 }
 
-export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity; // | SpotifyAlbumEntity | SpotifyPlaylistEntity;
-export type SpotifyExternal = SpotifyTrackExternal | SpotifyArtistExternal; // | SpotifyAlbum | SpotifyPlaylist;
+export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity | SpotifyPlaylistEntity;
+export type SpotifyExternal = SpotifyTrackExternal | SpotifyArtistExternal | SpotifyPlaylistExternal;
+
+type SpotifyPlaylist = SpotifyComponents["schemas"]["PlaylistObject"];
+
+export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">, BaseSpotifyEntity {
+  __type: "playlist";
+}
+
+export interface SpotifyPlaylistEntity extends BaseSpotifyEntity {
+  id: string;
+  name: string;
+  description: string | null;
+  public: boolean;
+  collaborative: boolean;
+  owner: string;
+  tracks: number;
+  followers: number;
+  snapshotId: string;
+  uri: string;
+  href: string;
+  createdAt: Date;
+  updatedAt: Date;
+  __type: "playlist";
+}

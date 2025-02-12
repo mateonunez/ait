@@ -1,13 +1,26 @@
 import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { getPostgresClient, closePostgresConnection, drizzleOrm, spotifyTracks, spotifyArtists } from "@ait/postgres";
-import type { SpotifyTrackEntity, SpotifyArtistEntity } from "@/types/domain/entities/vendors/connector.spotify.types";
+import {
+  getPostgresClient,
+  closePostgresConnection,
+  drizzleOrm,
+  spotifyTracks,
+  spotifyArtists,
+  spotifyPlaylists,
+} from "@ait/postgres";
+import type {
+  SpotifyTrackEntity,
+  SpotifyArtistEntity,
+  SpotifyPlaylistEntity,
+} from "@/types/domain/entities/vendors/connector.spotify.types";
 import { ConnectorSpotifyTrackRepository } from "@/domain/entities/vendors/spotify/connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-artist.repository";
+import { ConnectorSpotifyPlaylistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
 
 describe("ConnectorSpotifyRepository", () => {
   const trackRepository: ConnectorSpotifyTrackRepository = new ConnectorSpotifyTrackRepository();
   const artistRepository: ConnectorSpotifyArtistRepository = new ConnectorSpotifyArtistRepository();
+  const playlistRepository: ConnectorSpotifyPlaylistRepository = new ConnectorSpotifyPlaylistRepository();
   const { db } = getPostgresClient();
 
   after(async () => {
@@ -196,6 +209,112 @@ describe("ConnectorSpotifyRepository", () => {
         await artistRepository.saveArtists([]);
         const saved = await db.select().from(spotifyArtists).execute();
         assert.equal(saved.length, 0, "No artist should be saved for empty input");
+      });
+    });
+  });
+
+  describe("ConnectorSpotifyPlaylistRepository", () => {
+    beforeEach(async () => {
+      await db.delete(spotifyPlaylists).execute();
+    });
+
+    describe("savePlaylist", () => {
+      it("should save playlist successfully", async () => {
+        const now = new Date();
+        const playlist: SpotifyPlaylistEntity = {
+          id: "test-playlist-id",
+          name: "Test Playlist",
+          description: "Test Description",
+          public: true,
+          collaborative: false,
+          owner: "test-user",
+          snapshotId: "test-snapshot-id",
+          uri: "spotify:playlist:test-playlist-id",
+          href: "https://api.spotify.com/v1/playlists/test-playlist-id",
+          createdAt: now,
+          updatedAt: now,
+          __type: "playlist",
+          tracks: 0,
+          followers: 0,
+        };
+
+        await playlistRepository.savePlaylist(playlist);
+
+        const saved = await db
+          .select()
+          .from(spotifyPlaylists)
+          .where(drizzleOrm.eq(spotifyPlaylists.id, playlist.id))
+          .execute();
+
+        assert.equal(saved.length, 1);
+        assert(saved[0] !== undefined);
+        assert.equal(saved[0].id, playlist.id);
+        assert.equal(saved[0].name, playlist.name);
+        assert.equal(saved[0].description, playlist.description);
+        assert.equal(saved[0].public, playlist.public);
+        assert.equal(saved[0].collaborative, playlist.collaborative);
+        assert.equal(saved[0].owner, playlist.owner);
+        assert.equal(saved[0].snapshotId, playlist.snapshotId);
+        assert.equal(saved[0].uri, playlist.uri);
+        assert.equal(saved[0].href, playlist.href);
+      });
+
+      it("should throw on missing playlist ID", async () => {
+        const playlist = {} as SpotifyPlaylistEntity;
+        await assert.rejects(() => playlistRepository.savePlaylist(playlist), {
+          message: /Failed to save/,
+        });
+      });
+    });
+
+    describe("savePlaylists", () => {
+      it("should save multiple playlists", async () => {
+        const now = new Date();
+        const playlists: SpotifyPlaylistEntity[] = [
+          {
+            id: "playlist-1",
+            name: "Playlist One",
+            description: "First Test Playlist",
+            public: true,
+            collaborative: false,
+            owner: "user-1",
+            snapshotId: "snapshot-1",
+            uri: "spotify:playlist:playlist-1",
+            href: "https://api.spotify.com/v1/playlists/playlist-1",
+            createdAt: now,
+            updatedAt: now,
+            __type: "playlist",
+            tracks: 0,
+            followers: 0,
+          },
+          {
+            id: "playlist-2",
+            name: "Playlist Two",
+            description: "Second Test Playlist",
+            public: false,
+            collaborative: true,
+            owner: "user-2",
+            snapshotId: "snapshot-2",
+            uri: "spotify:playlist:playlist-2",
+            href: "https://api.spotify.com/v1/playlists/playlist-2",
+            createdAt: now,
+            updatedAt: now,
+            __type: "playlist",
+            tracks: 0,
+            followers: 0,
+          },
+        ];
+
+        await playlistRepository.savePlaylists(playlists);
+
+        const saved = await db.select().from(spotifyPlaylists).execute();
+        assert.equal(saved.length, 2, "Expected two playlists to be saved");
+      });
+
+      it("should do nothing if empty array is provided", async () => {
+        await playlistRepository.savePlaylists([]);
+        const saved = await db.select().from(spotifyPlaylists).execute();
+        assert.equal(saved.length, 0, "No playlist should be saved for empty input");
       });
     });
   });
