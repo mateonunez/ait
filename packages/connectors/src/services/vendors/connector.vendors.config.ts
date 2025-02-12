@@ -16,8 +16,12 @@ import type {
   SpotifyArtistExternal,
   SpotifyTrackEntity,
   SpotifyTrackExternal,
+  SpotifyPlaylistEntity,
+  SpotifyPlaylistExternal,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { XTweetEntity, XTweetExternal } from "@/types/domain/entities/vendors/connector.x.repository.types";
+// import type { EntityConfig } from "@/types/domain/entities/connector.entity.interface";
+import { connectorSpotifyPlaylistMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {
   fetcher: (connector: TConnector) => Promise<TExternal[]>;
@@ -35,11 +39,13 @@ export interface GitHubServiceEntityMap {
 export enum SPOTIFY_ENTITY_TYPES_ENUM {
   TRACK = "track",
   ARTIST = "artist",
+  PLAYLIST = "playlist",
 }
 
 export interface SpotifyServiceEntityMap {
   [SPOTIFY_ENTITY_TYPES_ENUM.TRACK]: SpotifyTrackEntity;
   [SPOTIFY_ENTITY_TYPES_ENUM.ARTIST]: SpotifyArtistEntity;
+  [SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST]: SpotifyPlaylistEntity;
 }
 
 export enum X_ENTITY_TYPES_ENUM {
@@ -67,6 +73,11 @@ const spotifyEntityConfigs = {
     fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchTopArtists(),
     mapper: (artist: SpotifyArtistExternal) => connectorSpotifyArtistMapper.externalToDomain(artist),
   } satisfies EntityConfig<ConnectorSpotify, SpotifyArtistExternal, SpotifyArtistEntity>,
+
+  [SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST]: {
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchPlaylists(),
+    mapper: (playlist: SpotifyPlaylistExternal) => connectorSpotifyPlaylistMapper.externalToDomain(playlist),
+  } satisfies EntityConfig<ConnectorSpotify, SpotifyPlaylistExternal, SpotifyPlaylistEntity>,
 } as const;
 
 const xEntityConfigs = {

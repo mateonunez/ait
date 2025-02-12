@@ -4,6 +4,7 @@ import type { IConnectorSpotifyDataSource } from "@/types/infrastructure/connect
 import type {
   SpotifyArtistExternal,
   SpotifyTrackExternal,
+  SpotifyPlaylistExternal,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 
 dotenv.config();
@@ -40,6 +41,25 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     }>("/me/top/artists");
 
     return response.items;
+  }
+
+  async fetchPlaylists(): Promise<SpotifyPlaylistExternal[]> {
+    const response = await this._fetchFromSpotify<{
+      items: SpotifyPlaylistExternal[];
+    }>("/me/playlists");
+
+    return response.items.map((playlist) => ({
+      ...playlist,
+      __type: "playlist" as const,
+    }));
+  }
+
+  async fetchPlaylistById(playlistId: string): Promise<SpotifyPlaylistExternal> {
+    const response = await this._fetchFromSpotify<SpotifyPlaylistExternal>(`/playlists/${playlistId}`);
+    return {
+      ...response,
+      __type: "playlist" as const,
+    };
   }
 
   private async _fetchFromSpotify<T>(

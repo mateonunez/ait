@@ -19,6 +19,26 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       });
     });
 
+    // Register Spotify Artist ETL
+    schedulerRegistry.register(SpotifyETLs.artist, async (data) => {
+      console.info(`[${SpotifyETLs.artist}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        await runSpotifyETL(qdrant, postgres);
+        console.info(`[${SpotifyETLs.artist}] Completed`);
+      });
+    });
+
+    // Register Spotify Playlist ETL
+    schedulerRegistry.register(SpotifyETLs.playlist, async (data) => {
+      console.info(`[${SpotifyETLs.playlist}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        await runSpotifyETL(qdrant, postgres);
+        console.info(`[${SpotifyETLs.playlist}] Completed`);
+      });
+    });
+
     // Register GitHub Repository ETL
     schedulerRegistry.register(GitHubETLs.repository, async (data) => {
       console.info(`[${GitHubETLs.repository}] Starting...`);

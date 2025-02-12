@@ -35,3 +35,21 @@ export const spotifyArtists = pgTable("spotify_artists", {
 });
 
 export type SpotifyArtistDataTarget = typeof spotifyArtists.$inferInsert;
+
+export const spotifyPlaylists = pgTable("spotify_playlists", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  public: boolean("public").notNull().default(false),
+  collaborative: boolean("collaborative").notNull().default(false),
+  owner: varchar("owner", { length: 255 }).notNull(),
+  tracks: integer("tracks").notNull().default(0),
+  followers: integer("followers").notNull().default(0),
+  snapshotId: varchar("snapshot_id", { length: 255 }).notNull(),
+  uri: varchar("uri", { length: 255 }).notNull(),
+  href: varchar("href", { length: 512 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type SpotifyPlaylistDataTarget = typeof spotifyPlaylists.$inferInsert;

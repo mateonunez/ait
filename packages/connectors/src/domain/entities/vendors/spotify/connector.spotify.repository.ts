@@ -4,6 +4,7 @@ import { getOAuthData, saveOAuthData } from "@/shared/auth/lib/oauth/connector.o
 import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.types";
 import { ConnectorSpotifyTrackRepository } from "./connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "./connector.spotify-artist.repository";
+import { ConnectorSpotifyPlaylistRepository } from "./connector.spotify-playlist.repository";
 
 /**
  * Connector for Spotify Repository: tracks, albums, artists, playlists, etc
@@ -11,11 +12,13 @@ import { ConnectorSpotifyArtistRepository } from "./connector.spotify-artist.rep
 export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository implements IConnectorSpotifyRepository {
   private _spotifyTrackRepository: ConnectorSpotifyTrackRepository;
   private _spotifyArtistRepository: ConnectorSpotifyArtistRepository;
+  private _spotifyPlaylistRepository: ConnectorSpotifyPlaylistRepository;
 
   constructor() {
     super();
     this._spotifyTrackRepository = new ConnectorSpotifyTrackRepository();
     this._spotifyArtistRepository = new ConnectorSpotifyArtistRepository();
+    this._spotifyPlaylistRepository = new ConnectorSpotifyPlaylistRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
@@ -40,5 +43,13 @@ export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository 
 
   set artist(artistRepository: ConnectorSpotifyArtistRepository) {
     this._spotifyArtistRepository = artistRepository;
+  }
+
+  get playlist(): ConnectorSpotifyPlaylistRepository {
+    return this._spotifyPlaylistRepository;
+  }
+
+  set playlist(playlistRepository: ConnectorSpotifyPlaylistRepository) {
+    this._spotifyPlaylistRepository = playlistRepository;
   }
 }

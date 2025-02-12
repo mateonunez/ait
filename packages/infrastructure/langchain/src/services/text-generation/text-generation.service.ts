@@ -133,7 +133,7 @@ export class TextGenerationService implements ITextGenerationService {
       console.info(`Stream text generation completed in ${Date.now() - overallStart}ms`);
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      console.error("Stream text generation failed", { error: errMsg, prompt });
+      console.error(error);
       throw new TextGenerationError(`Failed to generate stream text: ${errMsg}`);
     }
   }
