@@ -28,10 +28,19 @@ export interface IConnectorSpotifyPlaylistRepository {
   getPlaylists(): Promise<SpotifyPlaylistEntity[]>;
 }
 
+export interface IConnectorSpotifyAlbumRepository {
+  saveAlbum(album: SpotifyAlbumEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveAlbums(albums: SpotifyAlbumEntity[]): Promise<void>;
+
+  getAlbum(id: string): Promise<SpotifyAlbumEntity | null>;
+  getAlbums(): Promise<SpotifyAlbumEntity[]>;
+}
+
 export interface IConnectorSpotifyRepository extends IConnectorRepository {
   track: IConnectorSpotifyTrackRepository;
   artist: IConnectorSpotifyArtistRepository;
   playlist: IConnectorSpotifyPlaylistRepository;
+  album: IConnectorSpotifyAlbumRepository;
 }
 
 export interface BaseSpotifyEntity {
@@ -47,35 +56,6 @@ export interface SpotifyImage {
 export interface SpotifyFollowers {
   href: string | null;
   total: number;
-}
-
-type SpotifyArtist = SpotifyComponents["schemas"]["ArtistObject"];
-
-export interface SpotifyAlbum {
-  album_type: string;
-  artists: SpotifyArtist[];
-  available_markets: string[];
-  external_urls: { [key: string]: string };
-  href: string;
-  id: string;
-  images: { url: string; height: number; width: number }[];
-  is_playable: boolean;
-  name: string;
-  release_date: string;
-  release_date_precision: string;
-  total_tracks: number;
-  __type: string;
-  uri: string;
-}
-
-type SpotifyTrack = SpotifyComponents["schemas"]["TrackObject"];
-
-export interface SpotifyTrackExternal extends Omit<SpotifyTrack, "__type">, BaseSpotifyEntity {
-  __type: "track";
-}
-
-export interface SpotifyArtistExternal extends Omit<SpotifyArtist, "__type">, BaseSpotifyEntity {
-  __type: "artist";
 }
 
 export interface SpotifyTrackEntity extends BaseSpotifyEntity {
@@ -108,15 +88,6 @@ export interface SpotifyArtistEntity extends BaseSpotifyEntity {
   __type: "artist";
 }
 
-export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity | SpotifyPlaylistEntity;
-export type SpotifyExternal = SpotifyTrackExternal | SpotifyArtistExternal | SpotifyPlaylistExternal;
-
-type SpotifyPlaylist = SpotifyComponents["schemas"]["PlaylistObject"];
-
-export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">, BaseSpotifyEntity {
-  __type: "playlist";
-}
-
 export interface SpotifyPlaylistEntity extends BaseSpotifyEntity {
   id: string;
   name: string;
@@ -133,3 +104,53 @@ export interface SpotifyPlaylistEntity extends BaseSpotifyEntity {
   updatedAt: Date;
   __type: "playlist";
 }
+
+export interface SpotifyAlbumEntity extends BaseSpotifyEntity {
+  id: string;
+  name: string;
+  albumType: string;
+  artists: string[];
+  tracks: string[];
+  totalTracks: number;
+  releaseDate: string | null;
+  releaseDatePrecision: string | null;
+  isPlayable: boolean;
+  uri: string | null;
+  href: string | null;
+  popularity: number | null;
+  label: string | null;
+  copyrights: string[];
+  externalIds: string[];
+  genres: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  __type: "album";
+}
+
+type SpotifyArtist = SpotifyComponents["schemas"]["ArtistObject"];
+type SpotifyTrack = SpotifyComponents["schemas"]["TrackObject"];
+type SpotifyPlaylist = SpotifyComponents["schemas"]["PlaylistObject"];
+type SpotifyAlbum = SpotifyComponents["schemas"]["AlbumObject"];
+
+export interface SpotifyTrackExternal extends Omit<SpotifyTrack, "__type">, BaseSpotifyEntity {
+  __type: "track";
+}
+
+export interface SpotifyArtistExternal extends Omit<SpotifyArtist, "__type">, BaseSpotifyEntity {
+  __type: "artist";
+}
+
+export interface SpotifyAlbumExternal extends Omit<SpotifyAlbum, "__type">, BaseSpotifyEntity {
+  __type: "album";
+}
+
+export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">, BaseSpotifyEntity {
+  __type: "playlist";
+}
+
+export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity | SpotifyPlaylistEntity | SpotifyAlbumEntity;
+export type SpotifyExternal =
+  | SpotifyTrackExternal
+  | SpotifyArtistExternal
+  | SpotifyPlaylistExternal
+  | SpotifyAlbumExternal;

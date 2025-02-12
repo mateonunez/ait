@@ -5,6 +5,8 @@ import type {
   SpotifyTrackExternal,
   SpotifyPlaylistEntity,
   SpotifyPlaylistExternal,
+  SpotifyAlbumExternal,
+  SpotifyAlbumEntity,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
@@ -32,6 +34,10 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
       SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST],
     );
+    this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.ALBUM, SpotifyAlbumExternal>(
+      SPOTIFY_ENTITY_TYPES_ENUM.ALBUM,
+      connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.ALBUM],
+    );
   }
 
   protected createConnector(oauth: ConnectorOAuth): ConnectorSpotify {
@@ -53,5 +59,9 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
   async getPlaylistById(playlistId: string): Promise<SpotifyPlaylistEntity> {
     const playlist = await this.connector.dataSource.fetchPlaylistById(playlistId);
     return connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST].mapper(playlist);
+  }
+
+  async getAlbums(): Promise<SpotifyAlbumEntity[]> {
+    return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ALBUM);
   }
 }
