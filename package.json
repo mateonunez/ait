@@ -7,6 +7,7 @@
     "build": "pnpm run:recursive build",
     "lint": "pnpm run:recursive lint ",
     "lint:fix": "pnpm run:recursive lint:fix ",
+    "prepare": "husky",
     "pretest": "pnpm run --filter @ait/postgres db:migrate:test",
     "test": "pnpm run:recursive test",
     "migrate": "pnpm run --filter @ait/postgres db:migrate",
