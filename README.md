@@ -157,7 +157,7 @@ AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenti
 
 1. GitHub:
 ```
-https://github.com/login/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo
+https://github.com/login/oauth/authorize?client_id=Iv23liZi6U4SNA5ppud2&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo
 ```
 
 2. Spotify:
