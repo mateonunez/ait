@@ -321,13 +321,13 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
     }),
 
     artists: {
-      external: (external) => external.artists?.map((artist) => JSON.stringify(artist)) ?? [],
+      external: (external) => external.artists?.map((artist) => artist.name ?? "") ?? "",
       domain: (domain) => domain.artists,
       dataTarget: (dataTarget) => dataTarget.artists ?? [],
     },
 
     tracks: {
-      external: (external) => external.tracks?.items?.map((track) => JSON.stringify(track)) ?? [],
+      external: (external) => external.tracks?.items?.map((track) => track.name ?? "") ?? [],
       domain: (domain) => domain.tracks,
       dataTarget: (dataTarget) => dataTarget.tracks ?? [],
     },
@@ -453,7 +453,7 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
     }),
 
     copyrights: {
-      external: (external) => external.copyrights?.map((copyright) => JSON.stringify(copyright)) ?? [],
+      external: (external) => external.copyrights?.map((copyright) => copyright.text ?? "") ?? [],
       domain: (domain) => domain.copyrights,
       dataTarget: (dataTarget) => dataTarget.copyrights ?? [],
     },
