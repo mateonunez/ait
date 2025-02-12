@@ -61,15 +61,11 @@ jobs:
       - name: Build the Project
         run: pnpm build
 
-      - name: Start Services
-        run: pnpm start:services:test
-
-      - name: Wait for few secs for services to start
-        run: sleep 5
-
       - name: Run Tests
         run: pnpm test
 
+      # the `pnpm test` should stop them, but...
       - name: Tear Down Services
         if: always()
         run: pnpm stop:services:test
+

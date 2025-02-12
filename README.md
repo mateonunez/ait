@@ -200,14 +200,8 @@ The model is used for:
 Run tests in an isolated environment using Docker Compose:
 
 ```bash
-# Start test services
-pnpm start:services:test
-
-# Run tests (migrations and seeding happen automatically)
+# Run tests (services, migrations and seeding happen automatically)
 pnpm test
-
-# Stop test services
-pnpm stop:services:test
 ```
 
 > Note: Ensure the `ait_testing` database is properly initialized. The project uses `.env.test` for test configuration.
