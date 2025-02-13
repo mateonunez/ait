@@ -4,6 +4,8 @@ import AItButton from "./components/ait.button";
 import { ThemeToggle } from "./components/theme-toggle";
 import { Heading } from "./components/ui/heading";
 
+const text = "I'm";
+
 export default function App() {
   return (
     <main className={`${theme.layout.container} ${theme.layout.content} ${theme.animations.base}`}>
@@ -13,7 +15,7 @@ export default function App() {
 
       <div className="w-full px-4 sm:px-6 md:px-8 text-center">
         <Heading variant="hero" gradient>
-          Hey! It's <AItButton />
+          {text} <AItButton />
         </Heading>
       </div>
     </main>
