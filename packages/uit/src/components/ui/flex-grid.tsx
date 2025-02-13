@@ -20,10 +20,10 @@ const FlexGrid = forwardRef<HTMLDivElement, FlexGridProps>(
           "md:grid-cols-3",
           "lg:grid-cols-4",
           // Auto rows and dense packing
-          "auto-rows-[minmax(100px,auto)]",
+          "auto-rows-auto",
           "grid-flow-dense",
           // Spacing
-          "gap-4",
+          "gap-8",
           // Container control
           "px-4 mx-auto",
           className,
