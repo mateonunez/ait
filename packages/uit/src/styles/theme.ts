@@ -14,8 +14,8 @@ export const theme = {
   },
   typography: {
     heading: {
-      base: "font-bold tracking-tight cursor-default",
-      hero: "text-8xl md:text-9xl lg:text-[12rem]",
+      base: "font-bold tracking-tight cursor-default text-center",
+      hero: "text-5xl sm:text-6xl md:text-8xl lg:text-9xl xl:text-[12rem]",
     },
     gradient: {
       base: "text-transparent bg-clip-text selection:bg-rose-200/20 dark:selection:bg-rose-400/20",

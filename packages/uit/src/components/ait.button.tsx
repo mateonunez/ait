@@ -11,7 +11,8 @@ export default function AItButton({ label = "AIt", className, ...props }: AItBut
     <button type="button" aria-label="AIt button" {...props}>
       <span
         className={cn(
-          "relative inline-block origin-center p-3 rounded-lg cursor-pointer",
+          "relative inline-block origin-center p-2 sm:p-3 rounded-lg cursor-pointer",
+          "mx-1 sm:mx-2",
           theme.typography.gradient.base,
           `bg-gradient-to-r ${theme.gradients.light} ${theme.gradients.dark}`,
           theme.animations.base,

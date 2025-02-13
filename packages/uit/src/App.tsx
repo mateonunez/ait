@@ -11,9 +11,11 @@ export default function App() {
         <ThemeToggle />
       </div>
 
-      <Heading variant="hero" gradient>
-        Hey! It's <AItButton />
-      </Heading>
+      <div className="w-full px-4 sm:px-6 md:px-8 text-center">
+        <Heading variant="hero" gradient>
+          Hey! It's <AItButton />
+        </Heading>
+      </div>
     </main>
   );
 }
