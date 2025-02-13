@@ -134,7 +134,7 @@ export default function AItDialog({ className, ...props }: Readonly<AItDialogPro
                 size={item.size}
                 className={cn(
                   "relative transition-colors",
-                  item.disabled ? "opacity-60 hover:bg-background" : "hover:bg-accent/5",
+                  item.disabled ? "opacity-60 hover:bg-background" : "hover:bg-accent/5 cursor-pointer",
                 )}
                 onClick={(e) => item.disabled && e.preventDefault()}
                 aria-disabled={item.disabled}
