@@ -26,7 +26,7 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
 - **Storage Solutions**:
   - PostgreSQL for structured data and OAuth tokens
   - Qdrant for vector similarity search
-  - Ollama for local LLM processing (deepseek-r1:8b)
+  - Ollama for local LLM processing (deepseek-r1:1.5b)
   - Redis for job queue and caching
 
 - **Scheduler**:
@@ -127,7 +127,7 @@ The E2E tests will:
 - Connect to your Qdrant collections (_github_repositories_collection_ and _spotify_tracks_collection_)
 - Generate embeddings for test prompts
 - Perform similarity searches
-- Generate responses using Ollama (deepseek-r1:8b)
+- Generate responses using Ollama (deepseek-r1:1.5b)
 
 ### 🌐 Gateway & Connectors
 
@@ -185,7 +185,7 @@ docker compose up -d ait_ollama
 2. Install the model:
 
 ```bash
-docker exec -it ait_ollama sh -c "ollama pull deepseek-r1:8b"
+docker exec -it ait_ollama sh -c "ollama pull deepseek-r1:1.5b"
 ```
 
 The model is used for:
