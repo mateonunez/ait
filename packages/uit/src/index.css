@@ -1,9 +1,6 @@
 @import "tailwindcss";
-/* 
----break--- */
 @plugin "tailwindcss-animate";
-/* 
----break--- */
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -103,14 +100,35 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* 
----break--- */
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .custom-scrollbar {
+    @apply overflow-y-auto;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/50 rounded-full border-2 border-background;
+  }
+
+  /* Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--muted-foreground) var(--muted);
   }
 }

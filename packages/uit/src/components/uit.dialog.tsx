@@ -1,157 +1,138 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/styles/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FlexGrid } from "@/components/ui/flex-grid"; // our updated grid
-import { FlexItem } from "@/components/ui/flex-item"; // our updated item
+import { FlexGrid } from "@/components/ui/flex-grid";
 import { Badge } from "@/components/ui/badge";
 import { useUIt } from "@/contexts/uit.context";
+import { ArrowLeft as BackIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { AIT_SERVICES } from "@/utils/items.const";
+import { FlexItem } from "./ui/flex-item";
 
 type AItDialogProps = Omit<HTMLAttributes<HTMLDivElement>, "open" | "onOpenChange">;
 
-const ITEMS = [
-  {
-    id: "github",
-    title: "GitHub",
-    description: "Recent activity and repositories",
-    color: "#1A1E22",
-    size: "lg",
-    disabled: false,
+const animationVariants = {
+  expand: {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 0.95 },
+    transition: { type: "spring", stiffness: 120, damping: 20, duration: 0.3 },
   },
-  {
-    id: "spotify",
-    title: "Spotify",
-    description: "Now playing",
-    color: "#1DB954",
-    size: "lg",
-    disabled: false,
+  fade: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+    transition: { duration: 0.3 },
   },
-  {
-    id: "x-twitter",
-    title: "X (Twitter)",
-    description: "Latest tweets",
-    color: "#14171A",
-    size: "md",
-    disabled: false,
-  },
-  {
-    id: "discord",
-    title: "Discord",
-    description: "Server activity",
-    color: "#5865F2",
-    size: "sm",
-    disabled: true,
-  },
-  {
-    id: "youtube",
-    title: "YouTube",
-    description: "Latest videos and analytics",
-    color: "#FF0000",
-    size: "full",
-    disabled: true,
-  },
-  {
-    id: "notion",
-    title: "Notion",
-    description: "Recent documents and updates",
-    color: "#000000",
-    size: "full",
-    disabled: true,
-  },
-  {
-    id: "slack",
-    title: "Slack",
-    description: "Channel updates",
-    color: "#4A154B",
-    size: "sm",
-    disabled: true,
-  },
-  {
-    id: "linear",
-    title: "Linear",
-    description: "Assigned issues",
-    color: "#5E6AD2",
-    size: "xs",
-    disabled: true,
-  },
-  {
-    id: "vercel",
-    title: "Vercel",
-    description: "Deployment status",
-    color: "#000000",
-    size: "xs",
-    disabled: true,
-  },
-  {
-    id: "figma",
-    title: "Figma",
-    description: "Recent files",
-    color: "#1E1E1E",
-    size: "xs",
-    disabled: true,
-  },
-  {
-    id: "aws",
-    title: "AWS",
-    description: "Service status and metrics",
-    color: "#FF9900",
-    size: "full",
-    disabled: true,
-  },
-  {
-    id: "stripe",
-    title: "Stripe",
-    description: "Payment analytics",
-    color: "#635BFF",
-    size: "xs",
-    disabled: true,
-  },
-] as const;
+};
 
-export default function AItDialog({ className, ...props }: Readonly<AItDialogProps>) {
-  const { isOpen, closeDialog } = useUIt();
+const ExpandedView = ({
+  item,
+  onClose,
+}: {
+  item: (typeof AIT_SERVICES)[number];
+  onClose: () => void;
+}) => (
+  <motion.div
+    {...animationVariants.expand}
+    className="absolute inset-0 flex flex-col overflow-hidden rounded-md"
+    style={{ backgroundColor: item.color }}
+  >
+    <div className="absolute inset-0 bg-black/20" />
+    <div className="relative flex p-4">
+      <button
+        type="button"
+        onClick={onClose}
+        className="rounded-sm opacity-70 hover:opacity-100 transition-opacity"
+        aria-label="Close expanded view"
+      >
+        <BackIcon className="h-6 w-6 text-white" />
+      </button>
+    </div>
+
+    <DialogHeader className="relative px-6 pt-0 pb-6">
+      <DialogTitle className="text-2xl font-bold text-white">{item.title}</DialogTitle>
+    </DialogHeader>
+
+    <div className="relative flex-1 overflow-y-auto px-6 pb-6">
+      <p className="text-lg text-white/90 leading-relaxed">{item.description}</p>
+    </div>
+  </motion.div>
+);
+
+const ServicesGrid = ({
+  items,
+  onItemSelect,
+}: {
+  items: typeof AIT_SERVICES;
+  onItemSelect: (id: string) => void;
+}) => (
+  <motion.div {...animationVariants.fade} className="h-full flex flex-col overflow-hidden rounded-md">
+    <DialogHeader className="p-6">
+      <DialogTitle className="text-2xl font-bold">Pick one (or more)</DialogTitle>
+    </DialogHeader>
+
+    <div className="relative flex-1 overflow-y-auto custom-scrollbar">
+      <FlexGrid gap={12} className="p-4">
+        {items.map((item) => (
+          <FlexItem
+            key={item.id}
+            color={item.color}
+            size={item.size}
+            className={cn(
+              "relative transition-transform hover:scale-[1.02]",
+              item.disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer hover:bg-accent/5",
+            )}
+            onClick={() => !item.disabled && onItemSelect(item.id)}
+            aria-disabled={item.disabled}
+          >
+            {item.disabled && (
+              <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] rounded-lg flex items-center justify-center pointer-events-none">
+                <Badge variant="secondary">Coming Soon</Badge>
+              </div>
+            )}
+
+            <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center p-4">
+              <span className="text-xl font-bold text-white">{item.title}</span>
+              <span className="text-sm text-muted-foreground line-clamp-3">{item.description}</span>
+            </div>
+          </FlexItem>
+        ))}
+      </FlexGrid>
+    </div>
+  </motion.div>
+);
+
+export default function AItDialog({ className, ...props }: AItDialogProps) {
+  const { isOpen, closeDialog, expandedItem, expandItem, collapseItem } = useUIt();
+
+  const currentItem = AIT_SERVICES.find((item) => item.id === expandedItem);
+
+  const handleDialogClose = (open: boolean) => {
+    if (!open) {
+      closeDialog();
+      collapseItem();
+    }
+  };
 
   return (
-    <Dialog open={isOpen} onOpenChange={closeDialog}>
+    <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent
         className={cn(
-          "h-[100dvh] max-h-[100dvh] w-screen max-w-screen p-6",
-          "bg-neutral-900",
-          "sm:h-[90dvh] sm:max-h-[90dvh] sm:w-[90vw] sm:max-w-[90vw] sm:rounded-xl",
+          "border-0 shadow-xl",
+          "h-[100dvh] max-h-[100dvh] w-screen max-w-screen p-0",
+          "sm:h-[90dvh] sm:max-h-[90dvh] sm:w-[90vw] sm:max-w-[90vw]",
           className,
         )}
         {...props}
       >
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white/90">Pick one (or more)</DialogTitle>
-        </DialogHeader>
-
-        <div className="relative flex-1 overflow-y-auto">
-          <FlexGrid gap={12} className="p-4">
-            {ITEMS.map((item) => (
-              <FlexItem
-                key={item.id}
-                color={item.color}
-                size={item.size}
-                className={cn(
-                  "relative transition-colors",
-                  item.disabled ? "opacity-60 hover:bg-background" : "hover:bg-accent/5 cursor-pointer",
-                )}
-                onClick={(e) => item.disabled && e.preventDefault()}
-                aria-disabled={item.disabled}
-              >
-                {item.disabled && (
-                  <div className="absolute inset-0 bg-background/50 backdrop-blur-[1px] rounded-lg flex items-center justify-center">
-                    <Badge className="pointer-events-none">Coming Soon</Badge>
-                  </div>
-                )}
-                <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-center">
-                  <span className="text-xl font-bold text-white/90">{item.title}</span>
-                  <span className="text-sm text-white/70">{item.description}</span>
-                </div>
-              </FlexItem>
-            ))}
-          </FlexGrid>
-        </div>
+        <AnimatePresence mode="wait">
+          {currentItem ? (
+            <ExpandedView key={currentItem.id} item={currentItem} onClose={collapseItem} />
+          ) : (
+            <ServicesGrid key="services-grid" items={AIT_SERVICES} onItemSelect={expandItem} />
+          )}
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
