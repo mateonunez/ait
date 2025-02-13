@@ -3,11 +3,9 @@ import { cn } from "@/styles/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FlexGrid } from "@/components/ui/flex-grid";
 import { FlexItem } from "@/components/ui/flex-item";
+import { useUIt } from "@/contexts/uit.context";
 
-interface AItDialogProps extends HTMLAttributes<HTMLDivElement> {
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}
+type AItDialogProps = Omit<HTMLAttributes<HTMLDivElement>, "open" | "onOpenChange">;
 
 const ITEMS = [
   {
@@ -96,9 +94,11 @@ const ITEMS = [
   },
 ] as const;
 
-export default function AItDialog({ className, open, onOpenChange, ...props }: Readonly<AItDialogProps>) {
+export default function AItDialog({ className, ...props }: Readonly<AItDialogProps>) {
+  const { isOpen, closeDialog } = useUIt();
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={closeDialog}>
       <DialogContent
         className={cn(
           "h-[100dvh] max-h-[100dvh] w-screen max-w-screen p-6",
