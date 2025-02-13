@@ -13,7 +13,7 @@ export default function App() {
         <ThemeToggle />
       </div>
 
-      <div className="w-full px-4 sm:px-6 md:px-8 text-center">
+      <div className="mx-4 sm:mx-6 md:mx-8 text-center">
         <Heading variant="hero" gradient>
           {text} <AItButton />
         </Heading>
