@@ -4,3 +4,4 @@ packages:
   - 'packages/connectors/*'
   - 'packages/transformers/*'
   - 'packages/gateway/*'
+  - 'packages/uit/*'

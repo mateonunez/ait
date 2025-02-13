@@ -13,14 +13,16 @@ export default function App() {
         <ThemeToggle />
       </div>
 
-      <h1 className={`
+      <h1
+        className={`
         text-8xl md:text-9xl lg:text-[12rem] 
         font-bold tracking-tight cursor-default
         ${textBase} ${gradientStyles}
         bg-[length:200%_200%] ${ANIMATIONS.gradient}
         motion-safe:transform ${ANIMATIONS.base}
         hover:scale-[1.02] active:scale-[0.98]
-      `}>
+      `}
+      >
         Hey! It's <AItButton />
       </h1>
     </main>

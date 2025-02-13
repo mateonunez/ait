@@ -12,7 +12,7 @@ export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "deepseek-
 /**
  * Default vector size for embeddings.
  */
-export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "4096");
+export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "1536");
 
 /**
  * Default base URL for the Ollama server.

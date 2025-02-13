@@ -8,7 +8,8 @@
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "pretest": "test -f .env.test || cp .env.example .env.test",
-    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'"
+    "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
+    "test:e2e": "tsx --require ./test-setup.ts src/services/text-generation/text-generation.service.e2e.ts --concurrency=1"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",
