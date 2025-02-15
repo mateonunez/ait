@@ -1,0 +1,26 @@
+@keyframes gradient-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+    background-size: 200% 200%;
+  }
+  50% {
+    background-position: 100% 50%;
+    background-size: 200% 200%;
+  }
+}
+
+@keyframes gradient-hover {
+  to {
+    background-position: 100% 100%;
+    background-size: 200% 200%;
+  }
+}
+
+.animate-gradient-flow {
+  animation: gradient-flow 8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.hover\:animate-gradient-hover:hover {
+  animation: gradient-hover 1.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}

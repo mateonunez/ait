@@ -7,9 +7,7 @@ import { ConnectorSpotifyArtistRepository } from "./connector.spotify-artist.rep
 import { ConnectorSpotifyPlaylistRepository } from "./connector.spotify-playlist.repository";
 import { ConnectorSpotifyAlbumRepository } from "./connector.spotify-album.repository";
 
-/**
- * Connector for Spotify Repository: tracks, albums, artists, playlists, etc
- */
+// TODO: implement a generic repository for all connector repositories
 export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository implements IConnectorSpotifyRepository {
   private _spotifyTrackRepository: ConnectorSpotifyTrackRepository;
   private _spotifyArtistRepository: ConnectorSpotifyArtistRepository;

@@ -5,14 +5,14 @@ import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 dotenv.config();
 
 /**
- * Default model name, e.g., "deepseek-r1:8b".
+ * Default model name, e.g., "deepseek-r1:1.5b".
  */
-export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "deepseek-r1:8b";
+export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "deepseek-r1:1.5b";
 
 /**
  * Default vector size for embeddings.
  */
-export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "4096");
+export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "1536");
 
 /**
  * Default base URL for the Ollama server.
@@ -24,7 +24,7 @@ export const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:
  */
 export interface ILangChainConfig {
   /**
-   * Default model name, e.g., "deepseek-r1:8b".
+   * Default model name, e.g., "deepseek-r1:1.5b".
    */
   model: string;
 
