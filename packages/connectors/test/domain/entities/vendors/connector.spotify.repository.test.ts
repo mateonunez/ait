@@ -237,8 +237,9 @@ describe("ConnectorSpotifyRepository", () => {
           createdAt: now,
           updatedAt: now,
           __type: "playlist",
-          tracks: 0,
+          tracks: [],
           followers: 0,
+          externalUrls: [],
         };
 
         await playlistRepository.savePlaylist(playlist);
@@ -287,8 +288,9 @@ describe("ConnectorSpotifyRepository", () => {
             createdAt: now,
             updatedAt: now,
             __type: "playlist",
-            tracks: 0,
+            tracks: [],
             followers: 0,
+            externalUrls: [],
           },
           {
             id: "playlist-2",
@@ -303,8 +305,9 @@ describe("ConnectorSpotifyRepository", () => {
             createdAt: now,
             updatedAt: now,
             __type: "playlist",
-            tracks: 0,
+            tracks: [],
             followers: 0,
+            externalUrls: [],
           },
         ];
 

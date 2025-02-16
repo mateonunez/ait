@@ -118,11 +118,7 @@ describe("TextGenerationService", () => {
 
         it("should generate stream text successfully", { timeout: timeout }, async () => {
           const prompt =
-            "Based on your context, analyze playlists and show me the following information:\n" +
-            "1. Playlist name\n" +
-            "2. Playlist owner username\n" +
-            "3. Number of tracks\n" +
-            "4. Number of followers\n" +
+            "Based on your context, analyze playlists and show me the Playlist information in a structured way\n" +
             "Only include playlists from mateonunez or collaborative playlists. " +
             "Please format the output in a clear, structured way.";
 
@@ -133,6 +129,75 @@ describe("TextGenerationService", () => {
           });
 
           assert.ok(result.trim(), "Generated stream text should not be empty");
+        });
+      });
+
+      describe("albums", () => {
+        beforeEach(() => {
+          service = new TextGenerationService(model, expectedVectorSize, "spotify_albums_collection");
+        });
+
+        it("should generate amazing stream text for Spotify albums", { timeout }, async () => {
+          const prompt = `
+          Based on the vector store data in spotify_albums_collection, analyze and present a comprehensive analysis of the albums. Use ONLY the information available in the context, with strict adherence to the data schema.
+        
+          For each album in the context, structure the analysis as follows:
+        
+          1. **Core Album Details**
+             - Album ID (from data store)
+             - Name (exact match from database)
+             - Album Type (single/album/compilation)
+             - Artists Array (maintain original structure)
+             - Release Information:
+               * Release Date (preserve original format)
+               * Release Date Precision
+             - URI and External URLs
+        
+          2. **Performance Metrics**
+             - Popularity Score (raw number)
+             - Total Tracks Count
+             - Is Playable Status
+             - Market Availability List
+        
+          3. **Extended Metadata**
+             - Record Label
+             - Copyright Information (full array)
+             - External IDs (maintain all identifiers)
+             - Genre Classifications
+             - Additional Metadata:
+               * Creation Timestamp
+               * Last Update Timestamp
+               * Vector Store Metadata (__type, correlation_id)
+        
+          Response Format Requirements:
+          1. Use structured markdown with clear hierarchical organization
+          2. Preserve all numerical precision
+          3. Maintain array structures as stored
+          4. Include __type and metadata fields from vector store
+          5. Report timestamps in ISO format
+          6. Keep all IDs in their original format
+          7. Present lists with proper markdown bullet points
+          8. Format JSON data with proper escaping ({{ and }})
+        
+          Data Validation Rules:
+          1. Only include fields present in the vector store
+          2. Maintain data type consistency with schema
+          3. Preserve relationship references
+          4. Report null/undefined fields as "Not Available"
+          5. Keep array structures intact
+          6. Respect boolean flags as stored
+        
+          Note: Strictly adhere to the data schema and vector store structure. Do not infer, extrapolate, or make assumptions about missing data.
+          `;
+
+          const result = await smoothStream(service.generateTextStream(prompt), {
+            delay: 50,
+            prefix: "AI Response:",
+            cursor: "▌",
+          });
+
+          assert.ok(result.trim(), "Generated stream text should not be empty");
+          console.log("Generated stream text:", result);
         });
       });
     });

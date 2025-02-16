@@ -3,9 +3,6 @@ import { RetoveGitHubRepositoryETL } from "../../etl/vendors/retove.github.repos
 import type { getPostgresClient } from "@ait/postgres";
 import { RetoveSpotifyAlbumETL } from "../../etl/vendors/retove.spotify.album.etl";
 import { RetoveXTweetETL } from "../../etl/vendors/retove.x.tweet.etl";
-import { RetoveSpotifyTrackETL } from "@/etl/vendors/retove.spotify.track.etl";
-import { RetoveSpotifyArtistETL } from "@/etl/vendors/retove.spotify.artist.etl";
-import { RetoveSpotifyPlaylistETL } from "@/etl/vendors/retove.spotify.playlist.etl";
 
 export const SpotifyETLs = {
   track: "RetoveSpotifyTrackETL",
@@ -25,24 +22,24 @@ export const XETLs = {
 const LIMIT = 1000;
 
 export async function runSpotifyETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
-  const spotifyTrackETL = new RetoveSpotifyTrackETL(pgClient, qdrantClient);
-  console.log("🔍 Running RetoveSpotifyTrackETL with limit of 100...");
-  await spotifyTrackETL.run(LIMIT);
-  console.log("✅ RetoveSpotifyTrackETL process completed successfully!");
+  // const spotifyTrackETL = new RetoveSpotifyTrackETL(pgClient, qdrantClient);
+  // console.log("🔍 Running RetoveSpotifyTrackETL with limit of 100...");
+  // await spotifyTrackETL.run(LIMIT);
+  // console.log("✅ RetoveSpotifyTrackETL process completed successfully!");
 
-  const spotifyArtistETL = new RetoveSpotifyArtistETL(pgClient, qdrantClient);
-  console.log("🔍 Running RetoveSpotifyArtistETL with limit of 100...");
-  await spotifyArtistETL.run(LIMIT);
-  console.log("✅ RetoveSpotifyArtistETL process completed successfully!");
+  // const spotifyArtistETL = new RetoveSpotifyArtistETL(pgClient, qdrantClient);
+  // console.log("🔍 Running RetoveSpotifyArtistETL with limit of 100...");
+  // await spotifyArtistETL.run(LIMIT);
+  // console.log("✅ RetoveSpotifyArtistETL process completed successfully!");
 
-  const spotifyPlaylistETL = new RetoveSpotifyPlaylistETL(pgClient, qdrantClient);
-  console.log("🔍 Running RetoveSpotifyPlaylistETL with limit of 100...");
-  await spotifyPlaylistETL.run(LIMIT);
-  console.log("✅ RetoveSpotifyPlaylistETL process completed successfully!");
+  // const spotifyPlaylistETL = new RetoveSpotifyPlaylistETL(pgClient, qdrantClient);
+  // console.log("🔍 Running RetoveSpotifyPlaylistETL with limit of 100...");
+  // await spotifyPlaylistETL.run(LIMIT);
+  // console.log("✅ RetoveSpotifyPlaylistETL process completed successfully!");
 
   const spotifyAlbumETL = new RetoveSpotifyAlbumETL(pgClient, qdrantClient);
   console.log("🔍 Running RetoveSpotifyAlbumETL with limit of 100...");
-  await spotifyAlbumETL.run(LIMIT);
+  await spotifyAlbumETL.run(5);
   console.log("✅ RetoveSpotifyAlbumETL process completed successfully!");
 }
 

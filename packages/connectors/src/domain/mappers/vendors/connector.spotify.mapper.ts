@@ -15,7 +15,7 @@ import type {
   SpotifyAlbumDataTarget,
 } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
-import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
+import { connectorMapperPassThrough, mapObjectToStringArray } from "../utils/connector.mapper.utils";
 import type { ConnectorMapperDefinition } from "@/types/domain/mappers/connector.mapper.interface";
 
 const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, SpotifyTrackEntity, SpotifyTrackDataTarget> =
@@ -122,11 +122,9 @@ const spotifyArtistMapping: ConnectorMapperDefinition<
   id: connectorMapperPassThrough<"id", string, SpotifyArtistExternal, SpotifyArtistEntity, SpotifyArtistDataTarget>(
     "id",
   ),
-
   name: connectorMapperPassThrough<"name", string, SpotifyArtistExternal, SpotifyArtistEntity, SpotifyArtistDataTarget>(
     "name",
   ),
-
   popularity: connectorMapperPassThrough<
     "popularity",
     number | null,
@@ -134,15 +132,11 @@ const spotifyArtistMapping: ConnectorMapperDefinition<
     SpotifyArtistEntity,
     SpotifyArtistDataTarget
   >("popularity"),
-
-  genres: connectorMapperPassThrough<
-    "genres",
-    string[] | null,
-    SpotifyArtistExternal,
-    SpotifyArtistEntity,
-    SpotifyArtistDataTarget
-  >("genres"),
-
+  genres: {
+    external: (external: SpotifyArtistExternal) => mapObjectToStringArray(external.genres),
+    domain: (domain: SpotifyArtistEntity) => domain.genres,
+    dataTarget: (dataTarget: SpotifyArtistDataTarget) => dataTarget.genres ?? [],
+  },
   createdAt: connectorMapperPassThrough<
     "createdAt",
     Date | null,
@@ -157,7 +151,6 @@ const spotifyArtistMapping: ConnectorMapperDefinition<
       fallback: () => new Date(),
     },
   }),
-
   updatedAt: connectorMapperPassThrough<
     "updatedAt",
     Date | null,
@@ -172,7 +165,6 @@ const spotifyArtistMapping: ConnectorMapperDefinition<
       fallback: () => new Date(),
     },
   }),
-
   __type: {
     external: () => "artist" as const,
     domain: (domain) => domain.__type,
@@ -228,9 +220,13 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget) => dataTarget.owner,
   },
   tracks: {
-    external: (external) => external.tracks?.total ?? 0,
-    domain: (domain) => domain.tracks,
-    dataTarget: (dataTarget) => dataTarget.tracks!,
+    external: (external: SpotifyPlaylistExternal) =>
+      mapObjectToStringArray(external.tracks, {
+        valueTransform: (value) => JSON.stringify(value),
+        maxDepth: 6,
+      }),
+    domain: (domain: SpotifyPlaylistEntity) => domain.tracks,
+    dataTarget: (dataTarget: SpotifyPlaylistDataTarget) => dataTarget.tracks ?? [],
   },
   followers: {
     external: (external) => external.followers?.total ?? 0,
@@ -251,6 +247,12 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
     external: (external) => external.href ?? "",
     domain: (domain) => domain.href,
     dataTarget: (dataTarget) => dataTarget.href,
+  },
+
+  externalUrls: {
+    external: (external) => mapObjectToStringArray(external.external_urls),
+    domain: (domain) => domain.externalUrls,
+    dataTarget: (dataTarget) => dataTarget.externalUrls ?? [],
   },
 
   createdAt: connectorMapperPassThrough<
@@ -321,28 +323,22 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
     }),
 
     artists: {
-      external: (external) => external.artists?.map((artist) => artist.name ?? "") ?? "",
-      domain: (domain) => domain.artists,
-      dataTarget: (dataTarget) => dataTarget.artists ?? [],
+      external: (external: SpotifyAlbumExternal) =>
+        mapObjectToStringArray(external.artists, {
+          valueTransform: (value) => JSON.stringify(value),
+          maxDepth: 6,
+        }),
+      domain: (domain: SpotifyAlbumEntity) => domain.artists,
+      dataTarget: (dataTarget: SpotifyAlbumDataTarget) => dataTarget.artists ?? [],
     },
 
     tracks: {
       external: (external) =>
-        external.tracks?.items?.map((track) =>
-          JSON.stringify({
-            name: track.name,
-            artists: track.artists?.map((artist) => artist.name ?? ""),
-            durationMs: track.duration_ms,
-            uri: track.uri,
-            href: track.href,
-            isLocal: track.is_local,
-            isPlayable: track.is_playable,
-            discNumber: track.disc_number,
-            trackNumber: track.track_number,
-            explicit: track.explicit,
-            previewUrl: track.preview_url,
-          }),
-        ) ?? [],
+        mapObjectToStringArray(external.tracks, {
+          valueTransform: (value) => JSON.stringify(value),
+          maxDepth: 6,
+          excludeKeys: ["available_markets"],
+        }),
       domain: (domain) => domain.tracks,
       dataTarget: (dataTarget) => dataTarget.tracks ?? [],
     },
@@ -468,19 +464,19 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
     }),
 
     copyrights: {
-      external: (external) => external.copyrights?.map((copyright) => copyright.text ?? "") ?? [],
-      domain: (domain) => domain.copyrights,
-      dataTarget: (dataTarget) => dataTarget.copyrights ?? [],
+      external: (external: SpotifyAlbumExternal) => mapObjectToStringArray(external.copyrights),
+      domain: (domain: SpotifyAlbumEntity) => domain.copyrights,
+      dataTarget: (dataTarget: SpotifyAlbumDataTarget) => dataTarget.copyrights ?? [],
     },
 
     externalIds: {
-      external: (external) => Object.values(external.external_ids ?? {}),
-      domain: (domain) => domain.externalIds,
-      dataTarget: (dataTarget) => Object.values(dataTarget.externalIds ?? {}),
+      external: (external: SpotifyAlbumExternal) => mapObjectToStringArray(external.external_ids),
+      domain: (domain: SpotifyAlbumEntity) => domain.externalIds,
+      dataTarget: (dataTarget: SpotifyAlbumDataTarget) => dataTarget.externalIds ?? [],
     },
 
     genres: {
-      external: (external) => external.genres ?? [],
+      external: (external) => mapObjectToStringArray(external.genres, (genre) => JSON.stringify(genre)),
       domain: (domain) => domain.genres,
       dataTarget: (dataTarget) => dataTarget.genres ?? [],
     },

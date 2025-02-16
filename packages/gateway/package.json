@@ -4,7 +4,7 @@
   "description": "AIt's API Gateway",
   "main": "dist/gateway.server.js",
   "scripts": {
-    "dev": "tsx src/gateway.server.ts",
+    "dev": "tsx --watch src/gateway.server.ts",
     "build": "tsc",
     "start": "node dist/gateway.server.js",
     "lint": "biome format && biome lint",

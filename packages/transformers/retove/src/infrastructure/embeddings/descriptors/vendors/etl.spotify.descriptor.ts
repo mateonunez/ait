@@ -8,7 +8,8 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
 
 export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<SpotifyTrackDataTarget> {
   public getEmbeddingText(track: SpotifyTrackDataTarget): string {
-    return JSON.stringify(track, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
+    const jsonStr = JSON.stringify(track);
+    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
@@ -21,7 +22,8 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
 
 export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<SpotifyArtistDataTarget> {
   public getEmbeddingText(artist: SpotifyArtistDataTarget): string {
-    return JSON.stringify(artist, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
+    const jsonStr = JSON.stringify(artist);
+    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyArtistDataTarget): U {
@@ -34,7 +36,8 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
 
 export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> {
   public getEmbeddingText(playlist: SpotifyPlaylistDataTarget): string {
-    return JSON.stringify(playlist, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
+    const jsonStr = JSON.stringify(playlist);
+    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyPlaylistDataTarget): U {
@@ -47,7 +50,8 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
 
 export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> {
   public getEmbeddingText(album: SpotifyAlbumDataTarget): string {
-    return JSON.stringify(album, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
+    const jsonStr = JSON.stringify(album);
+    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyAlbumDataTarget): U {
@@ -62,4 +66,5 @@ export const spotifyDescriptorsETL = {
   track: new ETLSpotifyTrackDescriptor(),
   artist: new ETLSpotifyArtistDescriptor(),
   playlist: new ETLSpotifyPlaylistDescriptor(),
+  album: new ETLSpotifyAlbumDescriptor(),
 };
