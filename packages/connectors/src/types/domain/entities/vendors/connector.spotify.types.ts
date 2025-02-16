@@ -95,9 +95,10 @@ export interface SpotifyPlaylistEntity extends BaseSpotifyEntity {
   public: boolean;
   collaborative: boolean;
   owner: string;
-  tracks: number;
+  tracks: string[];
   followers: number;
   snapshotId: string;
+  externalUrls: string[];
   uri: string;
   href: string;
   createdAt: Date;

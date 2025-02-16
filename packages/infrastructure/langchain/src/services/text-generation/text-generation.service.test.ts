@@ -33,17 +33,17 @@ describe("TextGenerationService", () => {
   let createEmbeddingsStub: sinon.SinonStub;
 
   beforeEach(() => {
+    // Stub for the embeddings service: generateEmbeddings returns an array of zeros.
     mockEmbeddingsService = {
       generateEmbeddings: sinon.stub().resolves(new Array(expectedVectorSize).fill(0)),
     } as unknown as sinon.SinonStubbedInstance<IEmbeddingsService>;
 
     initLangChainClient({ model, expectedVectorSize, logger: false });
 
-    // Create a stubbed LLM with both invoke (non-streaming) and stream (streaming) methods.
+    // Stubbed LLM with both invoke (non-streaming) and stream (streaming) methods.
     mockLLM = {
       invoke: sinon.stub().resolves(generatedText),
       stream: sinon.stub().returns(
-        // Simulate an async iterator yielding a single chunk.
         (async function* () {
           yield generatedText;
         })(),
@@ -51,10 +51,12 @@ describe("TextGenerationService", () => {
       pipe: sinon.stub().returnsThis(),
     } as unknown as sinon.SinonStubbedInstance<Ollama>;
 
+    // Stub for QdrantVectorStore: similaritySearch returns an array with one document.
     mockVectorStore = {
       similaritySearch: sinon.stub().resolves([{ pageContent: "test content", metadata: {} }]),
     } as unknown as sinon.SinonStubbedInstance<QdrantVectorStore>;
 
+    // Stub the static method fromExistingCollection.
     fromExistingCollectionStub = sinon.stub(QdrantVectorStore, "fromExistingCollection").resolves(mockVectorStore);
 
     const client = getLangChainClient();
@@ -64,6 +66,7 @@ describe("TextGenerationService", () => {
       embedQuery: () => Promise.resolve(new Array(expectedVectorSize).fill(0)),
     } as unknown as OllamaEmbeddings);
 
+    // Stub ChatPromptTemplate.fromMessages to return a mock prompt template.
     mockPromptTemplate = {
       pipe: sinon.stub().returnsThis(),
       format: sinon.stub().resolves(generatedText),
@@ -155,7 +158,7 @@ describe("TextGenerationService", () => {
         result += chunk;
       }
       assert.strictEqual(result, generatedText);
-      // Ensure that createLLM and ChatPromptTemplate.fromMessages were called
+      // Ensure that createLLM and ChatPromptTemplate.fromMessages were called.
       assert(createLLMStub.called);
       assert(fromMessagesStub.called);
     });

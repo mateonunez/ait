@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
-    "etl": "tsx src/etl.retove.main.ts",
+    "etl": "NODE_OPTIONS='--max_old_space_size=8192' tsx src/etl.retove.main.ts",
     "example:etl": "tsx src/etl/example.etl.ts",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"

@@ -1,1 +1,0 @@
-ALTER TABLE "oauth_tokens" ALTER COLUMN "id" SET DEFAULT 'e7592a06-e875-4730-bf9c-fad3928e737d';
