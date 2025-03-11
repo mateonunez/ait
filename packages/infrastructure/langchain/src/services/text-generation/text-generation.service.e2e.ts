@@ -22,6 +22,8 @@ describe("TextGenerationService", () => {
           const prompt = "Based on your context, show me the name of some repositories with TypeScript language";
           const result = await service.generateText(prompt);
 
+          console.log("Generated text:", result);
+
           assert.ok(result);
         });
       });
@@ -37,6 +39,8 @@ describe("TextGenerationService", () => {
           const prompt = "Based on your context, show some tracks from Bad Bunny";
           const result = await service.generateText(prompt);
 
+          console.log("Generated text:", result);
+
           assert.ok(result);
         });
       });
@@ -45,6 +49,8 @@ describe("TextGenerationService", () => {
         it("should generate text successfully", { timeout: timeout }, async () => {
           const prompt = "Based on your context, show some artists from Bad Bunny";
           const result = await service.generateText(prompt);
+
+          console.log("Generated text:", result);
 
           assert.ok(result);
         });
@@ -55,6 +61,8 @@ describe("TextGenerationService", () => {
           const prompt = "Based on your context, show some playlists from Bad Bunny";
           const result = await service.generateText(prompt);
 
+          console.log("Generated text:", result);
+
           assert.ok(result);
         });
       });
@@ -63,6 +71,8 @@ describe("TextGenerationService", () => {
         it("should generate text successfully", { timeout: timeout }, async () => {
           const prompt = "Based on your context, show some albums from Bad Bunny";
           const result = await service.generateText(prompt);
+
+          console.log("Generated text:", result);
 
           assert.ok(result);
         });
@@ -80,65 +90,72 @@ describe("TextGenerationService", () => {
             "Based on your context, show some tweets from with retweetCount greater than 100 or equal to 0";
           const result = await service.generateText(prompt);
 
+          console.log("Generated text:", result);
+
           assert.ok(result);
         });
       });
     });
+  });
 
-    describe("stream", () => {
+  describe("stream", () => {
+    beforeEach(() => {
+      service = new TextGenerationService(model, expectedVectorSize, "x_tweets_collection");
+    });
+
+    describe("tweets", () => {
+      it("should generate stream text successfully", { timeout: timeout }, async () => {
+        const prompt =
+          "Based on your context, analyze tweets and show me the following information:\n" +
+          "1. Tweet text\n" +
+          "2. Author username\n" +
+          "3. Retweet count\n" +
+          "4. Like count\n" +
+          "Only include tweets that have either more than 100 retweets or 0 likes. " +
+          "Please format the output in a clear, structured way.";
+
+        const result = await smoothStream(service.generateTextStream(prompt), {
+          delay: 50,
+          prefix: "AI Response:",
+          cursor: "▌",
+        });
+
+        console.log("Generated stream text:", result);
+
+        assert.ok(result.trim(), "Generated stream text should not be empty");
+      });
+    });
+
+    describe("playlists", () => {
       beforeEach(() => {
-        service = new TextGenerationService(model, expectedVectorSize, "x_tweets_collection");
+        service = new TextGenerationService(model, expectedVectorSize, "spotify_playlists_collection");
       });
 
-      describe("tweets", () => {
-        it.skip("should generate stream text successfully", { timeout: timeout }, async () => {
-          const prompt =
-            "Based on your context, analyze tweets and show me the following information:\n" +
-            "1. Tweet text\n" +
-            "2. Author username\n" +
-            "3. Retweet count\n" +
-            "4. Like count\n" +
-            "Only include tweets that have either more than 100 retweets or 0 likes. " +
-            "Please format the output in a clear, structured way.";
+      it("should generate stream text successfully", { timeout: timeout }, async () => {
+        const prompt =
+          "Based on your context, analyze playlists and show me the Playlist information in a structured way\n" +
+          "Only include playlists from mateonunez or collaborative playlists. " +
+          "Please format the output in a clear, structured way.";
 
-          const result = await smoothStream(service.generateTextStream(prompt), {
-            delay: 50,
-            prefix: "AI Response:",
-            cursor: "▌",
-          });
-
-          assert.ok(result.trim(), "Generated stream text should not be empty");
+        const result = await smoothStream(service.generateTextStream(prompt), {
+          delay: 50,
+          prefix: "AI Response:",
+          cursor: "▌",
         });
+
+        console.log("Generated stream text:", result);
+
+        assert.ok(result.trim(), "Generated stream text should not be empty");
+      });
+    });
+
+    describe("albums", () => {
+      beforeEach(() => {
+        service = new TextGenerationService(model, expectedVectorSize, "spotify_albums_collection");
       });
 
-      describe("playlists", () => {
-        beforeEach(() => {
-          service = new TextGenerationService(model, expectedVectorSize, "spotify_playlists_collection");
-        });
-
-        it("should generate stream text successfully", { timeout: timeout }, async () => {
-          const prompt =
-            "Based on your context, analyze playlists and show me the Playlist information in a structured way\n" +
-            "Only include playlists from mateonunez or collaborative playlists. " +
-            "Please format the output in a clear, structured way.";
-
-          const result = await smoothStream(service.generateTextStream(prompt), {
-            delay: 50,
-            prefix: "AI Response:",
-            cursor: "▌",
-          });
-
-          assert.ok(result.trim(), "Generated stream text should not be empty");
-        });
-      });
-
-      describe("albums", () => {
-        beforeEach(() => {
-          service = new TextGenerationService(model, expectedVectorSize, "spotify_albums_collection");
-        });
-
-        it("should generate amazing stream text for Spotify albums", { timeout }, async () => {
-          const prompt = `
+      it("should generate amazing stream text for Spotify albums", { timeout }, async () => {
+        const prompt = `
           Based on the vector store data in spotify_albums_collection, analyze and present a comprehensive analysis of the albums. Use ONLY the information available in the context, with strict adherence to the data schema.
         
           For each album in the context, structure the analysis as follows:
@@ -190,15 +207,15 @@ describe("TextGenerationService", () => {
           Note: Strictly adhere to the data schema and vector store structure. Do not infer, extrapolate, or make assumptions about missing data.
           `;
 
-          const result = await smoothStream(service.generateTextStream(prompt), {
-            delay: 50,
-            prefix: "AI Response:",
-            cursor: "▌",
-          });
-
-          assert.ok(result.trim(), "Generated stream text should not be empty");
-          console.log("Generated stream text:", result);
+        const result = await smoothStream(service.generateTextStream(prompt), {
+          delay: 50,
+          prefix: "AI Response:",
+          cursor: "▌",
         });
+
+        console.log("Generated stream text:", result);
+
+        assert.ok(result.trim(), "Generated stream text should not be empty");
       });
     });
   });
