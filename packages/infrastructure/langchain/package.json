@@ -17,7 +17,8 @@
   "dependencies": {
     "@langchain/core": "^0.3.27",
     "@langchain/ollama": "^0.1.4",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@langchain/qdrant": "^0.1.1",
