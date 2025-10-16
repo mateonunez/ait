@@ -6,17 +6,19 @@ import { QdrantVectorStore } from "@langchain/qdrant";
 import {
   getLangChainClient,
   initLangChainClient,
-  DEFAULT_LANGCHAIN_MODEL,
-  LANGCHAIN_VECTOR_SIZE,
+  DEFAULT_GENERATION_MODEL,
+  GENERATION_VECTOR_SIZE,
   resetLangChainClientInstance,
+  DEFAULT_EMBEDDINGS_MODEL,
 } from "../../langchain.client";
 import type { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 describe("TextGenerationService", () => {
-  const model = DEFAULT_LANGCHAIN_MODEL;
-  const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
+  const model = DEFAULT_GENERATION_MODEL;
+  const embeddingsModel = DEFAULT_EMBEDDINGS_MODEL;
+  const expectedVectorSize = GENERATION_VECTOR_SIZE;
   const prompt = "test prompt";
   const generatedText = "generated response";
 
@@ -74,7 +76,7 @@ describe("TextGenerationService", () => {
     } as unknown as sinon.SinonStubbedInstance<ChatPromptTemplate>;
     fromMessagesStub = sinon.stub(ChatPromptTemplate, "fromMessages").returns(mockPromptTemplate);
 
-    service = new TextGenerationService(model, expectedVectorSize, "langchain", mockEmbeddingsService);
+    service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "langchain", mockEmbeddingsService);
   });
 
   afterEach(() => {
@@ -139,12 +141,12 @@ describe("TextGenerationService", () => {
     it("should use default model when not provided", async () => {
       service = new TextGenerationService(); // uses default model
       await service.generateText(prompt);
-      assert(createLLMStub.calledWith(DEFAULT_LANGCHAIN_MODEL));
+      assert(createLLMStub.calledWith(DEFAULT_GENERATION_MODEL));
     });
 
     it("should use provided model when specified", async () => {
       const customModel = "different-model:1b";
-      service = new TextGenerationService(customModel, expectedVectorSize, "langchain", mockEmbeddingsService);
+      service = new TextGenerationService(customModel, embeddingsModel, expectedVectorSize, "langchain", mockEmbeddingsService);
       await service.generateText(prompt);
       assert(createLLMStub.calledWith(customModel));
     });

@@ -14,6 +14,14 @@ pnpm db:generate
 pnpm db:migrate
 ```
 
+### Fix collation version mismatch
+
+If you encounter collation version mismatch warnings, run:
+
+```bash
+pnpm db:fix-collation
+```
+
 ### Studio
 
 ```bash

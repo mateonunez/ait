@@ -34,7 +34,7 @@ const ExpandedView = ({
   onClose: () => void;
 }) => (
   <motion.div
-    {...animationVariants.expand}
+    // {...animationVariants.expand}
     className="absolute inset-0 flex flex-col overflow-hidden rounded-md"
     style={{ backgroundColor: item.color }}
   >

@@ -1,5 +1,10 @@
 import { QdrantVectorStore } from "@langchain/qdrant";
-import { getLangChainClient, DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } from "../../langchain.client";
+import {
+  getLangChainClient,
+  DEFAULT_GENERATION_MODEL,
+  GENERATION_VECTOR_SIZE,
+  DEFAULT_EMBEDDINGS_MODEL,
+} from "../../langchain.client";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import type { Ollama } from "@langchain/ollama";
@@ -13,6 +18,7 @@ import { systemPrompt } from "../prompts/system.prompt";
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
+const RETOVE_COLLECTION_NAME = "ait_embeddings_collection";
 
 export class TextGenerationError extends Error {
   constructor(
@@ -46,27 +52,35 @@ export class TextGenerationService implements ITextGenerationService {
   private _llmInstance: Ollama | undefined;
 
   constructor(
-    private readonly _model: string = DEFAULT_LANGCHAIN_MODEL,
-    private readonly _expectedVectorSize: number = LANGCHAIN_VECTOR_SIZE,
-    private readonly _collectionName: string = "langchain",
+    private readonly _model: string = DEFAULT_GENERATION_MODEL,
+    private readonly _embeddingsModel: string = DEFAULT_EMBEDDINGS_MODEL,
+    private readonly _expectedVectorSize: number = GENERATION_VECTOR_SIZE,
+    private readonly _collectionName: string = RETOVE_COLLECTION_NAME,
     embeddingService?: IEmbeddingsService,
     promptConfig?: PromptConfig,
   ) {
-    this._embeddingService =
-      embeddingService ?? new EmbeddingsService(this._model, this._expectedVectorSize, { concurrencyLimit: 4 });
+    try {
+      this._embeddingService =
+        embeddingService ??
+        new EmbeddingsService(this._embeddingsModel, this._expectedVectorSize, { concurrencyLimit: 4 });
 
-    this._embeddingCache = new LRUCache({
-      maxSize: 1000,
-      ttlMs: 24 * 60 * 60 * 1000, // 24 hours TTL
-    });
+      this._embeddingCache = new LRUCache({
+        maxSize: 1000,
+        ttlMs: 24 * 60 * 60 * 1000, // 24 hours TTL
+      });
 
-    const config = promptConfig || {
-      systemPrompt: systemPrompt,
-      operation: "text-generation",
-      chainOfThought: true,
-    };
+      const config = promptConfig || {
+        systemPrompt: systemPrompt,
+        operation: "text-generation",
+      };
 
-    this._promptBuilder = new PromptBuilder(config);
+      this._promptBuilder = new PromptBuilder(config);
+    } catch (error) {
+      console.error("Failed to initialize TextGenerationService:", error);
+      throw new TextGenerationError(
+        `Failed to initialize service: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
   public async generateText(prompt: string): Promise<string> {
@@ -211,50 +225,57 @@ export class TextGenerationService implements ITextGenerationService {
     const embedStart = Date.now();
 
     const vectorStore = await QdrantVectorStore.fromExistingCollection(
-      {
-        embedQuery: async () => {
-          const embeddings = await this._embeddingService.generateEmbeddings(prompt, {
-            correlationId,
-            concurrencyLimit: 4,
-          });
-          console.debug("Query embeddings generated", { duration: Date.now() - embedStart });
-          return embeddings;
-        },
-        embedDocuments: async (documents: string[]) => {
-          const batchSize = 10;
-          const results: number[][] = [];
-
-          for (let i = 0; i < documents.length; i += batchSize) {
-            const batch = documents.slice(i, i + batchSize);
-            const batchStart = Date.now();
-
-            const batchResults = await Promise.all(
-              batch.map((doc) =>
-                this._getEmbeddingsWithCache(doc, {
-                  correlationId: `${correlationId}-batch-${i}`,
-                  concurrencyLimit: 2,
-                }),
-              ),
-            );
-
-            console.debug(`Batch ${Math.floor(i / batchSize) + 1} processed`, {
-              duration: Date.now() - batchStart,
+        {
+          embedQuery: async () => {
+            const embeddings = await this._embeddingService.generateEmbeddings(prompt, {
+              correlationId,
+              concurrencyLimit: 4,
             });
+            console.debug("Query embeddings generated", { duration: Date.now() - embedStart });
+            console.log("Embeddings", embeddings);
+            return embeddings;
+          },
+          embedDocuments: async (documents: string[]) => {
+            const batchSize = 10;
+            const results: number[][] = [];
 
-            results.push(...batchResults);
-          }
-          return results;
+            for (let i = 0; i < documents.length; i += batchSize) {
+              const batch = documents.slice(i, i + batchSize);
+              const batchStart = Date.now();
+
+              const batchResults = await Promise.all(
+                batch.map((doc) =>
+                  this._getEmbeddingsWithCache(doc, {
+                    correlationId: `${correlationId}-batch-${i}`,
+                    concurrencyLimit: 2,
+                  }),
+                ),
+              );
+
+              console.log("Batch results", batchResults);
+
+              console.debug(`Batch ${Math.floor(i / batchSize) + 1} processed`, {
+                duration: Date.now() - batchStart,
+              });
+
+              results.push(...batchResults);
+            }
+            console.log("Results", results);
+            return results;
+          },
         },
-      },
-      {
-        url: process.env.QDRANT_URL,
-        collectionName: this._collectionName,
-      },
-    );
+        {
+          url: process.env.QDRANT_URL,
+          collectionName: this._collectionName,
+        },
+      );
 
     const similarityStart = Date.now();
-    const similarDocs = await vectorStore.similaritySearch(prompt, this._maxSearchSimilarDocs);
+
+    const similarDocs = await this._retrieveWithMultiQueries(vectorStore, prompt);
+
     console.info("Similar documents found", {
+      prompt,
       count: similarDocs.length,
       duration: Date.now() - similarityStart,
     });
@@ -272,16 +293,37 @@ export class TextGenerationService implements ITextGenerationService {
     const metadataMap = new Map<string, Record<string, unknown>>();
 
     for (const doc of documents) {
-      const entityId = doc.metadata?.id! as string;
-      if (entityId) {
-        entityMap.set(entityId, (entityMap.get(entityId) || "") + doc.pageContent);
-        metadataMap.set(entityId, doc.metadata || {});
-      }
+      const entityId = (doc.metadata?.id as string) || randomUUID();
+      entityMap.set(entityId, (entityMap.get(entityId) || "") + doc.pageContent);
+      metadataMap.set(entityId, (doc.metadata || {}) as Record<string, unknown>);
     }
 
-    return Array.from(entityMap.entries())
-      .map(([id, content]) => `## ${metadataMap.get(id)?.__type || "Document"} ${id}\n${content}`)
+    const buildTitle = (meta: Record<string, unknown>): string => {
+      const type = (meta.__type as string) || "Document";
+      const name = typeof (meta as { name?: unknown }).name === "string" ? (meta as { name?: string }).name : undefined;
+      const artist = typeof (meta as { artist?: unknown }).artist === "string" ? (meta as { artist?: string }).artist : undefined;
+      const title = name && artist ? `${name} — ${artist}` : name;
+      const fallback =
+        title ||
+        (typeof (meta as { title?: unknown }).title === "string" ? (meta as { title?: string }).title : undefined) ||
+        (typeof (meta as { description?: unknown }).description === "string"
+          ? (meta as { description?: string }).description
+          : undefined) ||
+        type;
+      return `${type} ${fallback}`.trim();
+    };
+
+    const contextFromDocuments = Array.from(entityMap.entries())
+      .map(([id, content]) => {
+        const meta = metadataMap.get(id) || {};
+        const header = `## ${buildTitle(meta)}`;
+        return `${header}\n${content}`;
+      })
       .join("\n\n");
+
+    console.log("Context from documents", contextFromDocuments);
+
+    return contextFromDocuments;
   }
 
   private async _getEmbeddingsWithCache(
@@ -306,6 +348,163 @@ export class TextGenerationService implements ITextGenerationService {
   }
 
   private _generateCacheKey(text: string): string {
-    return `${this._model}:${text.trim().toLowerCase()}`;
+    return `${this._embeddingsModel}:${text.trim().toLowerCase()}`;
+  }
+
+  private async _planQueriesWithLLM(userPrompt: string): Promise<string[]> {
+    const llm = this._getLLM();
+    const instruction = [
+      "You are a retrieval query planner for AIt's KB populated via Connectors (Spotify, GitHub, X).",
+      "Given the user's request, emit 8-16 short keyword queries to retrieve relevant documents from a vector database.",
+      "Be connector-aware and prefer mnemonic fields over IDs:",
+      "- Spotify: playlists, tracks, artists, albums; prefer name, artist, album, playlist name, description, genres.",
+      "- GitHub: repositories; prefer name, description, language, topics.",
+      "- X (Twitter): tweets; prefer text terms, display name/handle; avoid tweet_id.",
+      "Include temporal hints if present: exact YYYY-MM-DD and phrases like 'on YYYY-MM-DD', 'from YYYY-MM-DD'.",
+      "Combine source/type tokens with topical nouns from the request (one concept per query).",
+      "Avoid IDs/URIs/hashes (e.g., spotify:*, commit hashes).",
+      "Keep queries concise (2-6 words), lowercase, space-separated (no punctuation).",
+      "Output ONLY a JSON array of strings.",
+    ].join(" ");
+
+    const composed = `${instruction}\n\nUser Request:\n${userPrompt}`;
+    const raw = await llm.invoke(composed);
+    const parsed = this._extractJsonArray(raw);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .map((q) => (typeof q === "string" ? q.trim() : ""))
+        .filter((q) => q.length > 0)
+        .slice(0, 12);
+    }
+    // Fallback: use the prompt itself
+    return [userPrompt];
+  }
+
+  private async _retrieveWithMultiQueries(
+    vectorStore: QdrantVectorStore,
+    userPrompt: string,
+  ): Promise<DocumentInterface<Record<string, unknown>>[]> {
+    const queries = await this._planQueriesWithLLM(userPrompt);
+
+    console.log("Queries", queries);
+
+    // Allocate per-query k based on total budget
+    const totalBudget = Math.max(10, this._maxSearchSimilarDocs);
+    const perQueryK = Math.max(2, Math.floor(totalBudget / Math.max(1, queries.length)));
+
+    type Scored = { doc: DocumentInterface<Record<string, unknown>>; score: number };
+    const bestById = new Map<string, Scored>();
+
+    // Prefer withScore API when available
+    const vsAny = vectorStore as unknown as {
+      similaritySearchWithScore?: (
+        query: string,
+        k: number,
+      ) => Promise<Array<[DocumentInterface<Record<string, unknown>>, number]>>;
+      similaritySearch: (
+        query: string,
+        k: number,
+      ) => Promise<Array<DocumentInterface<Record<string, unknown>>>>;
+    };
+
+    for (const q of queries) {
+      try {
+        if (typeof vsAny.similaritySearchWithScore === "function") {
+          const pairs = await vsAny.similaritySearchWithScore(q, perQueryK);
+          for (const [doc, score] of pairs) {
+            const id = (doc.metadata as { id?: string })?.id || doc.pageContent.slice(0, 80);
+            const prev = bestById.get(id);
+            if (!prev || score > prev.score) {
+              bestById.set(id, { doc, score });
+            }
+          }
+        } else {
+          const docs = await vsAny.similaritySearch(q, perQueryK);
+          for (const doc of docs) {
+            const id = (doc.metadata as { id?: string })?.id || doc.pageContent.slice(0, 80);
+            const prev = bestById.get(id);
+            const score = prev?.score ?? 0.5; // neutral when unknown
+            if (!prev) bestById.set(id, { doc, score });
+          }
+        }
+      } catch (e) {
+        console.debug("Query variant failed", { query: q, error: e instanceof Error ? e.message : String(e) });
+      }
+    }
+
+    const ranked = Array.from(bestById.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, totalBudget)
+      .map((s) => s.doc);
+
+    console.debug("Query variants used", { count: queries.length, perQueryK, returned: ranked.length });
+    return ranked;
+  }
+
+  private _extractJsonArray(text: string): unknown[] | null {
+    try {
+      const direct = JSON.parse(text);
+      return Array.isArray(direct) ? direct : null;
+    } catch {}
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (match) {
+      try {
+        const parsed = JSON.parse(match[1]);
+        return Array.isArray(parsed) ? parsed : null;
+      } catch {}
+    }
+    const bracket = text.match(/\[([\s\S]*?)\]/);
+    if (bracket) {
+      try {
+        const parsed = JSON.parse(bracket[0]);
+        return Array.isArray(parsed) ? parsed : null;
+      } catch {}
+    }
+    return null;
+  }
+
+  private _generateTemporalQueries(prompt: string): string[] {
+    const queries: string[] = [];
+    
+    // Check if the prompt suggests temporal exploration
+    const temporalIndicators = [
+      'journey', 'story', 'day', 'timeline', 'experience', 
+      'what happened', 'activities', 'events', 'describe'
+    ];
+    
+    const hasTemporalIntent = temporalIndicators.some(indicator => 
+      prompt.toLowerCase().includes(indicator)
+    );
+    
+    if (!hasTemporalIntent) {
+      return queries;
+    }
+    
+    // Generate diverse queries to cast a wider semantic net
+    queries.push(
+      "music listening activity songs tracks",
+      "daily activities social media posts",
+      "development coding programming work",
+      "creative projects repositories commits",
+      "entertainment media consumption",
+      "personal interests hobbies activities"
+    );
+    
+    // Extract any temporal references and create contextual queries
+    const words = prompt.toLowerCase().split(/\s+/);
+    const yearMatches = words.filter(word => /^\d{4}$/.test(word));
+    const monthMatches = words.filter(word => 
+      ['january', 'february', 'march', 'april', 'may', 'june',
+       'july', 'august', 'september', 'october', 'november', 'december'].includes(word)
+    );
+    
+    if (yearMatches.length > 0 || monthMatches.length > 0) {
+      queries.push(
+        "created updated timestamp recent activity",
+        "new content latest items recent additions"
+      );
+    }
+    
+    return queries;
   }
 }

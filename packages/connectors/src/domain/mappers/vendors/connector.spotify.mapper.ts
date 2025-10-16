@@ -229,7 +229,7 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget: SpotifyPlaylistDataTarget) => dataTarget.tracks ?? [],
   },
   followers: {
-    external: (external) => external.followers?.total ?? 0,
+    external: (_external) => 0,
     domain: (domain) => domain.followers,
     dataTarget: (dataTarget) => dataTarget.followers!,
   },

@@ -5,14 +5,19 @@ import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
 dotenv.config();
 
 /**
- * Default model name, e.g., "deepseek-r1:1.5b".
+ * Default model name, e.g., "qwen3:latest".
  */
-export const DEFAULT_LANGCHAIN_MODEL = process.env.LANGCHAIN_MODEL || "deepseek-r1:1.5b";
+export const DEFAULT_GENERATION_MODEL = process.env.GENERATION_MODEL || "qwen3:latest";
+
+/**
+ * Default model name, e.g., "qwen3-embedding:latest".
+ */
+export const DEFAULT_EMBEDDINGS_MODEL = process.env.EMBEDDINGS_MODEL || "qwen3-embedding:latest";
 
 /**
  * Default vector size for embeddings.
  */
-export const LANGCHAIN_VECTOR_SIZE = Number(process.env.LANGCHAIN_VECTOR_SIZE || "1536");
+export const GENERATION_VECTOR_SIZE = Number(process.env.GENERATION_VECTOR_SIZE || "4096");
 
 /**
  * Default base URL for the Ollama server.
@@ -24,7 +29,7 @@ export const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:
  */
 export interface ILangChainConfig {
   /**
-   * Default model name, e.g., "deepseek-r1:1.5b".
+   * Default model name, e.g., "qwen3:latest".
    */
   model: string;
 
@@ -82,8 +87,8 @@ let _instance: ReturnType<typeof buildLangChainClient> | null = null;
  * Default config derived from environment or safe defaults.
  */
 let _config: ILangChainConfig = {
-  model: DEFAULT_LANGCHAIN_MODEL,
-  expectedVectorSize: LANGCHAIN_VECTOR_SIZE,
+  model: DEFAULT_GENERATION_MODEL,
+  expectedVectorSize: GENERATION_VECTOR_SIZE,
   logger: true,
   baseUrl: OLLAMA_BASE_URL,
 };

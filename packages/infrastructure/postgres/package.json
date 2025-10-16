@@ -9,23 +9,24 @@
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "db:generate": "drizzle-kit generate --config src/drizzle.config.ts",
     "db:migrate": "test -f .env || cp .env.example .env && tsx src/db.migrate.ts",
+    "db:fix-collation": "test -f .env || cp .env.example .env && tsx src/db.fix-collation.ts",
     "db:generate:test": "NODE_ENV=test pnpm run --filter @ait/postgres db:generate",
     "db:migrate:test": "NODE_ENV=test pnpm run --filter @ait/postgres db:migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio --config src/drizzle.config.ts"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "drizzle-orm": "^0.38.3",
-    "postgres": "^3.4.5"
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.6",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
-    "@types/sinon": "^17.0.3",
-    "drizzle-kit": "^0.30.1",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "@types/sinon": "^17.0.4",
+    "drizzle-kit": "^0.31.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }

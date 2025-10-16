@@ -4,8 +4,7 @@ import { xTweets, type getPostgresClient, type XTweetDataTarget } from "@ait/pos
 import type { IETLEmbeddingDescriptor } from "@/infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import type { qdrant } from "@ait/qdrant";
 import type { IEmbeddingsService } from "@ait/langchain";
-
-const defaultCollectionName = "x_tweets_collection";
+import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
 
 export class RetoveXTweetETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<XTweetDataTarget> = new ETLXTweetDescriptor();
@@ -16,7 +15,7 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, defaultCollectionName, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<XTweetDataTarget[]> {
@@ -31,6 +30,10 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
 
   protected getPayload(tweet: XTweetDataTarget): RetoveXTweetVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(tweet);
+  }
+
+  protected override getIdBaseOffset(): number {
+    return 6_000_000_000_000;
   }
 }
 

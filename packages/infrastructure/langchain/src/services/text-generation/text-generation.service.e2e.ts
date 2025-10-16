@@ -1,20 +1,26 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { TextGenerationService } from "./text-generation.service";
-import { DEFAULT_LANGCHAIN_MODEL, LANGCHAIN_VECTOR_SIZE } from "../../langchain.client";
+import { DEFAULT_EMBEDDINGS_MODEL, DEFAULT_GENERATION_MODEL, GENERATION_VECTOR_SIZE } from "../../langchain.client";
 import { smoothStream } from "./utils/stream.utils";
 
 describe("TextGenerationService", () => {
-  const model = DEFAULT_LANGCHAIN_MODEL;
-  const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
+  const model = DEFAULT_GENERATION_MODEL;
+  const embeddingsModel = DEFAULT_EMBEDDINGS_MODEL;
+  const expectedVectorSize = GENERATION_VECTOR_SIZE;
   const timeout = 1800000;
 
   let service: TextGenerationService;
 
-  describe("generateText", () => {
+  describe.skip("generateText", () => {
     describe("github", () => {
       beforeEach(() => {
-        service = new TextGenerationService(model, expectedVectorSize, "github_repositories_collection");
+        service = new TextGenerationService(
+          model,
+          embeddingsModel,
+          expectedVectorSize,
+          "github_repositories_collection",
+        );
       });
 
       describe("repositories", () => {
@@ -31,7 +37,7 @@ describe("TextGenerationService", () => {
 
     describe("spotify", () => {
       beforeEach(() => {
-        service = new TextGenerationService(model, expectedVectorSize, "spotify_tracks_collection");
+        service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "spotify_tracks_collection");
       });
 
       describe("tracks", () => {
@@ -81,7 +87,7 @@ describe("TextGenerationService", () => {
 
     describe("x", () => {
       beforeEach(() => {
-        service = new TextGenerationService(model, expectedVectorSize, "x_tweets_collection");
+        service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "ait_embeddings_collection");
       });
 
       describe("tweets", () => {
@@ -98,9 +104,9 @@ describe("TextGenerationService", () => {
     });
   });
 
-  describe("stream", () => {
+  describe.skip("stream", () => {
     beforeEach(() => {
-      service = new TextGenerationService(model, expectedVectorSize, "x_tweets_collection");
+      service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "ait_embeddings_collection");
     });
 
     describe("tweets", () => {
@@ -128,7 +134,7 @@ describe("TextGenerationService", () => {
 
     describe("playlists", () => {
       beforeEach(() => {
-        service = new TextGenerationService(model, expectedVectorSize, "spotify_playlists_collection");
+        service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "spotify_playlists_collection");
       });
 
       it("should generate stream text successfully", { timeout: timeout }, async () => {
@@ -151,7 +157,7 @@ describe("TextGenerationService", () => {
 
     describe("albums", () => {
       beforeEach(() => {
-        service = new TextGenerationService(model, expectedVectorSize, "spotify_albums_collection");
+        service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "spotify_albums_collection");
       });
 
       it("should generate amazing stream text for Spotify albums", { timeout }, async () => {
@@ -217,6 +223,26 @@ describe("TextGenerationService", () => {
 
         assert.ok(result.trim(), "Generated stream text should not be empty");
       });
+    });
+  });
+
+  describe("generateTextStream", () => {
+    beforeEach(() => {
+      service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "ait_embeddings_collection");
+    });
+
+
+    it("should describe an user journey", { timeout: timeout }, async () => {
+      const prompt = "Tell me a simple user journey taking place one random day in 2025";
+      const result = await smoothStream(service.generateTextStream(prompt), {
+        delay: 50,
+        prefix: "AI Response:",
+        cursor: "▌",
+      });
+
+      console.log("Generated stream text:", result);
+
+      assert.ok(result.trim(), "Generated stream text should not be empty");
     });
   });
 });

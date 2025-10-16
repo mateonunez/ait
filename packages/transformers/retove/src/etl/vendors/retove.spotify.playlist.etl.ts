@@ -5,8 +5,7 @@ import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "
 import type { IETLEmbeddingDescriptor } from "@/infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import type { IEmbeddingsService } from "@ait/langchain";
 import { ETLSpotifyPlaylistDescriptor } from "@/infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-
-const defaultCollectionName = "spotify_playlists_collection";
+import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
 
 export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> = new ETLSpotifyPlaylistDescriptor();
@@ -17,7 +16,7 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, defaultCollectionName, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<SpotifyPlaylistDataTarget[]> {
@@ -32,6 +31,10 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
 
   protected getPayload(playlist: SpotifyPlaylistDataTarget): RetoveSpotifyPlaylistVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(playlist);
+  }
+
+  protected override getIdBaseOffset(): number {
+    return 3_000_000_000_000;
   }
 }
 

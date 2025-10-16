@@ -27,7 +27,7 @@ export type EmbeddingsConfig = z.infer<typeof embeddingsConfigSchema>;
  * Default configuration values for the embeddings service
  */
 export const defaultEmbeddingsConfig: EmbeddingsConfig = {
-  model: process.env.EMBEDDINGS_MODEL || "llama2",
+  model: process.env.EMBEDDINGS_MODEL || "qwen3-embedding:latest",
   expectedVectorSize: Number.parseInt(process.env.EMBEDDINGS_VECTOR_SIZE || "4096", 10),
   chunkSize: Number.parseInt(process.env.EMBEDDINGS_CHUNK_SIZE || "4096", 10),
   chunkOverlap: Number.parseInt(process.env.EMBEDDINGS_CHUNK_OVERLAP || "200", 10),
@@ -47,6 +47,8 @@ export function createEmbeddingsConfig(options?: Partial<EmbeddingsConfig>): Emb
     ...defaultEmbeddingsConfig,
     ...options,
   };
+
+  console.log("🔍 Merged config:", mergedConfig);
 
   return embeddingsConfigSchema.parse(mergedConfig);
 }

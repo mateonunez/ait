@@ -2,9 +2,9 @@ import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import {
   EmbeddingsService,
-  DEFAULT_LANGCHAIN_MODEL,
-  LANGCHAIN_VECTOR_SIZE,
+  GENERATION_VECTOR_SIZE,
   type IEmbeddingsService,
+  DEFAULT_EMBEDDINGS_MODEL,
 } from "@ait/langchain";
 
 export interface BaseVectorPoint {
@@ -22,7 +22,7 @@ export interface RetryOptions {
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 1000;
-  private readonly _vectorSize = LANGCHAIN_VECTOR_SIZE;
+  private readonly _vectorSize = GENERATION_VECTOR_SIZE;
   protected readonly _transformConcurrency: number = 10;
   protected readonly _batchUpsertConcurrency: number = 5;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
@@ -37,8 +37,8 @@ export abstract class RetoveBaseETLAbstract {
       maxDelay: 5000,
     },
     private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService(
-      DEFAULT_LANGCHAIN_MODEL,
-      LANGCHAIN_VECTOR_SIZE,
+      DEFAULT_EMBEDDINGS_MODEL,
+      GENERATION_VECTOR_SIZE,
       {
         concurrencyLimit: 2,
         chunkSize: 1024,
@@ -164,11 +164,12 @@ export abstract class RetoveBaseETLAbstract {
               version: "1.0",
             } as ReturnType<typeof this.getPayload>;
 
+            const baseOffset = this.getIdBaseOffset();
             return chunkVectors.map((chunkVector) => {
               const chunkFormatted = chunkVector.text.replace(/{/g, "{{").replace(/}/g, "}}");
 
               return {
-                id: (i + index + 1) * 1000 + chunkVector.chunkIndex,
+                id: baseOffset + (i + index + 1) * 1000 + chunkVector.chunkIndex,
                 vector: chunkVector.vector,
                 payload: {
                   content: chunkFormatted,
@@ -347,4 +348,11 @@ export abstract class RetoveBaseETLAbstract {
   protected abstract extract(limit: number): Promise<unknown[]>;
   protected abstract getTextForEmbedding(item: Record<string, unknown>): string;
   protected abstract getPayload(item: Record<string, unknown>): Record<string, unknown>;
+  /**
+   * Returns a large numeric offset that namespaces point IDs per ETL implementation,
+   * ensuring uniqueness when multiple ETLs share a single collection.
+   */
+  protected getIdBaseOffset(): number {
+    return 0;
+  }
 }
