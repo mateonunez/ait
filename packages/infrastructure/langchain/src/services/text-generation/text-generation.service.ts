@@ -78,7 +78,7 @@ export class TextGenerationService implements ITextGenerationService {
     } catch (error) {
       console.error("Failed to initialize TextGenerationService:", error);
       throw new TextGenerationError(
-        `Failed to initialize service: ${error instanceof Error ? error.message : String(error)}`
+        `Failed to initialize service: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }
@@ -225,50 +225,50 @@ export class TextGenerationService implements ITextGenerationService {
     const embedStart = Date.now();
 
     const vectorStore = await QdrantVectorStore.fromExistingCollection(
-        {
-          embedQuery: async () => {
-            const embeddings = await this._embeddingService.generateEmbeddings(prompt, {
-              correlationId,
-              concurrencyLimit: 4,
+      {
+        embedQuery: async () => {
+          const embeddings = await this._embeddingService.generateEmbeddings(prompt, {
+            correlationId,
+            concurrencyLimit: 4,
+          });
+          console.debug("Query embeddings generated", { duration: Date.now() - embedStart });
+          console.log("Embeddings", embeddings);
+          return embeddings;
+        },
+        embedDocuments: async (documents: string[]) => {
+          const batchSize = 10;
+          const results: number[][] = [];
+
+          for (let i = 0; i < documents.length; i += batchSize) {
+            const batch = documents.slice(i, i + batchSize);
+            const batchStart = Date.now();
+
+            const batchResults = await Promise.all(
+              batch.map((doc) =>
+                this._getEmbeddingsWithCache(doc, {
+                  correlationId: `${correlationId}-batch-${i}`,
+                  concurrencyLimit: 2,
+                }),
+              ),
+            );
+
+            console.log("Batch results", batchResults);
+
+            console.debug(`Batch ${Math.floor(i / batchSize) + 1} processed`, {
+              duration: Date.now() - batchStart,
             });
-            console.debug("Query embeddings generated", { duration: Date.now() - embedStart });
-            console.log("Embeddings", embeddings);
-            return embeddings;
-          },
-          embedDocuments: async (documents: string[]) => {
-            const batchSize = 10;
-            const results: number[][] = [];
 
-            for (let i = 0; i < documents.length; i += batchSize) {
-              const batch = documents.slice(i, i + batchSize);
-              const batchStart = Date.now();
-
-              const batchResults = await Promise.all(
-                batch.map((doc) =>
-                  this._getEmbeddingsWithCache(doc, {
-                    correlationId: `${correlationId}-batch-${i}`,
-                    concurrencyLimit: 2,
-                  }),
-                ),
-              );
-
-              console.log("Batch results", batchResults);
-
-              console.debug(`Batch ${Math.floor(i / batchSize) + 1} processed`, {
-                duration: Date.now() - batchStart,
-              });
-
-              results.push(...batchResults);
-            }
-            console.log("Results", results);
-            return results;
-          },
+            results.push(...batchResults);
+          }
+          console.log("Results", results);
+          return results;
         },
-        {
-          url: process.env.QDRANT_URL,
-          collectionName: this._collectionName,
-        },
-      );
+      },
+      {
+        url: process.env.QDRANT_URL,
+        collectionName: this._collectionName,
+      },
+    );
 
     const similarityStart = Date.now();
 
@@ -301,7 +301,8 @@ export class TextGenerationService implements ITextGenerationService {
     const buildTitle = (meta: Record<string, unknown>): string => {
       const type = (meta.__type as string) || "Document";
       const name = typeof (meta as { name?: unknown }).name === "string" ? (meta as { name?: string }).name : undefined;
-      const artist = typeof (meta as { artist?: unknown }).artist === "string" ? (meta as { artist?: string }).artist : undefined;
+      const artist =
+        typeof (meta as { artist?: unknown }).artist === "string" ? (meta as { artist?: string }).artist : undefined;
       const title = name && artist ? `${name} — ${artist}` : name;
       const fallback =
         title ||
@@ -401,10 +402,7 @@ export class TextGenerationService implements ITextGenerationService {
         query: string,
         k: number,
       ) => Promise<Array<[DocumentInterface<Record<string, unknown>>, number]>>;
-      similaritySearch: (
-        query: string,
-        k: number,
-      ) => Promise<Array<DocumentInterface<Record<string, unknown>>>>;
+      similaritySearch: (query: string, k: number) => Promise<Array<DocumentInterface<Record<string, unknown>>>>;
     };
 
     for (const q of queries) {
@@ -465,21 +463,26 @@ export class TextGenerationService implements ITextGenerationService {
 
   private _generateTemporalQueries(prompt: string): string[] {
     const queries: string[] = [];
-    
+
     // Check if the prompt suggests temporal exploration
     const temporalIndicators = [
-      'journey', 'story', 'day', 'timeline', 'experience', 
-      'what happened', 'activities', 'events', 'describe'
+      "journey",
+      "story",
+      "day",
+      "timeline",
+      "experience",
+      "what happened",
+      "activities",
+      "events",
+      "describe",
     ];
-    
-    const hasTemporalIntent = temporalIndicators.some(indicator => 
-      prompt.toLowerCase().includes(indicator)
-    );
-    
+
+    const hasTemporalIntent = temporalIndicators.some((indicator) => prompt.toLowerCase().includes(indicator));
+
     if (!hasTemporalIntent) {
       return queries;
     }
-    
+
     // Generate diverse queries to cast a wider semantic net
     queries.push(
       "music listening activity songs tracks",
@@ -487,24 +490,33 @@ export class TextGenerationService implements ITextGenerationService {
       "development coding programming work",
       "creative projects repositories commits",
       "entertainment media consumption",
-      "personal interests hobbies activities"
+      "personal interests hobbies activities",
     );
-    
+
     // Extract any temporal references and create contextual queries
     const words = prompt.toLowerCase().split(/\s+/);
-    const yearMatches = words.filter(word => /^\d{4}$/.test(word));
-    const monthMatches = words.filter(word => 
-      ['january', 'february', 'march', 'april', 'may', 'june',
-       'july', 'august', 'september', 'october', 'november', 'december'].includes(word)
+    const yearMatches = words.filter((word) => /^\d{4}$/.test(word));
+    const monthMatches = words.filter((word) =>
+      [
+        "january",
+        "february",
+        "march",
+        "april",
+        "may",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
+      ].includes(word),
     );
-    
+
     if (yearMatches.length > 0 || monthMatches.length > 0) {
-      queries.push(
-        "created updated timestamp recent activity",
-        "new content latest items recent additions"
-      );
+      queries.push("created updated timestamp recent activity", "new content latest items recent additions");
     }
-    
+
     return queries;
   }
 }

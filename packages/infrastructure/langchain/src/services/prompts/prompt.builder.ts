@@ -11,10 +11,8 @@ export class PromptBuilder implements IPromptBuilder {
 
   public async build(operation: PromptOperation, context: string, userPrompt: string): Promise<ChatPromptTemplate> {
     const enhancedUserPrompt = `${userPrompt}\n\nInstructions: Use ONLY the provided CONTEXT. Do NOT invent names, dates, metrics, or entities.`;
-    
-    const systemPrompt = this.config.systemPrompt
-      .replace("{context}", context)
-      .replace("{prompt}", enhancedUserPrompt);
+
+    const systemPrompt = this.config.systemPrompt.replace("{context}", context).replace("{prompt}", enhancedUserPrompt);
 
     const messages: [string, string][] = [["system", systemPrompt]];
 
@@ -33,6 +31,4 @@ export class PromptBuilder implements IPromptBuilder {
   public addFewShotExample(input: string, output: string): void {
     this.fewShotExamples.push({ input, output });
   }
-
-
 }

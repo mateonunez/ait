@@ -146,7 +146,13 @@ describe("TextGenerationService", () => {
 
     it("should use provided model when specified", async () => {
       const customModel = "different-model:1b";
-      service = new TextGenerationService(customModel, embeddingsModel, expectedVectorSize, "langchain", mockEmbeddingsService);
+      service = new TextGenerationService(
+        customModel,
+        embeddingsModel,
+        expectedVectorSize,
+        "langchain",
+        mockEmbeddingsService,
+      );
       await service.generateText(prompt);
       assert(createLLMStub.calledWith(customModel));
     });

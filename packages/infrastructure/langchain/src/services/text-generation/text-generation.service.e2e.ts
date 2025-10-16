@@ -231,7 +231,6 @@ describe("TextGenerationService", () => {
       service = new TextGenerationService(model, embeddingsModel, expectedVectorSize, "ait_embeddings_collection");
     });
 
-
     it("should describe an user journey", { timeout: timeout }, async () => {
       const prompt = "Tell me a simple user journey taking place one random day in 2025";
       const result = await smoothStream(service.generateTextStream(prompt), {
