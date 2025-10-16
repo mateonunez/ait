@@ -4,16 +4,16 @@ import sinon from "sinon";
 import {
   getLangChainClient,
   initLangChainClient,
-  DEFAULT_LANGCHAIN_MODEL,
-  LANGCHAIN_VECTOR_SIZE,
+  DEFAULT_GENERATION_MODEL,
+  GENERATION_VECTOR_SIZE,
 } from "../../langchain.client";
 import { EmbeddingsService } from "./embeddings.service";
 import type { OllamaEmbeddings } from "@langchain/ollama";
 
 describe("EmbeddingsService", () => {
   const ollamaBaseURL = "http://localhost:11434";
-  const model = DEFAULT_LANGCHAIN_MODEL;
-  const expectedVectorSize = LANGCHAIN_VECTOR_SIZE;
+  const model = DEFAULT_GENERATION_MODEL;
+  const expectedVectorSize = GENERATION_VECTOR_SIZE;
   const text = "sample text";
   let embeddingsService: EmbeddingsService;
   let langChainClientStub: sinon.SinonStub;

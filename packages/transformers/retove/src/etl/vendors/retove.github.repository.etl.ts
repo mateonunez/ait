@@ -5,8 +5,7 @@ import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract"
 import type { IEmbeddingsService } from "@ait/langchain";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
-
-const defaultCollectionName = "github_repositories_collection";
+import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
 
 export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> =
@@ -18,7 +17,7 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, defaultCollectionName, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<GitHubRepositoryDataTarget[]> {
@@ -33,6 +32,10 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
 
   protected getPayload(repository: GitHubRepositoryDataTarget): RetoveGitHubRepositoryVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(repository);
+  }
+
+  protected override getIdBaseOffset(): number {
+    return 5_000_000_000_000;
   }
 }
 export interface RetoveGitHubRepositoryVectorPoint extends BaseVectorPoint {

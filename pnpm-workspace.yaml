@@ -1,7 +1,13 @@
 packages:
-  - 'packages/*'
-  - 'packages/infrastructure/*'
-  - 'packages/connectors/*'
-  - 'packages/transformers/*'
-  - 'packages/gateway/*'
-  - 'packages/uit/*'
+  - packages/*
+  - packages/infrastructure/*
+  - packages/connectors/*
+  - packages/transformers/*
+  - packages/gateway/*
+  - packages/uit/*
+
+ignoredBuiltDependencies:
+  - '@tailwindcss/oxide'
+
+onlyBuiltDependencies:
+  - protobufjs

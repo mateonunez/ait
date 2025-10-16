@@ -84,6 +84,7 @@ export class EmbeddingsService implements IEmbeddingsService {
         correlationId,
         chunkCount: chunks.length,
         totalLength: text.length,
+        model: this._config.model,
       });
 
       // Process chunks and generate embeddings
@@ -105,6 +106,7 @@ export class EmbeddingsService implements IEmbeddingsService {
         correlationId,
         processedChunks: chunks.length,
         vectorSize: averagedVector.length,
+        model: this._config.model,
       });
 
       return averagedVector;
@@ -112,6 +114,7 @@ export class EmbeddingsService implements IEmbeddingsService {
       console.error("Failed to generate embeddings", {
         correlationId,
         error: err instanceof Error ? err.message : String(err),
+        model: this._config.model,
       });
       throw err;
     }
@@ -141,6 +144,7 @@ export class EmbeddingsService implements IEmbeddingsService {
         correlationId,
         chunkIndex: chunk.index,
         chunkLength: chunk.length,
+        model: this._config.model,
       });
     }
 
@@ -158,6 +162,7 @@ export class EmbeddingsService implements IEmbeddingsService {
         correlationId,
         chunkIndex: chunk.index,
         chunkLength: chunk.length,
+        model: this._config.model,
       });
     });
 
@@ -206,6 +211,7 @@ export class EmbeddingsService implements IEmbeddingsService {
             correlationId,
             error: lastError.message,
             delay,
+            model: this._config.model,
           });
           await new Promise((resolve) => setTimeout(resolve, delay));
         }

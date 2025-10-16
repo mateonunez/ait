@@ -1,4 +1,4 @@
-# Ollama
+# LangChain (legacy) and Ollama
 
 ## Overview
 
@@ -9,7 +9,12 @@ docker exec -it ait_ollama sh
 **Install the model**:
 
 ```bash
-ollama pull deepseek-r1:1.5b
+ollama pull qwen3:latest
+
+## Default Collection Name
+
+This package now reads the default Qdrant collection from `DEFAULT_RAG_COLLECTION`. If unset, it falls back to `rag_default_collection`.
+
 ```
 
 ### License

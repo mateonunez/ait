@@ -12,13 +12,13 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "@qdrant/js-client-rest": "^1.12.0",
-    "dotenv": "^16.4.7"
+    "@qdrant/js-client-rest": "^1.15.1",
+    "dotenv": "^17.2.3"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
-    "@types/sinon": "^17.0.3",
-    "sinon": "^19.0.2",
-    "typescript": "^5.7.2"
+    "@types/sinon": "^17.0.4",
+    "sinon": "^21.0.0",
+    "typescript": "^5.9.3"
   }
 }

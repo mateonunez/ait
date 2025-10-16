@@ -3,7 +3,7 @@ import { openApiSchemas, type OpenApiSchemaConfig } from "./openapi.schemas.conf
 
 function generateTypesForSchema(schemaKey: string, config: OpenApiSchemaConfig): Promise<void> {
   return new Promise((resolve, reject) => {
-    const command = `npx openapi-typescript ${config.url} --output ${config.outputPath}`;
+    const command = `npx openapi-typescript ${config.url} --output ${config.outputPath} --redocly`;
     exec(command, (error, stdout, stderr) => {
       if (error) {
         return reject(`Error generating types for ${schemaKey}: ${stderr}`);
@@ -15,12 +15,34 @@ function generateTypesForSchema(schemaKey: string, config: OpenApiSchemaConfig):
 }
 
 async function generateAllTypes(): Promise<void> {
+  const results: Array<{ key: string; success: boolean; error?: string }> = [];
+  
   for (const schemaKey of Object.keys(openApiSchemas)) {
     const schema = openApiSchemas[schemaKey];
     if (!schema) {
       throw new Error(`Schema configuration not found for key: ${schemaKey}`);
     }
-    await generateTypesForSchema(schemaKey, schema);
+    
+    try {
+      await generateTypesForSchema(schemaKey, schema);
+      results.push({ key: schemaKey, success: true });
+    } catch (error) {
+      console.warn(`⚠️  Warning: Could not generate types for ${schemaKey}`);
+      console.warn(`   ${error}`);
+      results.push({ 
+        key: schemaKey, 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+  
+  const successful = results.filter(r => r.success);
+  const failed = results.filter(r => !r.success);
+  
+  console.info(`\n✓ Successfully generated ${successful.length}/${results.length} schemas`);
+  if (failed.length > 0) {
+    console.warn(`⚠️  Failed to generate ${failed.length} schema(s): ${failed.map(f => f.key).join(", ")}`);
   }
 }
 

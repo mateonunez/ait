@@ -13,7 +13,12 @@ async function runMigration() {
   try {
     console.log("⏳ Running migrations...");
     const start = Date.now();
+
     const { db } = getPostgresClient();
+
+    console.log("📋 Note: Collation version warnings and 'already exists' notices are normal and can be ignored.");
+    console.log("💡 If you see collation version mismatch warnings, run: pnpm db:fix-collation");
+
     await migrate(db, { migrationsFolder: migrationsPath });
 
     const end = Date.now();
@@ -23,6 +28,7 @@ async function runMigration() {
     process.exit(0);
   } catch (error) {
     console.error("❌ Migration failed:", error);
+
     process.exit(1);
   }
 }

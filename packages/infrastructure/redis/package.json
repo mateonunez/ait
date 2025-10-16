@@ -12,14 +12,14 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "ioredis": "^5.4.2"
+    "dotenv": "^17.2.2",
+    "ioredis": "^5.8.0"
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
-    "@types/sinon": "^17.0.3",
+    "@types/sinon": "^17.0.4",
     "redis": "link:@@types/redis",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
   }
 }
