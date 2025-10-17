@@ -377,7 +377,7 @@ export class TextGenerationService implements ITextGenerationService {
         .filter((q) => q.length > 0)
         .slice(0, 12);
     }
-    // Fallback: use the prompt itself
+
     return [userPrompt];
   }
 
@@ -405,6 +405,9 @@ export class TextGenerationService implements ITextGenerationService {
       similaritySearch: (query: string, k: number) => Promise<Array<DocumentInterface<Record<string, unknown>>>>;
     };
 
+    let successfulQueries = 0;
+    let lastError: Error | undefined;
+
     for (const q of queries) {
       try {
         if (typeof vsAny.similaritySearchWithScore === "function") {
@@ -425,9 +428,15 @@ export class TextGenerationService implements ITextGenerationService {
             if (!prev) bestById.set(id, { doc, score });
           }
         }
+        successfulQueries++;
       } catch (e) {
+        lastError = e instanceof Error ? e : new Error(String(e));
         console.debug("Query variant failed", { query: q, error: e instanceof Error ? e.message : String(e) });
       }
+    }
+
+    if (successfulQueries === 0 && lastError) {
+      throw lastError;
     }
 
     const ranked = Array.from(bestById.values())
@@ -459,64 +468,5 @@ export class TextGenerationService implements ITextGenerationService {
       } catch {}
     }
     return null;
-  }
-
-  private _generateTemporalQueries(prompt: string): string[] {
-    const queries: string[] = [];
-
-    // Check if the prompt suggests temporal exploration
-    const temporalIndicators = [
-      "journey",
-      "story",
-      "day",
-      "timeline",
-      "experience",
-      "what happened",
-      "activities",
-      "events",
-      "describe",
-    ];
-
-    const hasTemporalIntent = temporalIndicators.some((indicator) => prompt.toLowerCase().includes(indicator));
-
-    if (!hasTemporalIntent) {
-      return queries;
-    }
-
-    // Generate diverse queries to cast a wider semantic net
-    queries.push(
-      "music listening activity songs tracks",
-      "daily activities social media posts",
-      "development coding programming work",
-      "creative projects repositories commits",
-      "entertainment media consumption",
-      "personal interests hobbies activities",
-    );
-
-    // Extract any temporal references and create contextual queries
-    const words = prompt.toLowerCase().split(/\s+/);
-    const yearMatches = words.filter((word) => /^\d{4}$/.test(word));
-    const monthMatches = words.filter((word) =>
-      [
-        "january",
-        "february",
-        "march",
-        "april",
-        "may",
-        "june",
-        "july",
-        "august",
-        "september",
-        "october",
-        "november",
-        "december",
-      ].includes(word),
-    );
-
-    if (yearMatches.length > 0 || monthMatches.length > 0) {
-      queries.push("created updated timestamp recent activity", "new content latest items recent additions");
-    }
-
-    return queries;
   }
 }
