@@ -10,6 +10,7 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
 
 - **Connectors**:
   - GitHub integration for repository analysis and OAuth 2.0 authentication
+  - Linear integration for issue tracking and project management
   - Spotify integration for music insights and playlist analysis
   - X integration for tweets analysis
   - Modular connector architecture with shared utilities
@@ -66,14 +67,33 @@ POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
 # GitHub OAuth
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_secret
+GITHUB_ENDPOINT=https://github.com/login/oauth/access_token
+GITHUB_REDIRECT_URI=http://localhost:3000/api/github/auth/callback
+GITHUB_AUTH_URL=https://github.com/login/oauth/authorize
+
+# Linear OAuth
+LINEAR_CLIENT_ID=your_linear_client_id
+LINEAR_CLIENT_SECRET=your_linear_secret
+LINEAR_ENDPOINT=https://api.linear.app/oauth/token
+LINEAR_REDIRECT_URI=http://localhost:3000/api/linear/auth/callback
+LINEAR_AUTH_URL=https://linear.app/oauth/authorize
+LINEAR_API_ENDPOINT=https://api.linear.app/graphql
 
 # Spotify OAuth
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_secret
+SPOTIFY_ENDPOINT=https://accounts.spotify.com/api/token
+SPOTIFY_REDIRECT_URI=http://localhost:3000/api/spotify/auth/callback
+SPOTIFY_AUTH_URL=https://accounts.spotify.com/authorize
+SPOTIFY_API_ENDPOINT=https://api.spotify.com/v1
 
 # X OAuth
 X_CLIENT_ID=your_x_client_id
 X_CLIENT_SECRET=your_x_secret
+X_ENDPOINT=https://api.x.com/2/oauth2/token
+X_REDIRECT_URI=http://localhost:3000/api/x/auth/callback
+X_AUTH_URL=https://twitter.com/i/oauth2/authorize
+X_API_ENDPOINT=https://api.x.com/2
 ```
 
 2. Initialize the database:
@@ -160,12 +180,17 @@ AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenti
 http://localhost:3000/api/github/auth
 ```
 
-2. Spotify:
+2. Linear:
+```
+http://localhost:3000/api/linear/auth
+```
+
+3. Spotify:
 ```
 http://localhost:3000/api/spotify/auth
 ```
 
-3. X:
+4. X:
 ```
 http://localhost:3000/api/x/auth
 ```

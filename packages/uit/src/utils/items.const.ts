@@ -33,6 +33,14 @@ export const AIT_SERVICES: Item[] = [
     disabled: false,
   },
   {
+    id: "linear",
+    title: "Linear",
+    description: "Assigned issues",
+    color: "#5e6ad2",
+    size: "md",
+    disabled: false,
+  },
+  {
     id: "discord",
     title: "Discord",
     description: "Server activity",
@@ -62,14 +70,6 @@ export const AIT_SERVICES: Item[] = [
     description: "Channel updates",
     color: "#4A154B",
     size: "sm",
-    disabled: true,
-  },
-  {
-    id: "linear",
-    title: "Linear",
-    description: "Assigned issues",
-    color: "#5E6AD2",
-    size: "xs",
     disabled: true,
   },
   {

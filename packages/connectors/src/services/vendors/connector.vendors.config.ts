@@ -1,4 +1,5 @@
 import { connectorGithubRepositoryMapper } from "@/domain/mappers/vendors/connector.github.mapper";
+import { connectorLinearIssueMapper } from "@/domain/mappers/vendors/connector.linear.mapper";
 import {
   connectorSpotifyAlbumMapper,
   connectorSpotifyArtistMapper,
@@ -6,12 +7,14 @@ import {
 } from "@/domain/mappers/vendors/connector.spotify.mapper";
 import { connectorXTweetMapper } from "@/domain/mappers/vendors/connector.x.mapper";
 import type { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
+import type { ConnectorLinear } from "@/infrastructure/vendors/linear/connector.linear";
 import type { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
 import type { ConnectorX } from "@/infrastructure/vendors/x/connector.x";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
 } from "@/types/domain/entities/vendors/connector.github.repository.types";
+import type { LinearIssueEntity, LinearIssueExternal } from "@/types/domain/entities/vendors/connector.linear.types";
 import type {
   SpotifyArtistEntity,
   SpotifyArtistExternal,
@@ -60,6 +63,14 @@ export interface XServiceEntityMap {
   [X_ENTITY_TYPES_ENUM.TWEET]: XTweetEntity;
 }
 
+export enum LINEAR_ENTITY_TYPES_ENUM {
+  ISSUE = "issue",
+}
+
+export interface LinearServiceEntityMap {
+  [LINEAR_ENTITY_TYPES_ENUM.ISSUE]: LinearIssueEntity;
+}
+
 const githubEntityConfigs = {
   [GITHUB_ENTITY_TYPES_ENUM.REPOSITORY]: {
     fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchRepositories(),
@@ -96,8 +107,16 @@ const xEntityConfigs = {
   } satisfies EntityConfig<ConnectorX, XTweetExternal, XTweetEntity>,
 } as const;
 
+const linearEntityConfigs = {
+  [LINEAR_ENTITY_TYPES_ENUM.ISSUE]: {
+    fetcher: (connector: ConnectorLinear) => connector.dataSource.fetchIssues(),
+    mapper: (issue: LinearIssueExternal) => connectorLinearIssueMapper.externalToDomain(issue),
+  } satisfies EntityConfig<ConnectorLinear, LinearIssueExternal, LinearIssueEntity>,
+} as const;
+
 export const connectorEntityConfigs = {
   github: githubEntityConfigs,
+  linear: linearEntityConfigs,
   spotify: spotifyEntityConfigs,
   x: xEntityConfigs,
 } as const;

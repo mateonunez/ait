@@ -1,6 +1,7 @@
 // Services
 export * from "./services/connector.service.factory";
 export * from "./services/vendors/connector.github.service";
+export * from "./services/vendors/connector.linear.service";
 export * from "./services/vendors/connector.spotify.service";
 export * from "./services/vendors/connector.x.service";
 
@@ -22,5 +23,6 @@ export * from "./shared/auth/connector.authenticator.abstract";
 
 // Repository Types
 export type * from "./types/domain/entities/vendors/connector.github.repository.types";
+export type * from "./types/domain/entities/vendors/connector.linear.types";
 export type * from "./types/domain/entities/vendors/connector.spotify.types";
 export type * from "./types/domain/entities/vendors/connector.x.repository.types";

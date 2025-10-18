@@ -4,7 +4,6 @@
   "description": "AIt's connectors",
   "main": "dist/src/index.js",
   "scripts": {
-    "dev": "tsx src/api/connector.server.ts",
     "build": "tsc && tsc-alias",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
