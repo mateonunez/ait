@@ -1,11 +1,13 @@
 import type { ConnectorServiceConstructor, ConnectorType } from "@/types/infrastructure/connector.interface";
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
+import { ConnectorLinearService } from "./vendors/connector.linear.service";
 import { ConnectorSpotifyService } from "./vendors/connector.spotify.service";
 import { ConnectorXService } from "./vendors/connector.x.service";
 
 export const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<ConnectorServiceBase<any, any>>> = {
   github: ConnectorGitHubService,
+  linear: ConnectorLinearService,
   spotify: ConnectorSpotifyService,
   x: ConnectorXService,
 };
