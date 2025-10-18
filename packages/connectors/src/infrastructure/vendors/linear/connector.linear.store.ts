@@ -17,7 +17,7 @@ export class ConnectorLinearStore implements IConnectorStore {
     for (const item of items) {
       switch (item.__type) {
         case LINEAR_ENTITY_TYPES_ENUM.ISSUE:
-          await this._connectorLinearRepository.issue.saveIssue(item, { incremental: true });
+          await this._connectorLinearRepository.issue.saveIssue(item, { incremental: false });
           break;
         default:
           // @ts-ignore: Unreachable code error

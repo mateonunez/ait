@@ -33,7 +33,7 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
   }
 
   protected override getIdBaseOffset(): number {
-    return 6_000_000_000_000;
+    return 7_000_000_000_000;
   }
 }
 

@@ -17,7 +17,12 @@ describe("AIt Personality Integration", () => {
   });
 
   it("should analyze knowledge base with sharp analytical personality and depth", { timeout: timeout }, async () => {
-    const prompt = `Analyze Mateo's digital footprint in the knowledge base and tell me what patterns reveal about him as a developer and person. Don't just list facts, challenge assumptions and dig into what the data actually means. What tensions do you see between what he creates, what he shares, and what matters? Be sharp, be honest, skip the corporate speak.`;
+    const prompt = `
+      Tell me about yourself. What drives you? What are you building and why? 
+      I don't want a resume or a pattern analysis, I want to understand who you are 
+      through what you create, what you listen to, what you share. Be honest, be direct, 
+      skip the corporate speak.
+    `;
 
     const result = await smoothStream(service.generateTextStream(prompt), {
       delay: 50,
@@ -29,10 +34,20 @@ describe("AIt Personality Integration", () => {
 
     assert.ok(result.trim(), "Generated stream text should not be empty");
 
-    // Verify the response has substance (personality traits)
+    // Verify the response has substance and uses first-person perspective
     const lowerResult = result.toLowerCase();
-    const hasAnalyticalContent = lowerResult.length > 200; // Should be a thoughtful response
+    const hasSubstantialContent = lowerResult.length > 200;
 
-    assert.ok(hasAnalyticalContent, "Response should be substantial and analytical");
+    // Check for first-person language (AIt speaking AS Mateo)
+    const firstPersonIndicators = [" i ", " my ", " me ", " i'm ", " i've "];
+    const hasFirstPerson = firstPersonIndicators.some((indicator) => lowerResult.includes(indicator));
+
+    // Check that it's NOT using third-person about Mateo
+    const thirdPersonPatterns = [" he ", " his ", " him ", "mateo's", "mateo is", "mateo has"];
+    const hasThirdPerson = thirdPersonPatterns.some((pattern) => lowerResult.includes(pattern));
+
+    assert.ok(hasSubstantialContent, "Response should be substantial and analytical (>200 chars)");
+    assert.ok(hasFirstPerson, "Response should use first-person perspective (I, my, me)");
+    assert.ok(!hasThirdPerson, "Response should NOT refer to Mateo in third person (he, his, him)");
   });
 });

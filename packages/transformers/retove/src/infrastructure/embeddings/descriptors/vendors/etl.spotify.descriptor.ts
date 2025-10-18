@@ -8,8 +8,14 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
 
 export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<SpotifyTrackDataTarget> {
   public getEmbeddingText(track: SpotifyTrackDataTarget): string {
-    const jsonStr = JSON.stringify(track);
-    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
+    const parts = [
+      `I listen to "${track.name}" by ${track.artist}`,
+      track.album ? `from ${track.album}` : null,
+      track.popularity && track.popularity > 70 ? "a widely appreciated track" : null,
+      track.popularity && track.popularity < 30 ? "a niche find" : null,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
@@ -22,8 +28,12 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
 
 export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<SpotifyArtistDataTarget> {
   public getEmbeddingText(artist: SpotifyArtistDataTarget): string {
-    const jsonStr = JSON.stringify(artist);
-    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
+    const parts = [
+      `I follow ${artist.name}`,
+      artist.genres && artist.genres.length > 0 ? `exploring ${artist.genres.slice(0, 3).join(", ")}` : null,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyArtistDataTarget): U {
@@ -36,8 +46,14 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
 
 export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> {
   public getEmbeddingText(playlist: SpotifyPlaylistDataTarget): string {
-    const jsonStr = JSON.stringify(playlist);
-    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
+    const parts = [
+      `My playlist "${playlist.name}"`,
+      playlist.description ? `${playlist.description}` : null,
+      playlist.tracks?.length ? `${playlist.tracks.length} tracks I curated` : null,
+      playlist.followers && playlist.followers > 0 ? `${playlist.followers} people following it` : null,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyPlaylistDataTarget): U {
@@ -50,8 +66,14 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
 
 export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> {
   public getEmbeddingText(album: SpotifyAlbumDataTarget): string {
-    const jsonStr = JSON.stringify(album);
-    return jsonStr.replace(/{/g, "{{").replace(/}/g, "}}");
+    const parts = [
+      `I have ${album.name}`,
+      album.artists && album.artists.length > 0 ? `by ${album.artists.slice(0, 2).join(", ")}` : null,
+      album.releaseDate ? `from ${album.releaseDate.split("-")[0]}` : null,
+      album.genres && album.genres.length > 0 ? `${album.genres.slice(0, 2).join(", ")}` : null,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyAlbumDataTarget): U {

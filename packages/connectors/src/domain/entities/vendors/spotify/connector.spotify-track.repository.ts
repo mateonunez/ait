@@ -22,7 +22,29 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       trackDataTarget.id = trackId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(spotifyTracks).values(trackDataTarget).onConflictDoNothing().execute();
+        await tx
+          .insert(spotifyTracks)
+          .values(trackDataTarget)
+          .onConflictDoUpdate({
+            target: spotifyTracks.id,
+            set: {
+              name: trackDataTarget.name,
+              artist: trackDataTarget.artist,
+              album: trackDataTarget.album,
+              durationMs: trackDataTarget.durationMs,
+              explicit: trackDataTarget.explicit,
+              isPlayable: trackDataTarget.isPlayable,
+              previewUrl: trackDataTarget.previewUrl,
+              trackNumber: trackDataTarget.trackNumber,
+              discNumber: trackDataTarget.discNumber,
+              uri: trackDataTarget.uri,
+              href: trackDataTarget.href,
+              isLocal: trackDataTarget.isLocal,
+              popularity: trackDataTarget.popularity,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Track saved successfully:", { trackId: track.id });
@@ -41,7 +63,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       console.debug("Saving tracks to Spotify repository:", { tracks });
 
       for (const track of tracks) {
-        await this.saveTrack(track, { incremental: true });
+        await this.saveTrack(track, { incremental: false });
       }
 
       console.debug("Tracks saved successfully:", { tracks: tracks.length });

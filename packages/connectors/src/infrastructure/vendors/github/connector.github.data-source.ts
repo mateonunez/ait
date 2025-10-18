@@ -10,7 +10,12 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
   async fetchRepositories(): Promise<GitHubRepositoryExternal[]> {
     try {
-      const response = await this.octokit.repos.listForAuthenticatedUser();
+      const response = await this.octokit.repos.listForAuthenticatedUser({
+        per_page: 100,
+        sort: "updated",
+        direction: "desc",
+        affiliation: "owner,collaborator,organization_member",
+      });
       const data = response.data;
 
       let parsedData = data;
@@ -20,7 +25,21 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
       const repositories = parsedData as GitHubRepositoryExternal[];
 
-      return repositories.map((repo) => ({
+      const userResponse = await this.octokit.users.getAuthenticated();
+      const username = userResponse.data.login;
+
+      // Separate owned repos from collaborations/forks
+      const ownedRepos = repositories.filter((repo) => repo.owner?.login === username);
+      const otherRepos = repositories.filter((repo) => repo.owner?.login !== username);
+
+      // Sort each group by stars
+      const sortedOwnedRepos = ownedRepos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
+      const sortedOtherRepos = otherRepos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
+
+      // Concatenate: owned repos first, then others
+      const sortedRepositories = [...sortedOwnedRepos, ...sortedOtherRepos];
+
+      return sortedRepositories.map((repo) => ({
         ...repo,
         __type: "repository" as const,
       }));

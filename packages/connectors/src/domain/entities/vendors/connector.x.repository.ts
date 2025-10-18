@@ -24,7 +24,22 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
       tweetData.id = tweetId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(xTweets).values(tweetData).onConflictDoNothing().execute();
+        await tx
+          .insert(xTweets)
+          .values(tweetData)
+          .onConflictDoUpdate({
+            target: xTweets.id,
+            set: {
+              text: tweetData.text,
+              authorId: tweetData.authorId,
+              lang: tweetData.lang,
+              retweetCount: tweetData.retweetCount,
+              likeCount: tweetData.likeCount,
+              jsonData: tweetData.jsonData,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Tweet saved successfully:", { tweetId });

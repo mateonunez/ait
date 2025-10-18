@@ -20,7 +20,7 @@ export class ConnectorGitHubStore implements IConnectorStore {
     for (const item of items) {
       switch (item.__type) {
         case GITHUB_ENTITY_TYPES_ENUM.REPOSITORY:
-          await this._connectorGitHubRepository.repo.saveRepository(item);
+          await this._connectorGitHubRepository.repo.saveRepository(item, { incremental: false });
           break;
         default:
           throw new Error(`Type ${item.__type} is not supported`);
