@@ -26,7 +26,7 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
   async fetchIssues(): Promise<LinearIssueExternal[]> {
     const query = `
       query {
-        issues(first: 50) {
+        issues(first: 50, orderBy: updatedAt) {
           nodes {
             id
             title
@@ -88,10 +88,37 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         throw new ConnectorLinearDataSourceError("Linear API returned no data", "");
       }
 
-      return data.data.issues.nodes.map((issue: any) => ({
+      const issues = data.data.issues.nodes.map((issue: any) => ({
         ...issue,
         __type: "issue" as const,
       }));
+
+      // Sort by priority (higher first), then state (In Progress > Todo > Done), then by updated date
+      return issues.sort((a, b) => {
+        // Priority (higher priority first, 0 = urgent, 4 = low)
+        const priorityA = a.priority ?? 4;
+        const priorityB = b.priority ?? 4;
+        if (priorityA !== priorityB) {
+          return priorityA - priorityB; // Lower number = higher priority
+        }
+
+        // State priority (In Progress > Todo > Done)
+        const statePriority: Record<string, number> = {
+          "In Progress": 1,
+          Todo: 2,
+          Done: 3,
+          Canceled: 4,
+          Backlog: 5,
+        };
+        const stateA = statePriority[a.state?.name] || 99;
+        const stateB = statePriority[b.state?.name] || 99;
+        if (stateA !== stateB) {
+          return stateA - stateB;
+        }
+
+        // Updated date (most recent first)
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
     } catch (error: any) {
       if (error instanceof ConnectorLinearDataSourceError) {
         throw error;

@@ -24,7 +24,25 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
       issueDataTarget.id = issueId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(linearIssues).values(issueDataTarget).onConflictDoNothing().execute();
+        await tx
+          .insert(linearIssues)
+          .values(issueDataTarget)
+          .onConflictDoUpdate({
+            target: linearIssues.id,
+            set: {
+              title: issueDataTarget.title,
+              description: issueDataTarget.description,
+              state: issueDataTarget.state,
+              priority: issueDataTarget.priority,
+              assigneeId: issueDataTarget.assigneeId,
+              teamId: issueDataTarget.teamId,
+              projectId: issueDataTarget.projectId,
+              url: issueDataTarget.url,
+              labels: issueDataTarget.labels,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Issue saved successfully:", { issueId });

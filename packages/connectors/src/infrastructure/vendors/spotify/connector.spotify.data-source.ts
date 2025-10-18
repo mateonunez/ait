@@ -27,13 +27,14 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       }[];
     }>("/me/tracks");
 
-    return (
+    const tracks =
       response?.items?.map((item) => ({
         ...item.track,
         addedAt: item.added_at,
         __type: "track" as const,
-      })) ?? []
-    );
+      })) ?? [];
+
+    return tracks.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
   }
 
   async fetchTopArtists(): Promise<SpotifyArtistExternal[]> {
@@ -49,10 +50,11 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       items: SpotifyPlaylistExternal[];
     }>("/me/playlists");
 
-    return response.items.map((playlist) => ({
-      ...playlist,
-      __type: "playlist" as const,
-    }));
+    const prioritizedPlaylists = response.items.sort((a, b) => {
+      return a.owner?.display_name?.toLowerCase() === "mateonunez" ? -1 : 1;
+    });
+
+    return prioritizedPlaylists;
   }
 
   async fetchPlaylistById(playlistId: string): Promise<SpotifyPlaylistExternal> {
@@ -77,9 +79,12 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       __type: "album" as const,
     }));
 
-    console.log("albums", albums);
+    // Sort by popularity to prioritize more significant albums
+    const sortedAlbums = albums.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
-    return albums;
+    console.log("albums", sortedAlbums);
+
+    return sortedAlbums;
   }
 
   async fetchAlbumById(albumId: string): Promise<SpotifyAlbumExternal> {

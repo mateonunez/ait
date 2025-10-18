@@ -36,29 +36,48 @@ export class TextPreprocessor {
     if (this.config.preserveSentences) {
       // Split on sentence boundaries while respecting chunk size
       const sentences = normalizedText.split(/(?<=[.!?])\s+/);
-      let currentChunk = "";
-      let chunkStartIndex = 0;
+      let sentenceBuffer: string[] = [];
+      let bufferLength = 0;
 
       for (const sentence of sentences) {
-        if (`${currentChunk} ${sentence}`.trim().length <= this.config.chunkSize) {
-          currentChunk = `${currentChunk} ${sentence}`.trim();
+        const newLength = bufferLength + sentence.length + (sentenceBuffer.length > 0 ? 1 : 0);
+
+        if (newLength <= this.config.chunkSize) {
+          sentenceBuffer.push(sentence);
+          bufferLength = newLength;
         } else {
-          if (currentChunk) {
+          if (sentenceBuffer.length > 0) {
             chunks.push({
-              content: currentChunk,
-              length: currentChunk.length,
+              content: sentenceBuffer.join(" "),
+              length: bufferLength,
               index: chunks.length,
             });
           }
-          currentChunk = sentence;
-          chunkStartIndex += currentChunk.length;
+
+          // Calculate overlap: keep the last few sentences that fit within chunkOverlap
+          const overlapSentences: string[] = [];
+          let overlapLength = 0;
+          for (let i = sentenceBuffer.length - 1; i >= 0; i--) {
+            const sentenceLen = sentenceBuffer[i].length + (overlapSentences.length > 0 ? 1 : 0);
+            if (overlapLength + sentenceLen <= this.config.chunkOverlap) {
+              overlapSentences.unshift(sentenceBuffer[i]);
+              overlapLength += sentenceLen;
+            } else {
+              break;
+            }
+          }
+
+          // Start next chunk with overlap sentences + current sentence
+          sentenceBuffer = [...overlapSentences, sentence];
+          bufferLength = overlapLength + sentence.length + (overlapSentences.length > 0 ? 1 : 0);
         }
       }
 
-      if (currentChunk) {
+      // Flush remaining buffer
+      if (sentenceBuffer.length > 0) {
         chunks.push({
-          content: currentChunk,
-          length: currentChunk.length,
+          content: sentenceBuffer.join(" "),
+          length: bufferLength,
           index: chunks.length,
         });
       }
@@ -100,7 +119,10 @@ export class TextPreprocessor {
     const normalizedRecombined = this.normalizeText(recombined);
 
     // Check if the recombined text approximately matches the original
-    // We use approximate matching since chunking may introduce some whitespace changes
-    return Math.abs(normalizedOriginal.length - normalizedRecombined.length) < this.config.chunkOverlap;
+    // We use approximate matching since chunking introduces whitespace changes and overlap
+    // Tolerance: 10% of original length or chunkOverlap * number of chunks (whichever is larger)
+    const tolerance = Math.max(normalizedOriginal.length * 0.1, this.config.chunkOverlap * chunks.length);
+
+    return Math.abs(normalizedOriginal.length - normalizedRecombined.length) < tolerance;
   }
 }

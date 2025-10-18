@@ -22,7 +22,27 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       playlistDataTarget.id = playlistId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(spotifyPlaylists).values(playlistDataTarget).onConflictDoNothing().execute();
+        await tx
+          .insert(spotifyPlaylists)
+          .values(playlistDataTarget)
+          .onConflictDoUpdate({
+            target: spotifyPlaylists.id,
+            set: {
+              name: playlistDataTarget.name,
+              description: playlistDataTarget.description,
+              public: playlistDataTarget.public,
+              collaborative: playlistDataTarget.collaborative,
+              owner: playlistDataTarget.owner,
+              tracks: playlistDataTarget.tracks,
+              followers: playlistDataTarget.followers,
+              snapshotId: playlistDataTarget.snapshotId,
+              uri: playlistDataTarget.uri,
+              href: playlistDataTarget.href,
+              externalUrls: playlistDataTarget.externalUrls,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Playlist saved successfully:", { playlistId: playlist.id });
@@ -41,7 +61,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       console.debug("Saving playlists to Spotify repository:", { playlists });
 
       for (const playlist of playlists) {
-        await this.savePlaylist(playlist, { incremental: true });
+        await this.savePlaylist(playlist, { incremental: false });
       }
 
       console.debug("Playlists saved successfully:", { playlists: playlists.length });

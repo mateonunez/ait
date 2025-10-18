@@ -27,6 +27,18 @@ export abstract class RetoveBaseETLAbstract {
   protected readonly _batchUpsertConcurrency: number = 5;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
 
+  private _generateStableId(entityId: string, chunkIndex: number): number {
+    const input = `${entityId}-chunk-${chunkIndex}`;
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+
+    return Math.abs(hash);
+  }
+
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
     protected readonly _qdrantClient: qdrant.QdrantClient,
@@ -139,13 +151,12 @@ export abstract class RetoveBaseETLAbstract {
           try {
             const text = this.getTextForEmbedding(item as Record<string, unknown>);
             const correlationId = `retove-${this._collectionName}-${i + index + 1}`;
+            // Split text into smaller chunks for better embedding quality
+            // The EmbeddingsService will handle further chunking if needed (using constructor config)
             const textChunks = this._splitTextIntoChunks(text, 512);
             const chunkVectors = await Promise.all(
               textChunks.map(async (textChunk, chunkIndex) => {
                 const vector = await this._embeddingsService.generateEmbeddings(textChunk, {
-                  concurrencyLimit: 2,
-                  chunkSize: 8192,
-                  weightChunks: true,
                   correlationId: `${correlationId}-chunk-${chunkIndex}`,
                 });
                 if (vector.length !== this._vectorSize) {
@@ -167,9 +178,10 @@ export abstract class RetoveBaseETLAbstract {
             const baseOffset = this.getIdBaseOffset();
             return chunkVectors.map((chunkVector) => {
               const chunkFormatted = chunkVector.text.replace(/{/g, "{{").replace(/}/g, "}}");
+              const entityId = String((item as any).id || i + index);
 
               return {
-                id: baseOffset + (i + index + 1) * 1000 + chunkVector.chunkIndex,
+                id: baseOffset + this._generateStableId(entityId, chunkVector.chunkIndex),
                 vector: chunkVector.vector,
                 payload: {
                   content: chunkFormatted,

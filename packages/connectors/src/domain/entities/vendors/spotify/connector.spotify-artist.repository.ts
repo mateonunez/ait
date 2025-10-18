@@ -22,7 +22,19 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
       artistDataTarget.id = artistId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(spotifyArtists).values(artistDataTarget).onConflictDoNothing().execute();
+        await tx
+          .insert(spotifyArtists)
+          .values(artistDataTarget)
+          .onConflictDoUpdate({
+            target: spotifyArtists.id,
+            set: {
+              name: artistDataTarget.name,
+              popularity: artistDataTarget.popularity,
+              genres: artistDataTarget.genres,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Artist saved successfully:", { artistId: artist.id });
@@ -41,7 +53,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
       console.debug("Saving artists to Spotify repository:", { artists });
 
       for (const artist of artists) {
-        await this.saveArtist(artist, { incremental: true });
+        await this.saveArtist(artist, { incremental: false });
       }
     } catch (error) {
       console.error("Error saving artists:", error);

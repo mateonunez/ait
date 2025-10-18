@@ -22,7 +22,31 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
       albumDataTarget.id = albumId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(spotifyAlbums).values(albumDataTarget).onConflictDoNothing().execute();
+        await tx
+          .insert(spotifyAlbums)
+          .values(albumDataTarget)
+          .onConflictDoUpdate({
+            target: spotifyAlbums.id,
+            set: {
+              name: albumDataTarget.name,
+              albumType: albumDataTarget.albumType,
+              artists: albumDataTarget.artists,
+              tracks: albumDataTarget.tracks,
+              totalTracks: albumDataTarget.totalTracks,
+              releaseDate: albumDataTarget.releaseDate,
+              releaseDatePrecision: albumDataTarget.releaseDatePrecision,
+              isPlayable: albumDataTarget.isPlayable,
+              uri: albumDataTarget.uri,
+              href: albumDataTarget.href,
+              popularity: albumDataTarget.popularity,
+              label: albumDataTarget.label,
+              copyrights: albumDataTarget.copyrights,
+              externalIds: albumDataTarget.externalIds,
+              genres: albumDataTarget.genres,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Album saved successfully:", { albumId: album.id });
@@ -41,7 +65,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
       console.debug("Saving albums to Spotify repository:", { albums });
 
       for (const album of albums) {
-        await this.saveAlbum(album, { incremental: true });
+        await this.saveAlbum(album, { incremental: false });
       }
 
       console.debug("Albums saved successfully:", { albums: albums.length });

@@ -226,8 +226,8 @@ export class TextGenerationService implements ITextGenerationService {
 
     const vectorStore = await QdrantVectorStore.fromExistingCollection(
       {
-        embedQuery: async () => {
-          const embeddings = await this._embeddingService.generateEmbeddings(prompt, {
+        embedQuery: async (query: string) => {
+          const embeddings = await this._getEmbeddingsWithCache(query, {
             correlationId,
             concurrencyLimit: 4,
           });
@@ -355,17 +355,25 @@ export class TextGenerationService implements ITextGenerationService {
   private async _planQueriesWithLLM(userPrompt: string): Promise<string[]> {
     const llm = this._getLLM();
     const instruction = [
-      "You are a retrieval query planner for AIt's KB populated via Connectors (Spotify, GitHub, X).",
-      "Given the user's request, emit 8-16 short keyword queries to retrieve relevant documents from a vector database.",
-      "Be connector-aware and prefer mnemonic fields over IDs:",
-      "- Spotify: playlists, tracks, artists, albums; prefer name, artist, album, playlist name, description, genres.",
-      "- GitHub: repositories; prefer name, description, language, topics.",
-      "- X (Twitter): tweets; prefer text terms, display name/handle; avoid tweet_id.",
-      "Include temporal hints if present: exact YYYY-MM-DD and phrases like 'on YYYY-MM-DD', 'from YYYY-MM-DD'.",
-      "Combine source/type tokens with topical nouns from the request (one concept per query).",
-      "Avoid IDs/URIs/hashes (e.g., spotify:*, commit hashes).",
-      "Keep queries concise (2-6 words), lowercase, space-separated (no punctuation).",
-      "Output ONLY a JSON array of strings.",
+      "You are a retrieval query planner for AIt's knowledge base populated via 4 Connectors: Spotify, GitHub, X (Twitter), and Linear.",
+      "Your goal: generate 12-16 diverse keyword queries to retrieve documents from ALL connectors, ensuring comprehensive coverage.",
+      "Required: Generate at least 2-3 queries for EACH connector type to avoid missing data sources.",
+      "",
+      "CONNECTOR-SPECIFIC GUIDANCE:",
+      "- Spotify: Query playlists (name, description, owner), tracks (name, artist, album), artists (name, genres), albums (name, artist, genres, label).",
+      "- GitHub: Query repositories (name, description, language, topics, stars, forks).",
+      "- X (Twitter): Query tweets (text content, mentions, hashtags, engagement metrics); avoid tweet_id.",
+      "- Linear: Query issues (title, description, state, priority, labels, assignee).",
+      "",
+      "STRATEGY:",
+      "1. Identify key concepts from user request (e.g., 'digital footprint' → code, playlists, tweets, issues)",
+      "2. Generate 3-4 queries per connector covering different aspects",
+      "3. Combine entity names (mateo, user) with connector-specific fields",
+      "4. Include temporal hints if present (YYYY-MM-DD format)",
+      "5. Avoid IDs/URIs/hashes (spotify:*, commit hashes, tweet IDs)",
+      "",
+      "FORMAT: Keep queries concise (2-6 words), lowercase, space-separated, no punctuation.",
+      "OUTPUT: ONLY a JSON array of 12-16 strings.",
     ].join(" ");
 
     const composed = `${instruction}\n\nUser Request:\n${userPrompt}`;
@@ -375,7 +383,7 @@ export class TextGenerationService implements ITextGenerationService {
       return parsed
         .map((q) => (typeof q === "string" ? q.trim() : ""))
         .filter((q) => q.length > 0)
-        .slice(0, 12);
+        .slice(0, 16);
     }
 
     return [userPrompt];

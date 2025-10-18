@@ -27,7 +27,22 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
       repositoryData.id = repositoryId;
 
       await this._pgClient.db.transaction(async (tx) => {
-        await tx.insert(githubRepositories).values(repositoryData).onConflictDoNothing().execute();
+        await tx
+          .insert(githubRepositories)
+          .values(repositoryData)
+          .onConflictDoUpdate({
+            target: githubRepositories.id,
+            set: {
+              name: repositoryData.name,
+              description: repositoryData.description,
+              stars: repositoryData.stars,
+              forks: repositoryData.forks,
+              url: repositoryData.url,
+              language: repositoryData.language,
+              updatedAt: new Date(),
+            },
+          })
+          .execute();
       });
 
       console.debug("Repository saved successfully:", { repoId: repositoryId });

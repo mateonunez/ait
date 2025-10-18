@@ -3,7 +3,13 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
 
 export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTarget> {
   public getEmbeddingText(tweet: XTweetDataTarget): string {
-    return JSON.stringify(tweet, null, 2).replace(/{/g, "{{").replace(/}/g, "}}");
+    const parts = [
+      `I tweeted: ${tweet.text}`,
+      tweet.retweetCount && tweet.retweetCount > 0 ? `${tweet.retweetCount} retweets` : null,
+      tweet.likeCount && tweet.likeCount > 0 ? `${tweet.likeCount} likes` : null,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: XTweetDataTarget): U {

@@ -17,16 +17,16 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     for (const item of items) {
       switch (item.__type) {
         case SPOTIFY_ENTITY_TYPES_ENUM.TRACK:
-          await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: true });
+          await this._connectorSpotifyRepository.track.saveTrack(item, { incremental: false });
           break;
         case SPOTIFY_ENTITY_TYPES_ENUM.ARTIST:
-          await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: true });
+          await this._connectorSpotifyRepository.artist.saveArtist(item, { incremental: false });
           break;
         case SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST:
-          await this._connectorSpotifyRepository.playlist.savePlaylist(item, { incremental: true });
+          await this._connectorSpotifyRepository.playlist.savePlaylist(item, { incremental: false });
           break;
         case SPOTIFY_ENTITY_TYPES_ENUM.ALBUM:
-          await this._connectorSpotifyRepository.album.saveAlbum(item, { incremental: true });
+          await this._connectorSpotifyRepository.album.saveAlbum(item, { incremental: false });
           break;
         default:
           // @ts-ignore: Unreachable code error
