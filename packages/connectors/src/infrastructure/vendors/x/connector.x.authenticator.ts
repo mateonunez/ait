@@ -26,7 +26,6 @@ export class ConnectorXAuthenticator extends ConnectorAuthenticatorAbstract {
     });
 
     const baseUrl = process.env.X_AUTH_URL!;
-    console.log("baseUrl", baseUrl);
     return `${baseUrl}?${params}`;
   }
 

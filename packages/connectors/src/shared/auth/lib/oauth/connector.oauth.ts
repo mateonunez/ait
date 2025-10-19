@@ -52,7 +52,6 @@ export class ConnectorOAuth implements IConnectorOAuth {
   }
 
   private async _postFormData<T>(url: string, formData: Record<string, string>): Promise<T> {
-    console.log("formData", formData);
     const basicAuth = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString("base64");
 
     const response = await request(url, {

@@ -23,14 +23,10 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
     });
 
     const endpoint = `/users/${userId}/tweets?${params.toString()}`;
-    console.log("endpoint", endpoint);
-
     const response = await this._fetchFromX<{
       data: XTweetExternal[];
       meta: { result_count: number };
     }>(endpoint);
-
-    console.log("response", response);
 
     return response.data.map((tweet) => ({
       ...tweet,

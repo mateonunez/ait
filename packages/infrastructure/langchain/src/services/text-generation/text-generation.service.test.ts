@@ -8,6 +8,7 @@ import {
   initLangChainClient,
   DEFAULT_GENERATION_MODEL,
   GENERATION_VECTOR_SIZE,
+  EMBEDDINGS_VECTOR_SIZE,
   resetLangChainClientInstance,
   DEFAULT_EMBEDDINGS_MODEL,
 } from "../../langchain.client";
@@ -19,6 +20,7 @@ describe("TextGenerationService", () => {
   const model = DEFAULT_GENERATION_MODEL;
   const embeddingsModel = DEFAULT_EMBEDDINGS_MODEL;
   const expectedVectorSize = GENERATION_VECTOR_SIZE;
+  const embeddingsVectorSize = EMBEDDINGS_VECTOR_SIZE;
   const prompt = "test prompt";
   const generatedText = "generated response";
 
@@ -37,7 +39,7 @@ describe("TextGenerationService", () => {
   beforeEach(() => {
     // Stub for the embeddings service: generateEmbeddings returns an array of zeros.
     mockEmbeddingsService = {
-      generateEmbeddings: sinon.stub().resolves(new Array(expectedVectorSize).fill(0)),
+      generateEmbeddings: sinon.stub().resolves(new Array(embeddingsVectorSize).fill(0)),
     } as unknown as sinon.SinonStubbedInstance<IEmbeddingsService>;
 
     initLangChainClient({ model, expectedVectorSize, logger: false });
@@ -65,7 +67,7 @@ describe("TextGenerationService", () => {
     createLLMStub = sinon.stub(client, "createLLM").returns(mockLLM);
     createEmbeddingsStub = sinon.stub(client, "createEmbeddings").returns({
       embedDocuments: sinon.stub(),
-      embedQuery: () => Promise.resolve(new Array(expectedVectorSize).fill(0)),
+      embedQuery: () => Promise.resolve(new Array(embeddingsVectorSize).fill(0)),
     } as unknown as OllamaEmbeddings);
 
     // Stub ChatPromptTemplate.fromMessages to return a mock prompt template.

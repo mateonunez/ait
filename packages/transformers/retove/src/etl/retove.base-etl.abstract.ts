@@ -2,7 +2,7 @@ import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import {
   EmbeddingsService,
-  GENERATION_VECTOR_SIZE,
+  EMBEDDINGS_VECTOR_SIZE,
   type IEmbeddingsService,
   DEFAULT_EMBEDDINGS_MODEL,
 } from "@ait/langchain";
@@ -22,22 +22,10 @@ export interface RetryOptions {
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 1000;
-  private readonly _vectorSize = GENERATION_VECTOR_SIZE;
+  private readonly _vectorSize = EMBEDDINGS_VECTOR_SIZE;
   protected readonly _transformConcurrency: number = 10;
   protected readonly _batchUpsertConcurrency: number = 5;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
-
-  private _generateStableId(entityId: string, chunkIndex: number): number {
-    const input = `${entityId}-chunk-${chunkIndex}`;
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-
-    return Math.abs(hash);
-  }
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -50,7 +38,7 @@ export abstract class RetoveBaseETLAbstract {
     },
     private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService(
       DEFAULT_EMBEDDINGS_MODEL,
-      GENERATION_VECTOR_SIZE,
+      EMBEDDINGS_VECTOR_SIZE,
       {
         concurrencyLimit: 2,
         chunkSize: 1024,
@@ -333,6 +321,18 @@ export abstract class RetoveBaseETLAbstract {
       throw new Error(`Invalid query vector size: ${queryVector.length}. Expected: ${this._vectorSize}`);
     }
     return this.search(queryVector, searchLimit, filter);
+  }
+
+  private _generateStableId(entityId: string, chunkIndex: number): number {
+    const input = `${entityId}-chunk-${chunkIndex}`;
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      const char = input.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash;
+    }
+
+    return Math.abs(hash);
   }
 
   protected getCachedQuery(queryText: string): number[] | undefined {

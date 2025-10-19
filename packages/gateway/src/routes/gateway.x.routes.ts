@@ -36,7 +36,6 @@ export default async function xRoutes(fastify: FastifyInstance) {
   fastify.get(
     "/auth/callback",
     async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      console.log("request.query", request.query);
       const { code } = request.query;
 
       if (!code) {

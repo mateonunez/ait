@@ -1,20 +1,13 @@
 import { z } from "zod";
+import { getEmbeddingModel } from "../../models.config";
 
-/**
- * Schema for embeddings configuration validation
- */
 export const embeddingsConfigSchema = z.object({
-  // Model configuration
   model: z.string(),
   expectedVectorSize: z.number().positive(),
-
-  // Chunking configuration
   chunkSize: z.number().positive().default(4096),
   chunkOverlap: z.number().nonnegative().default(200),
   concurrencyLimit: z.number().positive().default(1),
   weightChunks: z.boolean().default(false),
-
-  // Text preprocessing configuration
   normalizeText: z.boolean().default(true),
   preserveSentences: z.boolean().default(true),
   maxRetries: z.number().nonnegative().default(3),
@@ -23,12 +16,11 @@ export const embeddingsConfigSchema = z.object({
 
 export type EmbeddingsConfig = z.infer<typeof embeddingsConfigSchema>;
 
-/**
- * Default configuration values for the embeddings service
- */
+const embeddingModelConfig = getEmbeddingModel();
+
 export const defaultEmbeddingsConfig: EmbeddingsConfig = {
-  model: process.env.EMBEDDINGS_MODEL || "qwen3-embedding:latest",
-  expectedVectorSize: Number.parseInt(process.env.EMBEDDINGS_VECTOR_SIZE || "4096", 10),
+  model: embeddingModelConfig.name,
+  expectedVectorSize: embeddingModelConfig.vectorSize,
   chunkSize: Number.parseInt(process.env.EMBEDDINGS_CHUNK_SIZE || "4096", 10),
   chunkOverlap: Number.parseInt(process.env.EMBEDDINGS_CHUNK_OVERLAP || "200", 10),
   concurrencyLimit: Number.parseInt(process.env.EMBEDDINGS_CONCURRENCY_LIMIT || "1", 10),
@@ -39,16 +31,11 @@ export const defaultEmbeddingsConfig: EmbeddingsConfig = {
   retryDelayMs: Number.parseInt(process.env.EMBEDDINGS_RETRY_DELAY_MS || "1000", 10),
 };
 
-/**
- * Creates a validated embeddings configuration by merging defaults with provided options
- */
 export function createEmbeddingsConfig(options?: Partial<EmbeddingsConfig>): EmbeddingsConfig {
   const mergedConfig = {
     ...defaultEmbeddingsConfig,
     ...options,
   };
-
-  console.log("🔍 Merged config:", mergedConfig);
 
   return embeddingsConfigSchema.parse(mergedConfig);
 }
