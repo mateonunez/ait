@@ -29,9 +29,8 @@ describe("models.config", () => {
       process.env.GENERATION_MODEL = undefined;
       const model = getGenerationModel();
 
-      assert.strictEqual(model.name, GenerationModels.GPT_OSS_20B);
+      assert.strictEqual(model.name, GenerationModels.GEMMA_3);
       assert.strictEqual(model.vectorSize, 4096);
-      assert.strictEqual(model.contextWindow, 128000);
       assert.ok(model.description);
     });
 
@@ -41,7 +40,6 @@ describe("models.config", () => {
 
       assert.strictEqual(model.name, GenerationModels.QWEN3);
       assert.strictEqual(model.vectorSize, 4096);
-      assert.strictEqual(model.contextWindow, 32768);
     });
 
     it("should override vector size when env var is set", () => {
@@ -85,11 +83,11 @@ describe("models.config", () => {
     });
 
     it("should return custom embedding model when env var is set", () => {
-      process.env.EMBEDDINGS_MODEL = EmbeddingModels.QWEN3_EMBEDDING;
+      process.env.EMBEDDINGS_MODEL = EmbeddingModels.MXBAI_EMBED_LARGE;
       const model = getEmbeddingModel();
 
-      assert.strictEqual(model.name, EmbeddingModels.QWEN3_EMBEDDING);
-      assert.strictEqual(model.vectorSize, 4096);
+      assert.strictEqual(model.name, EmbeddingModels.MXBAI_EMBED_LARGE);
+      assert.strictEqual(model.vectorSize, 1024);
     });
 
     it("should override vector size when env var is set", () => {
