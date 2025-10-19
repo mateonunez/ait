@@ -5,6 +5,7 @@ import {
   GENERATION_VECTOR_SIZE,
   DEFAULT_EMBEDDINGS_MODEL,
   EMBEDDINGS_VECTOR_SIZE,
+  initLangChainClient,
 } from "../../langchain.client";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
@@ -210,6 +211,7 @@ export class TextGenerationService implements ITextGenerationService {
 
   private _getLLM(): Ollama {
     if (!this._llmInstance) {
+      initLangChainClient({ model: this._model, temperature: 1 });
       const langChainClient = getLangChainClient();
       this._llmInstance = langChainClient.createLLM(this._model);
     }
