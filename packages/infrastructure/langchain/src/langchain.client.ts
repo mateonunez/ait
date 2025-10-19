@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-import { Ollama, OllamaEmbeddings } from "@langchain/ollama";
+import { Ollama, OllamaEmbeddings, type OllamaInput } from "@langchain/ollama";
 import { getGenerationModel, getEmbeddingModel } from "./models.config";
 
 dotenv.config();
@@ -13,7 +13,7 @@ export const GENERATION_VECTOR_SIZE = generationModelConfig.vectorSize;
 export const EMBEDDINGS_VECTOR_SIZE = embeddingModelConfig.vectorSize;
 export const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 
-export interface ILangChainConfig {
+export interface ILangChainConfig extends OllamaInput {
   model: string;
   expectedVectorSize: number;
   logger?: boolean;
@@ -26,7 +26,7 @@ function buildLangChainClient(config: ILangChainConfig) {
     if (config.logger) {
       console.log(`[LangChainClient] Creating embeddings with model: ${modelToUse}`);
     }
-    return new OllamaEmbeddings({ model: modelToUse, baseUrl: config.baseUrl ?? OLLAMA_BASE_URL, truncate: true });
+    return new OllamaEmbeddings({ model: modelToUse, baseUrl: config.baseUrl ?? OLLAMA_BASE_URL });
   }
 
   function createLLM(modelOverride?: string, temperature = 0.7): Ollama {
