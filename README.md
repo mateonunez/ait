@@ -27,7 +27,7 @@ Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /
 - **Storage Solutions**:
   - PostgreSQL for structured data and OAuth tokens
   - Qdrant for vector similarity search
-  - Ollama for local LLM processing (qwen3:latest)
+  - Ollama for local LLM processing (gpt-oss:20b for generation, mxbai-embed-large for embeddings)
   - Redis for job queue and caching
 
 - **Scheduler**:
@@ -145,9 +145,9 @@ npx tsx src/services/text-generation/text-generation.service.e2e.ts
 The E2E tests will:
 
 - Connect to your Qdrant collections (_github_repositories_collection_ and _spotify_tracks_collection_)
-- Generate embeddings for test prompts
+- Generate embeddings for test prompts using mxbai-embed-large
 - Perform similarity searches
-- Generate responses using Ollama (qwen3:latest)
+- Generate responses using Ollama (gpt-oss:20b)
 
 ### 🌐 Gateway & Connectors
 
@@ -207,16 +207,22 @@ AIt uses Ollama for local LLM processing. Here's how to set it up:
 docker compose up -d ait_ollama
 ```
 
-2. Install the model:
+2. Install the models:
 
 ```bash
-docker exec -it ait_ollama sh -c "ollama pull qwen3:latest"
+# Install generation model (GPT-OSS 20B)
+docker exec -it ait_ollama sh -c "ollama pull gpt-oss:20b"
+
+# Install embedding model (MixedBread.ai large)
+docker exec -it ait_ollama sh -c "ollama pull mxbai-embed-large"
 ```
 
-The model is used for:
-- Generating embeddings via LangChain
-- Text generation and analysis
-- Semantic search operations
+The models are used for:
+- **gpt-oss:20b**: Text generation, reasoning, and agentic tasks
+- **mxbai-embed-large**: Generating embeddings for semantic search via LangChain
+- Similarity search operations in Qdrant vector store
+
+> **Note**: You can easily switch models by setting environment variables or updating the centralized configuration. See `packages/infrastructure/langchain/MODELS.md` for more details.
 
 ### 🛠️ Development
 

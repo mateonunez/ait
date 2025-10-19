@@ -4,6 +4,7 @@ import {
   DEFAULT_GENERATION_MODEL,
   GENERATION_VECTOR_SIZE,
   DEFAULT_EMBEDDINGS_MODEL,
+  EMBEDDINGS_VECTOR_SIZE,
 } from "../../langchain.client";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
@@ -62,7 +63,7 @@ export class TextGenerationService implements ITextGenerationService {
     try {
       this._embeddingService =
         embeddingService ??
-        new EmbeddingsService(this._embeddingsModel, this._expectedVectorSize, { concurrencyLimit: 4 });
+        new EmbeddingsService(this._embeddingsModel, EMBEDDINGS_VECTOR_SIZE, { concurrencyLimit: 4 });
 
       this._embeddingCache = new LRUCache({
         maxSize: 1000,
@@ -231,8 +232,6 @@ export class TextGenerationService implements ITextGenerationService {
             correlationId,
             concurrencyLimit: 4,
           });
-          console.debug("Query embeddings generated", { duration: Date.now() - embedStart });
-          console.log("Embeddings", embeddings);
           return embeddings;
         },
         embedDocuments: async (documents: string[]) => {
@@ -252,15 +251,9 @@ export class TextGenerationService implements ITextGenerationService {
               ),
             );
 
-            console.log("Batch results", batchResults);
-
-            console.debug(`Batch ${Math.floor(i / batchSize) + 1} processed`, {
-              duration: Date.now() - batchStart,
-            });
-
             results.push(...batchResults);
           }
-          console.log("Results", results);
+
           return results;
         },
       },

@@ -82,8 +82,6 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     // Sort by popularity to prioritize more significant albums
     const sortedAlbums = albums.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
-    console.log("albums", sortedAlbums);
-
     return sortedAlbums;
   }
 
@@ -103,11 +101,6 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     const url = `${this.apiUrl}${endpoint}`;
 
     try {
-      console.log("Fetching from Spotify:", url);
-      console.log("Access token:", this.accessToken);
-      console.log("Method:", method);
-      console.log("Body:", body);
-
       const response = await fetch(url, {
         method,
         headers: {

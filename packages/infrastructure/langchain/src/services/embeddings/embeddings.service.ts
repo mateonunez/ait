@@ -3,77 +3,39 @@ import type { OllamaEmbeddings } from "@langchain/ollama";
 import { TextPreprocessor, type TextChunk } from "./text-preprocessor";
 import { createEmbeddingsConfig, type EmbeddingsConfig } from "./embeddings.config";
 
-/**
- * Interface for an embeddings service.
- */
 export interface IEmbeddingsService {
-  /**
-   * Generates embeddings for a piece of text.
-   *
-   * @param text - The text to embed.
-   * @returns A vector of numbers representing the text's embeddings.
-   */
   generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]>;
 }
 
-/**
- * Options for configuring the EmbeddingsService.
- */
 export interface EmbeddingsServiceOptions {
-  /** Maximum characters per chunk (default: 4096) */
   chunkSize?: number;
-  /** Overlap between consecutive chunks (default: 200) */
   chunkOverlap?: number;
-  /**
-   * Maximum number of chunks to process concurrently.
-   * Use 1 for sequential processing (default: 1).
-   */
   concurrencyLimit?: number;
-  /**
-   * If true, use weighted averaging when combining chunk embeddings.
-   * Each chunk is weighted by its length (default: false).
-   */
   weightChunks?: boolean;
-  /**
-   * Optional correlation ID for the embeddings generation.
-   */
   correlationId?: string;
 }
 
-/**
- * An EmbeddingsService that uses LangChain's OllamaEmbeddings under the hood.
- * This implementation splits long texts into chunks (with overlap) and then
- * averages (or weighted-averages) the resulting vectors.
- */
 export class EmbeddingsService implements IEmbeddingsService {
   private readonly _embeddings: OllamaEmbeddings;
   private readonly _config: EmbeddingsConfig;
   private readonly _textPreprocessor: TextPreprocessor;
 
   constructor(model: string, expectedVectorSize: number, options?: EmbeddingsServiceOptions) {
-    // Create configuration from options
     this._config = createEmbeddingsConfig({
       model,
       expectedVectorSize,
       ...options,
     });
 
-    // Initialize dependencies
     const client = getLangChainClient();
     this._embeddings = client.createEmbeddings(this._config.model);
     this._textPreprocessor = new TextPreprocessor(this._config);
   }
 
-  /**
-   * Generates embeddings for a piece of text.
-   * @param text - The text to embed.
-   * @returns A vector of numbers representing the text's embeddings.
-   */
   public async generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]> {
     const correlationId = options?.correlationId;
 
     try {
-      // Split text into chunks using the text preprocessor
       const chunks = this._textPreprocessor.chunkText(text);
 
       if (!this._textPreprocessor.validateChunks(chunks, text)) {
@@ -87,10 +49,7 @@ export class EmbeddingsService implements IEmbeddingsService {
         model: this._config.model,
       });
 
-      // Process chunks and generate embeddings
       const chunkVectors = await this._processChunks(chunks, correlationId);
-
-      // Combine the embeddings using weighted or simple averaging
       const averagedVector = this._config.weightChunks
         ? this._weightedAverageVectors(
             chunkVectors,
@@ -120,9 +79,6 @@ export class EmbeddingsService implements IEmbeddingsService {
     }
   }
 
-  /**
-   * Processes chunks either sequentially or concurrently based on configuration.
-   */
   private async _processChunks(chunks: TextChunk[], correlationId?: string): Promise<number[][]> {
     if (this._config.concurrencyLimit === 1) {
       return this._processChunksSequentially(chunks, correlationId);
@@ -130,9 +86,6 @@ export class EmbeddingsService implements IEmbeddingsService {
     return this._processChunksConcurrently(chunks, correlationId);
   }
 
-  /**
-   * Processes chunks sequentially.
-   */
   private async _processChunksSequentially(chunks: TextChunk[], correlationId?: string): Promise<number[][]> {
     const vectors: number[][] = [];
 
@@ -151,9 +104,6 @@ export class EmbeddingsService implements IEmbeddingsService {
     return vectors;
   }
 
-  /**
-   * Processes chunks concurrently with retry logic.
-   */
   private async _processChunksConcurrently(chunks: TextChunk[], correlationId?: string): Promise<number[][]> {
     const results: number[][] = new Array(chunks.length);
     const tasks = chunks.map((chunk) => async () => {
@@ -185,9 +135,6 @@ export class EmbeddingsService implements IEmbeddingsService {
     return results;
   }
 
-  /**
-   * Embeds a single chunk with retry logic.
-   */
   private async _embedChunkWithRetry(chunk: TextChunk, correlationId?: string): Promise<number[]> {
     let lastError: Error | undefined;
 
@@ -221,9 +168,6 @@ export class EmbeddingsService implements IEmbeddingsService {
     throw lastError;
   }
 
-  /**
-   * Averages a list of vectors (simple arithmetic mean).
-   */
   private _averageVectors(vectors: number[][]): number[] {
     if (vectors.length === 0) {
       throw new Error("No vectors to average.");
@@ -231,9 +175,6 @@ export class EmbeddingsService implements IEmbeddingsService {
     return vectors[0].map((_, i) => vectors.reduce((sum, vec) => sum + vec[i], 0) / vectors.length);
   }
 
-  /**
-   * Computes a weighted average of vectors.
-   */
   private _weightedAverageVectors(vectors: number[][], weights: number[]): number[] {
     if (vectors.length === 0) {
       throw new Error("No vectors to average.");
