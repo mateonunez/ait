@@ -1,11 +1,12 @@
 import { getAItClient, DEFAULT_RAG_COLLECTION } from "../../client/ai-sdk.client";
 import { QdrantProvider } from "../../rag/qdrant.provider";
 import { MultiQueryRetrieval } from "../../rag/multi-query.retrieval";
-import { ContextBuilder, type Document } from "../../rag/context.builder";
+import { ContextBuilder } from "../../rag/context.builder";
 import { systemPrompt, buildSystemPromptWithContext } from "../prompts/system.prompt";
 import { LRUCache } from "../../cache/lru-cache";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
+import type { Document, BaseMetadata } from "../../types/documents";
 import { randomUUID } from "node:crypto";
 
 export interface CoreTool {
@@ -226,7 +227,7 @@ export class TextGenerationService implements ITextGenerationService {
       count: similarDocs.length,
     });
 
-    const context = this._contextBuilder.buildContextFromDocuments(similarDocs as Document[]);
+    const context = this._contextBuilder.buildContextFromDocuments(similarDocs as Document<BaseMetadata>[]);
     console.debug("Context built", {
       contextLength: context.length,
     });

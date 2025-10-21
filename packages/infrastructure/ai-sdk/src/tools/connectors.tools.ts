@@ -1,20 +1,17 @@
 import { z } from "zod";
 import type { QdrantProvider } from "../rag/qdrant.provider";
-
-// Tool interface compatible with our custom implementation
-interface Tool<TParams = any, TResult = any> {
-  description: string;
-  parameters: z.ZodSchema<TParams>;
-  execute: (params: TParams) => Promise<TResult>;
-}
-
-function tool<TParams, TResult>(config: Tool<TParams, TResult>): Tool<TParams, TResult> {
-  return config;
-}
+import {
+  createTool,
+  type SpotifySearchResult,
+  type GitHubSearchResult,
+  type TwitterSearchResult,
+  type LinearSearchResult,
+  type SearchResponse,
+} from "../types/tools";
 
 export function createSpotifyTools(qdrantProvider: QdrantProvider) {
   return {
-    searchSpotify: tool({
+    searchSpotify: createTool({
       description:
         "Search Spotify data including playlists, tracks, artists, or albums by name, artist, or description",
       parameters: z.object({
@@ -26,7 +23,7 @@ export function createSpotifyTools(qdrantProvider: QdrantProvider) {
           .describe("Type of Spotify content to search for"),
         limit: z.number().optional().default(10).describe("Maximum number of results to return"),
       }),
-      execute: async ({ query, type, limit }) => {
+      execute: async ({ query, type, limit }): Promise<SearchResponse<SpotifySearchResult>> => {
         try {
           const results = await qdrantProvider.similaritySearch(
             `spotify ${type !== "all" ? type : ""} ${query}`.trim(),
@@ -36,21 +33,23 @@ export function createSpotifyTools(qdrantProvider: QdrantProvider) {
           const filtered =
             type !== "all"
               ? results.filter((doc) => {
-                  const docType = (doc.metadata?.__type as string) || "";
-                  return docType.toLowerCase().includes(type ?? "");
+                  const docType = doc.metadata.__type.toLowerCase();
+                  return docType.includes(type ?? "");
                 })
               : results.filter((doc) => {
-                  const docType = (doc.metadata?.__type as string) || "";
-                  return docType.toLowerCase().includes("spotify");
+                  const docType = doc.metadata.__type.toLowerCase();
+                  return docType.startsWith("spotify");
                 });
 
           return {
-            results: filtered.map((doc) => ({
-              type: doc.metadata?.__type,
-              name: doc.metadata?.name,
-              artist: doc.metadata?.artist,
-              content: doc.pageContent.slice(0, 200),
-            })),
+            results: filtered.map(
+              (doc): SpotifySearchResult => ({
+                type: doc.metadata.__type,
+                name: typeof doc.metadata.name === "string" ? doc.metadata.name : undefined,
+                artist: typeof doc.metadata.artist === "string" ? doc.metadata.artist : undefined,
+                content: doc.pageContent.slice(0, 200),
+              }),
+            ),
             count: filtered.length,
           };
         } catch (error) {
@@ -67,7 +66,7 @@ export function createSpotifyTools(qdrantProvider: QdrantProvider) {
 
 export function createGitHubTools(qdrantProvider: QdrantProvider) {
   return {
-    searchGitHub: tool({
+    searchGitHub: createTool({
       description: "Search GitHub repositories by name, description, language, or topics",
       parameters: z.object({
         query: z.string().describe("The search query for GitHub repositories"),
@@ -75,9 +74,8 @@ export function createGitHubTools(qdrantProvider: QdrantProvider) {
         topics: z.array(z.string()).optional().describe("Filter by repository topics"),
         limit: z.number().optional().default(10).describe("Maximum number of results to return"),
       }),
-      execute: async ({ query, language, topics, limit }) => {
+      execute: async ({ query, language, topics, limit }): Promise<SearchResponse<GitHubSearchResult>> => {
         try {
-          // Build search query with filters
           let searchQuery = `github repository ${query}`;
           if (language) {
             searchQuery += ` ${language}`;
@@ -89,19 +87,23 @@ export function createGitHubTools(qdrantProvider: QdrantProvider) {
           const results = await qdrantProvider.similaritySearch(searchQuery, limit ?? 10);
 
           const filtered = results.filter((doc) => {
-            const docType = (doc.metadata?.__type as string) || "";
-            return docType.toLowerCase().includes("github");
+            const docType = doc.metadata.__type.toLowerCase();
+            return docType.includes("github") || docType.includes("repository");
           });
 
           return {
-            results: filtered.map((doc) => ({
-              type: doc.metadata?.__type,
-              name: doc.metadata?.name,
-              description: doc.metadata?.description,
-              language: doc.metadata?.language,
-              topics: doc.metadata?.topics,
-              content: doc.pageContent.slice(0, 200),
-            })),
+            results: filtered.map(
+              (doc): GitHubSearchResult => ({
+                type: doc.metadata.__type,
+                name: typeof doc.metadata.name === "string" ? doc.metadata.name : undefined,
+                description: typeof doc.metadata.description === "string" ? doc.metadata.description : undefined,
+                language: typeof doc.metadata.language === "string" ? doc.metadata.language : undefined,
+                topics: Array.isArray(doc.metadata.topics) ? doc.metadata.topics : undefined,
+                stars: typeof doc.metadata.stars === "number" ? doc.metadata.stars : undefined,
+                forks: typeof doc.metadata.forks === "number" ? doc.metadata.forks : undefined,
+                content: doc.pageContent.slice(0, 200),
+              }),
+            ),
             count: filtered.length,
           };
         } catch (error) {
@@ -118,7 +120,7 @@ export function createGitHubTools(qdrantProvider: QdrantProvider) {
 
 export function createTwitterTools(qdrantProvider: QdrantProvider) {
   return {
-    searchTwitter: tool({
+    searchTwitter: createTool({
       description: "Search X (Twitter) tweets by content, mentions, or hashtags",
       parameters: z.object({
         query: z.string().describe("The search query for tweets"),
@@ -131,7 +133,7 @@ export function createTwitterTools(qdrantProvider: QdrantProvider) {
           .describe("Filter tweets by date range"),
         limit: z.number().optional().default(10).describe("Maximum number of results to return"),
       }),
-      execute: async ({ query, dateRange, limit }) => {
+      execute: async ({ query, dateRange, limit }): Promise<SearchResponse<TwitterSearchResult>> => {
         try {
           let searchQuery = `twitter tweet ${query}`;
           if (dateRange?.from) {
@@ -144,18 +146,22 @@ export function createTwitterTools(qdrantProvider: QdrantProvider) {
           const results = await qdrantProvider.similaritySearch(searchQuery, limit ?? 10);
 
           const filtered = results.filter((doc) => {
-            const docType = (doc.metadata?.__type as string) || "";
-            return docType.toLowerCase().includes("twitter") || docType.toLowerCase().includes("tweet");
+            const docType = doc.metadata.__type.toLowerCase();
+            return docType.includes("tweet") || docType.includes("twitter") || docType.includes("x");
           });
 
           return {
-            results: filtered.map((doc) => ({
-              type: doc.metadata?.__type,
-              text: doc.pageContent.slice(0, 280),
-              mentions: doc.metadata?.mentions,
-              hashtags: doc.metadata?.hashtags,
-              created_at: doc.metadata?.created_at,
-            })),
+            results: filtered.map(
+              (doc): TwitterSearchResult => ({
+                type: doc.metadata.__type,
+                text: doc.pageContent.slice(0, 280),
+                mentions: Array.isArray(doc.metadata.mentions) ? doc.metadata.mentions : undefined,
+                hashtags: Array.isArray(doc.metadata.hashtags) ? doc.metadata.hashtags : undefined,
+                created_at: typeof doc.metadata.created_at === "string" ? doc.metadata.created_at : undefined,
+                likes: typeof doc.metadata.likes === "number" ? doc.metadata.likes : undefined,
+                retweets: typeof doc.metadata.retweets === "number" ? doc.metadata.retweets : undefined,
+              }),
+            ),
             count: filtered.length,
           };
         } catch (error) {
@@ -172,7 +178,7 @@ export function createTwitterTools(qdrantProvider: QdrantProvider) {
 
 export function createLinearTools(qdrantProvider: QdrantProvider) {
   return {
-    searchLinear: tool({
+    searchLinear: createTool({
       description: "Search Linear issues by title, description, state, priority, or labels",
       parameters: z.object({
         query: z.string().describe("The search query for Linear issues"),
@@ -184,9 +190,8 @@ export function createLinearTools(qdrantProvider: QdrantProvider) {
           .describe("Filter by priority"),
         limit: z.number().optional().default(10).describe("Maximum number of results to return"),
       }),
-      execute: async ({ query, state, priority, limit }) => {
+      execute: async ({ query, state, priority, limit }): Promise<SearchResponse<LinearSearchResult>> => {
         try {
-          // Build search query with filters
           let searchQuery = `linear issue ${query}`;
           if (state !== "all") {
             searchQuery += ` ${state}`;
@@ -198,20 +203,22 @@ export function createLinearTools(qdrantProvider: QdrantProvider) {
           const results = await qdrantProvider.similaritySearch(searchQuery, limit ?? 10);
 
           const filtered = results.filter((doc) => {
-            const docType = (doc.metadata?.__type as string) || "";
-            return docType.toLowerCase().includes("linear");
+            const docType = doc.metadata.__type.toLowerCase();
+            return docType.includes("linear") || docType.includes("issue");
           });
 
           return {
-            results: filtered.map((doc) => ({
-              type: doc.metadata?.__type,
-              title: doc.metadata?.title,
-              description: doc.pageContent.slice(0, 200),
-              state: doc.metadata?.state,
-              priority: doc.metadata?.priority,
-              labels: doc.metadata?.labels,
-              assignee: doc.metadata?.assignee,
-            })),
+            results: filtered.map(
+              (doc): LinearSearchResult => ({
+                type: doc.metadata.__type,
+                title: typeof doc.metadata.title === "string" ? doc.metadata.title : undefined,
+                description: doc.pageContent.slice(0, 200),
+                state: typeof doc.metadata.state === "string" ? doc.metadata.state : undefined,
+                priority: typeof doc.metadata.priority === "string" ? doc.metadata.priority : undefined,
+                labels: Array.isArray(doc.metadata.labels) ? doc.metadata.labels : undefined,
+                assignee: typeof doc.metadata.assignee === "string" ? doc.metadata.assignee : undefined,
+              }),
+            ),
             count: filtered.length,
           };
         } catch (error) {
