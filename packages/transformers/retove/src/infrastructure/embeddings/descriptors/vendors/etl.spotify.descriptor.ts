@@ -46,10 +46,21 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
 
 export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> {
   public getEmbeddingText(playlist: SpotifyPlaylistDataTarget): string {
+    let trackCount = 0;
+    if (playlist.tracks && Array.isArray(playlist.tracks)) {
+      const totalEntry = playlist.tracks.find((t) => t.startsWith("total:"));
+      if (totalEntry) {
+        const match = totalEntry.match(/total:\s*(\d+)/);
+        if (match) {
+          trackCount = Number.parseInt(match[1], 10);
+        }
+      }
+    }
+
     const parts = [
       `My playlist "${playlist.name}"`,
       playlist.description ? `${playlist.description}` : null,
-      playlist.tracks?.length ? `${playlist.tracks.length} tracks I curated` : null,
+      trackCount > 0 ? `${trackCount} tracks I curated` : null,
       playlist.followers && playlist.followers > 0 ? `${playlist.followers} people following it` : null,
     ].filter(Boolean);
 

@@ -41,7 +41,7 @@ export abstract class RetoveBaseETLAbstract {
       EMBEDDINGS_VECTOR_SIZE,
       {
         concurrencyLimit: 2,
-        chunkSize: 1024,
+        chunkSize: 128,
         weightChunks: true,
       },
     ),
@@ -139,9 +139,10 @@ export abstract class RetoveBaseETLAbstract {
           try {
             const text = this.getTextForEmbedding(item as Record<string, unknown>);
             const correlationId = `retove-${this._collectionName}-${i + index + 1}`;
-            // Split text into smaller chunks for better embedding quality
-            // The EmbeddingsService will handle further chunking if needed (using constructor config)
-            const textChunks = this._splitTextIntoChunks(text, 512);
+            // Split text into smaller chunks that respect the model's context limit
+            // mxbai-embed-large has a 512 token limit, so we use 128 chars to be very safe
+            // (128 chars ≈ 25-32 tokens, well below the 512 token limit)
+            const textChunks = this._splitTextIntoChunks(text, 128);
             const chunkVectors = await Promise.all(
               textChunks.map(async (textChunk, chunkIndex) => {
                 const vector = await this._embeddingsService.generateEmbeddings(textChunk, {
@@ -230,6 +231,19 @@ export abstract class RetoveBaseETLAbstract {
     let currentLength = 0;
 
     for (const entity of entities) {
+      if (entity.length > maxChunkSize) {
+        if (currentChunk.length > 0) {
+          chunks.push(currentChunk.join(""));
+          currentChunk = [];
+          currentLength = 0;
+        }
+
+        for (let i = 0; i < entity.length; i += maxChunkSize) {
+          chunks.push(entity.slice(i, i + maxChunkSize));
+        }
+        continue;
+      }
+
       if (currentLength + entity.length > maxChunkSize && currentChunk.length > 0) {
         chunks.push(currentChunk.join(""));
         currentChunk = [];

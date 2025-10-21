@@ -6,6 +6,10 @@ coverage/
 dist/
 .venv/
 .DS_Store
+ait_pgdata/
+ait_qdrant_storage/
+ait_ollama/
+ait_redis/
 
 packages/connectors/src/types/openapi
 # Temporary

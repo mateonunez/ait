@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./packages/infrastructure/postgres/data:/var/lib/postgresql/data
+      - ait_pgdata:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -29,7 +29,7 @@ services:
     image: ollama/ollama:latest
     container_name: ait_ollama
     volumes:
-      - ./packages/infrastructure/ollama/data:/root/.ollama
+      - ait_ollama:/root/.ollama
     ports:
       - "11434:11434"
     restart: always
@@ -67,7 +67,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - ./packages/infrastructure/redis/data:/data
+      - ait_redis:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -100,7 +100,7 @@ volumes:
   ait_pgdata:
   ait_qdrant_storage:
   ait_ollama:
-  ait_open_webui:
+  ait_redis:
 
 networks:
   app-network:
