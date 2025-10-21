@@ -220,11 +220,33 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget) => dataTarget.owner,
   },
   tracks: {
-    external: (external: SpotifyPlaylistExternal) =>
-      mapObjectToStringArray(external.tracks, {
-        valueTransform: (value) => JSON.stringify(value),
-        maxDepth: 6,
-      }),
+    external: (external: SpotifyPlaylistExternal) => {
+      const tracksData = external.tracks;
+      if (!tracksData) return [];
+
+      const result: string[] = [];
+
+      if (tracksData.href) {
+        result.push(`href: ${tracksData.href}`);
+      }
+      if (typeof tracksData.total === "number") {
+        result.push(`total: ${tracksData.total}`);
+      }
+
+      if (tracksData.items && Array.isArray(tracksData.items)) {
+        const trackNames = tracksData.items
+          .filter((item) => item?.track)
+          .map((item) => {
+            const track = item.track;
+            const name = track?.name || "Unknown";
+            const artist = track && "artists" in track && track.artists?.[0]?.name ? track.artists[0].name : "Unknown";
+            return `track: ${artist} - ${name}`;
+          });
+        result.push(...trackNames);
+      }
+
+      return result;
+    },
     domain: (domain: SpotifyPlaylistEntity) => domain.tracks,
     dataTarget: (dataTarget: SpotifyPlaylistDataTarget) => dataTarget.tracks ?? [],
   },
