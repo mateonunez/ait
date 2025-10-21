@@ -21,6 +21,7 @@
     "@ait/qdrant": "workspace:*"
   },
   "devDependencies": {
+    "@ait/connectors": "workspace:*",
     "@types/node": "^24.9.1",
     "@types/sinon": "^17.0.4",
     "sinon": "^21.0.0",

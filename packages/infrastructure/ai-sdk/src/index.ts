@@ -12,8 +12,9 @@ export * from "./services/prompts/system.prompt";
 export * from "./rag/qdrant.provider";
 export * from "./rag/multi-query.retrieval";
 export { ContextBuilder } from "./rag/context.builder";
-export type { Document } from "./rag/context.builder";
 
 export * from "./tools/connectors.tools";
 
 export * from "./cache/lru-cache";
+
+export * from "./types";

@@ -2,11 +2,8 @@ import { getQdrantClient, type qdrant } from "@ait/qdrant";
 import { EmbeddingsService } from "../services/embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../services/embeddings/embeddings.service";
 import { getEmbeddingModelConfig } from "../client/ai-sdk.client";
-
-export interface Document {
-  pageContent: string;
-  metadata: Record<string, unknown>;
-}
+import type { Document, BaseMetadata } from "../types/documents";
+import { extractContentFromPayload, extractMetadataFromPayload } from "../types/qdrant";
 
 export interface QdrantProviderConfig {
   url?: string;
@@ -42,7 +39,7 @@ export class QdrantProvider {
     this._client = getQdrantClient();
   }
 
-  async similaritySearch(query: string, k: number): Promise<Document[]> {
+  async similaritySearch(query: string, k: number): Promise<Document<BaseMetadata>[]> {
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
     });
@@ -54,12 +51,12 @@ export class QdrantProvider {
     });
 
     return searchResult.map((point) => ({
-      pageContent: (point.payload?.text as string) || (point.payload?.pageContent as string) || "",
-      metadata: point.payload || {},
+      pageContent: extractContentFromPayload(point.payload || undefined),
+      metadata: extractMetadataFromPayload(point.payload || undefined),
     }));
   }
 
-  async similaritySearchWithScore(query: string, k: number): Promise<Array<[Document, number]>> {
+  async similaritySearchWithScore(query: string, k: number): Promise<Array<[Document<BaseMetadata>, number]>> {
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
     });
@@ -73,8 +70,8 @@ export class QdrantProvider {
 
     return searchResult.map((point) => [
       {
-        pageContent: (point.payload?.text as string) || (point.payload?.pageContent as string) || "",
-        metadata: point.payload || {},
+        pageContent: extractContentFromPayload(point.payload || undefined),
+        metadata: extractMetadataFromPayload(point.payload || undefined),
       },
       point.score,
     ]);

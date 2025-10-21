@@ -1,6 +1,6 @@
-import type { Document } from "./qdrant.provider";
 import type { QdrantProvider } from "./qdrant.provider";
 import { getAItClient } from "../client/ai-sdk.client";
+import type { Document, BaseMetadata, ScoredDocument } from "../types/documents";
 
 export interface MultiQueryRetrievalConfig {
   maxDocs?: number;
@@ -65,7 +65,7 @@ export class MultiQueryRetrieval {
     return [userPrompt];
   }
 
-  async retrieveWithMultiQueries(vectorStore: QdrantProvider, userPrompt: string): Promise<Document[]> {
+  async retrieveWithMultiQueries(vectorStore: QdrantProvider, userPrompt: string): Promise<Document<BaseMetadata>[]> {
     const queries = await this.planQueriesWithLLM(userPrompt);
 
     console.debug("Queries", queries);
@@ -73,8 +73,7 @@ export class MultiQueryRetrieval {
     const totalBudget = Math.max(10, this.maxDocs);
     const perQueryK = Math.max(2, Math.floor(totalBudget / Math.max(1, queries.length)));
 
-    type Scored = { doc: Document; score: number };
-    const bestById = new Map<string, Scored>();
+    const bestById = new Map<string, ScoredDocument<BaseMetadata>>();
 
     let successfulQueries = 0;
     let lastError: Error | undefined;
@@ -84,7 +83,7 @@ export class MultiQueryRetrieval {
         const pairs = await vectorStore.similaritySearchWithScore(q, perQueryK);
 
         for (const [doc, score] of pairs) {
-          const id = (doc.metadata as { id?: string })?.id || doc.pageContent.slice(0, 80);
+          const id = doc.metadata.id || doc.pageContent.slice(0, 80);
           const prev = bestById.get(id);
           if (!prev || score > prev.score) {
             bestById.set(id, { doc, score });
