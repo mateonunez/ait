@@ -169,7 +169,7 @@ export function ChatDialog() {
                   }
                 }}
                 placeholder="Ask me anything..."
-                style={{ height: textareaHeight, minHeight: "44px" }}
+                style={{ height: textareaHeight, minHeight: "44px", overflow: "hidden" }}
                 className={cn(
                   "w-full resize-none rounded-2xl px-4 py-3",
                   "bg-muted/50 border border-border/50",

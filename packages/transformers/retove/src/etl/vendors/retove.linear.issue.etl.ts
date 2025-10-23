@@ -2,7 +2,7 @@ import { type getPostgresClient, linearIssues, type LinearIssueDataTarget } from
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
-import type { IEmbeddingsService } from "@ait/langchain";
+import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLLinearIssueDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.linear.descriptor";
 import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";

@@ -4,8 +4,8 @@
   "description": "AIt's internal postgres database client and utils",
   "main": "dist/index.js",
   "scripts": {
+    "dev": "tsc -p ./tsconfig.build.json --watch",
     "build": "tsc -p ./tsconfig.build.json",
-    "build:watch": "tsc -p ./tsconfig.build.json --watch",
     "clean": "rm -rf dist coverage",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"

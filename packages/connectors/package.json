@@ -4,8 +4,8 @@
   "description": "AIt's connectors",
   "main": "dist/src/index.js",
   "scripts": {
+    "dev": "tsc --watch",
     "build": "tsc && tsc-alias",
-    "build:watch": "tsc --watch & tsc-alias --watch",
     "clean": "rm -rf dist coverage",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",

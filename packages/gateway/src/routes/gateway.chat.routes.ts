@@ -32,6 +32,11 @@ export default async function chatRoutes(fastify: FastifyInstance) {
       "textGenerationService",
       new TextGenerationService({
         collectionName: "ait_embeddings_collection",
+        multipleQueryPlannerConfig: {
+          maxDocs: 100,
+          queriesCount: 12,
+          concurrency: 4,
+        },
       }),
     );
   }
@@ -52,6 +57,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
       }
 
       const prompt = lastMessage.content;
+      const conversationHistory = messages.slice(0, -1);
 
       reply.raw.setHeader("Access-Control-Allow-Origin", "http://localhost:5173");
       reply.raw.setHeader("Access-Control-Allow-Credentials", "true");
@@ -67,6 +73,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         const stream = textGenerationService.generateStream({
           prompt,
           enableRAG: true,
+          messages: conversationHistory,
         });
 
         for await (const chunk of stream) {
