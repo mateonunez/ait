@@ -12,6 +12,7 @@ export class SchedulerError extends Error {
 export interface ISchedulerConfig {
   queueName: string;
   redisConfig: IRedisConfig;
+  concurrency?: number;
 }
 
 export class Scheduler implements IScheduler {
@@ -19,12 +20,14 @@ export class Scheduler implements IScheduler {
   private readonly _worker: Worker;
   private readonly _queueEvents: QueueEvents;
   private readonly _client: ReturnType<typeof getRedisClient>;
+  private readonly _concurrency: number;
 
   constructor(config: ISchedulerConfig) {
     if (!config.queueName?.trim()) {
       throw new SchedulerError("Queue name is required");
     }
 
+    this._concurrency = config.concurrency || 2; // Default to 2 concurrent jobs
     this._client = this._initializeRedis(config.redisConfig);
     this._queue = this._initializeQueue(config.queueName);
     this._worker = this._initializeWorker(config.queueName);
@@ -33,7 +36,12 @@ export class Scheduler implements IScheduler {
     this._setupEventHandlers();
   }
 
-  public async scheduleJob(jobName: string, data: Record<string, unknown>, cronExpression: string): Promise<void> {
+  public async scheduleJob(
+    jobName: string,
+    data: Record<string, unknown>,
+    cronExpression: string,
+    priority?: number,
+  ): Promise<void> {
     if (!schedulerRegistry.has(jobName)) {
       throw new SchedulerError(
         `Cannot schedule unknown task: ${jobName}. Available tasks: ${schedulerRegistry.list().join(", ")}`,
@@ -42,10 +50,14 @@ export class Scheduler implements IScheduler {
 
     await this._queue.add(jobName, data, {
       repeat: { pattern: cronExpression },
-      jobId: `${jobName}-${Date.now()}`,
+      priority: priority || 0,
+      jobId: `${jobName}-repeatable`,
     });
 
-    console.info(`[Scheduler] Job "${jobName}" scheduled with cron: ${cronExpression}`);
+    console.info(
+      `[Scheduler] Job "${jobName}" scheduled with cron: ${cronExpression}`,
+      priority ? `(priority: ${priority})` : "",
+    );
   }
 
   public async addJob(jobName: string, data: Record<string, unknown>, options?: JobsOptions): Promise<void> {
@@ -90,11 +102,17 @@ export class Scheduler implements IScheduler {
     return new Queue(queueName, {
       connection: this._client,
       defaultJobOptions: {
-        removeOnComplete: true,
+        removeOnComplete: {
+          age: 3600,
+          count: 100,
+        },
+        removeOnFail: {
+          age: 86400,
+        },
         attempts: 3,
         backoff: {
           type: "exponential",
-          delay: 1000,
+          delay: 2000,
         },
       },
     });
@@ -104,16 +122,27 @@ export class Scheduler implements IScheduler {
     return new Worker(
       queueName,
       async (job: Job) => {
+        const startTime = Date.now();
         try {
-          console.info(`[Worker] Running job: ${job.name}`);
+          console.info(`[Worker] Running job: ${job.name} (priority: ${job.opts.priority || 0})`);
           const handler = schedulerRegistry.get(job.name);
           await handler(job.data);
+          const duration = Date.now() - startTime;
+          console.info(`[Worker] Job completed: ${job.name} (${duration}ms)`);
         } catch (error) {
-          console.error(`[Worker] Job execution failed: ${job.name}`, error);
+          const duration = Date.now() - startTime;
+          console.error(`[Worker] Job execution failed: ${job.name} (${duration}ms)`, error);
           throw error;
         }
       },
-      { connection: this._client },
+      {
+        connection: this._client,
+        concurrency: this._concurrency,
+        limiter: {
+          max: 10,
+          duration: 60000,
+        },
+      },
     );
   }
 
@@ -161,11 +190,11 @@ export class Scheduler implements IScheduler {
 }
 
 export interface IScheduler {
-  scheduleJob(jobName: string, data: Record<string, any>, cronExpression: string): Promise<void>;
+  scheduleJob(jobName: string, data: Record<string, any>, cronExpression: string, priority?: number): Promise<void>;
   addJob(
     jobName: string,
     data: Record<string, any>,
-    options?: { delay?: number; repeat?: Record<string, any> },
+    options?: { delay?: number; repeat?: Record<string, any>; priority?: number },
   ): Promise<void>;
   start(): Promise<void>;
   stop(): Promise<void>;

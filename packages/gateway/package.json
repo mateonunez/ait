@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx --watch src/gateway.server.ts",
     "build": "tsc",
+    "build:watch": "tsc --watch",
+    "clean": "rm -rf dist",
     "start": "node dist/gateway.server.js",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"

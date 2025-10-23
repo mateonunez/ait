@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:watch": "vite build --watch",
+    "clean": "rm -rf dist node_modules/.vite",
     "preview": "vite preview",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"

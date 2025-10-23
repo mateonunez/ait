@@ -4,7 +4,9 @@
   "description": "AIt's Relational to Vector DB ETL",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p ./tsconfig.build.json",
+    "build": "tsc -p ./tsconfig.build.json && tsc-alias -p ./tsconfig.build.json",
+    "build:watch": "tsc -p ./tsconfig.build.json --watch",
+    "clean": "rm -rf dist coverage",
     "etl": "NODE_OPTIONS='--max_old_space_size=8192' tsx src/etl.retove.main.ts",
     "example:etl": "tsx src/etl/example.etl.ts",
     "lint": "biome format && biome lint",
@@ -21,6 +23,7 @@
   },
   "devDependencies": {
     "@types/dotenv": "^8.2.3",
+    "tsc-alias": "^1.8.16",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }

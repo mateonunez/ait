@@ -39,62 +39,25 @@ services:
     networks:
       - app-network
 
-  # ait_open_webui:
-  #   image: ghcr.io/open-webui/open-webui:ollama
-  #   container_name: ait_open_webui
-  #   ports:
-  #     - "8434:8080"
-  #   volumes:
-  #     - ./packages/infrastructure/ollama/data:/root/.ollama
-  #     - ./packages/infrastructure/open-webui/data:/app/backend/data
-  #   depends_on:
-  #     - ait_ollama
-  #   restart: always
-  #   environment:
-  #     - "OLLAMA_BASE_URLS=http://ait_ollama:11434"
-  #     - "WEBUI_AUTH=false"
-  #     - "WEBUI_NAME=AIt Open WebUI"
-  #     - "WEBUI_URL=http://localhost:8434"
-  #     - "WEBUI_SECRET=ai-openwebui-secret"
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   networks:
-  #     - app-network
-
   ait_redis:
     image: redis:latest
     container_name: ait_redis
+    command: redis-server --appendonly yes --appendfsync everysec
     ports:
       - "6379:6379"
     volumes:
       - ait_redis:/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     networks:
       - app-network
-
-  # ait_scheduler:
-  #   build:
-  #     context: ./
-  #     dockerfile: Dockerfile
-  #   container_name: ait_scheduler
-  #   environment:
-  #     - POSTGRES_URL=postgresql://root:toor@ait_postgres:5432/ait
-  #     - QDRANT_URL=http://ait_qdrant:6333
-  #     - REDIS_URL=redis://ait_redis:6379
-  #     - OLLAMA_BASE_URL=http://ait_ollama:11434
-  #   depends_on:
-  #     - ait_postgres
-  #     - ait_qdrant
-  #     - ait_ollama
-  #     # - ait_open_webui
-  #     - ait_redis
-  #   networks:
-  #     - app-network
-  #   volumes:
-  #     - ./packages:/app/ait/packages
-  #     - ./packages/infrastructure/scheduler:/app/ait/packages/infrastructure/scheduler
-  #     - ./node_modules:/app/ait/node_modules
 
 volumes:
   ait_pgdata:

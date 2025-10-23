@@ -5,6 +5,8 @@
   "main": "dist/src/index.js",
   "scripts": {
     "build": "tsc && tsc-alias",
+    "build:watch": "tsc --watch & tsc-alias --watch",
+    "clean": "rm -rf dist coverage",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "pretest": "test -f .env.test || cp .env.example .env.test",
