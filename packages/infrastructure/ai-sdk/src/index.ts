@@ -18,3 +18,5 @@ export * from "./tools/connectors.tools";
 export * from "./cache/lru-cache";
 
 export * from "./types";
+export type { ChatMessage, MessageRole } from "./types/chat";
+export { formatConversationHistory } from "./types/chat";

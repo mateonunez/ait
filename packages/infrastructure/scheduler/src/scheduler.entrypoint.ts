@@ -19,7 +19,7 @@ const getScheduleConfig = () => {
   return {
     isDev,
     batchSize,
-    highPriorityCron: isDev ? "*/15 * * * *" : "*/5 * * * *", // Every 15 min (dev) / 5 min (prod)
+    highPriorityCron: isDev ? "*/30 * * * *" : "*/5 * * * *", // Every 15 min (dev) / 5 min (prod)
     mediumPriorityCron: isDev ? "0 * * * *" : "0 */2 * * *", // Hourly (dev) / Every 2 hours (prod)
     lowPriorityCron: isDev ? "0 */6 * * *" : "0 */4 * * *", // Every 6 hours (dev) / Every 4 hours (prod)
   };

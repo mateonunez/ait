@@ -2,11 +2,13 @@ import { getAItClient, DEFAULT_RAG_COLLECTION } from "../../client/ai-sdk.client
 import { QdrantProvider } from "../../rag/qdrant.provider";
 import { MultiQueryRetrieval } from "../../rag/multi-query.retrieval";
 import { ContextBuilder } from "../../rag/context.builder";
-import { systemPrompt, buildSystemPromptWithContext } from "../prompts/system.prompt";
+import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../prompts/system.prompt";
 import { LRUCache } from "../../cache/lru-cache";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import type { Document, BaseMetadata } from "../../types/documents";
+import type { ChatMessage } from "../../types/chat";
+import { formatConversationHistory } from "../../types/chat";
 import { randomUUID } from "node:crypto";
 
 export interface CoreTool {
@@ -33,8 +35,12 @@ export interface TextGenerationConfig {
   model?: string;
   embeddingsModel?: string;
   collectionName?: string;
-  maxSearchDocs?: number;
   embeddingsService?: IEmbeddingsService;
+  multipleQueryPlannerConfig?: {
+    maxDocs?: number;
+    queriesCount?: number;
+    concurrency?: number;
+  };
 }
 
 export interface GenerateOptions {
@@ -42,12 +48,14 @@ export interface GenerateOptions {
   tools?: Record<string, CoreTool>;
   maxToolRounds?: number;
   enableRAG?: boolean;
+  messages?: ChatMessage[];
 }
 
 export interface GenerateStreamOptions {
   prompt: string;
   tools?: Record<string, CoreTool>;
   enableRAG?: boolean;
+  messages?: ChatMessage[];
 }
 
 export interface ITextGenerationService {
@@ -81,7 +89,9 @@ export class TextGenerationService implements ITextGenerationService {
     });
 
     this._multiQueryRetrieval = new MultiQueryRetrieval({
-      maxDocs: config.maxSearchDocs || MAX_SEARCH_SIMILAR_DOCS,
+      maxDocs: config.multipleQueryPlannerConfig?.maxDocs || 100,
+      queriesCount: config.multipleQueryPlannerConfig?.queriesCount || 12,
+      concurrency: config.multipleQueryPlannerConfig?.concurrency || 4,
     });
 
     this._contextBuilder = new ContextBuilder();
@@ -92,6 +102,9 @@ export class TextGenerationService implements ITextGenerationService {
     });
   }
 
+  /**
+   * @deprecated Use generateStream instead
+   */
   public async generate(
     options: GenerateOptions,
   ): Promise<{ text: string; toolCalls?: unknown[]; finishReason: string }> {
@@ -103,17 +116,8 @@ export class TextGenerationService implements ITextGenerationService {
     const overallStart = Date.now();
 
     try {
-      console.info("Starting text generation", { prompt: options.prompt.slice(0, 100) });
-
       const client = getAItClient();
-      let systemMessage = systemPrompt;
-
-      if (options.enableRAG !== false) {
-        const context = await this._prepareContext(options.prompt, correlationId);
-        systemMessage = buildSystemPromptWithContext(context, options.prompt);
-      }
-
-      const fullPrompt = `${systemMessage}\n\nUser: ${options.prompt}`;
+      const fullPrompt = await this._buildFullPrompt(options, correlationId);
 
       const result = await this._retryOperation(async () => {
         const text = await client.generationModel.doGenerate({
@@ -160,15 +164,7 @@ export class TextGenerationService implements ITextGenerationService {
       console.info("Starting stream text generation", { prompt: options.prompt.slice(0, 100) });
 
       const client = getAItClient();
-      let systemMessage = systemPrompt;
-
-      if (options.enableRAG !== false) {
-        const context = await this._prepareContext(options.prompt, correlationId);
-        systemMessage = buildSystemPromptWithContext(context, options.prompt);
-      }
-
-      const fullPrompt = `${systemMessage}\n\nUser: ${options.prompt}`;
-
+      const fullPrompt = await this._buildFullPrompt(options, correlationId);
       const stream = await this._retryOperation(async () => {
         return client.generationModel.doStream({
           prompt: fullPrompt,
@@ -179,10 +175,14 @@ export class TextGenerationService implements ITextGenerationService {
       });
 
       let chunkCount = 0;
+      let fullResponse = "";
       for await (const chunk of stream) {
         chunkCount++;
+        fullResponse += chunk;
         yield chunk;
       }
+
+      console.log("Full AI response:", fullResponse);
 
       console.info("Stream generation completed", {
         duration: Date.now() - overallStart,
@@ -217,20 +217,46 @@ export class TextGenerationService implements ITextGenerationService {
     throw new Error("Retry operation failed unexpectedly");
   }
 
+  private async _buildFullPrompt(
+    options: GenerateOptions | GenerateStreamOptions,
+    correlationId: string,
+  ): Promise<string> {
+    let systemMessage: string;
+
+    if (options.enableRAG !== false) {
+      const context = await this._prepareContext(options.prompt, correlationId);
+      systemMessage = buildSystemPromptWithContext(context);
+    } else {
+      systemMessage = buildSystemPromptWithoutContext();
+    }
+
+    if (!options.messages || options.messages.length === 0) {
+      return `${systemMessage}\n\nUser: ${options.prompt}\n\nAssistant:`;
+    }
+
+    // Build conversation with proper formatting
+    const parts: string[] = [systemMessage];
+
+    // Add conversation history if present
+    const formattedHistory = formatConversationHistory(options.messages);
+    if (formattedHistory) {
+      parts.push(formattedHistory);
+    }
+
+    // Add current user message
+    parts.push(`User: ${options.prompt}`);
+
+    // Add assistant prompt
+    parts.push("Assistant:");
+
+    return parts.join("\n\n");
+  }
+
   private async _prepareContext(prompt: string, correlationId: string): Promise<string> {
     console.info("Preparing context for RAG");
 
     const similarDocs = await this._multiQueryRetrieval.retrieveWithMultiQueries(this._qdrantProvider, prompt);
-
-    console.info("Similar documents found", {
-      prompt,
-      count: similarDocs.length,
-    });
-
     const context = this._contextBuilder.buildContextFromDocuments(similarDocs as Document<BaseMetadata>[]);
-    console.debug("Context built", {
-      contextLength: context.length,
-    });
 
     return context;
   }

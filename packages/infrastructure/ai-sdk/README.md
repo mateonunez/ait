@@ -83,6 +83,58 @@ const text = await smoothStream(stream, {
 });
 ```
 
+### Conversation History
+
+```typescript
+import { TextGenerationService, type ChatMessage } from '@ait/ai-sdk';
+
+const service = new TextGenerationService({
+  collectionName: 'ait_embeddings_collection'
+});
+
+// Start a conversation
+const messages: ChatMessage[] = [];
+
+// Turn 1
+const response1 = await service.generate({
+  prompt: 'La canzone più recente che hai ascoltato?',
+  enableRAG: true
+});
+
+messages.push(
+  { role: 'user', content: 'La canzone più recente che hai ascoltato?' },
+  { role: 'assistant', content: response1.text }
+);
+
+// Turn 2 - with conversation context
+const response2 = await service.generate({
+  prompt: 'Sicuro che sia la più recente? Controlla le date~',
+  enableRAG: true,
+  messages: messages  // Pass conversation history
+});
+
+messages.push(
+  { role: 'user', content: 'Sicuro che sia la più recente? Controlla le date~' },
+  { role: 'assistant', content: response2.text }
+);
+
+// Turn 3 - Ask about the first message
+const response3 = await service.generate({
+  prompt: 'Dimmi il primo messaggio di questa chat.',
+  enableRAG: false,  // No RAG needed - just conversation memory
+  messages: messages
+});
+
+console.log('AIt remembers the conversation:', response3.text);
+```
+
+**Key Features:**
+- ✅ Multi-turn conversations with full context
+- ✅ Works with both streaming and non-streaming modes
+- ✅ Compatible with RAG - context retrieval uses current prompt
+- ✅ Simple array-based message history
+- ✅ Automatic conversation formatting
+
 ### Tool Calling
 
 ```typescript

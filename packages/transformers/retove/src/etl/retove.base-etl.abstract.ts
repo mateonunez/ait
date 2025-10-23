@@ -1,11 +1,6 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import {
-  EmbeddingsService,
-  EMBEDDINGS_VECTOR_SIZE,
-  type IEmbeddingsService,
-  DEFAULT_EMBEDDINGS_MODEL,
-} from "@ait/langchain";
+import { EmbeddingsService, getEmbeddingModelConfig, type IEmbeddingsService } from "@ait/ai-sdk";
 
 export interface BaseVectorPoint {
   id: number;
@@ -19,10 +14,12 @@ export interface RetryOptions {
   maxDelay: number;
 }
 
+const embeddingModelConfig = getEmbeddingModelConfig();
+
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 1000;
-  private readonly _vectorSize = EMBEDDINGS_VECTOR_SIZE;
+  private readonly _vectorSize = embeddingModelConfig.vectorSize;
   protected readonly _transformConcurrency: number = 10;
   protected readonly _batchUpsertConcurrency: number = 5;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
@@ -37,8 +34,8 @@ export abstract class RetoveBaseETLAbstract {
       maxDelay: 5000,
     },
     private readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService(
-      DEFAULT_EMBEDDINGS_MODEL,
-      EMBEDDINGS_VECTOR_SIZE,
+      embeddingModelConfig.name,
+      embeddingModelConfig.vectorSize,
       {
         concurrencyLimit: 2,
         chunkSize: 128,

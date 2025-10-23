@@ -3,7 +3,7 @@ import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "
 import { xTweets, type getPostgresClient, type XTweetDataTarget } from "@ait/postgres";
 import type { IETLEmbeddingDescriptor } from "@/infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import type { qdrant } from "@ait/qdrant";
-import type { IEmbeddingsService } from "@ait/langchain";
+import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
 
 export class RetoveXTweetETL extends RetoveBaseETLAbstract {

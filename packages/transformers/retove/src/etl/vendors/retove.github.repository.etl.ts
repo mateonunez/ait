@@ -2,7 +2,7 @@ import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTa
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
-import type { IEmbeddingsService } from "@ait/langchain";
+import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
 import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";

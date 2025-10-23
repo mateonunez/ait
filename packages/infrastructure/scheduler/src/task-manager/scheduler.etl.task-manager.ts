@@ -85,8 +85,6 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         console.info(`[${XETLs.tweet}] Completed`);
       });
     });
-
-    console.info("ETL tasks registered:", schedulerRegistry.list());
   }
 
   private async _withConnections<T>(

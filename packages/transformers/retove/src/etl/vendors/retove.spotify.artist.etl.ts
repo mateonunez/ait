@@ -1,7 +1,7 @@
 import type { getPostgresClient, SpotifyArtistDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { spotifyArtists } from "@ait/postgres";
-import type { IEmbeddingsService } from "@ait/langchain";
+import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { RetoveBaseETLAbstract, type BaseVectorPoint, type RetryOptions } from "../retove.base-etl.abstract";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyArtistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";

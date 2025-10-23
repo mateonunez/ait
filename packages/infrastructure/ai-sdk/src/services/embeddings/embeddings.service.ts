@@ -37,14 +37,6 @@ export class EmbeddingsService implements IEmbeddingsService {
       if (!this._textPreprocessor.validateChunks(chunks, text)) {
         throw new Error("Chunk validation failed - text may have been corrupted during preprocessing");
       }
-
-      console.info("Starting embeddings generation", {
-        correlationId,
-        chunkCount: chunks.length,
-        totalLength: text.length,
-        model: this._config.model,
-      });
-
       const chunkVectors = await this._processChunks(chunks, correlationId);
       const averagedVector = this._config.weightChunks
         ? this._weightedAverageVectors(
@@ -56,13 +48,6 @@ export class EmbeddingsService implements IEmbeddingsService {
       if (averagedVector.length !== this._config.expectedVectorSize) {
         throw new Error(`Unexpected embeddings size: ${averagedVector.length}`);
       }
-
-      console.info("Completed embeddings generation", {
-        correlationId,
-        processedChunks: chunks.length,
-        vectorSize: averagedVector.length,
-        model: this._config.model,
-      });
 
       return averagedVector;
     } catch (err) {
@@ -86,15 +71,8 @@ export class EmbeddingsService implements IEmbeddingsService {
     const vectors: number[][] = [];
 
     for (const chunk of chunks) {
-      const vec = await this._embedChunkWithRetry(chunk, correlationId);
-      vectors.push(vec);
-
-      console.debug(`Processed chunk ${chunk.index + 1}/${chunks.length}`, {
-        correlationId,
-        chunkIndex: chunk.index,
-        chunkLength: chunk.length,
-        model: this._config.model,
-      });
+      const vector = await this._embedChunkWithRetry(chunk, correlationId);
+      vectors.push(vector);
     }
 
     return vectors;
@@ -103,13 +81,8 @@ export class EmbeddingsService implements IEmbeddingsService {
   private async _processChunksConcurrently(chunks: TextChunk[], correlationId?: string): Promise<number[][]> {
     const results: number[][] = new Array(chunks.length);
     const tasks = chunks.map((chunk) => async () => {
-      results[chunk.index] = await this._embedChunkWithRetry(chunk, correlationId);
-      console.debug(`Processed chunk ${chunk.index + 1}/${chunks.length}`, {
-        correlationId,
-        chunkIndex: chunk.index,
-        chunkLength: chunk.length,
-        model: this._config.model,
-      });
+      const vector = await this._embedChunkWithRetry(chunk, correlationId);
+      results[chunk.index] = vector;
     });
 
     let currentIndex = 0;
