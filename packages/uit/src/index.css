@@ -119,16 +119,94 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
-    @apply bg-muted;
+    @apply bg-transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-muted-foreground/50 rounded-full border-2 border-background;
+    @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
   }
 
   /* Firefox */
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: var(--muted-foreground) var(--muted);
+    scrollbar-color: rgb(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  .streamdown-wrapper {
+    @apply text-sm leading-relaxed;
+  }
+
+  .streamdown-wrapper p {
+    @apply my-2 first:mt-0 last:mb-0;
+  }
+
+  .streamdown-wrapper h1,
+  .streamdown-wrapper h2,
+  .streamdown-wrapper h3,
+  .streamdown-wrapper h4,
+  .streamdown-wrapper h5,
+  .streamdown-wrapper h6 {
+    @apply font-semibold mt-4 mb-2 first:mt-0;
+  }
+
+  .streamdown-wrapper ul,
+  .streamdown-wrapper ol {
+    @apply my-2 pl-6;
+  }
+
+  .streamdown-wrapper li {
+    @apply my-0.5;
+  }
+
+  .streamdown-wrapper code {
+    @apply text-xs bg-primary/10 px-1.5 py-0.5 rounded font-mono;
+  }
+
+  .streamdown-wrapper pre {
+    @apply my-3 p-4 rounded-lg border border-border/50 overflow-x-auto;
+  }
+
+  .streamdown-wrapper pre code {
+    @apply bg-transparent p-0 text-xs;
+  }
+
+  .streamdown-wrapper blockquote {
+    @apply border-l-4 border-primary/30 pl-4 my-3 italic text-muted-foreground;
+  }
+
+  .streamdown-wrapper table {
+    @apply w-full my-3 border-collapse;
+  }
+
+  .streamdown-wrapper th,
+  .streamdown-wrapper td {
+    @apply border border-border px-3 py-2 text-left;
+  }
+
+  .streamdown-wrapper th {
+    @apply bg-muted font-semibold;
+  }
+
+  .streamdown-wrapper a {
+    @apply text-primary underline underline-offset-2 hover:text-primary/80 transition-colors;
+  }
+
+  .streamdown-wrapper hr {
+    @apply my-4 border-border;
+  }
+
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-in {
+    animation: slide-in 0.3s ease-out;
   }
 }
