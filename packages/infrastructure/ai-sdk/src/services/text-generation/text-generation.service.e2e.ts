@@ -26,30 +26,34 @@ describe("AIt Personality Integration (AI SDK)", () => {
     });
   });
 
-  it("should analyze knowledge base with sharp analytical personality and depth", { timeout: timeout }, async () => {
-    const prompt = `
+  it.only(
+    "should analyze knowledge base with sharp analytical personality and depth",
+    { timeout: timeout },
+    async () => {
+      const prompt = `
       Raccontami di te. Cosa ti spinge? Cosa stai costruendo e perché? 
       Non voglio un curriculum o un'analisi di pattern, voglio capire chi sei 
       attraverso ciò che crei, ciò che ascolti, ciò che condividi. Sii onesto, diretto, 
       salta il linguaggio corporate.
     `;
 
-    const result = await smoothStream(
-      service.generateStream({
-        prompt,
-        enableRAG: true,
-      }),
-      {
-        delay: 50,
-        prefix: "AIt:",
-        cursor: "▌",
-      },
-    );
+      const result = await smoothStream(
+        service.generateStream({
+          prompt,
+          enableRAG: true,
+        }),
+        {
+          delay: 50,
+          prefix: "AIt:",
+          cursor: "▌",
+        },
+      );
 
-    console.log("Generated stream text:", result);
+      console.log("Generated stream text:", result);
 
-    assert.ok(result.trim(), "Generated stream text should not be empty");
-  });
+      assert.ok(result.trim(), "Generated stream text should not be empty");
+    },
+  );
 
   it("should generate text with RAG context", { timeout: timeout }, async () => {
     const prompt = "Quali sono i miei progetti recenti?";

@@ -20,28 +20,39 @@ export class MultiQueryRetrieval {
     const client = getAItClient();
 
     const instruction = [
-      "You are a retrieval query planner for AIt's knowledge base populated via 4 Connectors: Spotify, GitHub, X (Twitter), and Linear.",
-      `Your goal: generate ${this.queriesCount}-16 diverse keyword queries to retrieve documents from ALL connectors, ensuring comprehensive coverage.`,
-      "Required: Generate at least 2-3 queries for EACH connector type to avoid missing data sources.",
+      "You are a context-aware retrieval query planner for AIt's knowledge base with 4 data sources: Spotify, GitHub, X (Twitter), and Linear.",
+      `Analyze the user's question and generate ${this.queriesCount}-16 targeted keyword queries focused on the MOST RELEVANT data sources.`,
       "",
-      "CONNECTOR-SPECIFIC GUIDANCE:",
-      "- Spotify: Query playlists (name, description, owner), tracks (name, artist, album), artists (name, genres), albums (name, artist, genres, label).",
-      "- GitHub: Query repositories (name, description, language, topics, stars, forks).",
-      "- X (Twitter): Query tweets (text content, mentions, hashtags, engagement metrics); avoid tweet_id.",
-      "- Linear: Query issues (title, description, state, priority, labels, assignee).",
+      "DATA SOURCE ANALYSIS:",
+      "- Music/listening/songs/artists/albums → Focus on Spotify",
+      "- Code/projects/repositories/programming → Focus on GitHub",
+      "- Tweets/social/posts/thoughts → Focus on X (Twitter)",
+      "- Tasks/issues/work/projects/todos → Focus on Linear",
+      "- General/broad questions → Use multiple sources strategically",
       "",
-      "STRATEGY:",
-      "1. Identify key concepts from user request (e.g., 'digital footprint' → code, playlists, tweets, issues)",
-      "2. Generate 3-4 queries per connector covering different aspects",
-      "3. Combine entity names (mateo, user) with connector-specific fields",
-      "4. Include temporal hints if present (YYYY-MM-DD format)",
-      "5. Avoid IDs/URIs/hashes (spotify:*, commit hashes, tweet IDs)",
+      "QUERY GENERATION STRATEGY:",
+      "1. Identify the PRIMARY intent and relevant data sources",
+      "2. Generate 6-12 queries for PRIMARY sources (deep coverage)",
+      "3. Generate 2-4 queries for SECONDARY sources (context)",
+      "4. Skip IRRELEVANT sources entirely",
+      "5. Use entity names (mateo, user) with source-specific fields",
+      "6. Include temporal hints if present (YYYY-MM-DD format)",
       "",
-      "FORMAT: Keep queries concise (2-6 words), lowercase, space-separated, no punctuation.",
-      "OUTPUT: ONLY a JSON array of 12-16 strings.",
+      "FIELD GUIDANCE BY SOURCE:",
+      "- Spotify: playlists (name, description), tracks (name, artist, album), artists (name, genres), albums (name, artist, genres)",
+      "- GitHub: repositories (name, description, language, topics, stars)",
+      "- X (Twitter): tweets (text content, mentions, hashtags, engagement)",
+      "- Linear: issues (title, description, state, priority, labels, assignee)",
+      "",
+      "CONSTRAINTS:",
+      "- Keep queries concise (2-6 words), lowercase, space-separated",
+      "- Avoid IDs/URIs/hashes (spotify:*, commit hashes, tweet IDs)",
+      "- Focus on SEMANTIC content, not technical identifiers",
+      "",
+      "OUTPUT: ONLY a JSON array of 8-16 query strings, NO explanations.",
     ].join(" ");
 
-    const composed = `${instruction}\n\nUser Request:\n${userPrompt}`;
+    const composed = `${instruction}\n\nUser Question:\n${userPrompt}`;
 
     try {
       const result = await client.generationModel.doGenerate({
