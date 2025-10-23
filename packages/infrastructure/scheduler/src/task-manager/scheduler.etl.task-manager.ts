@@ -1,4 +1,13 @@
-import { runSpotifyETL, runGitHubETL, SpotifyETLs, GitHubETLs } from "@ait/retove";
+import {
+  runSpotifyETL,
+  runGitHubETL,
+  runLinearETL,
+  runXETL,
+  SpotifyETLs,
+  GitHubETLs,
+  LinearETLs,
+  XETLs,
+} from "@ait/retove";
 import { getQdrantClient } from "@ait/qdrant";
 import { getPostgresClient, closePostgresConnection } from "@ait/postgres";
 import { schedulerRegistry } from "../registry/scheduler.etl.registry";
@@ -56,6 +65,24 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       await this._withConnections(async ({ qdrant, postgres }) => {
         await runGitHubETL(qdrant, postgres);
         console.info(`[${GitHubETLs.repository}] Completed`);
+      });
+    });
+
+    schedulerRegistry.register(LinearETLs.issue, async (data) => {
+      console.info(`[${LinearETLs.issue}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        await runLinearETL(qdrant, postgres);
+        console.info(`[${LinearETLs.issue}] Completed`);
+      });
+    });
+
+    schedulerRegistry.register(XETLs.tweet, async (data) => {
+      console.info(`[${XETLs.tweet}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        await runXETL(qdrant, postgres);
+        console.info(`[${XETLs.tweet}] Completed`);
       });
     });
 

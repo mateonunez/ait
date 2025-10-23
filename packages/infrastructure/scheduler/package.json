@@ -5,8 +5,10 @@
   "main": "dist/scheduler.entrypoint.js",
   "scripts": {
     "build": "tsc -p ./tsconfig.build.json",
+    "build:watch": "tsc -p ./tsconfig.build.json --watch",
+    "clean": "rm -rf dist coverage",
     "start": "node ./dist/scheduler.entrypoint.js",
-    "dev": "tsx src/scheduler.entrypoint.ts --manual",
+    "dev": "tsx src/scheduler.entrypoint.ts",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
     "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",

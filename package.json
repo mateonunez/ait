@@ -5,6 +5,12 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "scripts": {
     "build": "pnpm run:recursive build",
+    "build:watch": "pnpm run:recursive --parallel build:watch",
+    "clean": "pnpm run:recursive clean && rm -rf node_modules/.cache",
+    "clean:services": "docker compose down -v --remove-orphans",
+    "clean:services:test": "docker compose -f docker-compose.test.yml down -v --remove-orphans",
+    "clean:all": "pnpm clean && pnpm clean:services && pnpm clean:services:test",
+    "dev": "pnpm run:recursive --parallel dev",
     "lint": "pnpm run:recursive lint ",
     "lint:fix": "pnpm run:recursive lint:fix ",
     "prepare": "husky",
