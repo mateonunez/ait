@@ -9,7 +9,7 @@ if (process.env.NODE_ENV === "test") {
   dotenv.config({ path: ".env.test", override: true });
 }
 
-async function waitForDatabase(maxRetries = 30, delayMs = 1000): Promise<void> {
+async function waitForDatabase(maxRetries = 10, delayMs = 1000): Promise<void> {
   console.log("⏳ Waiting for database to be ready...");
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -24,8 +24,10 @@ async function waitForDatabase(maxRetries = 30, delayMs = 1000): Promise<void> {
         throw error;
       }
       console.log(`⏳ Attempt ${attempt}/${maxRetries}: Database not ready yet, retrying in ${delayMs}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-      await closePostgresConnection();
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        await closePostgresConnection();
+      }
     }
   }
 }
