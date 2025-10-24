@@ -10,8 +10,8 @@ services:
       POSTGRES_DB: ait_testing
     ports:
       - "5432:5432"
-    volumes:
-      - ait_pgdata_test:/var/lib/postgresql/data
+    tmpfs:
+      - /var/lib/postgresql/data
     networks:
       - app-network
     healthcheck:
@@ -26,14 +26,10 @@ services:
     container_name: ait_qdrant_test
     ports:
       - "6333:6333"
-    volumes:
-      - ait_qdrant_data_test:/qdrant/storage
+    tmpfs:
+      - /qdrant/storage
     networks:
       - app-network
-
-volumes:
-  ait_pgdata_test:
-  ait_qdrant_data_test:
 
 networks:
   app-network:
