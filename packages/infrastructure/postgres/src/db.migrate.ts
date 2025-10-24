@@ -9,10 +9,33 @@ if (process.env.NODE_ENV === "test") {
   dotenv.config({ path: ".env.test", override: true });
 }
 
+async function waitForDatabase(maxRetries = 30, delayMs = 1000): Promise<void> {
+  console.log("⏳ Waiting for database to be ready...");
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const { queryClient } = getPostgresClient();
+      await queryClient`SELECT 1`;
+      console.log(`✅ Database is ready after ${attempt} attempt(s)`);
+      return;
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error(`❌ Database not ready after ${maxRetries} attempts`);
+        throw error;
+      }
+      console.log(`⏳ Attempt ${attempt}/${maxRetries}: Database not ready yet, retrying in ${delayMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await closePostgresConnection();
+    }
+  }
+}
+
 async function runMigration() {
   try {
     console.log("⏳ Running migrations...");
     const start = Date.now();
+
+    await waitForDatabase();
 
     const { db } = getPostgresClient();
 
@@ -28,7 +51,7 @@ async function runMigration() {
     process.exit(0);
   } catch (error) {
     console.error("❌ Migration failed:", error);
-
+    await closePostgresConnection();
     process.exit(1);
   }
 }
