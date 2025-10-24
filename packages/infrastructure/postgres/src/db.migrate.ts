@@ -11,7 +11,7 @@ if (process.env.NODE_ENV === "test") {
 
 async function waitForDatabase(maxRetries = 30, delayMs = 1000): Promise<void> {
   console.log("⏳ Waiting for database to be ready...");
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const { queryClient } = getPostgresClient();
@@ -24,7 +24,7 @@ async function waitForDatabase(maxRetries = 30, delayMs = 1000): Promise<void> {
         throw error;
       }
       console.log(`⏳ Attempt ${attempt}/${maxRetries}: Database not ready yet, retrying in ${delayMs}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
       await closePostgresConnection();
     }
   }
