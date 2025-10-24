@@ -2,20 +2,23 @@ name: ait_testing
 
 services:
   ait_postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     container_name: ait_postgres_test
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: toor
       POSTGRES_DB: ait_testing
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --no-sync"
+      POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
     tmpfs:
       - /var/lib/postgresql/data
+    shm_size: 128mb
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d ait_testing"]
+      test: ["CMD-SHELL", "pg_isready -U root -d ait_testing || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10
