@@ -35,6 +35,8 @@ async function waitForDatabase(maxRetries = 10, delayMs = 1000): Promise<void> {
 async function runMigration() {
   try {
     console.log("⏳ Running migrations...");
+    console.log(`📊 Environment: NODE_ENV=${process.env.NODE_ENV}`);
+    console.log(`🔗 Database URL: ${process.env.POSTGRES_URL}`);
     const start = Date.now();
 
     await waitForDatabase();
