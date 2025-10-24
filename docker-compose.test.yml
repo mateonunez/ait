@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata_test:/var/lib/postgresql/data
+      - ait_pgdata_test:/var/lib/postgresql/data
     networks:
       - app-network
 
@@ -21,13 +21,13 @@ services:
     ports:
       - "6333:6333"
     volumes:
-      - qdrant_storage_test:/qdrant/storage
+      - ait_qdrant_data_test:/qdrant/storage
     networks:
       - app-network
 
 volumes:
-  pgdata_test:
-  qdrant_storage_test:
+  ait_pgdata_test:
+  ait_qdrant_data_test:
 
 networks:
   app-network:
