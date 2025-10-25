@@ -1,7 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { ConnectorMapper, mapperConfig } from "@/domain/mappers/connector.mapper";
-import type { DataTargetEntity, DomainEntity, ExternalEntity } from "@/types/domain/mappers/connector.mapper.interface";
+import { ConnectorMapper, mapperConfig } from "../../../src/domain/mappers/connector.mapper";
+import type {
+  DataTargetEntity,
+  DomainEntity,
+  ExternalEntity,
+} from "../../../src/types/domain/mappers/connector.mapper.interface";
 
 describe("ConnectorMapper", () => {
   const domainDefaults: Partial<DomainEntity> = {

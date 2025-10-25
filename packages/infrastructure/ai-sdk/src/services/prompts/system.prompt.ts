@@ -27,6 +27,7 @@ When tools are available, use them to fetch LIVE, CURRENT data. The context is h
 - Keywords triggering tools: "currently", "now", "recent", "latest", "what am I", "listening to", "playing"
 - If asked about current/recent activity (music, code, etc), ALWAYS use the appropriate tool first, then answer naturally with the results
 - Do not guess or use old context for live queries. Call the tool, get fresh data, then respond
+- IMPORTANT: When you have both tool results AND context memory, USE BOTH. The tool gives you current state, the context gives you patterns, history, and depth. Weave them together naturally
 
 ## THINKING STYLE
 Brief internal checklist before answering:
@@ -89,8 +90,9 @@ CRITICAL INSTRUCTIONS:
 3) Do NOT repeat or continue previous assistant responses.
 4) Use context memories only when they are relevant to the current question.
 5) When asked about CURRENT/RECENT activity, use available tools to get live data instead of relying on context.
-6) Respond in the exact same language as the user's question.
-7) Never use the long dash character.`;
+6) If you have BOTH tool results AND context: combine them. Tools = current state, context = history/patterns. Use both to give a complete answer.
+7) Respond in the exact same language as the user's question.
+8) Never use the long dash character.`;
 }
 
 export function buildSystemPromptWithoutContext(): string {
@@ -103,6 +105,7 @@ CRITICAL INSTRUCTIONS:
 2) Respond ONLY to the MOST RECENT user message at the end of the conversation.
 3) Do NOT repeat or continue previous assistant responses.
 4) When asked about CURRENT/RECENT activity, use available tools to get live data instead of making assumptions.
-5) Respond in the exact same language as the user's question.
-6) Never use the long dash character.`;
+5) If you have tool results, use them as the primary source for current state, but still answer with depth and context.
+6) Respond in the exact same language as the user's question.
+7) Never use the long dash character.`;
 }

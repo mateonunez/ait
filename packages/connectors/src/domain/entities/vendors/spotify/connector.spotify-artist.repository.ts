@@ -1,9 +1,9 @@
-import { connectorSpotifyArtistMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
-import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
+import { connectorSpotifyArtistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
+import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
   IConnectorSpotifyArtistRepository,
   SpotifyArtistEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.types";
+} from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyArtists } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 

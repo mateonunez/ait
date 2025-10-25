@@ -1,8 +1,8 @@
-import type { SpotifyEntity } from "@/types/domain/entities/vendors/connector.spotify.types";
-import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.types";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "@/types/shared/store/connector.store.interface";
-import { SPOTIFY_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";
+import type { SpotifyEntity } from "../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
+import { SPOTIFY_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 
 export class ConnectorSpotifyStore implements IConnectorStore {
   private _connectorSpotifyRepository: IConnectorSpotifyRepository;
@@ -27,6 +27,9 @@ export class ConnectorSpotifyStore implements IConnectorStore {
           break;
         case SPOTIFY_ENTITY_TYPES_ENUM.ALBUM:
           await this._connectorSpotifyRepository.album.saveAlbum(item, { incremental: false });
+          break;
+        case SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED:
+          await this._connectorSpotifyRepository.recentlyPlayed.saveRecentlyPlayed(item, { incremental: false });
           break;
         default:
           // @ts-ignore: Unreachable code error

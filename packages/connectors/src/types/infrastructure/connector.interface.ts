@@ -1,4 +1,4 @@
-import type { ConnectorServiceBase } from "@/services/connector.service.base.abstract";
+import type { ConnectorServiceBase } from "../../services/connector.service.base.abstract";
 
 export interface IConnector<T, U, W> {
   connect(code: string): Promise<void>;

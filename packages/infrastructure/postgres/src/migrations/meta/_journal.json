@@ -29,6 +29,13 @@
       "when": 1761381192467,
       "tag": "0003_lean_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1761410886120,
+      "tag": "0004_clever_terrax",
+      "breakpoints": true
     }
   ]
 }

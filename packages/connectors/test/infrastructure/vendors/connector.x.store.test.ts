@@ -5,11 +5,11 @@ import type {
   IConnectorXRepository,
   XEntity,
   XTweetEntity,
-} from "@/types/domain/entities/vendors/connector.x.repository.types";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import { ConnectorXStore } from "@/infrastructure/vendors/x/connector.x.store";
+} from "../../../src/types/domain/entities/vendors/connector.x.repository.types";
+import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
+import { ConnectorXStore } from "../../../src/infrastructure/vendors/x/connector.x.store";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
-import { X_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";
+import { X_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
 
 describe("ConnectorXStore", () => {
   let mockRepository: IConnectorXRepository;

@@ -118,7 +118,7 @@ export class TextGenerationService implements ITextGenerationService {
       const fullPrompt = await this._buildFullPrompt(options, correlationId);
 
       const ollamaTools = options.tools ? convertToOllamaTools(options.tools) : undefined;
-      const maxRounds = options.maxToolRounds || 5;
+      const maxRounds = options.maxToolRounds || 2;
 
       let currentPrompt = fullPrompt;
       let hasToolCalls = false;
@@ -338,7 +338,7 @@ export class TextGenerationService implements ITextGenerationService {
   ): string {
     let prompt = originalPrompt;
 
-    prompt += "\n\n=== Tool Call Results ===\n";
+    prompt += "\n\n=== Tool Call Results (LIVE DATA) ===\n";
 
     for (let i = 0; i < toolCalls.length; i++) {
       const toolCall = toolCalls[i];
@@ -355,7 +355,8 @@ export class TextGenerationService implements ITextGenerationService {
     }
 
     prompt += "\n=== End Tool Results ===\n\n";
-    prompt += "Based on the tool results above, please provide your final response to the user's query.";
+    prompt +=
+      "Now respond to the user's query. Use the LIVE tool data above for current activity, and weave in relevant context from your memory to provide a complete, natural answer. Combine both sources seamlessly.";
 
     return prompt;
   }

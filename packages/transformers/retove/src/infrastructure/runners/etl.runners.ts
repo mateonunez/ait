@@ -4,12 +4,14 @@ import type { getPostgresClient } from "@ait/postgres";
 import { RetoveXTweetETL } from "../../etl/vendors/retove.x.tweet.etl";
 import { RetoveSpotifyTrackETL } from "@/etl/vendors/retove.spotify.track.etl";
 import { RetoveLinearIssueETL } from "@/etl/vendors/retove.linear.issue.etl";
+import { RetoveSpotifyRecentlyPlayedETL } from "@/etl/vendors/retove.spotify.recently-played.etl";
 
 export const SpotifyETLs = {
   track: "RetoveSpotifyTrackETL",
   artist: "RetoveSpotifyArtistETL",
   playlist: "RetoveSpotifyPlaylistETL",
   album: "RetoveSpotifyAlbumETL",
+  recentlyPlayed: "RetoveSpotifyRecentlyPlayedETL",
 };
 
 export const GitHubETLs = {
@@ -46,6 +48,16 @@ export async function runSpotifyETL(qdrantClient: qdrant.QdrantClient, pgClient:
   // console.log(`🔍 Running RetoveSpotifyAlbumETL with limit of ${LIMIT}...`);
   // await spotifyAlbumETL.run(LIMIT);
   // console.log("✅ RetoveSpotifyAlbumETL process completed successfully!");
+}
+
+export async function runSpotifyRecentlyPlayedETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const recentlyPlayedETL = new RetoveSpotifyRecentlyPlayedETL(pgClient, qdrantClient);
+  console.log(`🔍 Running RetoveSpotifyRecentlyPlayedETL with limit of ${LIMIT}...`);
+  await recentlyPlayedETL.run(LIMIT);
+  console.log("✅ RetoveSpotifyRecentlyPlayedETL process completed successfully!");
 }
 
 export async function runGitHubETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {

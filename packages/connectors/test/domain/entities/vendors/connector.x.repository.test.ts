@@ -1,8 +1,8 @@
 import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm, xTweets } from "@ait/postgres";
-import type { XTweetEntity } from "@/types/domain/entities/vendors/connector.x.repository.types";
-import { ConnectorXTweetRepository } from "@/domain/entities/vendors/connector.x.repository";
+import type { XTweetEntity } from "../../../../src/types/domain/entities/vendors/connector.x.repository.types";
+import { ConnectorXTweetRepository } from "../../../../src/domain/entities/vendors/connector.x.repository";
 
 describe("ConnectorXRepository", () => {
   const repository = new ConnectorXTweetRepository();

@@ -5,7 +5,7 @@ import type {
   DomainEntity,
   ExternalEntity,
   IConnectorMapper,
-} from "@/types/domain/mappers/connector.mapper.interface";
+} from "../../types/domain/mappers/connector.mapper.interface";
 import { connectorMapperPassThrough } from "./utils/connector.mapper.utils";
 
 export class ConnectorMapper<ExternalEntity, DomainEntity, DataTargetEntity>

@@ -1,8 +1,8 @@
-import type { LinearEntity } from "@/types/domain/entities/vendors/connector.linear.types";
-import type { IConnectorLinearRepository } from "@/types/domain/entities/vendors/connector.linear.types";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "@/types/shared/store/connector.store.interface";
-import { LINEAR_ENTITY_TYPES_ENUM } from "@/services/vendors/connector.vendors.config";
+import type { LinearEntity } from "../../../types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
+import { LINEAR_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 
 export class ConnectorLinearStore implements IConnectorStore {
   private _connectorLinearRepository: IConnectorLinearRepository;

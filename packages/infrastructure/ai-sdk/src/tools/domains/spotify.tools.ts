@@ -4,6 +4,7 @@ import { createTool } from "../../types/tools";
 import type {
   ConnectorSpotifyService,
   SpotifyCurrentlyPlayingExternal,
+  SpotifyRecentlyPlayedEntity,
   SpotifyTrackEntity,
   SpotifyTrackExternal,
 } from "@ait/connectors";
@@ -205,22 +206,25 @@ export function createSpotifyTools(qdrantProvider: QdrantProvider, spotifyServic
             };
           }
 
-          const recentlyPlayed = await spotifyService.getRecentlyPlayed(limit ?? 20);
+          const recentlyPlayedEntities = await spotifyService.getRecentlyPlayed();
 
-          const results: SpotifyRecentlyPlayedResult[] = recentlyPlayed.items.map((item) => ({
+          // Limit the results if a limit is specified
+          const limitedResults = limit ? recentlyPlayedEntities.slice(0, limit) : recentlyPlayedEntities;
+
+          const results: SpotifyRecentlyPlayedResult[] = limitedResults.map((entity: SpotifyRecentlyPlayedEntity) => ({
             track: {
-              id: item.track.id!,
-              name: item.track.name!,
-              artist: item.track.artists!.map((artist: { name?: string }) => artist.name!).join(", "),
-              album: item.track.album!.name!,
-              durationMs: item.track.duration_ms!,
-              explicit: item.track.explicit!,
-              popularity: item.track.popularity!,
-              uri: item.track.uri!,
-              __type: item.track.__type as "track",
+              id: entity.trackId,
+              name: entity.trackName,
+              artist: entity.artist,
+              album: entity.album,
+              durationMs: entity.durationMs,
+              explicit: entity.explicit,
+              popularity: entity.popularity,
+              uri: null,
+              __type: "track" as const,
             },
-            playedAt: item.playedAt,
-            context: item.context,
+            playedAt: entity.playedAt.toISOString(),
+            context: entity.context,
           }));
 
           return {

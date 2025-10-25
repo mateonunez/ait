@@ -1,12 +1,12 @@
-import { connectorXTweetMapper } from "@/domain/mappers/vendors/connector.x.mapper";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import { saveOAuthData, getOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
-import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
+import { connectorXTweetMapper } from "../../../domain/mappers/vendors/connector.x.mapper";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import type { IConnectorRepositorySaveOptions } from "../../../types/domain/entities/connector.repository.interface";
 import type {
   IConnectorXRepository,
   IConnectorXTweetRepository,
   XTweetEntity,
-} from "@/types/domain/entities/vendors/connector.x.repository.types";
+} from "../../../types/domain/entities/vendors/connector.x.repository.types";
 import { getPostgresClient, type OAuthTokenDataTarget, xTweets } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 

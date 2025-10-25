@@ -7,16 +7,19 @@ import type {
   SpotifyPlaylistEntity,
   SpotifyAlbumExternal,
   SpotifyAlbumEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.types";
+  SpotifyRecentlyPlayedEntity,
+  SpotifyRecentlyPlayedExternal,
+} from "../../../types/domain/entities/vendors/connector.spotify.types";
 import type {
   SpotifyArtistDataTarget,
   SpotifyTrackDataTarget,
   SpotifyPlaylistDataTarget,
   SpotifyAlbumDataTarget,
+  SpotifyRecentlyPlayedDataTarget,
 } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough, mapObjectToStringArray } from "../utils/connector.mapper.utils";
-import type { ConnectorMapperDefinition } from "@/types/domain/mappers/connector.mapper.interface";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 
 const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, SpotifyTrackEntity, SpotifyTrackDataTarget> =
   {
@@ -574,3 +577,125 @@ export const connectorSpotifyAlbumMapper = new ConnectorMapper<
   SpotifyAlbumEntity,
   SpotifyAlbumDataTarget
 >(spotifyAlbumMapping, spotifyAlbumDomainDefaults);
+
+const spotifyRecentlyPlayedMapping: ConnectorMapperDefinition<
+  SpotifyRecentlyPlayedExternal,
+  SpotifyRecentlyPlayedEntity,
+  SpotifyRecentlyPlayedDataTarget
+> = {
+  id: {
+    external: (external: SpotifyRecentlyPlayedExternal) => {
+      const trackId = external.track?.id ?? "";
+      const playedAt = external.played_at ?? "";
+      return `${trackId}-${playedAt}`;
+    },
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.id,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.id,
+  },
+
+  trackId: {
+    external: (external: SpotifyRecentlyPlayedExternal) => external.track?.id ?? "",
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.trackId,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.trackId,
+  },
+
+  trackName: {
+    external: (external: SpotifyRecentlyPlayedExternal) => external.track?.name ?? "",
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.trackName,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.trackName,
+  },
+
+  artist: {
+    external: (external: SpotifyRecentlyPlayedExternal) =>
+      external.track?.artists?.map((artist) => artist.name).join(", ") ?? "",
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.artist,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.artist,
+  },
+
+  album: {
+    external: (external: SpotifyRecentlyPlayedExternal) => external.track?.album?.name ?? null,
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.album,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.album!,
+  },
+
+  durationMs: {
+    external: (external: SpotifyRecentlyPlayedExternal) => external.track?.duration_ms ?? 0,
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.durationMs,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.durationMs,
+  },
+
+  explicit: {
+    external: (external: SpotifyRecentlyPlayedExternal) => external.track?.explicit ?? false,
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.explicit,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.explicit!,
+  },
+
+  popularity: {
+    external: (external: SpotifyRecentlyPlayedExternal) => external.track?.popularity ?? null,
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.popularity,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.popularity!,
+  },
+
+  playedAt: {
+    external: (external: SpotifyRecentlyPlayedExternal) => new Date(external.played_at ?? ""),
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.playedAt,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.playedAt,
+  },
+
+  context: {
+    external: (external: SpotifyRecentlyPlayedExternal): { type: string; uri: string } | null => {
+      if (!external.context) return null;
+      return {
+        type: external.context.type ?? "",
+        uri: external.context.uri ?? "",
+      };
+    },
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.context,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) =>
+      dataTarget.context as { type: string; uri: string } | null,
+  },
+
+  createdAt: connectorMapperPassThrough<
+    "createdAt",
+    Date | null,
+    SpotifyRecentlyPlayedExternal,
+    SpotifyRecentlyPlayedEntity,
+    SpotifyRecentlyPlayedDataTarget
+  >("createdAt", {
+    external: {
+      fallback: () => new Date(),
+    },
+    dataTarget: {
+      fallback: () => new Date(),
+    },
+  }),
+
+  updatedAt: connectorMapperPassThrough<
+    "updatedAt",
+    Date | null,
+    SpotifyRecentlyPlayedExternal,
+    SpotifyRecentlyPlayedEntity,
+    SpotifyRecentlyPlayedDataTarget
+  >("updatedAt", {
+    external: {
+      fallback: () => new Date(),
+    },
+    dataTarget: {
+      fallback: () => new Date(),
+    },
+  }),
+
+  __type: {
+    external: () => "recently_played" as const,
+    domain: (domain) => domain.__type,
+    dataTarget: () => "recently_played" as const,
+  },
+};
+
+const spotifyRecentlyPlayedDomainDefaults = { __type: "recently_played" as const };
+
+export const connectorSpotifyRecentlyPlayedMapper = new ConnectorMapper<
+  SpotifyRecentlyPlayedExternal,
+  SpotifyRecentlyPlayedEntity,
+  SpotifyRecentlyPlayedDataTarget
+>(spotifyRecentlyPlayedMapping, spotifyRecentlyPlayedDomainDefaults);

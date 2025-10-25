@@ -1,4 +1,4 @@
-import { ConnectorLinear } from "@/infrastructure/vendors/linear/connector.linear";
+import { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import {
   connectorEntityConfigs,
@@ -6,8 +6,11 @@ import {
   type LinearServiceEntityMap,
 } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type { LinearIssueEntity, LinearIssueExternal } from "@/types/domain/entities/vendors/connector.linear.types";
-import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
+import type {
+  LinearIssueEntity,
+  LinearIssueExternal,
+} from "../../types/domain/entities/vendors/connector.linear.types";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export class ConnectorLinearService extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap> {
   constructor() {

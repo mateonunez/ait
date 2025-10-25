@@ -1,7 +1,7 @@
 import {
   ConnectorLinearDataSource,
   ConnectorLinearDataSourceError,
-} from "@/infrastructure/vendors/linear/connector.linear.data-source";
+} from "../../../src/infrastructure/vendors/linear/connector.linear.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";

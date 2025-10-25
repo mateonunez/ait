@@ -1,6 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { connectorMapperPassThrough, mapObjectToStringArray } from "@/domain/mappers/utils/connector.mapper.utils";
+import {
+  connectorMapperPassThrough,
+  mapObjectToStringArray,
+} from "../../../../src/domain/mappers/utils/connector.mapper.utils";
 
 type TestExternal = { testField?: string };
 type TestDomain = { testField?: string };

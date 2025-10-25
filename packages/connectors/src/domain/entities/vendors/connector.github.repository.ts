@@ -1,14 +1,14 @@
 import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
 import { connectorGithubRepositoryMapper } from "../../mappers/vendors/connector.github.mapper";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import { saveOAuthData, getOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
 import { randomUUID } from "node:crypto";
 import type {
   IConnectorGitHubRepoRepository,
   GitHubRepositoryEntity,
   IConnectorGitHubRepository,
-} from "@/types/domain/entities/vendors/connector.github.repository.types";
-import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
+} from "../../../types/domain/entities/vendors/connector.github.repository.types";
+import type { IConnectorRepositorySaveOptions } from "../../../types/domain/entities/connector.repository.interface";
 
 export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoRepository {
   private _pgClient = getPostgresClient();

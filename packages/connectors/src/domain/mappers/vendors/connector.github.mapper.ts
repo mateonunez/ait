@@ -4,8 +4,8 @@ import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
 import type {
   GitHubRepositoryExternal,
   GitHubRepositoryEntity,
-} from "@/types/domain/entities/vendors/connector.github.repository.types";
-import type { ConnectorMapperDefinition } from "@/types/domain/mappers/connector.mapper.interface";
+} from "../../../types/domain/entities/vendors/connector.github.repository.types";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 
 const githubRepositoryMapping: ConnectorMapperDefinition<
   GitHubRepositoryExternal,

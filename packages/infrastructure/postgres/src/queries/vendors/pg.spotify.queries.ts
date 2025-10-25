@@ -1,5 +1,6 @@
 import type { getPostgresClient } from "../../postgres.client";
-import { spotifyTracks } from "../../schemas/connector.spotify.schema";
+import { spotifyTracks, spotifyRecentlyPlayed } from "../../schemas/connector.spotify.schema";
+import { desc } from "drizzle-orm";
 
 export function getSpotifyTracksQuery(
   _postgresClient: ReturnType<typeof getPostgresClient>,
@@ -18,6 +19,19 @@ export function getSpotifyTracksQuery(
       updatedAt: spotifyTracks.updatedAt,
     })
     .from(spotifyTracks)
+    .limit(options?.limit ?? 100)
+    .execute();
+}
+
+export function getSpotifyRecentlyPlayedQuery(
+  _postgresClient: ReturnType<typeof getPostgresClient>,
+  options?: { limit?: number },
+) {
+  const { db } = _postgresClient;
+  return db
+    .select()
+    .from(spotifyRecentlyPlayed)
+    .orderBy(desc(spotifyRecentlyPlayed.playedAt))
     .limit(options?.limit ?? 100)
     .execute();
 }

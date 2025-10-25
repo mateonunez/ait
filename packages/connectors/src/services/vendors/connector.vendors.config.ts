@@ -1,20 +1,24 @@
-import { connectorGithubRepositoryMapper } from "@/domain/mappers/vendors/connector.github.mapper";
-import { connectorLinearIssueMapper } from "@/domain/mappers/vendors/connector.linear.mapper";
+import { connectorGithubRepositoryMapper } from "../../domain/mappers/vendors/connector.github.mapper";
+import { connectorLinearIssueMapper } from "../../domain/mappers/vendors/connector.linear.mapper";
 import {
   connectorSpotifyAlbumMapper,
   connectorSpotifyArtistMapper,
+  connectorSpotifyRecentlyPlayedMapper,
   connectorSpotifyTrackMapper,
-} from "@/domain/mappers/vendors/connector.spotify.mapper";
-import { connectorXTweetMapper } from "@/domain/mappers/vendors/connector.x.mapper";
-import type { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
-import type { ConnectorLinear } from "@/infrastructure/vendors/linear/connector.linear";
-import type { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
-import type { ConnectorX } from "@/infrastructure/vendors/x/connector.x";
+} from "../../domain/mappers/vendors/connector.spotify.mapper";
+import { connectorXTweetMapper } from "../../domain/mappers/vendors/connector.x.mapper";
+import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
+import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
+import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
+import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
-} from "@/types/domain/entities/vendors/connector.github.repository.types";
-import type { LinearIssueEntity, LinearIssueExternal } from "@/types/domain/entities/vendors/connector.linear.types";
+} from "../../types/domain/entities/vendors/connector.github.repository.types";
+import type {
+  LinearIssueEntity,
+  LinearIssueExternal,
+} from "../../types/domain/entities/vendors/connector.linear.types";
 import type {
   SpotifyArtistEntity,
   SpotifyArtistExternal,
@@ -24,9 +28,11 @@ import type {
   SpotifyPlaylistExternal,
   SpotifyAlbumEntity,
   SpotifyAlbumExternal,
-} from "@/types/domain/entities/vendors/connector.spotify.types";
-import type { XTweetEntity, XTweetExternal } from "@/types/domain/entities/vendors/connector.x.repository.types";
-import { connectorSpotifyPlaylistMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
+  SpotifyRecentlyPlayedEntity,
+  SpotifyRecentlyPlayedExternal,
+} from "../../types/domain/entities/vendors/connector.spotify.types";
+import type { XTweetEntity, XTweetExternal } from "../../types/domain/entities/vendors/connector.x.repository.types";
+import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {
   fetcher: (connector: TConnector) => Promise<TExternal[]>;
@@ -46,6 +52,7 @@ export enum SPOTIFY_ENTITY_TYPES_ENUM {
   ARTIST = "artist",
   PLAYLIST = "playlist",
   ALBUM = "album",
+  RECENTLY_PLAYED = "recently_played",
 }
 
 export interface SpotifyServiceEntityMap {
@@ -53,6 +60,7 @@ export interface SpotifyServiceEntityMap {
   [SPOTIFY_ENTITY_TYPES_ENUM.ARTIST]: SpotifyArtistEntity;
   [SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST]: SpotifyPlaylistEntity;
   [SPOTIFY_ENTITY_TYPES_ENUM.ALBUM]: SpotifyAlbumEntity;
+  [SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED]: SpotifyRecentlyPlayedEntity;
 }
 
 export enum X_ENTITY_TYPES_ENUM {
@@ -98,6 +106,11 @@ const spotifyEntityConfigs = {
     fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchAlbums(),
     mapper: (album: SpotifyAlbumExternal) => connectorSpotifyAlbumMapper.externalToDomain(album),
   } satisfies EntityConfig<ConnectorSpotify, SpotifyAlbumExternal, SpotifyAlbumEntity>,
+
+  [SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED]: {
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchRecentlyPlayed(),
+    mapper: (item: SpotifyRecentlyPlayedExternal) => connectorSpotifyRecentlyPlayedMapper.externalToDomain(item),
+  } satisfies EntityConfig<ConnectorSpotify, SpotifyRecentlyPlayedExternal, SpotifyRecentlyPlayedEntity>,
 } as const;
 
 const xEntityConfigs = {

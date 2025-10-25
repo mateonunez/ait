@@ -3,6 +3,7 @@ import type {
   SpotifyArtistDataTarget,
   SpotifyPlaylistDataTarget,
   SpotifyTrackDataTarget,
+  SpotifyRecentlyPlayedDataTarget,
 } from "@ait/postgres";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
@@ -134,9 +135,54 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
   }
 }
 
+export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescriptor<SpotifyRecentlyPlayedDataTarget> {
+  public getEmbeddingText(item: SpotifyRecentlyPlayedDataTarget): string {
+    const playedDate = new Date(item.playedAt);
+    const now = new Date();
+    const minutesAgo = Math.floor((now.getTime() - playedDate.getTime()) / (1000 * 60));
+
+    let temporalContext = "";
+    if (minutesAgo < 5) {
+      temporalContext = "just now";
+    } else if (minutesAgo < 60) {
+      temporalContext = `${minutesAgo} minutes ago`;
+    } else if (minutesAgo < 1440) {
+      // Less than a day
+      const hoursAgo = Math.floor(minutesAgo / 60);
+      temporalContext = `${hoursAgo} hour${hoursAgo > 1 ? "s" : ""} ago`;
+    } else {
+      const daysAgo = Math.floor(minutesAgo / 1440);
+      temporalContext = `${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
+    }
+
+    const minutes = Math.floor(item.durationMs / 60000);
+    const seconds = Math.floor((item.durationMs % 60000) / 1000);
+    const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+    const parts = [
+      `I played ${temporalContext}`,
+      `"${item.trackName}" by ${item.artist}`,
+      item.album ? `from ${item.album}` : null,
+      durationStr ? `(${durationStr})` : null,
+      item.explicit ? "explicit track" : null,
+      item.popularity && item.popularity > 70 ? "popular track" : null,
+    ].filter(Boolean);
+
+    return parts.join(" ");
+  }
+
+  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyRecentlyPlayedDataTarget): U {
+    return {
+      __type: "recently_played",
+      ...entity,
+    } as unknown as U;
+  }
+}
+
 export const spotifyDescriptorsETL = {
   track: new ETLSpotifyTrackDescriptor(),
   artist: new ETLSpotifyArtistDescriptor(),
   playlist: new ETLSpotifyPlaylistDescriptor(),
   album: new ETLSpotifyAlbumDescriptor(),
+  recentlyPlayed: new ETLSpotifyRecentlyPlayedDescriptor(),
 };

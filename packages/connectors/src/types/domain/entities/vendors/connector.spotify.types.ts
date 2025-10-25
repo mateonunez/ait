@@ -1,8 +1,5 @@
-import type {
-  IConnectorRepository,
-  IConnectorRepositorySaveOptions,
-} from "@/types/domain/entities/connector.repository.interface";
-import type { components as SpotifyComponents } from "@/types/openapi/openapi.spotify.types";
+import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
+import type { components as SpotifyComponents } from "../../../openapi/openapi.spotify.types";
 
 export interface IConnectorSpotifyTrackRepository {
   saveTrack(track: SpotifyTrackEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
@@ -36,15 +33,24 @@ export interface IConnectorSpotifyAlbumRepository {
   getAlbums(): Promise<SpotifyAlbumEntity[]>;
 }
 
+export interface IConnectorSpotifyRecentlyPlayedRepository {
+  saveRecentlyPlayed(item: SpotifyRecentlyPlayedEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveRecentlyPlayedBatch(items: SpotifyRecentlyPlayedEntity[]): Promise<void>;
+
+  getRecentlyPlayed(limit?: number): Promise<SpotifyRecentlyPlayedEntity[]>;
+  getRecentlyPlayedById(id: string): Promise<SpotifyRecentlyPlayedEntity | null>;
+}
+
 export interface IConnectorSpotifyRepository extends IConnectorRepository {
   track: IConnectorSpotifyTrackRepository;
   artist: IConnectorSpotifyArtistRepository;
   playlist: IConnectorSpotifyPlaylistRepository;
   album: IConnectorSpotifyAlbumRepository;
+  recentlyPlayed: IConnectorSpotifyRecentlyPlayedRepository;
 }
 
 export interface BaseSpotifyEntity {
-  __type: "track" | "album" | "artist" | "playlist";
+  __type: "track" | "album" | "artist" | "playlist" | "recently_played";
 }
 
 export interface SpotifyImage {
@@ -133,10 +139,30 @@ export interface SpotifyAlbumEntity extends BaseSpotifyEntity {
   __type: "album";
 }
 
+export interface SpotifyRecentlyPlayedEntity extends BaseSpotifyEntity {
+  id: string; // Composite: trackId-playedAt
+  trackId: string;
+  trackName: string;
+  artist: string;
+  album: string | null;
+  durationMs: number;
+  explicit: boolean;
+  popularity: number | null;
+  playedAt: Date;
+  context: {
+    type: string;
+    uri: string;
+  } | null;
+  createdAt: Date;
+  updatedAt: Date;
+  __type: "recently_played";
+}
+
 type SpotifyArtist = SpotifyComponents["schemas"]["ArtistObject"];
 type SpotifyTrack = SpotifyComponents["schemas"]["TrackObject"];
 type SpotifyPlaylist = SpotifyComponents["schemas"]["PlaylistObject"];
 type SpotifyAlbum = SpotifyComponents["schemas"]["AlbumObject"];
+type SpotifyRecentlyPlayed = SpotifyComponents["schemas"]["PlayHistoryObject"];
 
 export interface SpotifyTrackExternal extends Omit<SpotifyTrack, "__type">, BaseSpotifyEntity {
   __type: "track";
@@ -154,26 +180,8 @@ export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">
   __type: "playlist";
 }
 
-// Recently Played Item External (normalized from Spotify API)
-export interface SpotifyRecentlyPlayedItemExternal {
-  track: SpotifyTrackExternal;
-  playedAt: string;
-  context: {
-    type: string;
-    uri: string;
-  } | null;
-}
-
-// Recently Played External (normalized collection response)
-export interface SpotifyRecentlyPlayedExternal {
-  items: SpotifyRecentlyPlayedItemExternal[];
-  next: string | null;
-  cursors: {
-    after: string;
-    before: string;
-  } | null;
-  limit: number;
-  href: string;
+export interface SpotifyRecentlyPlayedExternal extends Omit<SpotifyRecentlyPlayed, "__type">, BaseSpotifyEntity {
+  __type: "recently_played";
 }
 
 export interface SpotifyCurrentlyPlayingExternal {
@@ -187,18 +195,15 @@ export interface SpotifyCurrentlyPlayingExternal {
   } | null;
 }
 
-export interface SpotifyRecentlyPlayedItem {
-  track: SpotifyTrackExternal;
-  playedAt: string;
-  context: {
-    type: string;
-    uri: string;
-  } | null;
-}
-
-export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity | SpotifyPlaylistEntity | SpotifyAlbumEntity;
+export type SpotifyEntity =
+  | SpotifyTrackEntity
+  | SpotifyArtistEntity
+  | SpotifyPlaylistEntity
+  | SpotifyAlbumEntity
+  | SpotifyRecentlyPlayedEntity;
 export type SpotifyExternal =
   | SpotifyTrackExternal
   | SpotifyArtistExternal
   | SpotifyPlaylistExternal
-  | SpotifyAlbumExternal;
+  | SpotifyAlbumExternal
+  | SpotifyRecentlyPlayedExternal;

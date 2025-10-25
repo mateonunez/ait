@@ -4,7 +4,7 @@ import {
   ConnectorOAuthRequestError,
   type IConnectorOAuthTokenResponse,
   type IConnectorOAuthConfig,
-} from "@/shared/auth/lib/oauth/connector.oauth";
+} from "../../src/shared/auth/lib/oauth/connector.oauth";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";

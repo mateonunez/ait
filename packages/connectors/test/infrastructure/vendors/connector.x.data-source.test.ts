@@ -1,4 +1,7 @@
-import { ConnectorXDataSource, ConnectorXDataSourceError } from "@/infrastructure/vendors/x/connector.x.data-source";
+import {
+  ConnectorXDataSource,
+  ConnectorXDataSourceError,
+} from "../../../src/infrastructure/vendors/x/connector.x.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";

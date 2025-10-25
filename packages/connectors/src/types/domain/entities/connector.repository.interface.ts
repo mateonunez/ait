@@ -1,5 +1,5 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 
 /**
  * Options for saving a track
