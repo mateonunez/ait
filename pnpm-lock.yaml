@@ -115,6 +115,9 @@ importers:
         specifier: ^13.1.2
         version: 13.1.2
     devDependencies:
+      tsc-alias:
+        specifier: ^1.8.16
+        version: 1.8.16
       tsx:
         specifier: ^4.20.6
         version: 4.20.6

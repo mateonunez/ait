@@ -1,7 +1,34 @@
-interface OllamaGenerateRequest {
+export interface OllamaTool {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  };
+}
+
+export interface OllamaToolCall {
+  function: {
+    name: string;
+    arguments: Record<string, unknown>;
+  };
+}
+
+export interface OllamaMessage {
+  role: "system" | "user" | "assistant" | "tool";
+  content: string;
+  tool_calls?: OllamaToolCall[];
+}
+
+export interface OllamaGenerateRequest {
   model: string;
   prompt: string;
   stream?: boolean;
+  tools?: OllamaTool[];
   options?: {
     temperature?: number;
     top_p?: number;
@@ -9,7 +36,19 @@ interface OllamaGenerateRequest {
   };
 }
 
-interface OllamaEmbedRequest {
+export interface OllamaChatRequest {
+  model: string;
+  messages: OllamaMessage[];
+  stream?: boolean;
+  tools?: OllamaTool[];
+  options?: {
+    temperature?: number;
+    top_p?: number;
+    top_k?: number;
+  };
+}
+
+export interface OllamaEmbedRequest {
   model: string;
   prompt: string;
 }
@@ -37,7 +76,14 @@ export class OllamaProvider {
         temperature?: number;
         topP?: number;
         topK?: number;
-      }): Promise<{ text: string }> {
+        tools?: OllamaTool[];
+        messages?: OllamaMessage[];
+      }): Promise<{ text: string; toolCalls?: OllamaToolCall[] }> {
+        // Use chat API if tools are present or messages provided
+        if (options.tools || options.messages) {
+          return this.doChatGenerate(options);
+        }
+
         const response = await fetch(`${baseURL}/api/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -45,6 +91,7 @@ export class OllamaProvider {
             model: modelName,
             prompt: options.prompt,
             stream: false,
+            tools: options.tools,
             options: {
               temperature: options.temperature,
               top_p: options.topP,
@@ -57,8 +104,65 @@ export class OllamaProvider {
           throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
         }
 
-        const data = (await response.json()) as { response: string };
-        return { text: data.response };
+        const data = (await response.json()) as {
+          response: string;
+          message?: { tool_calls?: OllamaToolCall[] };
+        };
+
+        return {
+          text: data.response,
+          toolCalls: data.message?.tool_calls,
+        };
+      },
+
+      async doChatGenerate(options: {
+        prompt?: string;
+        messages?: OllamaMessage[];
+        temperature?: number;
+        topP?: number;
+        topK?: number;
+        tools?: OllamaTool[];
+      }): Promise<{ text: string; toolCalls?: OllamaToolCall[] }> {
+        // Build messages array
+        const messages = options.messages || [
+          {
+            role: "user" as const,
+            content: options.prompt || "",
+          },
+        ];
+
+        const response = await fetch(`${baseURL}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelName,
+            messages,
+            stream: false,
+            tools: options.tools,
+            options: {
+              temperature: options.temperature,
+              top_p: options.topP,
+              top_k: options.topK,
+            },
+          } as OllamaChatRequest),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = (await response.json()) as {
+          message: {
+            role: string;
+            content: string;
+            tool_calls?: OllamaToolCall[];
+          };
+        };
+
+        return {
+          text: data.message.content,
+          toolCalls: data.message.tool_calls,
+        };
       },
 
       async *doStream(options: {
@@ -66,6 +170,7 @@ export class OllamaProvider {
         temperature?: number;
         topP?: number;
         topK?: number;
+        tools?: OllamaTool[];
       }): AsyncGenerator<string> {
         const response = await fetch(`${baseURL}/api/generate`, {
           method: "POST",
@@ -74,6 +179,7 @@ export class OllamaProvider {
             model: modelName,
             prompt: options.prompt,
             stream: true,
+            tools: options.tools,
             options: {
               temperature: options.temperature,
               top_p: options.topP,

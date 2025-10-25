@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const spotifyTracks = pgTable("spotify_tracks", {
   id: varchar("id", { length: 255 }).primaryKey(),
@@ -15,6 +15,11 @@ export const spotifyTracks = pgTable("spotify_tracks", {
   href: varchar("href", { length: 512 }),
   isLocal: boolean("is_local").notNull().default(false),
   popularity: integer("popularity"),
+  albumData: jsonb("album_data"),
+  artistsData: jsonb("artists_data"),
+  externalIds: jsonb("external_ids"),
+  externalUrls: jsonb("external_urls"),
+  addedAt: timestamp("added_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

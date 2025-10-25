@@ -6,6 +6,8 @@ import type {
   SpotifyTrackExternal,
   SpotifyPlaylistExternal,
   SpotifyAlbumExternal,
+  SpotifyRecentlyPlayedExternal,
+  SpotifyCurrentlyPlayingExternal,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 
 dotenv.config();
@@ -34,7 +36,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
         __type: "track" as const,
       })) ?? [];
 
-    return tracks.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    return tracks;
   }
 
   async fetchTopArtists(): Promise<SpotifyArtistExternal[]> {
@@ -90,6 +92,71 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     return {
       ...response,
       __type: "album" as const,
+    };
+  }
+
+  async fetchRecentlyPlayed(limit = 20): Promise<SpotifyRecentlyPlayedExternal> {
+    const params = new URLSearchParams({ limit: limit.toString() });
+
+    const response = await this._fetchFromSpotify<{
+      items: Array<{
+        track: SpotifyTrackExternal;
+        played_at: string;
+        context: {
+          type: string;
+          uri: string;
+        } | null;
+      }>;
+      next: string | null;
+      cursors: {
+        after: string;
+        before: string;
+      } | null;
+      limit: number;
+      href: string;
+    }>(`/me/player/recently-played?${params}`);
+
+    return {
+      items: response.items.map((item) => ({
+        track: {
+          ...item.track,
+          __type: "track" as const,
+        },
+        playedAt: item.played_at,
+        context: item.context,
+      })),
+      next: response.next,
+      cursors: response.cursors,
+      limit: response.limit,
+      href: response.href,
+    };
+  }
+
+  async fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null> {
+    const response = await this._fetchFromSpotify<{
+      is_playing: boolean;
+      item: SpotifyTrackExternal | null;
+      progress_ms: number;
+      timestamp: number;
+      context: {
+        type: string;
+        uri: string;
+      } | null;
+    }>("/me/player/currently-playing");
+
+    if (!response || !response.item) {
+      return null;
+    }
+
+    return {
+      is_playing: response.is_playing,
+      item: {
+        ...response.item,
+        __type: "track" as const,
+      },
+      progress_ms: response.progress_ms,
+      timestamp: response.timestamp,
+      context: response.context,
     };
   }
 

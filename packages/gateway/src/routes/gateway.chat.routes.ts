@@ -1,10 +1,12 @@
-import { TextGenerationService, initAItClient } from "@ait/ai-sdk";
+import { TextGenerationService, initAItClient, QdrantProvider, createAllConnectorTools } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
+import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/connectors";
 
 declare module "fastify" {
   interface FastifyInstance {
     textGenerationService: TextGenerationService;
+    spotifyService: ConnectorSpotifyService;
   }
 }
 
@@ -15,7 +17,7 @@ interface ChatRequestBody {
 export default async function chatRoutes(fastify: FastifyInstance) {
   if (!fastify.textGenerationService) {
     initAItClient({
-      generation: { model: "gemma3:latest", temperature: 0.7 },
+      generation: { model: "llama3.2:latest", temperature: 0.7 },
       embeddings: { model: "mxbai-embed-large:latest" },
       rag: {
         collection: "ait_embeddings_collection",
@@ -41,7 +43,16 @@ export default async function chatRoutes(fastify: FastifyInstance) {
     );
   }
 
+  if (!fastify.spotifyService) {
+    fastify.decorate("spotifyService", connectorServiceFactory.getService<ConnectorSpotifyService>("spotify"));
+  }
+
   const textGenerationService = fastify.textGenerationService;
+
+  const qdrantProvider = new QdrantProvider({
+    collectionName: "ait_embeddings_collection",
+  });
+  const tools = createAllConnectorTools(qdrantProvider, fastify.spotifyService);
 
   fastify.post("/", async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
     try {
@@ -74,6 +85,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           prompt,
           enableRAG: true,
           messages: conversationHistory,
+          tools,
+          maxToolRounds: 5,
         });
 
         for await (const chunk of stream) {

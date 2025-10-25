@@ -36,8 +36,6 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
           })
           .execute();
       });
-
-      console.debug("Artist saved successfully:", { artistId: artist.id });
     } catch (error: any) {
       console.error("Failed to save artist:", { artistId: artist.id, error });
       throw new Error(`Failed to save artist ${artist.id}: ${error.message}`);

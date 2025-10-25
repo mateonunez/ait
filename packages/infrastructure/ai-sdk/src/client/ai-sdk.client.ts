@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 import { OllamaProvider } from "./ollama.provider";
 import { getGenerationModel, getEmbeddingModel, type ModelSpec } from "../config/models.config";
+import type { OllamaTool, OllamaToolCall } from "./ollama.provider";
 
 dotenv.config();
 
@@ -36,10 +37,24 @@ export interface AItClient {
   generationModel: {
     modelId: string;
     provider: string;
-    doGenerate(options: { prompt: string; temperature?: number; topP?: number; topK?: number }): Promise<{
+    doGenerate(options: {
+      prompt: string;
+      messages?: Array<{ role: string; content: string; tool_calls?: OllamaToolCall[] }>;
+      temperature?: number;
+      topP?: number;
+      topK?: number;
+      tools?: OllamaTool[];
+    }): Promise<{
       text: string;
+      toolCalls?: OllamaToolCall[];
     }>;
-    doStream(options: { prompt: string; temperature?: number; topP?: number; topK?: number }): AsyncGenerator<string>;
+    doStream(options: {
+      prompt: string;
+      temperature?: number;
+      topP?: number;
+      topK?: number;
+      tools?: OllamaTool[];
+    }): AsyncGenerator<string>;
   };
   embeddingsModel: {
     modelId: string;

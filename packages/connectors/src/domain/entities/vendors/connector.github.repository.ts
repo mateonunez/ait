@@ -44,8 +44,6 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
           })
           .execute();
       });
-
-      console.debug("Repository saved successfully:", { repoId: repositoryId });
     } catch (error: any) {
       console.error("Failed to save repository:", { repoId: repositoryId, error });
       throw new Error(`Failed to save repository ${repositoryId}: ${error.message}`);

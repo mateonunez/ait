@@ -48,8 +48,6 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
           })
           .execute();
       });
-
-      console.debug("Album saved successfully:", { albumId: album.id });
     } catch (error: any) {
       console.error("Failed to save album:", { albumId: album.id, error });
       throw new Error(`Failed to save album ${album.id}: ${error.message}`);
@@ -62,13 +60,9 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
     }
 
     try {
-      console.debug("Saving albums to Spotify repository:", { albums });
-
       for (const album of albums) {
         await this.saveAlbum(album, { incremental: false });
       }
-
-      console.debug("Albums saved successfully:", { albums: albums.length });
     } catch (error) {
       console.error("Error saving albums:", error);
       throw new Error("Failed to save albums to repository");

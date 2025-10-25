@@ -14,6 +14,8 @@ export * from "./rag/multi-query.retrieval";
 export { ContextBuilder } from "./rag/context.builder";
 
 export * from "./tools/connectors.tools";
+export { convertToOllamaTools } from "./tools/tool.converter";
+export type { OllamaTool, OllamaToolCall } from "./client/ollama.provider";
 
 export * from "./cache/lru-cache";
 

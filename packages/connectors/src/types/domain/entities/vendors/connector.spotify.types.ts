@@ -73,6 +73,11 @@ export interface SpotifyTrackEntity extends BaseSpotifyEntity {
   href: string | null;
   isLocal: boolean;
   popularity: number | null;
+  albumData: Record<string, unknown> | null;
+  artistsData: Array<Record<string, unknown>>;
+  externalIds: Record<string, unknown> | null;
+  externalUrls: Record<string, unknown> | null;
+  addedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   __type: "track";
@@ -147,6 +152,48 @@ export interface SpotifyAlbumExternal extends Omit<SpotifyAlbum, "__type">, Base
 
 export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">, BaseSpotifyEntity {
   __type: "playlist";
+}
+
+// Recently Played Item External (normalized from Spotify API)
+export interface SpotifyRecentlyPlayedItemExternal {
+  track: SpotifyTrackExternal;
+  playedAt: string;
+  context: {
+    type: string;
+    uri: string;
+  } | null;
+}
+
+// Recently Played External (normalized collection response)
+export interface SpotifyRecentlyPlayedExternal {
+  items: SpotifyRecentlyPlayedItemExternal[];
+  next: string | null;
+  cursors: {
+    after: string;
+    before: string;
+  } | null;
+  limit: number;
+  href: string;
+}
+
+export interface SpotifyCurrentlyPlayingExternal {
+  is_playing: boolean;
+  item: SpotifyTrackExternal;
+  progress_ms: number;
+  timestamp: number;
+  context: {
+    type: string;
+    uri: string;
+  } | null;
+}
+
+export interface SpotifyRecentlyPlayedItem {
+  track: SpotifyTrackExternal;
+  playedAt: string;
+  context: {
+    type: string;
+    uri: string;
+  } | null;
 }
 
 export type SpotifyEntity = SpotifyTrackEntity | SpotifyArtistEntity | SpotifyPlaylistEntity | SpotifyAlbumEntity;

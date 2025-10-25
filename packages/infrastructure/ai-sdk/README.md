@@ -46,36 +46,28 @@ initAItClient({
 });
 ```
 
-### Text Generation
+### Text Generation (Streaming)
 
 ```typescript
-import { TextGenerationService } from '@ait/ai-sdk';
+import { TextGenerationService, smoothStream } from '@ait/ai-sdk';
 
 const service = new TextGenerationService({
   model: 'gemma3:latest',
   collectionName: 'ait_embeddings_collection'
 });
 
-// Non-streaming generation with RAG
-const result = await service.generate({
+// Streaming generation with RAG
+const stream = service.generateStream({
   prompt: 'Tell me about my Spotify playlists',
   enableRAG: true
 });
 
-console.log(result.text);
-```
+// Option 1: Simple iteration
+for await (const chunk of stream) {
+  process.stdout.write(chunk);
+}
 
-### Streaming Generation
-
-```typescript
-import { smoothStream } from '@ait/ai-sdk';
-
-// Streaming with visual feedback
-const stream = service.generateStream({
-  prompt: 'Analyze my GitHub projects',
-  enableRAG: true
-});
-
+// Option 2: Smooth streaming with visual feedback
 const text = await smoothStream(stream, {
   delay: 50,
   prefix: 'AIt:',
@@ -92,45 +84,58 @@ const service = new TextGenerationService({
   collectionName: 'ait_embeddings_collection'
 });
 
+// Helper to collect stream into text
+async function collectStream(stream: AsyncGenerator<string>): Promise<string> {
+  let text = '';
+  for await (const chunk of stream) {
+    text += chunk;
+    process.stdout.write(chunk);
+  }
+  return text;
+}
+
 // Start a conversation
 const messages: ChatMessage[] = [];
 
 // Turn 1
-const response1 = await service.generate({
+const stream1 = service.generateStream({
   prompt: 'La canzone più recente che hai ascoltato?',
   enableRAG: true
 });
+const response1 = await collectStream(stream1);
 
 messages.push(
   { role: 'user', content: 'La canzone più recente che hai ascoltato?' },
-  { role: 'assistant', content: response1.text }
+  { role: 'assistant', content: response1 }
 );
 
 // Turn 2 - with conversation context
-const response2 = await service.generate({
+const stream2 = service.generateStream({
   prompt: 'Sicuro che sia la più recente? Controlla le date~',
   enableRAG: true,
   messages: messages  // Pass conversation history
 });
+const response2 = await collectStream(stream2);
 
 messages.push(
   { role: 'user', content: 'Sicuro che sia la più recente? Controlla le date~' },
-  { role: 'assistant', content: response2.text }
+  { role: 'assistant', content: response2 }
 );
 
 // Turn 3 - Ask about the first message
-const response3 = await service.generate({
+const stream3 = service.generateStream({
   prompt: 'Dimmi il primo messaggio di questa chat.',
   enableRAG: false,  // No RAG needed - just conversation memory
   messages: messages
 });
+const response3 = await collectStream(stream3);
 
-console.log('AIt remembers the conversation:', response3.text);
+console.log('\nAIt remembers the conversation!');
 ```
 
 **Key Features:**
 - ✅ Multi-turn conversations with full context
-- ✅ Works with both streaming and non-streaming modes
+- ✅ Streaming responses for better UX
 - ✅ Compatible with RAG - context retrieval uses current prompt
 - ✅ Simple array-based message history
 - ✅ Automatic conversation formatting
@@ -138,8 +143,7 @@ console.log('AIt remembers the conversation:', response3.text);
 ### Tool Calling
 
 ```typescript
-import { createAllConnectorTools } from '@ait/ai-sdk';
-import { QdrantProvider } from '@ait/ai-sdk';
+import { createAllConnectorTools, QdrantProvider } from '@ait/ai-sdk';
 
 const qdrantProvider = new QdrantProvider({
   collectionName: 'ait_embeddings_collection'
@@ -147,16 +151,27 @@ const qdrantProvider = new QdrantProvider({
 
 const tools = createAllConnectorTools(qdrantProvider);
 
-const result = await service.generate({
-  prompt: 'Find my most popular GitHub repositories',
-  tools: { searchGitHub: tools.searchGitHub },
-  maxToolRounds: 3,
+// Streaming with tool calling
+const stream = service.generateStream({
+  prompt: 'What am I listening to?',
+  tools: { getRecentlyPlayed: tools.getRecentlyPlayed },
+  maxToolRounds: 5,
   enableRAG: true
 });
 
-console.log('Tool calls:', result.toolCalls);
-console.log('Response:', result.text);
+// AIt will automatically:
+// 1. Call the getRecentlyPlayed tool
+// 2. Get your Spotify recently played tracks
+// 3. Stream a natural language response about your music
+for await (const chunk of stream) {
+  process.stdout.write(chunk);
+}
 ```
+
+**Available Tools:**
+- `searchSpotify` - Search Spotify tracks, albums, artists, playlists
+- `getRecentlyPlayed` - Get recently played Spotify tracks
+- More connectors coming soon (GitHub, X, Linear)
 
 ### Embeddings Generation
 
@@ -261,10 +276,10 @@ The system will generate 12-16 diverse queries covering all connectors (Spotify,
 Define custom tools for specific use cases:
 
 ```typescript
-import { tool } from 'ai';
+import { createTool } from '@ait/ai-sdk';
 import { z } from 'zod';
 
-const customTool = tool({
+const customTool = createTool({
   description: 'Search for specific data',
   parameters: z.object({
     query: z.string(),
@@ -276,10 +291,14 @@ const customTool = tool({
   }
 });
 
-const result = await service.generate({
+const stream = service.generateStream({
   prompt: 'Use my custom search',
   tools: { customSearch: customTool }
 });
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk);
+}
 ```
 
 ### Context Building

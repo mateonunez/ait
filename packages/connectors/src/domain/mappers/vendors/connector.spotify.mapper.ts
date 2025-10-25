@@ -100,6 +100,39 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, Spoti
       dataTarget: (dataTarget) => dataTarget.durationMs,
     },
 
+    albumData: {
+      external: (external) => (external.album ? (external.album as Record<string, unknown>) : null),
+      domain: (domain) => domain.albumData,
+      dataTarget: (dataTarget) => (dataTarget.albumData as Record<string, unknown>) ?? null,
+    },
+
+    artistsData: {
+      external: (external) => (external.artists ? (external.artists as Array<Record<string, unknown>>) : []),
+      domain: (domain) => domain.artistsData,
+      dataTarget: (dataTarget) => (dataTarget.artistsData as Array<Record<string, unknown>>) ?? [],
+    },
+
+    externalIds: {
+      external: (external) => (external.external_ids ? (external.external_ids as Record<string, unknown>) : null),
+      domain: (domain) => domain.externalIds,
+      dataTarget: (dataTarget) => (dataTarget.externalIds as Record<string, unknown>) ?? null,
+    },
+
+    externalUrls: {
+      external: (external) => (external.external_urls ? (external.external_urls as Record<string, unknown>) : null),
+      domain: (domain) => domain.externalUrls,
+      dataTarget: (dataTarget) => (dataTarget.externalUrls as Record<string, unknown>) ?? null,
+    },
+
+    addedAt: {
+      external: (external) => {
+        const addedAtStr = (external as any).addedAt;
+        return addedAtStr ? new Date(addedAtStr) : null;
+      },
+      domain: (domain) => domain.addedAt,
+      dataTarget: (dataTarget) => dataTarget.addedAt ?? null,
+    },
+
     __type: {
       external: () => "track" as const,
       domain: (domain) => domain.__type,
