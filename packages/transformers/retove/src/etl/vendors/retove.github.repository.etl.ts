@@ -5,7 +5,7 @@ import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract"
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
-import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
+import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
 
 export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> =

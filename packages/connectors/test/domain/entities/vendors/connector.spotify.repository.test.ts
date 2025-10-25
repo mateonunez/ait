@@ -8,17 +8,20 @@ import {
   spotifyArtists,
   spotifyPlaylists,
   spotifyAlbums,
+  spotifyRecentlyPlayed,
 } from "@ait/postgres";
 import type {
   SpotifyTrackEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
   SpotifyAlbumEntity,
+  SpotifyRecentlyPlayedEntity,
 } from "../../../../src/types/domain/entities/vendors/connector.spotify.types";
 import { ConnectorSpotifyTrackRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-artist.repository";
 import { ConnectorSpotifyPlaylistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
 import { ConnectorSpotifyAlbumRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-album.repository";
+import { ConnectorSpotifyRecentlyPlayedRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-recently-played.repository";
 
 describe("ConnectorSpotifyRepository", () => {
   const trackRepository: ConnectorSpotifyTrackRepository = new ConnectorSpotifyTrackRepository();
@@ -445,6 +448,270 @@ describe("ConnectorSpotifyRepository", () => {
         await albumRepository.saveAlbums([]);
         const saved = await db.select().from(spotifyAlbums).execute();
         assert.equal(saved.length, 0, "No album should be saved for empty input");
+      });
+    });
+  });
+
+  describe("ConnectorSpotifyRecentlyPlayedRepository", () => {
+    const recentlyPlayedRepository: ConnectorSpotifyRecentlyPlayedRepository =
+      new ConnectorSpotifyRecentlyPlayedRepository();
+
+    beforeEach(async () => {
+      await db.delete(spotifyRecentlyPlayed).execute();
+    });
+
+    describe("saveRecentlyPlayed", () => {
+      it("should save recently played item successfully", async () => {
+        const now = new Date();
+        const playedAt = new Date(now.getTime() - 60000); // 1 minute ago
+        const recentlyPlayed: SpotifyRecentlyPlayedEntity = {
+          id: `track-1-${playedAt.toISOString()}`,
+          trackId: "track-1",
+          trackName: "Test Track",
+          artist: "Test Artist",
+          album: "Test Album",
+          durationMs: 180000,
+          explicit: false,
+          popularity: 75,
+          playedAt: playedAt,
+          context: {
+            type: "playlist",
+            uri: "spotify:playlist:test-playlist",
+          },
+          createdAt: now,
+          updatedAt: now,
+          __type: "recently_played",
+        };
+
+        await recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed);
+
+        const saved = await db
+          .select()
+          .from(spotifyRecentlyPlayed)
+          .where(drizzleOrm.eq(spotifyRecentlyPlayed.id, recentlyPlayed.id))
+          .execute();
+
+        assert.equal(saved.length, 1);
+        assert(saved[0] !== undefined);
+        assert.equal(saved[0].id, recentlyPlayed.id);
+        assert.equal(saved[0].trackId, recentlyPlayed.trackId);
+        assert.equal(saved[0].trackName, recentlyPlayed.trackName);
+        assert.equal(saved[0].artist, recentlyPlayed.artist);
+        assert.equal(saved[0].album, recentlyPlayed.album);
+        assert.equal(saved[0].durationMs, recentlyPlayed.durationMs);
+        assert.equal(saved[0].explicit, recentlyPlayed.explicit);
+        assert.equal(saved[0].popularity, recentlyPlayed.popularity);
+      });
+
+      it("should update existing recently played item on conflict", async () => {
+        const now = new Date();
+        const playedAt = new Date(now.getTime() - 60000);
+        const recentlyPlayed: SpotifyRecentlyPlayedEntity = {
+          id: `track-1-${playedAt.toISOString()}`,
+          trackId: "track-1",
+          trackName: "Test Track",
+          artist: "Test Artist",
+          album: "Test Album",
+          durationMs: 180000,
+          explicit: false,
+          popularity: 75,
+          playedAt: playedAt,
+          context: null,
+          createdAt: now,
+          updatedAt: now,
+          __type: "recently_played",
+        };
+
+        // Save first time
+        await recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed);
+
+        // Update with new data
+        const updatedItem: SpotifyRecentlyPlayedEntity = {
+          ...recentlyPlayed,
+          trackName: "Updated Track Name",
+          popularity: 85,
+        };
+
+        await recentlyPlayedRepository.saveRecentlyPlayed(updatedItem);
+
+        const saved = await db
+          .select()
+          .from(spotifyRecentlyPlayed)
+          .where(drizzleOrm.eq(spotifyRecentlyPlayed.id, recentlyPlayed.id))
+          .execute();
+
+        assert.equal(saved.length, 1);
+        assert.equal(saved[0]?.trackName, "Updated Track Name");
+        assert.equal(saved[0]?.popularity, 85);
+      });
+
+      it("should throw on missing recently played ID", async () => {
+        const recentlyPlayed = {} as SpotifyRecentlyPlayedEntity;
+        await assert.rejects(() => recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed), {
+          message: /Failed to save/,
+        });
+      });
+    });
+
+    describe("saveRecentlyPlayedBatch", () => {
+      it("should save multiple recently played items", async () => {
+        const now = new Date();
+        const items: SpotifyRecentlyPlayedEntity[] = [
+          {
+            id: `track-1-${now.toISOString()}`,
+            trackId: "track-1",
+            trackName: "Track One",
+            artist: "Artist One",
+            album: "Album One",
+            durationMs: 200000,
+            explicit: false,
+            popularity: 70,
+            playedAt: new Date(now.getTime() - 120000), // 2 minutes ago
+            context: {
+              type: "playlist",
+              uri: "spotify:playlist:playlist-1",
+            },
+            createdAt: now,
+            updatedAt: now,
+            __type: "recently_played",
+          },
+          {
+            id: `track-2-${now.toISOString()}`,
+            trackId: "track-2",
+            trackName: "Track Two",
+            artist: "Artist Two",
+            album: "Album Two",
+            durationMs: 180000,
+            explicit: true,
+            popularity: 80,
+            playedAt: new Date(now.getTime() - 60000), // 1 minute ago
+            context: {
+              type: "album",
+              uri: "spotify:album:album-2",
+            },
+            createdAt: now,
+            updatedAt: now,
+            __type: "recently_played",
+          },
+        ];
+
+        await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
+
+        const saved = await db.select().from(spotifyRecentlyPlayed).execute();
+        assert.equal(saved.length, 2, "Expected two recently played items to be saved");
+      });
+
+      it("should do nothing if empty array is provided", async () => {
+        await recentlyPlayedRepository.saveRecentlyPlayedBatch([]);
+        const saved = await db.select().from(spotifyRecentlyPlayed).execute();
+        assert.equal(saved.length, 0, "No recently played item should be saved for empty input");
+      });
+    });
+
+    describe("getRecentlyPlayed", () => {
+      it("should retrieve recently played items ordered by playedAt", async () => {
+        const now = new Date();
+        const items: SpotifyRecentlyPlayedEntity[] = [
+          {
+            id: "track-1-old",
+            trackId: "track-1",
+            trackName: "Old Track",
+            artist: "Artist One",
+            album: "Album One",
+            durationMs: 200000,
+            explicit: false,
+            popularity: 70,
+            playedAt: new Date(now.getTime() - 300000), // 5 minutes ago
+            context: null,
+            createdAt: now,
+            updatedAt: now,
+            __type: "recently_played",
+          },
+          {
+            id: "track-2-recent",
+            trackId: "track-2",
+            trackName: "Recent Track",
+            artist: "Artist Two",
+            album: "Album Two",
+            durationMs: 180000,
+            explicit: true,
+            popularity: 80,
+            playedAt: new Date(now.getTime() - 60000), // 1 minute ago
+            context: null,
+            createdAt: now,
+            updatedAt: now,
+            __type: "recently_played",
+          },
+        ];
+
+        await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
+
+        const retrieved = await recentlyPlayedRepository.getRecentlyPlayed(10);
+        assert.equal(retrieved.length, 2);
+        // Most recent should be first
+        assert.equal(retrieved[0]?.trackName, "Recent Track");
+        assert.equal(retrieved[1]?.trackName, "Old Track");
+      });
+
+      it("should respect the limit parameter", async () => {
+        const now = new Date();
+        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 5 }, (_, i) => ({
+          id: `track-${i}-${now.toISOString()}`,
+          trackId: `track-${i}`,
+          trackName: `Track ${i}`,
+          artist: `Artist ${i}`,
+          album: `Album ${i}`,
+          durationMs: 180000,
+          explicit: false,
+          popularity: 70,
+          playedAt: new Date(now.getTime() - i * 60000), // i minutes ago
+          context: null,
+          createdAt: now,
+          updatedAt: now,
+          __type: "recently_played",
+        }));
+
+        await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
+
+        const retrieved = await recentlyPlayedRepository.getRecentlyPlayed(3);
+        assert.equal(retrieved.length, 3, "Should return only 3 items");
+      });
+    });
+
+    describe("getRecentlyPlayedById", () => {
+      it("should retrieve a specific recently played item by ID", async () => {
+        const now = new Date();
+        const recentlyPlayed: SpotifyRecentlyPlayedEntity = {
+          id: "test-id-123",
+          trackId: "track-1",
+          trackName: "Test Track",
+          artist: "Test Artist",
+          album: "Test Album",
+          durationMs: 180000,
+          explicit: false,
+          popularity: 75,
+          playedAt: new Date(now.getTime() - 60000),
+          context: {
+            type: "playlist",
+            uri: "spotify:playlist:test",
+          },
+          createdAt: now,
+          updatedAt: now,
+          __type: "recently_played",
+        };
+
+        await recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed);
+
+        const retrieved = await recentlyPlayedRepository.getRecentlyPlayedById("test-id-123");
+        assert(retrieved !== null, "Should retrieve the saved item");
+        assert.equal(retrieved.id, "test-id-123");
+        assert.equal(retrieved.trackName, "Test Track");
+        assert.equal(retrieved.artist, "Test Artist");
+      });
+
+      it("should return null for non-existent ID", async () => {
+        const retrieved = await recentlyPlayedRepository.getRecentlyPlayedById("non-existent-id");
+        assert.equal(retrieved, null, "Should return null for non-existent ID");
       });
     });
   });

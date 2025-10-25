@@ -1,6 +1,15 @@
 import { getQdrantClient } from "@ait/qdrant";
 import { getPostgresClient, closePostgresConnection } from "@ait/postgres";
-import { runSpotifyETL, runSpotifyRecentlyPlayedETL } from "./infrastructure/runners/etl.runners";
+import {
+  runSpotifyTrackETL,
+  runSpotifyArtistETL,
+  runSpotifyPlaylistETL,
+  runSpotifyAlbumETL,
+  runSpotifyRecentlyPlayedETL,
+  runGitHubETL,
+  runLinearETL,
+  runXETL,
+} from "./infrastructure/runners/etl.runners";
 
 async function main() {
   console.log("🚀 Starting ETL process...");
@@ -8,11 +17,17 @@ async function main() {
     const qdrantClient = getQdrantClient();
     const pgClient = getPostgresClient();
 
-    await runSpotifyETL(qdrantClient, pgClient);
+    // Run all Spotify ETLs
+    await runSpotifyTrackETL(qdrantClient, pgClient);
+    await runSpotifyArtistETL(qdrantClient, pgClient);
+    await runSpotifyPlaylistETL(qdrantClient, pgClient);
+    await runSpotifyAlbumETL(qdrantClient, pgClient);
     await runSpotifyRecentlyPlayedETL(qdrantClient, pgClient);
-    // await runGitHubETL(qdrantClient, pgClient);
-    // await runXETL(qdrantClient, pgClient);
-    // await runLinearETL(qdrantClient, pgClient);
+
+    // Run other vendor ETLs
+    await runGitHubETL(qdrantClient, pgClient);
+    await runXETL(qdrantClient, pgClient);
+    await runLinearETL(qdrantClient, pgClient);
 
     console.log("✅ ETL process completed successfully!");
   } catch (error) {

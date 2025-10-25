@@ -1,4 +1,4 @@
-import { TextGenerationService, initAItClient, QdrantProvider, createAllConnectorTools } from "@ait/ai-sdk";
+import { TextGenerationService, initAItClient, createAllConnectorTools } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
 import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/connectors";
@@ -49,10 +49,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
   const textGenerationService = fastify.textGenerationService;
 
-  const qdrantProvider = new QdrantProvider({
-    collectionName: "ait_embeddings_collection",
-  });
-  const tools = createAllConnectorTools(qdrantProvider, fastify.spotifyService);
+  const tools = createAllConnectorTools(fastify.spotifyService);
 
   fastify.post("/", async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
     try {

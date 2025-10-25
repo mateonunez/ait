@@ -1,5 +1,8 @@
 import {
-  runSpotifyETL,
+  runSpotifyTrackETL,
+  runSpotifyArtistETL,
+  runSpotifyPlaylistETL,
+  runSpotifyAlbumETL,
   runSpotifyRecentlyPlayedETL,
   runGitHubETL,
   runLinearETL,
@@ -24,7 +27,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.track}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        await runSpotifyETL(qdrant, postgres);
+        await runSpotifyTrackETL(qdrant, postgres);
         console.info(`[${SpotifyETLs.track}] Completed`);
       });
     });
@@ -34,7 +37,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.artist}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        await runSpotifyETL(qdrant, postgres);
+        await runSpotifyArtistETL(qdrant, postgres);
         console.info(`[${SpotifyETLs.artist}] Completed`);
       });
     });
@@ -44,7 +47,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.playlist}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        await runSpotifyETL(qdrant, postgres);
+        await runSpotifyPlaylistETL(qdrant, postgres);
         console.info(`[${SpotifyETLs.playlist}] Completed`);
       });
     });
@@ -54,8 +57,18 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.album}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        await runSpotifyETL(qdrant, postgres);
+        await runSpotifyAlbumETL(qdrant, postgres);
         console.info(`[${SpotifyETLs.album}] Completed`);
+      });
+    });
+
+    // Register Spotify Recently Played ETL
+    schedulerRegistry.register(SpotifyETLs.recentlyPlayed, async (data) => {
+      console.info(`[${SpotifyETLs.recentlyPlayed}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        await runSpotifyRecentlyPlayedETL(qdrant, postgres);
+        console.info(`[${SpotifyETLs.recentlyPlayed}] Completed`);
       });
     });
 
@@ -84,16 +97,6 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       await this._withConnections(async ({ qdrant, postgres }) => {
         await runXETL(qdrant, postgres);
         console.info(`[${XETLs.tweet}] Completed`);
-      });
-    });
-
-    // Register Spotify Recently Played ETL
-    schedulerRegistry.register(SpotifyETLs.recentlyPlayed, async (data) => {
-      console.info(`[${SpotifyETLs.recentlyPlayed}] Starting...`);
-
-      await this._withConnections(async ({ qdrant, postgres }) => {
-        await runSpotifyRecentlyPlayedETL(qdrant, postgres);
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Completed`);
       });
     });
   }

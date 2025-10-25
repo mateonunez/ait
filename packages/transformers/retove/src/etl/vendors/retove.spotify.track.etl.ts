@@ -5,7 +5,7 @@ import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { RetoveBaseETLAbstract, type BaseVectorPoint, type RetryOptions } from "../retove.base-etl.abstract";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
+import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
 
 export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();

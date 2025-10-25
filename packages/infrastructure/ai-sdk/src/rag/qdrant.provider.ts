@@ -56,16 +56,59 @@ export class QdrantProvider {
     }));
   }
 
-  async similaritySearchWithScore(query: string, k: number): Promise<Array<[Document<BaseMetadata>, number]>> {
+  async similaritySearchWithScore(
+    query: string,
+    k: number,
+    filter?: { types?: string[] },
+    scoreThreshold?: number,
+  ): Promise<Array<[Document<BaseMetadata>, number]>> {
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
     });
+
+    let qdrantFilter: any;
+    if (filter?.types && filter.types.length > 0) {
+      if (filter.types.length === 1) {
+        // Single type - use must with match
+        qdrantFilter = {
+          must: [
+            {
+              key: "metadata.__type",
+              match: { value: filter.types[0] },
+            },
+          ],
+        };
+      } else {
+        // Multiple types - use should (OR condition)
+        qdrantFilter = {
+          should: filter.types.map((type) => ({
+            key: "metadata.__type",
+            match: { value: type },
+          })),
+        };
+      }
+    }
+
+    // Use provided threshold or default to 0.3 for better quality
+    const effectiveThreshold = scoreThreshold ?? 0.3;
 
     const searchResult = await this._client.search(this._config.collectionName, {
       vector: queryVector,
       limit: k,
       with_payload: true,
-      score_threshold: 0.0,
+      score_threshold: effectiveThreshold,
+      filter: qdrantFilter,
+    });
+
+    console.debug("Qdrant search result", {
+      query: `${query.slice(0, 50)}...`,
+      scoreThreshold: effectiveThreshold,
+      filter: filter?.types,
+      resultsCount: searchResult.length,
+      scoreRange:
+        searchResult.length > 0
+          ? `${searchResult[searchResult.length - 1].score.toFixed(3)} - ${searchResult[0].score.toFixed(3)}`
+          : "none",
     });
 
     return searchResult.map((point) => [

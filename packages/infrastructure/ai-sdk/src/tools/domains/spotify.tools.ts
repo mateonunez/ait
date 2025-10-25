@@ -1,10 +1,8 @@
 import { z } from "zod";
-import type { QdrantProvider } from "../../rag/qdrant.provider";
 import { createTool } from "../../types/tools";
 import type {
   ConnectorSpotifyService,
   SpotifyCurrentlyPlayingExternal,
-  SpotifyRecentlyPlayedEntity,
   SpotifyTrackEntity,
   SpotifyTrackExternal,
 } from "@ait/connectors";
@@ -91,51 +89,8 @@ interface ExtendedSpotifyService extends ConnectorSpotifyService {
   >;
 }
 
-export function createSpotifyTools(qdrantProvider: QdrantProvider, spotifyService?: ExtendedSpotifyService) {
+export function createSpotifyTools(spotifyService?: ExtendedSpotifyService) {
   return {
-    // searchSpotify: createTool({
-    //   description:
-    //     "Search Spotify data including playlists, tracks, artists, or albums by name, artist, or description",
-    //   parameters: spotifySearchSchema,
-    //   execute: async ({ query, type, limit }): Promise<SearchResponse<SpotifySearchResult>> => {
-    //     try {
-    //       const results = await qdrantProvider.similaritySearch(
-    //         `spotify ${type !== "all" ? type : ""} ${query}`.trim(),
-    //         limit ?? 10,
-    //       );
-
-    //       const filtered =
-    //         type !== "all"
-    //           ? results.filter((doc) => {
-    //               const docType = doc.metadata.__type.toLowerCase();
-    //               return docType.includes(type ?? "");
-    //             })
-    //           : results.filter((doc) => {
-    //               const docType = doc.metadata.__type.toLowerCase();
-    //               return docType.startsWith("spotify");
-    //             });
-
-    //       return {
-    //         results: filtered.map(
-    //           (doc): SpotifySearchResult => ({
-    //             type: doc.metadata.__type,
-    //             name: typeof doc.metadata.name === "string" ? doc.metadata.name : undefined,
-    //             artist: typeof doc.metadata.artist === "string" ? doc.metadata.artist : undefined,
-    //             content: doc.pageContent.slice(0, 200),
-    //           }),
-    //         ),
-    //         count: filtered.length,
-    //       };
-    //     } catch (error) {
-    //       return {
-    //         error: error instanceof Error ? error.message : String(error),
-    //         results: [],
-    //         count: 0,
-    //       };
-    //     }
-    //   },
-    // }),
-
     getCurrentlyPlaying: createTool({
       description:
         "Fetch the user's CURRENTLY PLAYING track on Spotify RIGHT NOW. MUST be called when user asks: 'what am I listening to', 'what's playing now', 'current song', 'what's on', or similar queries about LIVE/CURRENT music playback. Returns real-time data directly from Spotify API showing exactly what is playing at this moment.",
@@ -181,55 +136,6 @@ export function createSpotifyTools(qdrantProvider: QdrantProvider, spotifyServic
           return {
             results: [result],
             count: 1,
-          };
-        } catch (error) {
-          return {
-            error: error instanceof Error ? error.message : String(error),
-            results: [],
-            count: 0,
-          };
-        }
-      },
-    }),
-
-    getRecentlyPlayed: createTool({
-      description:
-        "Fetch the user's LIVE recently played Spotify tracks with timestamps. MUST be called when user asks: 'what am I listening to', 'recently played', 'current music', 'latest songs', or similar queries about CURRENT/RECENT music activity. Returns real-time data directly from Spotify API, not historical context.",
-      parameters: spotifyRecentlyPlayedSchema,
-      execute: async ({ limit }): Promise<SearchResponse<SpotifyRecentlyPlayedResult>> => {
-        try {
-          if (!spotifyService) {
-            return {
-              error: "Spotify service not available. Please configure Spotify authentication.",
-              results: [],
-              count: 0,
-            };
-          }
-
-          const recentlyPlayedEntities = await spotifyService.getRecentlyPlayed();
-
-          // Limit the results if a limit is specified
-          const limitedResults = limit ? recentlyPlayedEntities.slice(0, limit) : recentlyPlayedEntities;
-
-          const results: SpotifyRecentlyPlayedResult[] = limitedResults.map((entity: SpotifyRecentlyPlayedEntity) => ({
-            track: {
-              id: entity.trackId,
-              name: entity.trackName,
-              artist: entity.artist,
-              album: entity.album,
-              durationMs: entity.durationMs,
-              explicit: entity.explicit,
-              popularity: entity.popularity,
-              uri: null,
-              __type: "track" as const,
-            },
-            playedAt: entity.playedAt.toISOString(),
-            context: entity.context,
-          }));
-
-          return {
-            results,
-            count: results.length,
           };
         } catch (error) {
           return {

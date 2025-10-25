@@ -53,14 +53,17 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
   }
 
   async getTracks(): Promise<SpotifyTrackEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.TRACK);
   }
 
   async getArtists(): Promise<SpotifyArtistEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ARTIST);
   }
 
   async getPlaylists(): Promise<SpotifyPlaylistEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST);
   }
 
@@ -70,10 +73,12 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
   }
 
   async getAlbums(): Promise<SpotifyAlbumEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ALBUM);
   }
 
   async getRecentlyPlayed(): Promise<SpotifyRecentlyPlayedEntity[]> {
+    await this.connector.connect(); // needed for the AI tool
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED);
   }
 
