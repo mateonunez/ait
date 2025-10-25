@@ -8,7 +8,6 @@ services:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: toor
       POSTGRES_DB: ait
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --no-sync"
       POSTGRES_HOST_AUTH_METHOD: trust
     ports:
       - "5432:5432"
@@ -17,7 +16,7 @@ services:
     networks:
       - app-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U root -d ait"]
+      test: ["CMD-SHELL", "pg_isready -U root -d ait || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 10

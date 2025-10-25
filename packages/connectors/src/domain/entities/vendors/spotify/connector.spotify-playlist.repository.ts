@@ -44,8 +44,6 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
           })
           .execute();
       });
-
-      console.debug("Playlist saved successfully:", { playlistId: playlist.id });
     } catch (error: any) {
       console.error("Failed to save playlist:", { playlistId: playlist.id, error });
       throw new Error(`Failed to save playlist ${playlist.id}: ${error.message}`);
@@ -63,8 +61,6 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       for (const playlist of playlists) {
         await this.savePlaylist(playlist, { incremental: false });
       }
-
-      console.debug("Playlists saved successfully:", { playlists: playlists.length });
     } catch (error) {
       console.error("Error saving playlists:", error);
       throw new Error("Failed to save playlists to repository");

@@ -8,14 +8,53 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
 
 export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<SpotifyTrackDataTarget> {
   public getEmbeddingText(track: SpotifyTrackDataTarget): string {
+    const albumData = track.albumData as Record<string, unknown>;
+    const artistsData = track.artistsData as Array<Record<string, unknown>>;
+    const primaryArtist = artistsData?.[0]?.name || track.artist;
+    const albumName = albumData?.name || track.album;
+    const releaseDate = albumData?.release_date;
+    const albumType = albumData?.album_type;
+
+    const minutes = Math.floor(track.durationMs / 60000);
+    const seconds = Math.floor((track.durationMs % 60000) / 1000);
+    const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+    let temporalContext = "";
+    if (track.addedAt) {
+      const now = new Date();
+      const addedDate = new Date(track.addedAt);
+      const daysDiff = Math.floor((now.getTime() - addedDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff < 7) {
+        temporalContext = "recently added";
+      } else if (daysDiff < 30) {
+        temporalContext = `added ${Math.floor(daysDiff / 7)} weeks ago`;
+      } else if (daysDiff < 365) {
+        temporalContext = `discovered ${Math.floor(daysDiff / 30)} months ago`;
+      } else {
+        temporalContext = `added ${Math.floor(daysDiff / 365)} years ago`;
+      }
+    }
+
     const parts = [
-      `I listen to "${track.name}" by ${track.artist}`,
-      track.album ? `from ${track.album}` : null,
-      track.popularity && track.popularity > 70 ? "a widely appreciated track" : null,
-      track.popularity && track.popularity < 30 ? "a niche find" : null,
+      temporalContext ? `I ${temporalContext}` : "I listen to",
+      `"${track.name}" by ${primaryArtist}`,
+      durationStr ? `a ${durationStr} ${albumType || "track"}` : null,
+      albumName
+        ? `from the ${releaseDate ? (releaseDate as string).split("-")[0] : ""} ${albumType || "album"} "${albumName}"`
+        : null,
+      releaseDate
+        ? `released on ${new Date(releaseDate as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
+        : null,
+      track.explicit ? "This explicit track" : "This track",
+      track.popularity && track.popularity > 70 ? "is widely appreciated and popular" : null,
+      track.popularity && track.popularity < 30 ? "is a niche find with unique appeal" : null,
+      track.popularity && track.popularity >= 30 && track.popularity <= 70
+        ? `has moderate popularity (${track.popularity}/100)`
+        : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    return parts.join(" ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {

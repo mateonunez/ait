@@ -22,6 +22,13 @@
       "when": 1760783825925,
       "tag": "0002_large_roulette",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1761381192467,
+      "tag": "0003_lean_valeria_richards",
+      "breakpoints": true
     }
   ]
 }

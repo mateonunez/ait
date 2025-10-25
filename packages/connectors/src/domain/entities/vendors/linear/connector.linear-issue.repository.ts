@@ -44,8 +44,6 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
           })
           .execute();
       });
-
-      console.debug("Issue saved successfully:", { issueId });
     } catch (error: any) {
       console.error("Failed to save issue:", { issueId, error });
       throw new Error(`Failed to save issue ${issueId}: ${error.message}`);
@@ -63,8 +61,6 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
       for (const issue of issues) {
         await this.saveIssue(issue, { incremental: true });
       }
-
-      console.debug("Issues saved successfully:", { issues: issues.length });
     } catch (error) {
       console.error("Error saving issues:", error);
       throw new Error("Failed to save issues to repository");

@@ -7,6 +7,9 @@ import type {
   SpotifyPlaylistExternal,
   SpotifyAlbumExternal,
   SpotifyAlbumEntity,
+  SpotifyRecentlyPlayedExternal,
+  SpotifyRecentlyPlayedItemExternal,
+  SpotifyCurrentlyPlayingExternal,
 } from "@/types/domain/entities/vendors/connector.spotify.types";
 import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
@@ -17,6 +20,7 @@ import {
   SPOTIFY_ENTITY_TYPES_ENUM,
   type SpotifyServiceEntityMap,
 } from "./connector.vendors.config";
+import { connectorSpotifyTrackMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
 
 export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
   constructor() {
@@ -63,5 +67,47 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
 
   async getAlbums(): Promise<SpotifyAlbumEntity[]> {
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ALBUM);
+  }
+
+  // TODO: consider move this to a separate service
+  async getRecentlyPlayed(limit = 20): Promise<
+    SpotifyRecentlyPlayedExternal & {
+      items: Array<SpotifyRecentlyPlayedItemExternal & { trackEntity: SpotifyTrackEntity }>;
+    }
+  > {
+    await this.connector.connect();
+
+    const response = await this.connector.dataSource.fetchRecentlyPlayed(limit);
+
+    return {
+      ...response,
+      items: response.items.map((item) => ({
+        ...item,
+        trackEntity: connectorSpotifyTrackMapper.externalToDomain(item.track),
+      })),
+    };
+  }
+
+  async getCurrentlyPlaying(): Promise<
+    | (SpotifyCurrentlyPlayingExternal & {
+        item: SpotifyTrackExternal & { trackEntity: SpotifyTrackEntity };
+      })
+    | null
+  > {
+    await this.connector.connect();
+
+    const response = await this.connector.dataSource.fetchCurrentlyPlaying();
+
+    if (!response) {
+      return null;
+    }
+
+    return {
+      ...response,
+      item: {
+        ...response.item,
+        trackEntity: connectorSpotifyTrackMapper.externalToDomain(response.item),
+      },
+    };
   }
 }

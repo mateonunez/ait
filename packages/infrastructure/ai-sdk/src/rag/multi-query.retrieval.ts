@@ -100,7 +100,6 @@ export class MultiQueryRetrieval {
           }
         } catch (e) {
           console.debug("Query variant failed", { query: q, error: e instanceof Error ? e.message : String(e) });
-          // continue
         }
       }
     };
@@ -109,14 +108,13 @@ export class MultiQueryRetrieval {
     await Promise.all(workers);
 
     if (hits.size === 0) {
-      throw new Error("No results retrieved across query variants");
+      console.warn("No results retrieved across query variants");
+      return [];
     }
 
-    // Rank: primary by bestScore, secondary by hit frequency and sumScore
-    // Small boost for documents hit by multiple distinct queries
     const ranked = Array.from(hits.values())
       .map((h) => {
-        const freqBoost = Math.log1p(h.hits); // 1.0 for single hit, grows slowly
+        const freqBoost = Math.log1p(h.hits);
         const blended = h.bestScore * 0.75 + (h.sumScore * 0.25) / Math.max(1, h.hits);
         const finalScore = blended * (1 + 0.05 * freqBoost);
         return { ...h, finalScore };

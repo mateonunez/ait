@@ -41,13 +41,16 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
               href: trackDataTarget.href,
               isLocal: trackDataTarget.isLocal,
               popularity: trackDataTarget.popularity,
+              albumData: trackDataTarget.albumData,
+              artistsData: trackDataTarget.artistsData,
+              externalIds: trackDataTarget.externalIds,
+              externalUrls: trackDataTarget.externalUrls,
+              addedAt: trackDataTarget.addedAt,
               updatedAt: new Date(),
             },
           })
           .execute();
       });
-
-      console.debug("Track saved successfully:", { trackId: track.id });
     } catch (error: any) {
       console.error("Failed to save track:", { trackId: track.id, error });
       throw new Error(`Failed to save track ${track.id}: ${error.message}`);
@@ -65,8 +68,6 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       for (const track of tracks) {
         await this.saveTrack(track, { incremental: false });
       }
-
-      console.debug("Tracks saved successfully:", { tracks: tracks.length });
     } catch (error) {
       console.error("Error saving tracks:", error);
       throw new Error("Failed to save tracks to repository");

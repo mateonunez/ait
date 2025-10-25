@@ -1,6 +1,6 @@
 import { connectorXTweetMapper } from "@/domain/mappers/vendors/connector.x.mapper";
 import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import { getOAuthData, saveOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
+import { saveOAuthData, getOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
 import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
 import type {
   IConnectorXRepository,
@@ -41,8 +41,6 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
           })
           .execute();
       });
-
-      console.debug("Tweet saved successfully:", { tweetId });
     } catch (error: any) {
       console.error("Failed to save tweet:", { tweetId, error });
       throw new Error(`Failed to save tweet ${tweetId}: ${error.message}`);
