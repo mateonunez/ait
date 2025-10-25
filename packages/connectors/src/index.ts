@@ -29,8 +29,6 @@ export type * from "./types/domain/entities/vendors/connector.x.repository.types
 
 // Spotify Types (additional exports)
 export type {
-  SpotifyRecentlyPlayedItemExternal,
   SpotifyRecentlyPlayedExternal,
-  SpotifyRecentlyPlayedItem,
   SpotifyCurrentlyPlayingExternal,
 } from "./types/domain/entities/vendors/connector.spotify.types";

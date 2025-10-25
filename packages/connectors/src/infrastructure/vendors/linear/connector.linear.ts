@@ -1,10 +1,10 @@
-import { BaseConnectorAbstract } from "@/infrastructure/connector.base.abstract";
+import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
 import { ConnectorLinearStore } from "./connector.linear.store";
-import type { IConnectorLinearRepository } from "@/types/domain/entities/vendors/connector.linear.types";
-import type { IConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorLinearAuthenticator } from "./connector.linear.authenticator";
 import { ConnectorLinearDataSource } from "./connector.linear.data-source";
-import { ConnectorLinearRepository } from "@/domain/entities/vendors/linear/connector.linear.repository";
+import { ConnectorLinearRepository } from "../../../domain/entities/vendors/linear/connector.linear.repository";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 
 export class ConnectorLinear extends BaseConnectorAbstract<

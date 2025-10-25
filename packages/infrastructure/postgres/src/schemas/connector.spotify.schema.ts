@@ -82,3 +82,24 @@ export const spotifyAlbums = pgTable("spotify_albums", {
 });
 
 export type SpotifyAlbumDataTarget = typeof spotifyAlbums.$inferInsert;
+
+/**
+ * Recently Played History Table
+ * Stores temporal playback data for RAG context
+ */
+export const spotifyRecentlyPlayed = pgTable("spotify_recently_played", {
+  id: varchar("id", { length: 255 }).primaryKey(), // composite: trackId-playedAt timestamp
+  trackId: varchar("track_id", { length: 255 }).notNull(),
+  trackName: varchar("track_name", { length: 255 }).notNull(),
+  artist: varchar("artist", { length: 255 }).notNull(),
+  album: varchar("album", { length: 255 }),
+  durationMs: integer("duration_ms").notNull(),
+  explicit: boolean("explicit").notNull().default(false),
+  popularity: integer("popularity"),
+  playedAt: timestamp("played_at").notNull(), // When the user played this track
+  context: jsonb("context"), // Playlist/album/artist context
+  createdAt: timestamp("created_at").defaultNow(), // When we stored this record
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type SpotifyRecentlyPlayedDataTarget = typeof spotifyRecentlyPlayed.$inferInsert;

@@ -1,4 +1,4 @@
-import type { components as XComponents } from "@/types/openapi/openapi.x.types";
+import type { components as XComponents } from "../../../openapi/openapi.x.types";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorXTweetRepository {

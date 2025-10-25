@@ -1,8 +1,5 @@
-import type {
-  IConnectorRepository,
-  IConnectorRepositorySaveOptions,
-} from "@/types/domain/entities/connector.repository.interface";
-import type { components as GitHubComponents } from "@/types/openapi/openapi.github.types";
+import type { components as GitHubComponents } from "../../../openapi/openapi.github.types";
+import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 /**
  * Repository interface for GitHub repositories

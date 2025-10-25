@@ -1,5 +1,6 @@
 import {
   runSpotifyETL,
+  runSpotifyRecentlyPlayedETL,
   runGitHubETL,
   runLinearETL,
   runXETL,
@@ -83,6 +84,16 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       await this._withConnections(async ({ qdrant, postgres }) => {
         await runXETL(qdrant, postgres);
         console.info(`[${XETLs.tweet}] Completed`);
+      });
+    });
+
+    // Register Spotify Recently Played ETL
+    schedulerRegistry.register(SpotifyETLs.recentlyPlayed, async (data) => {
+      console.info(`[${SpotifyETLs.recentlyPlayed}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        await runSpotifyRecentlyPlayedETL(qdrant, postgres);
+        console.info(`[${SpotifyETLs.recentlyPlayed}] Completed`);
       });
     });
   }

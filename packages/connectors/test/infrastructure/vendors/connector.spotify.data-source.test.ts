@@ -1,4 +1,4 @@
-import { ConnectorSpotifyDataSource } from "@/infrastructure/vendors/spotify/connector.spotify.data-source";
+import { ConnectorSpotifyDataSource } from "../../../src/infrastructure/vendors/spotify/connector.spotify.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";

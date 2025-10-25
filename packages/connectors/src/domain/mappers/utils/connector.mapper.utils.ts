@@ -1,4 +1,4 @@
-import type { ConnectorLevels } from "@/types/domain/mappers/connector.mapper.interface";
+import type { ConnectorLevels } from "../../../types/domain/mappers/connector.mapper.interface";
 
 export interface PassThroughLevelOptions<T> {
   /**

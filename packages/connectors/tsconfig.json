@@ -24,8 +24,7 @@
     "incremental": true,
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"],
-      "@/types/*": ["src/types/*"]
+      "@/*": ["src/*"]
     },
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },

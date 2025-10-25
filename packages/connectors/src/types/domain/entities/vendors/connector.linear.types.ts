@@ -1,7 +1,4 @@
-import type {
-  IConnectorRepository,
-  IConnectorRepositorySaveOptions,
-} from "@/types/domain/entities/connector.repository.interface";
+import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface BaseLinearEntity {
   __type: "issue";

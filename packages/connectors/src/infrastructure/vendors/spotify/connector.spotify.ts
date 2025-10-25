@@ -1,7 +1,7 @@
-import { ConnectorSpotifyRepository } from "@/domain/entities/vendors/spotify/connector.spotify.repository";
-import type { IConnectorSpotifyRepository } from "@/types/domain/entities/vendors/connector.spotify.types";
-import type { IConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
-import { BaseConnectorAbstract } from "@/infrastructure/connector.base.abstract";
+import { ConnectorSpotifyRepository } from "../../../domain/entities/vendors/spotify/connector.spotify.repository";
+import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
+import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
 import { ConnectorSpotifyAuthenticator } from "./connector.spotify.authenticator";
 import { ConnectorSpotifyDataSource } from "./connector.spotify.data-source";
 import { ConnectorSpotifyStore } from "./connector.spotify.store";

@@ -1,9 +1,9 @@
-import { connectorLinearIssueMapper } from "@/domain/mappers/vendors/connector.linear.mapper";
-import type { IConnectorRepositorySaveOptions } from "@/types/domain/entities/connector.repository.interface";
+import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
+import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
   IConnectorLinearIssueRepository,
   LinearIssueEntity,
-} from "@/types/domain/entities/vendors/connector.linear.types";
+} from "../../../../types/domain/entities/vendors/connector.linear.types";
 import { getPostgresClient, linearIssues } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 

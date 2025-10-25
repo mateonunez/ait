@@ -1,11 +1,11 @@
-import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
-import { ConnectorGitHub } from "@/infrastructure/vendors/github/connector.github";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
-} from "@/types/domain/entities/vendors/connector.github.repository.types";
+} from "../../types/domain/entities/vendors/connector.github.repository.types";
 import {
   connectorEntityConfigs,
   GITHUB_ENTITY_TYPES_ENUM,

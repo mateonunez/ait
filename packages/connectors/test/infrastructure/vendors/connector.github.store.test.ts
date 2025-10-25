@@ -4,8 +4,8 @@ import type {
   GitHubEntity,
   GitHubRepositoryEntity,
   IConnectorGitHubRepository,
-} from "@/types/domain/entities/vendors/connector.github.repository.types";
-import { ConnectorGitHubStore } from "@/infrastructure/vendors/github/connector.github.store";
+} from "../../../src/types/domain/entities/vendors/connector.github.repository.types";
+import { ConnectorGitHubStore } from "../../../src/infrastructure/vendors/github/connector.github.store";
 
 describe("ConnectorGitHubStore", () => {
   let mockRepository: IConnectorGitHubRepository;

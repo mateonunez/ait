@@ -1,6 +1,6 @@
-import { ConnectorOAuth, type IConnectorOAuthConfig } from "@/shared/auth/lib/oauth/connector.oauth";
-import type { BaseConnectorAbstract } from "@/infrastructure/connector.base.abstract";
-// import { AIT } from "@/shared/constants/ait.constant";
+import type { BaseConnectorAbstract } from "../infrastructure/connector.base.abstract";
+import type { IConnectorOAuthConfig } from "../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
 
 interface EntityConfig<TEntityMap, K extends keyof TEntityMap, E> {
   fetcher: () => Promise<E[]>;

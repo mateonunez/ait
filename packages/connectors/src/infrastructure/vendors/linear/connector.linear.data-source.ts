@@ -1,5 +1,5 @@
 import { fetch } from "undici";
-import type { LinearIssueExternal } from "@/types/domain/entities/vendors/connector.linear.types";
+import type { LinearIssueExternal } from "../../../types/domain/entities/vendors/connector.linear.types";
 
 export interface IConnectorLinearDataSource {
   fetchIssues(): Promise<LinearIssueExternal[]>;

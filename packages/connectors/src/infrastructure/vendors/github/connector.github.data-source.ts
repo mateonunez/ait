@@ -1,4 +1,4 @@
-import type { GitHubRepositoryExternal } from "@/types/domain/entities/vendors/connector.github.repository.types";
+import type { GitHubRepositoryExternal } from "../../../types/domain/entities/vendors/connector.github.repository.types";
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
 
 export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {

@@ -28,6 +28,14 @@ const getScheduleConfig = () => {
 const scheduleConfig = getScheduleConfig();
 
 const SCHEDULED_JOBS: JobConfig[] = [
+  // Critical priority: Real-time listening data
+  {
+    name: SpotifyETLs.recentlyPlayed,
+    options: {},
+    cronExpression: "*/5 * * * *", // Every 5 minutes
+    priority: 0, // Highest priority for fresh context
+    enabled: true,
+  },
   // High priority: Most frequently accessed data
   {
     name: SpotifyETLs.track,

@@ -1,5 +1,5 @@
-import { ConnectorAuthenticatorAbstract } from "@/shared/auth/connector.authenticator.abstract";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
+import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { createHash, randomBytes } from "node:crypto";
 
 export class ConnectorXAuthenticator extends ConnectorAuthenticatorAbstract {

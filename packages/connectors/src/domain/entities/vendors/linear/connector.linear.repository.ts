@@ -1,7 +1,7 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
-import type { IConnectorOAuthTokenResponse } from "@/shared/auth/lib/oauth/connector.oauth";
-import { getOAuthData, saveOAuthData } from "@/shared/auth/lib/oauth/connector.oauth.utils";
-import type { IConnectorLinearRepository } from "@/types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
+import { getOAuthData, saveOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
+import type { IConnectorLinearRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
 import { ConnectorLinearIssueRepository } from "./connector.linear-issue.repository";
 
 export class ConnectorLinearRepository extends ConnectorLinearIssueRepository implements IConnectorLinearRepository {

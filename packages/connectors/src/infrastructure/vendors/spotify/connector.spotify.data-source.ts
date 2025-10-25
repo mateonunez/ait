@@ -1,14 +1,14 @@
-import { fetch } from "undici";
-import dotenv from "dotenv";
-import type { IConnectorSpotifyDataSource } from "@/types/infrastructure/connector.spotify.data-source.interface";
 import type {
-  SpotifyArtistExternal,
-  SpotifyTrackExternal,
-  SpotifyPlaylistExternal,
   SpotifyAlbumExternal,
-  SpotifyRecentlyPlayedExternal,
+  SpotifyArtistExternal,
   SpotifyCurrentlyPlayingExternal,
-} from "@/types/domain/entities/vendors/connector.spotify.types";
+  SpotifyPlaylistExternal,
+  SpotifyRecentlyPlayedExternal,
+  SpotifyTrackExternal,
+} from "../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
+import dotenv from "dotenv";
+import { fetch } from "undici";
 
 dotenv.config();
 
@@ -95,41 +95,17 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     };
   }
 
-  async fetchRecentlyPlayed(limit = 20): Promise<SpotifyRecentlyPlayedExternal> {
+  async fetchRecentlyPlayed(limit = 20): Promise<SpotifyRecentlyPlayedExternal[]> {
     const params = new URLSearchParams({ limit: limit.toString() });
 
     const response = await this._fetchFromSpotify<{
-      items: Array<{
-        track: SpotifyTrackExternal;
-        played_at: string;
-        context: {
-          type: string;
-          uri: string;
-        } | null;
-      }>;
-      next: string | null;
-      cursors: {
-        after: string;
-        before: string;
-      } | null;
-      limit: number;
-      href: string;
+      items: SpotifyRecentlyPlayedExternal[];
     }>(`/me/player/recently-played?${params}`);
 
-    return {
-      items: response.items.map((item) => ({
-        track: {
-          ...item.track,
-          __type: "track" as const,
-        },
-        playedAt: item.played_at,
-        context: item.context,
-      })),
-      next: response.next,
-      cursors: response.cursors,
-      limit: response.limit,
-      href: response.href,
-    };
+    return response.items.map((item) => ({
+      ...item,
+      __type: "recently_played" as const,
+    }));
   }
 
   async fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null> {

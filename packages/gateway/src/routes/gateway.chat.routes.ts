@@ -17,7 +17,7 @@ interface ChatRequestBody {
 export default async function chatRoutes(fastify: FastifyInstance) {
   if (!fastify.textGenerationService) {
     initAItClient({
-      generation: { model: "llama3.2:latest", temperature: 0.7 },
+      generation: { model: "llama3.1:latest", temperature: 1, topP: 0.9, topK: 40 },
       embeddings: { model: "mxbai-embed-large:latest" },
       rag: {
         collection: "ait_embeddings_collection",
@@ -86,7 +86,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           enableRAG: true,
           messages: conversationHistory,
           tools,
-          maxToolRounds: 5,
+          maxToolRounds: 2,
         });
 
         for await (const chunk of stream) {

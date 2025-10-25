@@ -155,7 +155,7 @@ const tools = createAllConnectorTools(qdrantProvider);
 const stream = service.generateStream({
   prompt: 'What am I listening to?',
   tools: { getRecentlyPlayed: tools.getRecentlyPlayed },
-  maxToolRounds: 5,
+  maxToolRounds: 2,
   enableRAG: true
 });
 

@@ -1,5 +1,5 @@
 import { fetch, type Response } from "undici";
-import type { XTweetExternal } from "@/types/domain/entities/vendors/connector.x.repository.types";
+import type { XTweetExternal } from "../../../types/domain/entities/vendors/connector.x.repository.types";
 
 export interface IConnectorXDataSource {
   fetchTweets(): Promise<XTweetExternal[]>;

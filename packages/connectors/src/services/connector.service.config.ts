@@ -1,4 +1,4 @@
-import type { IConnectorOAuthConfig } from "@/shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorOAuthConfig } from "../shared/auth/lib/oauth/connector.oauth";
 import type { ConnectorType } from "./vendors/connector.vendors.config";
 
 const CONFIG_SUFFIXES = ["CLIENT_ID", "CLIENT_SECRET", "ENDPOINT", "REDIRECT_URI"] as const;

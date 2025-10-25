@@ -1,4 +1,4 @@
-import type { ConnectorServiceConstructor, ConnectorType } from "@/types/infrastructure/connector.interface";
+import type { ConnectorServiceConstructor, ConnectorType } from "../types/infrastructure/connector.interface";
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
 import { ConnectorLinearService } from "./vendors/connector.linear.service";

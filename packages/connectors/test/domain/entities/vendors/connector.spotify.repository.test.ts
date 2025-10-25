@@ -14,11 +14,11 @@ import type {
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
   SpotifyAlbumEntity,
-} from "@/types/domain/entities/vendors/connector.spotify.types";
-import { ConnectorSpotifyTrackRepository } from "@/domain/entities/vendors/spotify/connector.spotify-track.repository";
-import { ConnectorSpotifyArtistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-artist.repository";
-import { ConnectorSpotifyPlaylistRepository } from "@/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
-import { ConnectorSpotifyAlbumRepository } from "@/domain/entities/vendors/spotify/connector.spotify-album.repository";
+} from "../../../../src/types/domain/entities/vendors/connector.spotify.types";
+import { ConnectorSpotifyTrackRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-track.repository";
+import { ConnectorSpotifyArtistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-artist.repository";
+import { ConnectorSpotifyPlaylistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
+import { ConnectorSpotifyAlbumRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-album.repository";
 
 describe("ConnectorSpotifyRepository", () => {
   const trackRepository: ConnectorSpotifyTrackRepository = new ConnectorSpotifyTrackRepository();

@@ -7,12 +7,12 @@ import type {
   SpotifyPlaylistExternal,
   SpotifyAlbumExternal,
   SpotifyAlbumEntity,
+  SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
-  SpotifyRecentlyPlayedItemExternal,
   SpotifyCurrentlyPlayingExternal,
-} from "@/types/domain/entities/vendors/connector.spotify.types";
-import type { ConnectorOAuth } from "@/shared/auth/lib/oauth/connector.oauth";
-import { ConnectorSpotify } from "@/infrastructure/vendors/spotify/connector.spotify";
+} from "../../types/domain/entities/vendors/connector.spotify.types";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import { getConnectorConfig } from "../connector.service.config";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import {
@@ -20,7 +20,7 @@ import {
   SPOTIFY_ENTITY_TYPES_ENUM,
   type SpotifyServiceEntityMap,
 } from "./connector.vendors.config";
-import { connectorSpotifyTrackMapper } from "@/domain/mappers/vendors/connector.spotify.mapper";
+import { connectorSpotifyTrackMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
 export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
   constructor() {
@@ -41,6 +41,10 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
     this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.ALBUM, SpotifyAlbumExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.ALBUM,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.ALBUM],
+    );
+    this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED, SpotifyRecentlyPlayedExternal>(
+      SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED,
+      connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED],
     );
   }
 
@@ -69,23 +73,8 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ALBUM);
   }
 
-  // TODO: consider move this to a separate service
-  async getRecentlyPlayed(limit = 20): Promise<
-    SpotifyRecentlyPlayedExternal & {
-      items: Array<SpotifyRecentlyPlayedItemExternal & { trackEntity: SpotifyTrackEntity }>;
-    }
-  > {
-    await this.connector.connect();
-
-    const response = await this.connector.dataSource.fetchRecentlyPlayed(limit);
-
-    return {
-      ...response,
-      items: response.items.map((item) => ({
-        ...item,
-        trackEntity: connectorSpotifyTrackMapper.externalToDomain(item.track),
-      })),
-    };
+  async getRecentlyPlayed(): Promise<SpotifyRecentlyPlayedEntity[]> {
+    return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED);
   }
 
   async getCurrentlyPlaying(): Promise<
