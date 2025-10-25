@@ -2,10 +2,10 @@ import type { qdrant } from "@ait/qdrant";
 import { spotifyPlaylists, type getPostgresClient } from "@ait/postgres";
 import type { SpotifyPlaylistDataTarget } from "@ait/postgres";
 import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
-import type { IETLEmbeddingDescriptor } from "@/infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
-import { ETLSpotifyPlaylistDescriptor } from "@/infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { RETOVE_COLLECTION_NAME } from "@/config/retove.config";
+import { ETLSpotifyPlaylistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
+import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
 
 export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> = new ETLSpotifyPlaylistDescriptor();

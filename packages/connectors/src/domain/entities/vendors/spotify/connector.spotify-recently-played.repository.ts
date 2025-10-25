@@ -4,7 +4,7 @@ import type {
   IConnectorSpotifyRecentlyPlayedRepository,
   SpotifyRecentlyPlayedEntity,
 } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyRecentlyPlayed } from "@ait/postgres";
+import { getPostgresClient, spotifyRecentlyPlayed, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpotifyRecentlyPlayedRepository {
@@ -63,13 +63,29 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
     }
   }
 
-  async getRecentlyPlayed(limit?: number): Promise<SpotifyRecentlyPlayedEntity[]> {
-    console.log("Getting recently played from Spotify repository", limit);
-    return [];
+  async getRecentlyPlayed(limit = 20): Promise<SpotifyRecentlyPlayedEntity[]> {
+    const results = await this._pgClient.db
+      .select()
+      .from(spotifyRecentlyPlayed)
+      .orderBy(drizzleOrm.desc(spotifyRecentlyPlayed.playedAt))
+      .limit(limit)
+      .execute();
+
+    return results.map((result) => connectorSpotifyRecentlyPlayedMapper.dataTargetToDomain(result));
   }
 
   async getRecentlyPlayedById(id: string): Promise<SpotifyRecentlyPlayedEntity | null> {
-    console.log("Getting recently played item by id from Spotify repository", id);
+    const result = await this._pgClient.db
+      .select()
+      .from(spotifyRecentlyPlayed)
+      .where(drizzleOrm.eq(spotifyRecentlyPlayed.id, id))
+      .limit(1)
+      .execute();
+
+    if (result.length > 0 && result[0]) {
+      return connectorSpotifyRecentlyPlayedMapper.dataTargetToDomain(result[0]);
+    }
+
     return null;
   }
 }

@@ -1,27 +1,22 @@
 import { getAItClient, DEFAULT_RAG_COLLECTION } from "../../client/ai-sdk.client";
 import { QdrantProvider } from "../../rag/qdrant.provider";
-import { MultiQueryRetrieval } from "../../rag/multi-query.retrieval";
-import { ContextBuilder } from "../../rag/context.builder";
+import { createMultiQueryRetrievalService } from "../rag/multi-query-retrieval.factory";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../prompts/system.prompt";
-import { LRUCache } from "../../cache/lru-cache";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
-import type { IEmbeddingsService } from "../embeddings/embeddings.service";
-import type { Document, BaseMetadata } from "../../types/documents";
-import type { ChatMessage } from "../../types/chat";
-import { formatConversationHistory } from "../../types/chat";
-import { randomUUID } from "node:crypto";
 import { convertToOllamaTools } from "../../tools/tool.converter";
-import type { OllamaToolCall } from "../../client/ollama.provider";
+import { randomUUID } from "node:crypto";
 
-export interface CoreTool {
-  description: string;
-  parameters: any;
-  execute: (params: any) => Promise<unknown>;
-}
+import { RetryService, type IRetryService } from "./retry.service";
+import { ToolExecutionService, type IToolExecutionService } from "./tool-execution.service";
+import { PromptBuilderService, type IPromptBuilderService } from "./prompt-builder.service";
+import { ContextPreparationService, type IContextPreparationService } from "./context-preparation.service";
+import { ConversationManagerService, type IConversationManagerService } from "./conversation-manager.service";
+
+import type { IEmbeddingsService } from "../embeddings/embeddings.service";
+import type { ChatMessage } from "../../types/chat";
+import type { Tool } from "../../types/tools";
 
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
-const MAX_RETRIES = 3;
-const RETRY_DELAY_MS = 1000;
 
 export class TextGenerationError extends Error {
   constructor(
@@ -43,11 +38,30 @@ export interface TextGenerationConfig {
     queriesCount?: number;
     concurrency?: number;
   };
+  conversationConfig?: {
+    maxRecentMessages?: number;
+    maxHistoryTokens?: number;
+    enableSummarization?: boolean;
+  };
+  contextPreparationConfig?: {
+    enableRAG?: boolean;
+    cacheDurationMs?: number;
+    topicSimilarityThreshold?: number;
+  };
+  toolExecutionConfig?: {
+    maxRounds?: number;
+    toolTimeoutMs?: number;
+  };
+  retryConfig?: {
+    maxRetries?: number;
+    delayMs?: number;
+    backoffMultiplier?: number;
+  };
 }
 
 export interface GenerateOptions {
   prompt: string;
-  tools?: Record<string, CoreTool>;
+  tools?: Record<string, Tool>;
   maxToolRounds?: number;
   enableRAG?: boolean;
   messages?: ChatMessage[];
@@ -55,7 +69,7 @@ export interface GenerateOptions {
 
 export interface GenerateStreamOptions {
   prompt: string;
-  tools?: Record<string, CoreTool>;
+  tools?: Record<string, Tool>;
   maxToolRounds?: number;
   enableRAG?: boolean;
   messages?: ChatMessage[];
@@ -65,14 +79,23 @@ export interface ITextGenerationService {
   generateStream(options: GenerateStreamOptions): AsyncGenerator<string>;
 }
 
+/**
+ * Orchestrator service for text generation with RAG, tools, and conversation management
+ */
 export class TextGenerationService implements ITextGenerationService {
-  private readonly _qdrantProvider: QdrantProvider;
-  private readonly _multiQueryRetrieval: MultiQueryRetrieval;
-  private readonly _contextBuilder: ContextBuilder;
-  private readonly _embeddingCache: LRUCache<string, number[]>;
   private readonly _embeddingsModel: string;
   private readonly _collectionName: string;
-  private readonly _embeddingService: IEmbeddingsService;
+
+  // Service dependencies
+  private readonly _retryService: IRetryService;
+  private readonly _toolExecutionService: IToolExecutionService;
+  private readonly _promptBuilderService: IPromptBuilderService;
+  private readonly _contextPreparationService: IContextPreparationService;
+  private readonly _conversationManagerService: IConversationManagerService;
+
+  // Configuration
+  private readonly _enableRAGByDefault: boolean;
+  private readonly _maxToolRounds: number;
 
   constructor(config: TextGenerationConfig = {}) {
     const client = getAItClient();
@@ -80,29 +103,41 @@ export class TextGenerationService implements ITextGenerationService {
     this._embeddingsModel = config.embeddingsModel || client.embeddingModelConfig.name;
     this._collectionName = config.collectionName || DEFAULT_RAG_COLLECTION;
 
-    this._embeddingService =
+    const embeddingService =
       config.embeddingsService ||
       new EmbeddingsService(this._embeddingsModel, client.embeddingModelConfig.vectorSize, { concurrencyLimit: 4 });
 
-    this._qdrantProvider = new QdrantProvider({
+    const qdrantProvider = new QdrantProvider({
       collectionName: this._collectionName,
       embeddingsModel: this._embeddingsModel,
-      embeddingsService: this._embeddingService,
+      embeddingsService: embeddingService,
     });
 
-    this._multiQueryRetrieval = new MultiQueryRetrieval({
+    const multiQueryRetrieval = createMultiQueryRetrievalService({
       maxDocs: config.multipleQueryPlannerConfig?.maxDocs || 100,
-      queriesCount: config.multipleQueryPlannerConfig?.queriesCount || 12,
+      queryPlanner: {
+        queriesCount: config.multipleQueryPlannerConfig?.queriesCount || 12,
+      },
       concurrency: config.multipleQueryPlannerConfig?.concurrency || 4,
     });
 
-    this._contextBuilder = new ContextBuilder();
+    // Initialize services
+    this._retryService = new RetryService(config.retryConfig);
+    this._toolExecutionService = new ToolExecutionService(config.toolExecutionConfig);
+    this._promptBuilderService = new PromptBuilderService();
+    this._contextPreparationService = new ContextPreparationService(
+      qdrantProvider,
+      multiQueryRetrieval,
+      embeddingService,
+      config.contextPreparationConfig,
+    );
+    this._conversationManagerService = new ConversationManagerService(config.conversationConfig);
 
-    this._embeddingCache = new LRUCache({
-      maxSize: 1000,
-      ttlMs: 24 * 60 * 60 * 1000,
-    });
+    // Configuration
+    this._enableRAGByDefault = config.contextPreparationConfig?.enableRAG ?? true;
+    this._maxToolRounds = config.toolExecutionConfig?.maxRounds ?? 2;
   }
+
   public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string> {
     if (!options.prompt || !options.prompt.trim()) {
       throw new TextGenerationError("Prompt cannot be empty");
@@ -112,63 +147,97 @@ export class TextGenerationService implements ITextGenerationService {
     const overallStart = Date.now();
 
     try {
-      console.info("Starting stream text generation", { prompt: options.prompt.slice(0, 100) });
+      console.info("Starting stream text generation", {
+        prompt: options.prompt.slice(0, 100),
+        hasMessages: !!options.messages && options.messages.length > 0,
+        messageCount: options.messages?.length || 0,
+      });
 
       const client = getAItClient();
-      const fullPrompt = await this._buildFullPrompt(options, correlationId);
 
+      // Process conversation history
+      const conversationContext = await this._conversationManagerService.processConversation(
+        options.messages,
+        options.prompt,
+      );
+
+      console.info("Conversation context processed", {
+        recentMessageCount: conversationContext.recentMessages.length,
+        hasSummary: !!conversationContext.summary,
+        estimatedTokens: conversationContext.estimatedTokens,
+      });
+
+      // Prepare system message with RAG context if enabled
+      const systemMessage = await this._prepareSystemMessage(options, correlationId);
+
+      // Build initial prompt
+      let currentPrompt = this._promptBuilderService.buildPrompt({
+        systemMessage,
+        conversationHistory: this._formatConversationContext(conversationContext),
+        userMessage: options.prompt,
+      });
+
+      // Tool execution loop
       const ollamaTools = options.tools ? convertToOllamaTools(options.tools) : undefined;
-      const maxRounds = options.maxToolRounds || 2;
-
-      let currentPrompt = fullPrompt;
+      const maxRounds = options.maxToolRounds || this._maxToolRounds;
       let hasToolCalls = false;
 
       for (let round = 0; round < maxRounds; round++) {
-        if (options.tools) {
-          console.info(`Checking for tool calls (round ${round + 1})...`);
+        if (!options.tools) {
+          break;
+        }
 
-          const messages = this._buildMessages(options, correlationId);
+        console.info(`Checking for tool calls (round ${round + 1})...`);
 
-          const checkResult = await this._retryOperation(async () => {
-            return await client.generationModel.doGenerate({
-              prompt: currentPrompt,
-              messages: await messages,
-              temperature: client.config.generation.temperature,
-              topP: client.config.generation.topP,
-              topK: client.config.generation.topK,
-              tools: ollamaTools,
-            });
+        const messages = this._promptBuilderService.buildMessages(
+          systemMessage,
+          conversationContext.recentMessages,
+          options.prompt,
+        );
+
+        const checkResult = await this._retryService.execute(async () => {
+          return await client.generationModel.doGenerate({
+            prompt: currentPrompt,
+            messages,
+            temperature: client.config.generation.temperature,
+            topP: client.config.generation.topP,
+            topK: client.config.generation.topK,
+            tools: ollamaTools,
+          });
+        }, "tool-check");
+
+        console.info("Tool check result", {
+          hasToolCalls: checkResult.toolCalls && checkResult.toolCalls.length > 0,
+          toolCallsCount: checkResult.toolCalls?.length || 0,
+        });
+
+        if (checkResult.toolCalls && checkResult.toolCalls.length > 0) {
+          hasToolCalls = true;
+
+          const toolResults = await this._toolExecutionService.executeToolCalls(checkResult.toolCalls, options.tools);
+          const formattedToolResults = this._toolExecutionService.formatToolResults(toolResults);
+
+          currentPrompt = this._promptBuilderService.buildPrompt({
+            systemMessage,
+            conversationHistory: this._formatConversationContext(conversationContext),
+            userMessage: options.prompt,
+            toolResults: formattedToolResults,
           });
 
-          console.info("Tool check result", {
-            hasToolCalls: checkResult.toolCalls && checkResult.toolCalls.length > 0,
-            toolCallsCount: checkResult.toolCalls?.length || 0,
-          });
-
-          if (checkResult.toolCalls && checkResult.toolCalls.length > 0) {
-            hasToolCalls = true;
-
-            console.info("Executing tools...", {
-              toolNames: checkResult.toolCalls.map((tc) => tc.function.name),
-            });
-            const toolResults = await this._executeToolCalls(checkResult.toolCalls, options.tools);
-
-            currentPrompt = this._buildPromptWithToolResults(fullPrompt, checkResult.toolCalls, toolResults);
-
-            console.info("Streaming response with tool results...");
-            break;
-          }
+          console.info("Streaming response with tool results...");
+          break;
         }
       }
 
-      const stream = await this._retryOperation(async () => {
+      // Generate streaming response
+      const stream = await this._retryService.execute(async () => {
         return client.generationModel.doStream({
           prompt: currentPrompt,
           temperature: client.config.generation.temperature,
           topP: client.config.generation.topP,
           topK: client.config.generation.topK,
         });
-      });
+      }, "stream-generation");
 
       let chunkCount = 0;
       let fullResponse = "";
@@ -182,6 +251,8 @@ export class TextGenerationService implements ITextGenerationService {
       console.info("Stream generation completed", {
         duration: Date.now() - overallStart,
         hasToolCalls,
+        chunkCount,
+        responseLength: fullResponse.length,
       });
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
@@ -190,174 +261,34 @@ export class TextGenerationService implements ITextGenerationService {
     }
   }
 
-  private async _retryOperation<T>(operation: () => Promise<T>, retries = MAX_RETRIES): Promise<T> {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        if (attempt === retries) {
-          throw error;
-        }
+  private async _prepareSystemMessage(options: GenerateStreamOptions, correlationId: string): Promise<string> {
+    const enableRAG = options.enableRAG ?? this._enableRAGByDefault;
 
-        const delay = RETRY_DELAY_MS * attempt;
-        console.warn(`Operation failed, retrying in ${delay}ms`, {
-          attempt,
-          error: error instanceof Error ? error.message : String(error),
-        });
-
-        await new Promise((resolve) => setTimeout(resolve, delay));
-      }
+    if (!enableRAG) {
+      return buildSystemPromptWithoutContext();
     }
 
-    throw new Error("Retry operation failed unexpectedly");
+    const ragContext = await this._contextPreparationService.prepareContext(options.prompt);
+    return buildSystemPromptWithContext(ragContext.context);
   }
 
-  private async _buildFullPrompt(
-    options: GenerateOptions | GenerateStreamOptions,
-    correlationId: string,
-  ): Promise<string> {
-    let systemMessage: string;
+  private _formatConversationContext(conversationContext: {
+    recentMessages: ChatMessage[];
+    summary?: string;
+  }): string {
+    const parts: string[] = [];
 
-    if (options.enableRAG !== false) {
-      const context = await this._prepareContext(options.prompt, correlationId);
-      systemMessage = buildSystemPromptWithContext(context);
-    } else {
-      systemMessage = buildSystemPromptWithoutContext();
+    if (conversationContext.summary) {
+      parts.push(conversationContext.summary);
     }
 
-    if (!options.messages || options.messages.length === 0) {
-      return `${systemMessage}\n\nUser: ${options.prompt}\n\nAssistant:`;
+    if (conversationContext.recentMessages.length > 0) {
+      const formattedMessages = conversationContext.recentMessages
+        .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
+        .join("\n\n");
+      parts.push(formattedMessages);
     }
-
-    // Build conversation with proper formatting
-    const parts: string[] = [systemMessage];
-
-    // Add conversation history if present
-    const formattedHistory = formatConversationHistory(options.messages);
-    if (formattedHistory) {
-      parts.push(formattedHistory);
-    }
-
-    // Add current user message
-    parts.push(`User: ${options.prompt}`);
-
-    // Add assistant prompt
-    parts.push("Assistant:");
 
     return parts.join("\n\n");
-  }
-
-  private async _buildMessages(
-    options: GenerateStreamOptions,
-    correlationId: string,
-  ): Promise<Array<{ role: string; content: string }>> {
-    let systemMessage: string;
-
-    if (options.enableRAG !== false) {
-      const context = await this._prepareContext(options.prompt, correlationId);
-      systemMessage = buildSystemPromptWithContext(context);
-    } else {
-      systemMessage = buildSystemPromptWithoutContext();
-    }
-
-    const messages: Array<{ role: string; content: string }> = [{ role: "system", content: systemMessage }];
-
-    // Add conversation history if present
-    if (options.messages && options.messages.length > 0) {
-      for (const msg of options.messages) {
-        messages.push({
-          role: msg.role,
-          content: msg.content,
-        });
-      }
-    }
-
-    // Add current user message
-    messages.push({
-      role: "user",
-      content: options.prompt,
-    });
-
-    return messages;
-  }
-
-  private async _prepareContext(prompt: string, correlationId: string): Promise<string> {
-    console.info("Preparing context for RAG");
-
-    const similarDocs = await this._multiQueryRetrieval.retrieveWithMultiQueries(this._qdrantProvider, prompt);
-    const context = this._contextBuilder.buildContextFromDocuments(similarDocs as Document<BaseMetadata>[]);
-
-    return context;
-  }
-
-  private async _executeToolCalls(
-    toolCalls: OllamaToolCall[],
-    tools: Record<string, CoreTool>,
-  ): Promise<Array<{ name: string; result: unknown; error?: string }>> {
-    const results = await Promise.all(
-      toolCalls.map(async (toolCall) => {
-        const toolName = toolCall.function.name;
-        const tool = tools[toolName];
-
-        if (!tool) {
-          console.warn(`Tool ${toolName} not found`);
-          return {
-            name: toolName,
-            result: null,
-            error: `Tool ${toolName} not found`,
-          };
-        }
-
-        try {
-          console.info(`Executing tool: ${toolName}`, { arguments: toolCall.function.arguments });
-          const result = await tool.execute(toolCall.function.arguments);
-          console.info(`Tool ${toolName} completed`, { result });
-          return {
-            name: toolName,
-            result,
-          };
-        } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error);
-          console.error(`Tool ${toolName} failed`, { error: errMsg });
-          return {
-            name: toolName,
-            result: null,
-            error: errMsg,
-          };
-        }
-      }),
-    );
-
-    return results;
-  }
-
-  private _buildPromptWithToolResults(
-    originalPrompt: string,
-    toolCalls: OllamaToolCall[],
-    toolResults: Array<{ name: string; result: unknown; error?: string }>,
-  ): string {
-    let prompt = originalPrompt;
-
-    prompt += "\n\n=== Tool Call Results (LIVE DATA) ===\n";
-
-    for (let i = 0; i < toolCalls.length; i++) {
-      const toolCall = toolCalls[i];
-      const result = toolResults[i];
-
-      prompt += `\nTool: ${toolCall.function.name}\n`;
-      prompt += `Arguments: ${JSON.stringify(toolCall.function.arguments, null, 2)}\n`;
-
-      if (result.error) {
-        prompt += `Error: ${result.error}\n`;
-      } else {
-        prompt += `Result: ${JSON.stringify(result.result, null, 2)}\n`;
-      }
-    }
-
-    prompt += "\n=== End Tool Results ===\n\n";
-    prompt +=
-      "Now respond to the user's query. Use the LIVE tool data above for current activity, and weave in relevant context from your memory to provide a complete, natural answer. Combine both sources seamlessly.";
-
-    return prompt;
   }
 }

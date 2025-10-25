@@ -35,7 +35,7 @@ export function ChatMessagesList({ messages, isLoading, onSuggestionClick }: Cha
   }, [lastMessage]);
 
   return (
-    <div className="flex-1 overflow-y-auto custom-scrollbar relative min-h-[300px] max-h-[60dvh]">
+    <div className="flex-1 overflow-y-auto custom-scrollbar relative min-h-[300px]">
       <AnimatePresence mode="wait">
         {messages.length === 0 ? (
           <motion.div
