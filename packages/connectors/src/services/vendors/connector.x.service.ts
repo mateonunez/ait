@@ -20,6 +20,7 @@ export class ConnectorXService extends ConnectorServiceBase<ConnectorX, XService
   }
 
   async getTweets(): Promise<XTweetEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(X_ENTITY_TYPES_ENUM.TWEET);
   }
 }

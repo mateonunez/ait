@@ -27,6 +27,7 @@ export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub
   }
 
   async getRepositories(): Promise<GitHubRepositoryEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.REPOSITORY);
   }
 }

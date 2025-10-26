@@ -230,6 +230,9 @@ importers:
 
   packages/infrastructure/scheduler:
     dependencies:
+      '@ait/connectors':
+        specifier: workspace:*
+        version: link:../../connectors
       '@ait/postgres':
         specifier: workspace:*
         version: link:../postgres
