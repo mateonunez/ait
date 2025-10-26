@@ -3,6 +3,7 @@ import { Scheduler } from "./scheduler.service";
 import type { IRedisConfig } from "@ait/redis";
 import { GitHubETLs, SpotifyETLs, LinearETLs, XETLs } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
+import { closePostgresConnection } from "@ait/postgres";
 
 interface JobConfig {
   name: string;
@@ -169,6 +170,10 @@ async function main() {
 
     if (isManualRun) {
       await schedulerEntrypoint.runJobsManually();
+
+      console.info("🔒 Closing database connections...");
+      await closePostgresConnection();
+
       process.exit(0);
     }
 
@@ -180,6 +185,10 @@ async function main() {
     const shutdown = async (signal: string) => {
       console.info(`📥 Received ${signal}. Shutting down...`);
       await schedulerEntrypoint.stop();
+
+      console.info("🔒 Closing database connections...");
+      await closePostgresConnection();
+
       process.exit(0);
     };
 

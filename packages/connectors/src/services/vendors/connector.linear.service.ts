@@ -27,6 +27,7 @@ export class ConnectorLinearService extends ConnectorServiceBase<ConnectorLinear
   }
 
   async getIssues(): Promise<LinearIssueEntity[]> {
+    await this.connector.connect();
     return this.fetchEntities(LINEAR_ENTITY_TYPES_ENUM.ISSUE);
   }
 }
