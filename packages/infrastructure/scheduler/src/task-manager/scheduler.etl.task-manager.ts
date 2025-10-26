@@ -4,7 +4,7 @@ import {
   runSpotifyPlaylistETL,
   runSpotifyAlbumETL,
   runSpotifyRecentlyPlayedETL,
-  runGitHubETL,
+  runGitHubRepositoryETL,
   runGitHubPullRequestETL,
   runLinearETL,
   runXETL,
@@ -153,7 +153,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
         // 3. Run ETL to Qdrant
         console.info(`[${GitHubETLs.repository}] Running ETL to Qdrant...`);
-        await runGitHubETL(qdrant, postgres);
+        await runGitHubRepositoryETL(qdrant, postgres);
         console.info(`[${GitHubETLs.repository}] Completed`);
       });
     });

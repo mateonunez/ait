@@ -6,9 +6,10 @@ import {
   runSpotifyPlaylistETL,
   runSpotifyAlbumETL,
   runSpotifyRecentlyPlayedETL,
-  runGitHubETL,
+  runGitHubRepositoryETL,
   runLinearETL,
   runXETL,
+  runGitHubPullRequestETL,
 } from "./infrastructure/runners/etl.runners";
 
 async function main() {
@@ -25,7 +26,8 @@ async function main() {
     await runSpotifyRecentlyPlayedETL(qdrantClient, pgClient);
 
     // Run other vendor ETLs
-    await runGitHubETL(qdrantClient, pgClient);
+    await runGitHubRepositoryETL(qdrantClient, pgClient);
+    await runGitHubPullRequestETL(qdrantClient, pgClient);
     await runXETL(qdrantClient, pgClient);
     await runLinearETL(qdrantClient, pgClient);
 
