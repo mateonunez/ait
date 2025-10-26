@@ -181,13 +181,13 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${XETLs.tweet}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${XETLs.tweet}] Fetching tweets from X API...`);
-        const tweets = await this._xService.getTweets();
-        console.info(`[${XETLs.tweet}] Fetched ${tweets.length} tweets`);
+        // console.info(`[${XETLs.tweet}] Fetching tweets from X API...`);
+        // const tweets = await this._xService.getTweets();
+        // console.info(`[${XETLs.tweet}] Fetched ${tweets.length} tweets`);
 
-        console.info(`[${XETLs.tweet}] Saving tweets to Postgres...`);
-        await this._xService.connector.store.save(tweets);
-        console.info(`[${XETLs.tweet}] Saved to Postgres`);
+        // console.info(`[${XETLs.tweet}] Saving tweets to Postgres...`);
+        // await this._xService.connector.store.save(tweets);
+        // console.info(`[${XETLs.tweet}] Saved to Postgres`);
 
         console.info(`[${XETLs.tweet}] Running ETL to Qdrant...`);
         await runXETL(qdrant, postgres);
