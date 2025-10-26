@@ -89,29 +89,11 @@ describe("ConnectorGitHubDataSource", () => {
     });
   });
 
-  it("should throw an error if getting user fails", async () => {
-    const mockReposResponse = [
-      {
-        id: "1",
-        name: "repo1",
-        full_name: "mateonunez/repo1",
-        owner: { login: "mateonunez" },
-        stargazers_count: 10,
-      },
-    ];
-
+  it("should handle authentication errors", async () => {
     agent
       .get("https://api.github.com")
       .intercept({
         path: (path) => path.startsWith("/user/repos"),
-        method: "GET",
-      })
-      .reply(200, mockReposResponse);
-
-    agent
-      .get("https://api.github.com")
-      .intercept({
-        path: "/user",
         method: "GET",
       })
       .reply(401, { message: "Bad credentials" });
@@ -125,11 +107,6 @@ describe("ConnectorGitHubDataSource", () => {
 
   describe("Pull Requests", () => {
     it("should fetch pull requests from all repositories", async () => {
-      const mockUserResponse = {
-        login: "mateonunez",
-        id: 123456,
-      };
-
       const mockReposResponse = [
         {
           id: 123,
@@ -186,16 +163,7 @@ describe("ConnectorGitHubDataSource", () => {
         },
       ];
 
-      // Mock user endpoint
-      agent
-        .get("https://api.github.com")
-        .intercept({
-          path: "/user",
-          method: "GET",
-        })
-        .reply(200, mockUserResponse);
-
-      // Mock repos endpoint
+      // Mock repos endpoint (fetchPullRequests calls fetchRepositories internally)
       agent
         .get("https://api.github.com")
         .intercept({
@@ -204,22 +172,26 @@ describe("ConnectorGitHubDataSource", () => {
         })
         .reply(200, mockReposResponse);
 
-      // Mock pulls endpoint
+      // Mock pulls endpoint for each repo (Octokit expects { data: [...] } format from response.data)
       agent
         .get("https://api.github.com")
         .intercept({
           path: (path) => path.includes("/repos/mateonunez/test-repo/pulls"),
           method: "GET",
         })
-        .reply(200, mockPullRequestsResponse);
+        .reply(200, mockPullRequestsResponse, {
+          headers: {
+            "content-type": "application/json",
+          },
+        });
 
       const result = await dataSource.fetchPullRequests();
 
       assert.ok(Array.isArray(result));
       assert.equal(result.length, 1);
       assert.equal(result[0]?.__type, "pull_request");
-      assert.equal(result[0].number, 1);
-      assert.equal(result[0].title, "Test PR 1");
+      assert.equal(result[0]?.number, 1);
+      assert.equal(result[0]?.title, "Test PR 1");
     });
 
     it("should handle errors when fetching pull requests", async () => {
@@ -238,11 +210,6 @@ describe("ConnectorGitHubDataSource", () => {
     });
 
     it("should continue when individual repository PR fetch fails", async () => {
-      const mockUserResponse = {
-        login: "mateonunez",
-        id: 123456,
-      };
-
       const mockReposResponse = [
         {
           id: 123,
@@ -257,15 +224,6 @@ describe("ConnectorGitHubDataSource", () => {
           owner: { login: "mateonunez" },
         },
       ];
-
-      // Mock user endpoint
-      agent
-        .get("https://api.github.com")
-        .intercept({
-          path: "/user",
-          method: "GET",
-        })
-        .reply(200, mockUserResponse);
 
       // Mock repos endpoint
       agent
@@ -292,7 +250,11 @@ describe("ConnectorGitHubDataSource", () => {
           path: (path) => path.includes("/repos/mateonunez/test-repo-2/pulls"),
           method: "GET",
         })
-        .reply(200, []);
+        .reply(200, [], {
+          headers: {
+            "content-type": "application/json",
+          },
+        });
 
       const result = await dataSource.fetchPullRequests();
 
