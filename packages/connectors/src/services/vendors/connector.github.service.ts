@@ -6,6 +6,10 @@ import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
 } from "../../types/domain/entities/vendors/connector.github.repository.types";
+import type {
+  GitHubPullRequestEntity,
+  GitHubPullRequestExternal,
+} from "../../types/domain/entities/vendors/connector.github.pull-request.types";
 import {
   connectorEntityConfigs,
   GITHUB_ENTITY_TYPES_ENUM,
@@ -20,6 +24,11 @@ export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub
       GITHUB_ENTITY_TYPES_ENUM.REPOSITORY,
       connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.REPOSITORY],
     );
+
+    this.registerEntityConfig<GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, GitHubPullRequestExternal>(
+      GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST,
+      connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST],
+    );
   }
 
   protected createConnector(oauth: ConnectorOAuth): ConnectorGitHub {
@@ -27,7 +36,10 @@ export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub
   }
 
   async getRepositories(): Promise<GitHubRepositoryEntity[]> {
-    await this.connector.connect();
-    return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.REPOSITORY);
+    return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.REPOSITORY, true);
+  }
+
+  async getPullRequests(): Promise<GitHubPullRequestEntity[]> {
+    return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, true);
   }
 }

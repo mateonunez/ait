@@ -52,8 +52,12 @@ export default async function githubRoutes(fastify: FastifyInstance) {
         const repositories = await githubService.getRepositories();
         await githubService.connector.store.save(repositories);
 
+        const pullRequests = await githubService.getPullRequests();
+        await githubService.connector.store.save(pullRequests);
+
         reply.send({
           repositories,
+          pullRequests,
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

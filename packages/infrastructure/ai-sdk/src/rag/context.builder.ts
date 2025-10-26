@@ -9,9 +9,20 @@ import type {
   GitHubRepositoryEntity,
   XTweetEntity,
   LinearIssueEntity,
+  SpotifyRecentlyPlayedEntity,
 } from "@ait/connectors";
+import type { GitHubPullRequestEntity } from "@ait/connectors";
 
-type EntityType = "track" | "artist" | "playlist" | "album" | "repository" | "tweet" | "issue";
+type EntityType =
+  | "track"
+  | "artist"
+  | "playlist"
+  | "album"
+  | "recently_played"
+  | "repository"
+  | "pull_request"
+  | "tweet"
+  | "issue";
 
 type EntityContentBuilder<T = BaseMetadata> = (meta: T, pageContent: string) => string;
 
@@ -102,6 +113,23 @@ const buildSpotifyAlbum: EntityContentBuilder<SpotifyAlbumEntity> = (meta) => {
   );
 };
 
+const buildSpotifyRecentlyPlayed: EntityContentBuilder<SpotifyRecentlyPlayedEntity> = (meta) => {
+  const trackName = safeString(meta.trackName, "Unknown Track");
+  const artist = safeString(meta.artist, "Unknown Artist");
+  const album = safeString(meta.album);
+  const duration = safeNumber(meta.durationMs);
+  const explicit = meta.explicit ? " [Explicit]" : "";
+  const popularity = safeNumber(meta.popularity);
+
+  return joinParts(
+    `Recently Played: "${trackName}" by ${artist}`,
+    album ? ` from the album "${album}"` : null,
+    duration ? ` (${duration} seconds)` : null,
+    explicit,
+    popularity !== null ? ` (popularity: ${popularity}/100)` : null,
+  );
+};
+
 const buildGitHubRepository: EntityContentBuilder<GitHubRepositoryEntity> = (meta) => {
   const name = safeString(meta.fullName || meta.name, "Unknown Repository");
   const description = safeString(meta.description);
@@ -149,6 +177,59 @@ const buildGitHubRepository: EntityContentBuilder<GitHubRepositoryEntity> = (met
   );
 };
 
+const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (meta) => {
+  const number = safeNumber(meta.number);
+  const title = safeString(meta.title, "Unnamed PR");
+  const state = safeString(meta.state);
+  const merged = meta.merged ? "merged" : null;
+  const draft = meta.draft ? "draft" : null;
+
+  // Build stats
+  const stats: string[] = [];
+  const additions = safeNumber(meta.additions);
+  const deletions = safeNumber(meta.deletions);
+  if (additions !== null || deletions !== null) {
+    stats.push(`+${additions ?? 0} -${deletions ?? 0} lines`);
+  }
+
+  const changedFiles = safeNumber(meta.changedFiles);
+  if (changedFiles !== null) {
+    stats.push(`${changedFiles} file${changedFiles === 1 ? "" : "s"}`);
+  }
+
+  const comments = safeNumber(meta.comments);
+  const reviewComments = safeNumber(meta.reviewComments);
+  if (comments !== null && comments > 0) {
+    stats.push(`${comments} comment${comments === 1 ? "" : "s"}`);
+  }
+  if (reviewComments !== null && reviewComments > 0) {
+    stats.push(`${reviewComments} review${reviewComments === 1 ? "" : "s"}`);
+  }
+
+  // Build branches
+  const branchInfo =
+    meta.headRef && meta.baseRef ? `from ${safeString(meta.headRef)} to ${safeString(meta.baseRef)}` : null;
+
+  // Build labels
+  const labels =
+    meta.labels && Array.isArray(meta.labels) && meta.labels.length > 0
+      ? `Labels: ${meta.labels
+          .map((l: any) => l.name)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join(", ")}`
+      : null;
+
+  return joinParts(
+    `Pull Request #${number ?? "?"}`,
+    `: "${title}"`,
+    state ? ` [${merged || draft || state}]` : null,
+    stats.length > 0 ? `. ${stats.join(", ")}` : null,
+    branchInfo ? `. ${branchInfo}` : null,
+    labels ? `. ${labels}` : null,
+  );
+};
+
 const buildXTweet: EntityContentBuilder<XTweetEntity> = (meta, pageContent) => {
   const text = safeString(meta.text || pageContent, "");
   const retweetCount = safeNumber(meta.retweetCount);
@@ -189,7 +270,9 @@ const entityBuilders: Record<EntityType, EntityContentBuilder<any>> = {
   artist: buildSpotifyArtist,
   playlist: buildSpotifyPlaylist,
   album: buildSpotifyAlbum,
+  recently_played: buildSpotifyRecentlyPlayed,
   repository: buildGitHubRepository,
+  pull_request: buildGitHubPullRequest,
   tweet: buildXTweet,
   issue: buildLinearIssue,
 };

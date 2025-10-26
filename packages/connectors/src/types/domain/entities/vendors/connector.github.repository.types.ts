@@ -1,5 +1,10 @@
 import type { components as GitHubComponents } from "../../../openapi/openapi.github.types";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
+import type {
+  GitHubPullRequestEntity,
+  GitHubPullRequestExternal,
+  IConnectorGitHubPullRequestRepository,
+} from "./connector.github.pull-request.types";
 
 /**
  * Repository interface for GitHub repositories
@@ -13,10 +18,11 @@ export interface IConnectorGitHubRepoRepository {
 
 export interface IConnectorGitHubRepository extends IConnectorRepository {
   repo: IConnectorGitHubRepoRepository;
+  pullRequest: IConnectorGitHubPullRequestRepository;
 }
 
 export interface BaseGitHubEntity {
-  __type: "repository" | "issue" | "pullRequest";
+  __type: "repository" | "issue" | "pull_request";
 }
 
 type GitHubRepository = GitHubComponents["schemas"]["repository"];
@@ -62,5 +68,5 @@ export interface GitHubRepositoryEntity extends BaseGitHubEntity {
   __type: "repository";
 }
 
-export type GitHubEntity = GitHubRepositoryEntity;
-export type GitHubExternal = GitHubRepositoryExternal;
+export type GitHubEntity = GitHubRepositoryEntity | GitHubPullRequestEntity;
+export type GitHubExternal = GitHubRepositoryExternal | GitHubPullRequestExternal;
