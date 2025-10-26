@@ -83,7 +83,10 @@ export async function runSpotifyRecentlyPlayedETL(
   console.log("✅ RetoveSpotifyRecentlyPlayedETL process completed successfully!");
 }
 
-export async function runGitHubETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
+export async function runGitHubRepositoryETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
   const githubETL = new RetoveGitHubRepositoryETL(pgClient, qdrantClient);
 
   console.log(`🔍 Running RetoveGitHubRepositoryETL with limit of ${LIMIT}...`);
