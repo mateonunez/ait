@@ -103,21 +103,49 @@ const buildSpotifyAlbum: EntityContentBuilder<SpotifyAlbumEntity> = (meta) => {
 };
 
 const buildGitHubRepository: EntityContentBuilder<GitHubRepositoryEntity> = (meta) => {
-  const name = safeString(meta.name, "Unknown Repository");
+  const name = safeString(meta.fullName || meta.name, "Unknown Repository");
   const description = safeString(meta.description);
   const language = safeString(meta.language);
   const stars = safeNumber(meta.stars);
   const forks = safeNumber(meta.forks);
+  const watchers = safeNumber(meta.watchersCount);
+  const openIssues = safeNumber(meta.openIssuesCount);
 
+  // Build comprehensive stats
   const stats: string[] = [];
-  if (stars !== null) stats.push(`${stars} stars`);
-  if (forks !== null) stats.push(`${forks} forks`);
+  if (stars !== null) stats.push(`${stars} star${stars === 1 ? "" : "s"}`);
+  if (forks !== null) stats.push(`${forks} fork${forks === 1 ? "" : "s"}`);
+  if (watchers !== null && watchers > 0) stats.push(`${watchers} watcher${watchers === 1 ? "" : "s"}`);
+  if (openIssues !== null) stats.push(`${openIssues} open issue${openIssues === 1 ? "" : "s"}`);
+
+  // Build status indicators
+  const statusParts: string[] = [];
+  if (meta.archived) statusParts.push("archived");
+  if (meta.private) statusParts.push("private");
+  if (meta.fork) statusParts.push("fork");
+  if (meta.isTemplate) statusParts.push("template");
+
+  // Build features
+  const features: string[] = [];
+  if (meta.hasWiki) features.push("wiki");
+  if (meta.hasDiscussions) features.push("discussions");
+  if (meta.hasPages) features.push("GitHub Pages");
+
+  // Build topics
+  const topics = meta.topics && meta.topics.length > 0 ? `Topics: ${meta.topics.slice(0, 5).join(", ")}` : null;
+
+  // Build license
+  const license = meta.licenseName ? `License: ${meta.licenseName}` : null;
 
   return joinParts(
     `Repository: "${name}"`,
+    statusParts.length > 0 ? ` [${statusParts.join(", ")}]` : null,
     description ? ` - ${description}` : null,
     language ? ` (${language})` : null,
-    stats.length > 0 ? `, ${stats.join(", ")}` : null,
+    stats.length > 0 ? `. Stats: ${stats.join(", ")}` : null,
+    features.length > 0 ? `. Features: ${features.join(", ")}` : null,
+    topics ? `. ${topics}` : null,
+    license ? `. ${license}` : null,
   );
 };
 

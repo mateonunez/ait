@@ -12,7 +12,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
     try {
       const response = await this.octokit.repos.listForAuthenticatedUser({
         per_page: 100,
-        sort: "updated",
+        sort: "pushed",
         direction: "desc",
         affiliation: "owner,collaborator,organization_member",
       });
@@ -25,21 +25,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
       const repositories = parsedData as GitHubRepositoryExternal[];
 
-      const userResponse = await this.octokit.users.getAuthenticated();
-      const username = userResponse.data.login;
-
-      // Separate owned repos from collaborations/forks
-      const ownedRepos = repositories.filter((repo) => repo.owner?.login === username);
-      const otherRepos = repositories.filter((repo) => repo.owner?.login !== username);
-
-      // Sort each group by stars
-      const sortedOwnedRepos = ownedRepos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
-      const sortedOtherRepos = otherRepos.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
-
-      // Concatenate: owned repos first, then others
-      const sortedRepositories = [...sortedOwnedRepos, ...sortedOtherRepos];
-
-      return sortedRepositories.map((repo) => ({
+      return repositories.map((repo) => ({
         ...repo,
         __type: "repository" as const,
       }));
