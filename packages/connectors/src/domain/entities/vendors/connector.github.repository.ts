@@ -9,6 +9,7 @@ import type {
   IConnectorGitHubRepository,
 } from "../../../types/domain/entities/vendors/connector.github.repository.types";
 import type { IConnectorRepositorySaveOptions } from "../../../types/domain/entities/connector.repository.interface";
+import { ConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.repository";
 
 export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoRepository {
   private _pgClient = getPostgresClient();
@@ -99,10 +100,12 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
  */
 export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository implements IConnectorGitHubRepository {
   private _gitHubRepositoryRepository: ConnectorGitHubRepoRepository;
+  private _gitHubPullRequestRepository: ConnectorGitHubPullRequestRepository;
 
   constructor() {
     super();
     this._gitHubRepositoryRepository = new ConnectorGitHubRepoRepository();
+    this._gitHubPullRequestRepository = new ConnectorGitHubPullRequestRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
@@ -119,5 +122,13 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
 
   set repo(repo: ConnectorGitHubRepoRepository) {
     this._gitHubRepositoryRepository = repo;
+  }
+
+  get pullRequest(): ConnectorGitHubPullRequestRepository {
+    return this._gitHubPullRequestRepository;
+  }
+
+  set pullRequest(pullRequest: ConnectorGitHubPullRequestRepository) {
+    this._gitHubPullRequestRepository = pullRequest;
   }
 }

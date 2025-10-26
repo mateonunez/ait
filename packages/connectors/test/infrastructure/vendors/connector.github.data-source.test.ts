@@ -122,4 +122,183 @@ describe("ConnectorGitHubDataSource", () => {
       return true;
     });
   });
+
+  describe("Pull Requests", () => {
+    it("should fetch pull requests from all repositories", async () => {
+      const mockUserResponse = {
+        login: "mateonunez",
+        id: 123456,
+      };
+
+      const mockReposResponse = [
+        {
+          id: 123,
+          name: "test-repo",
+          full_name: "mateonunez/test-repo",
+          owner: { login: "mateonunez" },
+          stargazers_count: 10,
+        },
+      ];
+
+      const mockPullRequestsResponse = [
+        {
+          id: 1,
+          number: 1,
+          title: "Test PR 1",
+          body: "This is test PR 1",
+          state: "open",
+          draft: false,
+          locked: false,
+          html_url: "https://github.com/mateonunez/test-repo/pull/1",
+          diff_url: "https://github.com/mateonunez/test-repo/pull/1.diff",
+          patch_url: "https://github.com/mateonunez/test-repo/pull/1.patch",
+          issue_url: "https://api.github.com/repos/mateonunez/test-repo/issues/1",
+          merged: false,
+          merged_at: null,
+          closed_at: null,
+          merge_commit_sha: null,
+          commits: 3,
+          additions: 100,
+          deletions: 10,
+          changed_files: 5,
+          comments: 2,
+          review_comments: 1,
+          head: {
+            ref: "feature-branch",
+            sha: "abc123",
+          },
+          base: {
+            ref: "main",
+            sha: "def456",
+            repo: { id: 123 },
+          },
+          mergeable: true,
+          maintainer_can_modify: true,
+          user: { login: "testuser", id: 12345 },
+          assignee: null,
+          assignees: [],
+          requested_reviewers: [],
+          merged_by: null,
+          labels: [{ name: "feature", color: "00ff00" }],
+          milestone: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+
+      // Mock user endpoint
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: "/user",
+          method: "GET",
+        })
+        .reply(200, mockUserResponse);
+
+      // Mock repos endpoint
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.startsWith("/user/repos"),
+          method: "GET",
+        })
+        .reply(200, mockReposResponse);
+
+      // Mock pulls endpoint
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.includes("/repos/mateonunez/test-repo/pulls"),
+          method: "GET",
+        })
+        .reply(200, mockPullRequestsResponse);
+
+      const result = await dataSource.fetchPullRequests();
+
+      assert.ok(Array.isArray(result));
+      assert.equal(result.length, 1);
+      assert.equal(result[0]?.__type, "pull_request");
+      assert.equal(result[0].number, 1);
+      assert.equal(result[0].title, "Test PR 1");
+    });
+
+    it("should handle errors when fetching pull requests", async () => {
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.startsWith("/user/repos"),
+          method: "GET",
+        })
+        .reply(500, { message: "API Error" });
+
+      await assert.rejects(dataSource.fetchPullRequests(), (error: Error) => {
+        assert.ok(error.message.includes("Invalid fetch pull requests"));
+        return true;
+      });
+    });
+
+    it("should continue when individual repository PR fetch fails", async () => {
+      const mockUserResponse = {
+        login: "mateonunez",
+        id: 123456,
+      };
+
+      const mockReposResponse = [
+        {
+          id: 123,
+          name: "test-repo-1",
+          full_name: "mateonunez/test-repo-1",
+          owner: { login: "mateonunez" },
+        },
+        {
+          id: 456,
+          name: "test-repo-2",
+          full_name: "mateonunez/test-repo-2",
+          owner: { login: "mateonunez" },
+        },
+      ];
+
+      // Mock user endpoint
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: "/user",
+          method: "GET",
+        })
+        .reply(200, mockUserResponse);
+
+      // Mock repos endpoint
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.startsWith("/user/repos"),
+          method: "GET",
+        })
+        .reply(200, mockReposResponse);
+
+      // Mock first repo pulls to fail
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.includes("/repos/mateonunez/test-repo-1/pulls"),
+          method: "GET",
+        })
+        .reply(500, { message: "Failed to fetch PRs" });
+
+      // Mock second repo pulls to succeed with empty array
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.includes("/repos/mateonunez/test-repo-2/pulls"),
+          method: "GET",
+        })
+        .reply(200, []);
+
+      const result = await dataSource.fetchPullRequests();
+
+      assert.ok(Array.isArray(result));
+      // Should still succeed for repo 2 even though repo 1 failed
+      assert.equal(result.length, 0);
+    });
+  });
 });

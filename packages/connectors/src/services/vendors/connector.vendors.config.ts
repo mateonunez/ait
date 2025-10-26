@@ -1,4 +1,5 @@
 import { connectorGithubRepositoryMapper } from "../../domain/mappers/vendors/connector.github.mapper";
+import { connectorGithubPullRequestMapper } from "../../domain/mappers/vendors/connector.github.pull-request.mapper";
 import { connectorLinearIssueMapper } from "../../domain/mappers/vendors/connector.linear.mapper";
 import {
   connectorSpotifyAlbumMapper,
@@ -15,6 +16,10 @@ import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
 } from "../../types/domain/entities/vendors/connector.github.repository.types";
+import type {
+  GitHubPullRequestEntity,
+  GitHubPullRequestExternal,
+} from "../../types/domain/entities/vendors/connector.github.pull-request.types";
 import type {
   LinearIssueEntity,
   LinearIssueExternal,
@@ -41,10 +46,12 @@ export interface EntityConfig<TConnector, TExternal, TDomain> {
 
 export enum GITHUB_ENTITY_TYPES_ENUM {
   REPOSITORY = "repository",
+  PULL_REQUEST = "pull_request",
 }
 
 export interface GitHubServiceEntityMap {
   [GITHUB_ENTITY_TYPES_ENUM.REPOSITORY]: GitHubRepositoryEntity;
+  [GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST]: GitHubPullRequestEntity;
 }
 
 export enum SPOTIFY_ENTITY_TYPES_ENUM {
@@ -84,6 +91,11 @@ const githubEntityConfigs = {
     fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchRepositories(),
     mapper: (repo: GitHubRepositoryExternal) => connectorGithubRepositoryMapper.externalToDomain(repo),
   } satisfies EntityConfig<ConnectorGitHub, GitHubRepositoryExternal, GitHubRepositoryEntity>,
+
+  [GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST]: {
+    fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchPullRequests(),
+    mapper: (pr: GitHubPullRequestExternal) => connectorGithubPullRequestMapper.externalToDomain(pr),
+  } satisfies EntityConfig<ConnectorGitHub, GitHubPullRequestExternal, GitHubPullRequestEntity>,
 } as const;
 
 const spotifyEntityConfigs = {

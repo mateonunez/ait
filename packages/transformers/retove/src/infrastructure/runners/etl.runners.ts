@@ -1,5 +1,6 @@
 import type { qdrant } from "@ait/qdrant";
 import { RetoveGitHubRepositoryETL } from "../../etl/vendors/retove.github.repository.etl";
+import { RetoveGitHubPullRequestETL } from "../../etl/vendors/retove.github.pull-request.etl";
 import type { getPostgresClient } from "@ait/postgres";
 import { RetoveXTweetETL } from "../../etl/vendors/retove.x.tweet.etl";
 import { RetoveSpotifyTrackETL } from "../../etl/vendors/retove.spotify.track.etl";
@@ -19,6 +20,7 @@ export const SpotifyETLs = {
 
 export const GitHubETLs = {
   repository: "RetoveGitHubRepositoryETL",
+  pullRequest: "RetoveGitHubPullRequestETL",
 };
 
 export const XETLs = {
@@ -87,6 +89,16 @@ export async function runGitHubETL(qdrantClient: qdrant.QdrantClient, pgClient: 
   console.log(`🔍 Running RetoveGitHubRepositoryETL with limit of ${LIMIT}...`);
   await githubETL.run(LIMIT);
   console.log("✅ RetoveGitHubRepositoryETL process completed successfully!");
+}
+
+export async function runGitHubPullRequestETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const etl = new RetoveGitHubPullRequestETL(pgClient, qdrantClient);
+  console.log(`🔍 Running RetoveGitHubPullRequestETL with limit of ${LIMIT}...`);
+  await etl.run(LIMIT);
+  console.log("✅ RetoveGitHubPullRequestETL process completed successfully!");
 }
 
 export async function runXETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
