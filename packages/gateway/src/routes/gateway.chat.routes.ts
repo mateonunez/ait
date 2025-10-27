@@ -1,4 +1,9 @@
-import { TextGenerationService, createAllConnectorTools, initAItClient } from "@ait/ai-sdk";
+import {
+  createAllConnectorTools,
+  initAItClient,
+  getTextGenerationService,
+  type TextGenerationService,
+} from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
 import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/connectors";
@@ -14,45 +19,38 @@ interface ChatRequestBody {
   messages: ChatMessage[];
 }
 
-const generationConfig = {
-  model: "granite4:latest",
-  temperature: 1,
-  topP: 0.9,
-  topK: 40,
-};
-const embeddingConfig = {
-  model: "mxbai-embed-large:latest",
-};
-const ragConfig = {
-  collection: "ait_embeddings_collection",
-  strategy: "multi-query" as const,
-  maxDocs: 100,
-};
-const multipleQueryPlannerConfig = {
-  maxDocs: 100,
-  queriesCount: 12,
-  concurrency: 4,
-};
-
 export default async function chatRoutes(fastify: FastifyInstance) {
   if (!fastify.textGenerationService) {
     initAItClient({
-      generation: generationConfig,
-      embeddings: embeddingConfig,
-      rag: ragConfig,
+      generation: {
+        model: "granite4:latest",
+        // model: "gemma3:latest",
+        temperature: 1,
+        topP: 0.9,
+        topK: 40,
+      },
+      embeddings: {
+        model: "mxbai-embed-large:latest",
+      },
+      rag: {
+        collection: "ait_embeddings_collection",
+        strategy: "multi-query",
+        maxDocs: 100,
+      },
+      textGeneration: {
+        multipleQueryPlannerConfig: {
+          maxDocs: 100,
+          queriesCount: 12,
+          concurrency: 4,
+        },
+      },
       ollama: {
         baseURL: "http://127.0.0.1:11434",
       },
       logger: true,
     });
 
-    fastify.decorate(
-      "textGenerationService",
-      new TextGenerationService({
-        collectionName: "ait_embeddings_collection",
-        multipleQueryPlannerConfig: multipleQueryPlannerConfig,
-      }),
-    );
+    fastify.decorate("textGenerationService", getTextGenerationService());
   }
 
   if (!fastify.spotifyService) {

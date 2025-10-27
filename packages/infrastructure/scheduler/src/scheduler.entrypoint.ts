@@ -42,14 +42,14 @@ const SCHEDULED_JOBS: JobConfig[] = [
     name: SpotifyETLs.track,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.highPriorityCron,
-    priority: 1,
+    priority: 2,
     enabled: true,
   },
   {
     name: XETLs.tweet,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.highPriorityCron,
-    priority: 1,
+    priority: 2,
     enabled: true,
   },
   {
