@@ -23,6 +23,32 @@ export interface AItClientConfig {
     strategy?: "single" | "multi-query";
     maxDocs?: number;
   };
+  textGeneration?: {
+    multipleQueryPlannerConfig?: {
+      maxDocs?: number;
+      queriesCount?: number;
+      concurrency?: number;
+    };
+    conversationConfig?: {
+      maxRecentMessages?: number;
+      maxHistoryTokens?: number;
+      enableSummarization?: boolean;
+    };
+    contextPreparationConfig?: {
+      enableRAG?: boolean;
+      cacheDurationMs?: number;
+      topicSimilarityThreshold?: number;
+    };
+    toolExecutionConfig?: {
+      maxRounds?: number;
+      toolTimeoutMs?: number;
+    };
+    retryConfig?: {
+      maxRetries?: number;
+      delayMs?: number;
+      backoffMultiplier?: number;
+    };
+  };
   ollama?: {
     baseURL?: string;
   };
@@ -66,6 +92,7 @@ export interface AItClient {
 }
 
 let _clientInstance: AItClient | null = null;
+let _textGenerationServiceInstance: any = null; // Will be typed as TextGenerationService to avoid circular dependency
 let _config: Required<AItClientConfig>;
 
 function buildAItClient(config: Required<AItClientConfig>) {
@@ -121,6 +148,37 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
       maxDocs: 100,
       ...configOverrides.rag,
     },
+    textGeneration: {
+      multipleQueryPlannerConfig: {
+        maxDocs: 100,
+        queriesCount: 12,
+        concurrency: 4,
+        ...configOverrides.textGeneration?.multipleQueryPlannerConfig,
+      },
+      conversationConfig: {
+        maxRecentMessages: 10,
+        maxHistoryTokens: 4000,
+        enableSummarization: false,
+        ...configOverrides.textGeneration?.conversationConfig,
+      },
+      contextPreparationConfig: {
+        enableRAG: true,
+        cacheDurationMs: 5 * 60 * 1000, // 5 minutes
+        topicSimilarityThreshold: 0.5,
+        ...configOverrides.textGeneration?.contextPreparationConfig,
+      },
+      toolExecutionConfig: {
+        maxRounds: 2,
+        toolTimeoutMs: 30000,
+        ...configOverrides.textGeneration?.toolExecutionConfig,
+      },
+      retryConfig: {
+        maxRetries: 3,
+        delayMs: 1000,
+        backoffMultiplier: 2,
+        ...configOverrides.textGeneration?.retryConfig,
+      },
+    },
     ollama: {
       baseURL: DEFAULT_OLLAMA_BASE_URL,
       ...configOverrides.ollama,
@@ -129,6 +187,7 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
   };
 
   _clientInstance = null;
+  _textGenerationServiceInstance = null;
 }
 
 export function getAItClient(): AItClient {
@@ -141,8 +200,31 @@ export function getAItClient(): AItClient {
   return _clientInstance;
 }
 
+export function getTextGenerationService(): any {
+  if (!_textGenerationServiceInstance) {
+    // Lazy import to avoid circular dependency
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { TextGenerationService } = require("../services/text-generation/text-generation.service");
+
+    if (!_config) {
+      initAItClient();
+    }
+
+    _textGenerationServiceInstance = new TextGenerationService({
+      collectionName: _config.rag.collection,
+      multipleQueryPlannerConfig: _config.textGeneration.multipleQueryPlannerConfig,
+      conversationConfig: _config.textGeneration.conversationConfig,
+      contextPreparationConfig: _config.textGeneration.contextPreparationConfig,
+      toolExecutionConfig: _config.textGeneration.toolExecutionConfig,
+      retryConfig: _config.textGeneration.retryConfig,
+    });
+  }
+  return _textGenerationServiceInstance;
+}
+
 export function resetAItClientInstance() {
   _clientInstance = null;
+  _textGenerationServiceInstance = null;
 }
 
 export function getClientConfig(): Required<AItClientConfig> {

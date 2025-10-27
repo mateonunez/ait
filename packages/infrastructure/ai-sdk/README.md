@@ -27,9 +27,9 @@ pnpm install
 ### Initialize the Client
 
 ```typescript
-import { initAItClient, getAItClient } from '@ait/ai-sdk';
+import { initAItClient, getTextGenerationService } from '@ait/ai-sdk';
 
-// Initialize with default configuration
+// Initialize everything in one call
 initAItClient({
   generation: { 
     model: 'gemma3:latest',
@@ -42,19 +42,34 @@ initAItClient({
     collection: 'ait_embeddings_collection',
     strategy: 'multi-query',
     maxDocs: 100
+  },
+  textGeneration: {
+    multipleQueryPlannerConfig: {
+      maxDocs: 100,
+      queriesCount: 12,
+      concurrency: 4
+    }
   }
 });
+
+// Get the text generation service (automatically configured)
+const service = getTextGenerationService();
 ```
 
 ### Text Generation (Streaming)
 
 ```typescript
-import { TextGenerationService, smoothStream } from '@ait/ai-sdk';
+import { initAItClient, getTextGenerationService, smoothStream } from '@ait/ai-sdk';
 
-const service = new TextGenerationService({
-  model: 'gemma3:latest',
-  collectionName: 'ait_embeddings_collection'
+// Initialize once
+initAItClient({
+  generation: { model: 'gemma3:latest' },
+  embeddings: { model: 'mxbai-embed-large:latest' },
+  rag: { collection: 'ait_embeddings_collection' }
 });
+
+// Get the service (no need to instantiate TextGenerationService manually!)
+const service = getTextGenerationService();
 
 // Streaming generation with RAG
 const stream = service.generateStream({
@@ -75,14 +90,23 @@ const text = await smoothStream(stream, {
 });
 ```
 
+**🎉 What's New:**
+- **Simplified Setup**: Configure everything (client + services) in a single `initAItClient()` call
+- **No Manual Instantiation**: Use `getTextGenerationService()` instead of `new TextGenerationService()`
+- **No Config Duplication**: Pass `textGeneration` config once, not twice
+- **Better DX**: One initialization, zero boilerplate
+
 ### Conversation History
 
 ```typescript
-import { TextGenerationService, type ChatMessage } from '@ait/ai-sdk';
+import { initAItClient, getTextGenerationService, type ChatMessage } from '@ait/ai-sdk';
 
-const service = new TextGenerationService({
-  collectionName: 'ait_embeddings_collection'
+// Initialize once
+initAItClient({
+  rag: { collection: 'ait_embeddings_collection' }
 });
+
+const service = getTextGenerationService();
 
 // Helper to collect stream into text
 async function collectStream(stream: AsyncGenerator<string>): Promise<string> {
@@ -143,13 +167,15 @@ console.log('\nAIt remembers the conversation!');
 ### Tool Calling
 
 ```typescript
-import { createAllConnectorTools, QdrantProvider } from '@ait/ai-sdk';
+import { initAItClient, getTextGenerationService, createAllConnectorTools } from '@ait/ai-sdk';
 
-const qdrantProvider = new QdrantProvider({
-  collectionName: 'ait_embeddings_collection'
+// Initialize
+initAItClient({
+  rag: { collection: 'ait_embeddings_collection' }
 });
 
-const tools = createAllConnectorTools(qdrantProvider);
+const service = getTextGenerationService();
+const tools = createAllConnectorTools(/* your connector service */);
 
 // Streaming with tool calling
 const stream = service.generateStream({
@@ -355,6 +381,61 @@ pnpm test:e2e
 # Build
 pnpm build
 ```
+
+## Developer Experience Improvements
+
+### Before (Manual Setup)
+
+```typescript
+import { initAItClient, TextGenerationService } from '@ait/ai-sdk';
+
+// Step 1: Initialize client
+initAItClient({
+  generation: { model: 'gemma3:latest' },
+  embeddings: { model: 'mxbai-embed-large:latest' },
+  rag: { collection: 'ait_embeddings_collection' }
+});
+
+// Step 2: Manually create service with duplicated config
+const service = new TextGenerationService({
+  collectionName: 'ait_embeddings_collection', // Already set in rag.collection above!
+  multipleQueryPlannerConfig: {
+    maxDocs: 100,
+    queriesCount: 12,
+    concurrency: 4
+  }
+});
+```
+
+### After (Simplified Setup)
+
+```typescript
+import { initAItClient, getTextGenerationService } from '@ait/ai-sdk';
+
+// One-time initialization with everything configured
+initAItClient({
+  generation: { model: 'gemma3:latest' },
+  embeddings: { model: 'mxbai-embed-large:latest' },
+  rag: { collection: 'ait_embeddings_collection' },
+  textGeneration: {
+    multipleQueryPlannerConfig: {
+      maxDocs: 100,
+      queriesCount: 12,
+      concurrency: 4
+    }
+  }
+});
+
+// Get the service (automatically configured!)
+const service = getTextGenerationService();
+```
+
+**Benefits:**
+- ✅ No configuration duplication
+- ✅ Single initialization point
+- ✅ Consistent API with other getters like `getAItClient()`
+- ✅ Better TypeScript autocomplete
+- ✅ Easier testing and mocking
 
 ## Migration from LangChain
 

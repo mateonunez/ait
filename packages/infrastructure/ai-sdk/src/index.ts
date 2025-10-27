@@ -1,4 +1,5 @@
 export * from "./client/ai-sdk.client";
+export { getTextGenerationService } from "./client/ai-sdk.client";
 
 export * from "./config/models.config";
 
