@@ -18,9 +18,7 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
     const pullRequestId = incremental ? randomUUID() : pullRequest.id;
 
     try {
-      console.debug("Before mapping pull request to data target:", pullRequest);
       const pullRequestData = connectorGithubPullRequestMapper.domainToDataTarget(pullRequest);
-      console.debug("After mapping pull request to data target:", pullRequestData);
       pullRequestData.id = pullRequestId;
 
       await this._pgClient.db.transaction(async (tx) => {

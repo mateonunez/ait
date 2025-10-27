@@ -22,9 +22,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
     const repositoryId = incremental ? randomUUID() : repository.id;
 
     try {
-      console.debug("Before mapping repository to data target:", repository);
       const repositoryData = connectorGithubRepositoryMapper.domainToDataTarget(repository);
-      console.debug("After mapping repository to data target:", repositoryData);
       repositoryData.id = repositoryId;
 
       await this._pgClient.db.transaction(async (tx) => {
