@@ -18,9 +18,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
     const tweetId = incremental ? randomUUID() : tweet.id;
 
     try {
-      console.debug("Before mapping tweet to data target:", tweet);
       const tweetData = connectorXTweetMapper.domainToDataTarget(tweet);
-      console.debug("After mapping tweet to data target:", tweetData);
       tweetData.id = tweetId;
 
       await this._pgClient.db.transaction(async (tx) => {

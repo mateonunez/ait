@@ -3,13 +3,13 @@ import { useChat } from "@ai-sdk/react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useChatDialog } from "@/contexts/chat.context";
 import { ChatMessagesList } from "./chat-messages-list";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Maximize, Minimize } from "lucide-react";
 import { cn } from "@/styles/utils";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function ChatDialog() {
-  const { isOpen, closeChat, openChat } = useChatDialog();
+  const { isOpen, isFullscreen, closeChat, openChat, toggleFullscreen } = useChatDialog();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [textareaHeight, setTextareaHeight] = useState("auto");
 
@@ -45,13 +45,21 @@ export function ChatDialog() {
         }
       }
       if (e.key === "Escape" && isOpen) {
-        closeChat();
+        if (isFullscreen) {
+          toggleFullscreen();
+        } else {
+          closeChat();
+        }
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === "f" && isOpen) {
+        e.preventDefault();
+        toggleFullscreen();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, closeChat, openChat]);
+  }, [isOpen, isFullscreen, closeChat, openChat, toggleFullscreen]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: input is intentionally the only dependency for auto-resize
   useEffect(() => {
@@ -105,10 +113,11 @@ export function ChatDialog() {
       <DialogContent
         className={cn(
           "gap-0 p-0 !border-0 !outline-none shadow-2xl overflow-hidden flex flex-col",
-          "h-[100dvh] max-h-[100dvh] min-h-[80dvh] w-screen max-w-screen",
-          "sm:h-auto sm:max-h-[80dvh] sm:w-[min(90vw,1000px)] sm:rounded-3xl",
           "bg-background",
           "[&>button]:hidden",
+          isFullscreen
+            ? "h-[100dvh] max-h-[100dvh] w-screen max-w-screen"
+            : "h-[100dvh] max-h-[100dvh] min-h-[80dvh] w-screen max-w-screen sm:h-auto sm:max-h-[80dvh] sm:w-[min(90vw,1000px)] sm:rounded-3xl",
         )}
       >
         {/* Header */}
@@ -129,6 +138,20 @@ export function ChatDialog() {
                 {messages.length} {messages.length === 1 ? "message" : "messages"}
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={toggleFullscreen}
+              className="h-8 w-8 rounded-lg hover:bg-muted/50"
+              title={isFullscreen ? "Exit fullscreen (Cmd/Ctrl + F)" : "Enter fullscreen (Cmd/Ctrl + F)"}
+            >
+              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+              <span className="sr-only">{isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}</span>
+            </Button>
           </div>
         </motion.div>
 

@@ -2,27 +2,36 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 
 interface ChatContextType {
   isOpen: boolean;
+  isFullscreen: boolean;
   openChat: () => void;
   closeChat: () => void;
   toggleChat: () => void;
+  toggleFullscreen: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const openChat = () => setIsOpen(true);
-  const closeChat = () => setIsOpen(false);
+  const closeChat = () => {
+    setIsOpen(false);
+    setIsFullscreen(false);
+  };
   const toggleChat = () => setIsOpen((prev) => !prev);
+  const toggleFullscreen = () => setIsFullscreen((prev) => !prev);
 
   return (
     <ChatContext.Provider
       value={{
         isOpen,
+        isFullscreen,
         openChat,
         closeChat,
         toggleChat,
+        toggleFullscreen,
       }}
     >
       {children}

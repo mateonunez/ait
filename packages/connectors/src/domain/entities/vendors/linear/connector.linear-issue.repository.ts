@@ -18,9 +18,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     const issueId = incremental ? randomUUID() : issue.id;
 
     try {
-      console.debug("Before mapping issue to data target:", issue);
       const issueDataTarget = connectorLinearIssueMapper.domainToDataTarget(issue);
-      console.debug("After mapping issue to data target:", issueDataTarget);
       issueDataTarget.id = issueId;
 
       await this._pgClient.db.transaction(async (tx) => {
