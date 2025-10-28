@@ -105,8 +105,16 @@ export class ContextPreparationService implements IContextPreparationService {
     try {
       const similarity = await this._calculateTopicSimilarity(query, this._cachedContext.query);
 
+      console.info("Topic similarity check", {
+        similarity: similarity.toFixed(3),
+        threshold: this._topicSimilarityThreshold,
+        willReuseCache: similarity >= this._topicSimilarityThreshold,
+        previousQuery: this._cachedContext.query.slice(0, 50),
+        currentQuery: query.slice(0, 50),
+      });
+
       if (similarity < this._topicSimilarityThreshold) {
-        console.info("Topic changed significantly", { similarity, threshold: this._topicSimilarityThreshold });
+        console.info("Topic changed significantly - fetching fresh context");
         return false;
       }
 

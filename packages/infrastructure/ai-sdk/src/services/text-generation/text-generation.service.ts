@@ -15,6 +15,7 @@ import { ConversationManagerService, type IConversationManagerService } from "./
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import type { ChatMessage } from "../../types/chat";
 import type { Tool } from "../../types/tools";
+import type { TextGenerationFeatureConfig } from "../../types/config";
 
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
@@ -28,35 +29,19 @@ export class TextGenerationError extends Error {
   }
 }
 
-export interface TextGenerationConfig {
+/**
+ * Configuration for Text Generation Service
+ * Extends TextGenerationFeatureConfig with service-specific options
+ */
+export interface TextGenerationConfig extends TextGenerationFeatureConfig {
+  /** Generation model name */
   model?: string;
+  /** Embeddings model name */
   embeddingsModel?: string;
+  /** Vector collection name */
   collectionName?: string;
+  /** Custom embeddings service instance */
   embeddingsService?: IEmbeddingsService;
-  multipleQueryPlannerConfig?: {
-    maxDocs?: number;
-    queriesCount?: number;
-    concurrency?: number;
-  };
-  conversationConfig?: {
-    maxRecentMessages?: number;
-    maxHistoryTokens?: number;
-    enableSummarization?: boolean;
-  };
-  contextPreparationConfig?: {
-    enableRAG?: boolean;
-    cacheDurationMs?: number;
-    topicSimilarityThreshold?: number;
-  };
-  toolExecutionConfig?: {
-    maxRounds?: number;
-    toolTimeoutMs?: number;
-  };
-  retryConfig?: {
-    maxRetries?: number;
-    delayMs?: number;
-    backoffMultiplier?: number;
-  };
 }
 
 export interface GenerateOptions {
@@ -182,8 +167,21 @@ export class TextGenerationService implements ITextGenerationService {
       const maxRounds = options.maxToolRounds || this._maxToolRounds;
       let hasToolCalls = false;
 
+      // Check if model supports tools
+      const modelSupportsTools = client.generationModelConfig.supportsTools ?? true;
+      if (options.tools && !modelSupportsTools) {
+        console.warn(
+          `Model '${client.generationModelConfig.name}' does not support tools. Tool execution will be skipped.`,
+          {
+            model: client.generationModelConfig.name,
+            supportsTools: false,
+            toolsProvided: Object.keys(options.tools).length,
+          },
+        );
+      }
+
       for (let round = 0; round < maxRounds; round++) {
-        if (!options.tools) {
+        if (!options.tools || !modelSupportsTools) {
           break;
         }
 

@@ -1,93 +1,36 @@
 import dotenv from "dotenv";
 import { OllamaProvider } from "./ollama.provider";
-import { getGenerationModel, getEmbeddingModel, type ModelSpec } from "../config/models.config";
-import type { OllamaTool, OllamaToolCall } from "./ollama.provider";
+import {
+  getGenerationModel,
+  getEmbeddingModel,
+  type ModelSpec,
+  type GenerationModelName,
+  type EmbeddingModelName,
+} from "../config/models.config";
+import type { ClientConfig } from "../types/config";
+import type { GenerationModel, EmbeddingsModel } from "../types/models";
 
 dotenv.config();
 
-export interface AItClientConfig {
-  generation?: {
-    model?: string;
-    temperature?: number;
-    topP?: number;
-    topK?: number;
-    frequencyPenalty?: number;
-    presencePenalty?: number;
-  };
-  embeddings?: {
-    model?: string;
-    vectorSize?: number;
-  };
-  rag?: {
-    collection?: string;
-    strategy?: "single" | "multi-query";
-    maxDocs?: number;
-  };
-  textGeneration?: {
-    multipleQueryPlannerConfig?: {
-      maxDocs?: number;
-      queriesCount?: number;
-      concurrency?: number;
-    };
-    conversationConfig?: {
-      maxRecentMessages?: number;
-      maxHistoryTokens?: number;
-      enableSummarization?: boolean;
-    };
-    contextPreparationConfig?: {
-      enableRAG?: boolean;
-      cacheDurationMs?: number;
-      topicSimilarityThreshold?: number;
-    };
-    toolExecutionConfig?: {
-      maxRounds?: number;
-      toolTimeoutMs?: number;
-    };
-    retryConfig?: {
-      maxRetries?: number;
-      delayMs?: number;
-      backoffMultiplier?: number;
-    };
-  };
-  ollama?: {
-    baseURL?: string;
-  };
-  logger?: boolean;
-}
+export type AItClientConfig = ClientConfig;
 
-export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 export const DEFAULT_RAG_COLLECTION = process.env.DEFAULT_RAG_COLLECTION || "ait_embeddings_collection";
 
+/**
+ * AI Client interface
+ * Provides access to generation and embedding models with configuration
+ */
 export interface AItClient {
+  /** Client configuration */
   config: Required<AItClientConfig>;
-  generationModel: {
-    modelId: string;
-    provider: string;
-    doGenerate(options: {
-      prompt: string;
-      messages?: Array<{ role: string; content: string; tool_calls?: OllamaToolCall[] }>;
-      temperature?: number;
-      topP?: number;
-      topK?: number;
-      tools?: OllamaTool[];
-    }): Promise<{
-      text: string;
-      toolCalls?: OllamaToolCall[];
-    }>;
-    doStream(options: {
-      prompt: string;
-      temperature?: number;
-      topP?: number;
-      topK?: number;
-      tools?: OllamaTool[];
-    }): AsyncGenerator<string>;
-  };
-  embeddingsModel: {
-    modelId: string;
-    provider: string;
-    doEmbed(text: string): Promise<number[]>;
-  };
+  /** Generation model instance */
+  generationModel: GenerationModel;
+  /** Embeddings model instance */
+  embeddingsModel: EmbeddingsModel;
+  /** Generation model configuration */
   generationModelConfig: ModelSpec;
+  /** Embedding model configuration */
   embeddingModelConfig: ModelSpec;
 }
 
@@ -129,7 +72,7 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
 
   _config = {
     generation: {
-      model: generationModelConfig.name,
+      model: generationModelConfig.name as GenerationModelName,
       temperature: generationModelConfig.temperature || 0.7,
       topP: generationModelConfig.topP || 0.9,
       topK: generationModelConfig.topK,
@@ -138,7 +81,7 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
       ...configOverrides.generation,
     },
     embeddings: {
-      model: embeddingModelConfig.name,
+      model: embeddingModelConfig.name as EmbeddingModelName,
       vectorSize: embeddingModelConfig.vectorSize,
       ...configOverrides.embeddings,
     },
@@ -163,8 +106,8 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
       },
       contextPreparationConfig: {
         enableRAG: true,
-        cacheDurationMs: 5 * 60 * 1000, // 5 minutes
-        topicSimilarityThreshold: 0.5,
+        cacheDurationMs: 0, // Disable caching
+        topicSimilarityThreshold: 0.95,
         ...configOverrides.textGeneration?.contextPreparationConfig,
       },
       toolExecutionConfig: {
@@ -237,4 +180,30 @@ export function getGenerationModelConfig(): ModelSpec {
 
 export function getEmbeddingModelConfig(): ModelSpec {
   return getAItClient().embeddingModelConfig;
+}
+
+/**
+ * Check if the current generation model supports tool/function calling
+ * @returns true if the model supports tools, false otherwise
+ */
+export function modelSupportsTools(): boolean {
+  const config = getGenerationModelConfig();
+  return config.supportsTools ?? true; // Default to true for backwards compatibility
+}
+
+/**
+ * Get model capabilities for validation
+ * @returns Object with model capability flags
+ */
+export function getModelCapabilities(): {
+  supportsTools: boolean;
+  contextWindow?: number;
+  vectorSize: number;
+} {
+  const config = getGenerationModelConfig();
+  return {
+    supportsTools: config.supportsTools ?? true,
+    contextWindow: config.contextWindow,
+    vectorSize: config.vectorSize,
+  };
 }

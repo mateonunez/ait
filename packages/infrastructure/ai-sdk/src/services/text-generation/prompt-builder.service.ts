@@ -1,5 +1,6 @@
 import type { PromptComponents } from "../../types/text-generation";
 import type { ChatMessage } from "../../types/chat";
+import type { ModelMessage } from "../../types/models";
 
 /**
  * Interface for prompt builder service
@@ -23,7 +24,7 @@ export interface IPromptBuilderService {
     systemMessage: string,
     conversationHistory: ChatMessage[] | undefined,
     userMessage: string,
-  ): Array<{ role: string; content: string }>;
+  ): ModelMessage[];
 }
 
 /**
@@ -43,6 +44,11 @@ export class PromptBuilderService implements IPromptBuilderService {
       parts.push(components.toolResults);
     }
 
+    // Separator before current query
+    if (components.conversationHistory?.trim()) {
+      parts.push("---");
+    }
+
     // Add current user message
     parts.push(`User: ${components.userMessage}`);
 
@@ -56,14 +62,14 @@ export class PromptBuilderService implements IPromptBuilderService {
     systemMessage: string,
     conversationHistory: ChatMessage[] | undefined,
     userMessage: string,
-  ): Array<{ role: string; content: string }> {
-    const messages: Array<{ role: string; content: string }> = [{ role: "system", content: systemMessage }];
+  ): ModelMessage[] {
+    const messages: ModelMessage[] = [{ role: "system", content: systemMessage }];
 
     // Add conversation history if present
     if (conversationHistory && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
         messages.push({
-          role: msg.role,
+          role: msg.role as "user" | "assistant" | "system" | "tool",
           content: msg.content,
         });
       }
