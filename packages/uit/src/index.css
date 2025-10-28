@@ -23,6 +23,8 @@
   --rose-300: hsl(355 100% 89%);
   --rose-400: hsl(355 100% 80%);
   --rose-500: hsl(355 90% 62%);
+  --rose-600: hsl(355 90% 52%);
+  --rose-700: hsl(355 90% 42%);
 
   --background: var(--neutral-50);
   --foreground: var(--neutral-900);
@@ -188,7 +190,20 @@
   }
 
   .streamdown-wrapper a {
-    @apply text-primary underline underline-offset-2 hover:text-primary/80 transition-colors;
+    @apply text-blue-600 dark:text-blue-400 underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium;
+    color: var(--rose-500) !important;
+  }
+
+  .dark .streamdown-wrapper a {
+    color: var(--rose-400) !important;
+  }
+
+  .streamdown-wrapper a:hover {
+    color: var(--rose-600) !important;
+  }
+
+  .dark .streamdown-wrapper a:hover {
+    color: var(--rose-300) !important;
   }
 
   .streamdown-wrapper hr {
