@@ -4,6 +4,7 @@ import { TextGenerationService } from "./text-generation.service";
 import { initAItClient } from "../../client/ai-sdk.client";
 import { smoothStream } from "./utils/stream.utils";
 import type { ChatMessage } from "../../types/chat";
+import { GenerationModels, EmbeddingModels } from "../../config/models.config";
 
 describe("AIt Personality Integration (AI SDK)", () => {
   const timeout = 1800000;
@@ -12,8 +13,8 @@ describe("AIt Personality Integration (AI SDK)", () => {
 
   beforeEach(() => {
     initAItClient({
-      generation: { model: "gemma3:latest", temperature: 0.7 },
-      embeddings: { model: "mxbai-embed-large:latest" },
+      generation: { model: GenerationModels.GEMMA_3, temperature: 0.7 },
+      embeddings: { model: EmbeddingModels.MXBAI_EMBED_LARGE },
       rag: {
         collection: "ait_embeddings_collection",
         strategy: "multi-query",

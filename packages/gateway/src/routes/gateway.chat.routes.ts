@@ -3,6 +3,7 @@ import {
   initAItClient,
   getTextGenerationService,
   type TextGenerationService,
+  GenerationModels,
 } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
@@ -23,31 +24,9 @@ export default async function chatRoutes(fastify: FastifyInstance) {
   if (!fastify.textGenerationService) {
     initAItClient({
       generation: {
-        model: "granite4:latest",
-        // model: "gemma3:latest",
+        model: GenerationModels.GEMMA_3,
         temperature: 1,
-        topP: 0.9,
-        topK: 40,
       },
-      embeddings: {
-        model: "mxbai-embed-large:latest",
-      },
-      rag: {
-        collection: "ait_embeddings_collection",
-        strategy: "multi-query",
-        maxDocs: 100,
-      },
-      textGeneration: {
-        multipleQueryPlannerConfig: {
-          maxDocs: 100,
-          queriesCount: 12,
-          concurrency: 4,
-        },
-      },
-      ollama: {
-        baseURL: "http://127.0.0.1:11434",
-      },
-      logger: true,
     });
 
     fastify.decorate("textGenerationService", getTextGenerationService());

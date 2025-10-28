@@ -5,3 +5,6 @@ export * from "./context";
 export * from "./chat";
 export * from "./rag";
 export * from "./text-generation";
+export * from "./config";
+export * from "./models";
+export * from "./providers";

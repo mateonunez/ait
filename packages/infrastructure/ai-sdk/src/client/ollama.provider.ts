@@ -1,61 +1,26 @@
-export interface OllamaTool {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: {
-      type: "object";
-      properties: Record<string, unknown>;
-      required?: string[];
-    };
-  };
-}
+import type { GenerationModel, EmbeddingsModel, ModelGenerateOptions, ModelStreamOptions } from "../types/models";
+import type {
+  OllamaTool,
+  OllamaToolCall,
+  OllamaMessage,
+  OllamaGenerateRequest,
+  OllamaChatRequest,
+  OllamaEmbedRequest,
+  OllamaConfig,
+  OllamaChatGenerateOptions,
+  OllamaGenerateResult,
+} from "../types/providers/ollama.types";
 
-export interface OllamaToolCall {
-  function: {
-    name: string;
-    arguments: Record<string, unknown>;
-  };
-}
-
-export interface OllamaMessage {
-  role: "system" | "user" | "assistant" | "tool";
-  content: string;
-  tool_calls?: OllamaToolCall[];
-}
-
-export interface OllamaGenerateRequest {
-  model: string;
-  prompt: string;
-  stream?: boolean;
-  tools?: OllamaTool[];
-  options?: {
-    temperature?: number;
-    top_p?: number;
-    top_k?: number;
-  };
-}
-
-export interface OllamaChatRequest {
-  model: string;
-  messages: OllamaMessage[];
-  stream?: boolean;
-  tools?: OllamaTool[];
-  options?: {
-    temperature?: number;
-    top_p?: number;
-    top_k?: number;
-  };
-}
-
-export interface OllamaEmbedRequest {
-  model: string;
-  prompt: string;
-}
-
-export interface OllamaConfig {
-  baseURL: string;
-}
+// Re-export Ollama types for backward compatibility
+export type {
+  OllamaTool,
+  OllamaToolCall,
+  OllamaMessage,
+  OllamaGenerateRequest,
+  OllamaChatRequest,
+  OllamaEmbedRequest,
+  OllamaConfig,
+};
 
 export class OllamaProvider {
   private baseURL: string;
@@ -64,21 +29,16 @@ export class OllamaProvider {
     this.baseURL = config.baseURL;
   }
 
-  createTextModel(modelName: string) {
+  createTextModel(modelName: string): GenerationModel & {
+    doChatGenerate(options: OllamaChatGenerateOptions): Promise<OllamaGenerateResult>;
+  } {
     const baseURL = this.baseURL;
 
     return {
       modelId: modelName,
       provider: "ollama",
 
-      async doGenerate(options: {
-        prompt: string;
-        temperature?: number;
-        topP?: number;
-        topK?: number;
-        tools?: OllamaTool[];
-        messages?: OllamaMessage[];
-      }): Promise<{ text: string; toolCalls?: OllamaToolCall[] }> {
+      async doGenerate(options: ModelGenerateOptions): Promise<OllamaGenerateResult> {
         // Use chat API if tools are present or messages provided
         if (options.tools || options.messages) {
           return this.doChatGenerate(options);
@@ -115,14 +75,7 @@ export class OllamaProvider {
         };
       },
 
-      async doChatGenerate(options: {
-        prompt?: string;
-        messages?: OllamaMessage[];
-        temperature?: number;
-        topP?: number;
-        topK?: number;
-        tools?: OllamaTool[];
-      }): Promise<{ text: string; toolCalls?: OllamaToolCall[] }> {
+      async doChatGenerate(options: OllamaChatGenerateOptions): Promise<OllamaGenerateResult> {
         // Build messages array
         const messages = options.messages || [
           {
@@ -165,13 +118,7 @@ export class OllamaProvider {
         };
       },
 
-      async *doStream(options: {
-        prompt: string;
-        temperature?: number;
-        topP?: number;
-        topK?: number;
-        tools?: OllamaTool[];
-      }): AsyncGenerator<string> {
+      async *doStream(options: ModelStreamOptions): AsyncGenerator<string> {
         const response = await fetch(`${baseURL}/api/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -229,7 +176,7 @@ export class OllamaProvider {
     };
   }
 
-  createEmbeddingsModel(modelName: string) {
+  createEmbeddingsModel(modelName: string): EmbeddingsModel {
     const baseURL = this.baseURL;
 
     return {
