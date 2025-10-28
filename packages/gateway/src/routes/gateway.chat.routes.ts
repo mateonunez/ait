@@ -1,9 +1,9 @@
 import {
   createAllConnectorTools,
-  initAItClient,
-  getTextGenerationService,
-  type TextGenerationService,
   GenerationModels,
+  getTextGenerationService,
+  initAItClient,
+  type TextGenerationService,
 } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
@@ -20,15 +20,15 @@ interface ChatRequestBody {
   messages: ChatMessage[];
 }
 
+initAItClient({
+  generation: {
+    model: GenerationModels.QWEN3,
+    temperature: 1,
+  },
+});
+
 export default async function chatRoutes(fastify: FastifyInstance) {
   if (!fastify.textGenerationService) {
-    initAItClient({
-      generation: {
-        model: GenerationModels.GEMMA_3,
-        temperature: 1,
-      },
-    });
-
     fastify.decorate("textGenerationService", getTextGenerationService());
   }
 
