@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
+
 import chatRoutes from "./routes/gateway.chat.routes";
 import githubRoutes from "./routes/gateway.github.routes";
 import linearRoutes from "./routes/gateway.linear.routes";

@@ -3,6 +3,7 @@ import { OllamaProvider } from "./ollama.provider";
 import {
   getGenerationModel,
   getEmbeddingModel,
+  getModelSpec,
   type ModelSpec,
   type GenerationModelName,
   type EmbeddingModelName,
@@ -39,11 +40,17 @@ let _textGenerationServiceInstance: any = null; // Will be typed as TextGenerati
 let _config: Required<AItClientConfig>;
 
 function buildAItClient(config: Required<AItClientConfig>) {
-  const generationModelConfig = getGenerationModel();
-  const embeddingModelConfig = getEmbeddingModel();
+  // Use the model from config, not from environment
+  const generationModelName = config.generation.model;
+  const embeddingsModelName = config.embeddings.model;
 
-  const generationModelName = config.generation.model || generationModelConfig.name;
-  const embeddingsModelName = config.embeddings.model || embeddingModelConfig.name;
+  // Get the model specs based on the configured model names
+  const generationModelConfig = generationModelName
+    ? getModelSpec(generationModelName, "generation") || getGenerationModel()
+    : getGenerationModel();
+  const embeddingModelConfig = embeddingsModelName
+    ? getModelSpec(embeddingsModelName, "embedding") || getEmbeddingModel()
+    : getEmbeddingModel();
 
   if (config.logger) {
     console.log(`[AItClient] Initializing with generation model: ${generationModelName}`);
@@ -54,8 +61,8 @@ function buildAItClient(config: Required<AItClientConfig>) {
     baseURL: config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL,
   });
 
-  const generationModel = ollama.createTextModel(generationModelName);
-  const embeddingsModel = ollama.createEmbeddingsModel(embeddingsModelName);
+  const generationModel = ollama.createTextModel(String(generationModelName));
+  const embeddingsModel = ollama.createEmbeddingsModel(String(embeddingsModelName));
 
   return {
     config,

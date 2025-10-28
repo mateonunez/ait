@@ -186,5 +186,14 @@ export function isModelAvailable(modelName: ModelName, type: ModelType): boolean
 
 export function getModelSpec(modelName: ModelName, type: ModelType): ModelSpec | undefined {
   const models = type === "generation" ? GENERATION_MODELS : EMBEDDING_MODELS;
-  return models[modelName as keyof typeof models];
+  const spec = models[modelName as keyof typeof models] as Omit<ModelSpec, "name"> | undefined;
+
+  if (!spec) {
+    return undefined;
+  }
+
+  return {
+    name: modelName,
+    ...spec,
+  };
 }
