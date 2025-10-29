@@ -1,6 +1,6 @@
 import { connectorXTweetMapper } from "../../../domain/mappers/vendors/connector.x.mapper";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
 import type { IConnectorRepositorySaveOptions } from "../../../types/domain/entities/connector.repository.interface";
 import type {
   IConnectorXRepository,
@@ -73,11 +73,15 @@ export class ConnectorXRepository extends ConnectorXTweetRepository implements I
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    saveOAuthData(data, "x");
+    await saveOAuthData(data, "x");
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
     return getOAuthData("x");
+  }
+
+  public async clearAuthenticationData(): Promise<void> {
+    await clearOAuthData("x");
   }
 
   get tweet(): ConnectorXTweetRepository {

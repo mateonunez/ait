@@ -40,6 +40,10 @@ export class ConnectorX extends BaseConnectorAbstract<
     await this._store.saveAuthenticationData(response);
   }
 
+  protected async clearAuthenticatedData(): Promise<void> {
+    await this._repository.clearAuthenticationData();
+  }
+
   public getAuthenticator(): ConnectorXAuthenticator {
     return this._authenticator as ConnectorXAuthenticator;
   }
