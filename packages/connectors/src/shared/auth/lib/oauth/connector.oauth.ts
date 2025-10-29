@@ -41,7 +41,14 @@ export class ConnectorOAuth implements IConnectorOAuth {
       grant_type: "refresh_token",
     };
 
-    return this._postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData);
+    try {
+      return await this._postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData, true);
+    } catch (error: any) {
+      if (error instanceof ConnectorOAuthRequestError && (error.statusCode === 400 || error.statusCode === 401)) {
+        throw new ConnectorOAuthRefreshTokenExpiredError(error.statusCode, error.responseBody);
+      }
+      throw error;
+    }
   }
 
   public async revokeAccessToken(accessToken: string): Promise<void> {
@@ -51,37 +58,53 @@ export class ConnectorOAuth implements IConnectorOAuth {
     await this._postFormData<void>(url, formData);
   }
 
-  private async _postFormData<T>(url: string, formData: Record<string, string>): Promise<T> {
+  private async _postFormData<T>(url: string, formData: Record<string, string>, isRefresh = false): Promise<T> {
     const basicAuth = Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString("base64");
 
-    const response = await request(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
-        Authorization: `Basic ${basicAuth}`,
-      },
-      body: new URLSearchParams(formData).toString(),
-    });
+    try {
+      const response = await request(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+          Authorization: `Basic ${basicAuth}`,
+        },
+        body: new URLSearchParams(formData).toString(),
+      });
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      const errorText = await response.body.text().catch(() => "");
-      throw new ConnectorOAuthRequestError(
-        response.statusCode,
-        `Request failed [${response.statusCode}]: ${errorText}`,
-        errorText,
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        const errorText = await response.body.text().catch(() => "");
+        throw new ConnectorOAuthRequestError(
+          response.statusCode,
+          `Request failed [${response.statusCode}]: ${errorText}`,
+          errorText,
+        );
+      }
+
+      let parsedBody: unknown;
+      const responseText = await response.body.text();
+      try {
+        parsedBody = JSON.parse(responseText);
+      } catch {
+        throw new ConnectorOAuthJsonParseError(`Invalid JSON response: ${responseText}`, responseText);
+      }
+
+      return parsedBody as T;
+    } catch (error: any) {
+      if (
+        error instanceof ConnectorOAuthRequestError ||
+        error instanceof ConnectorOAuthJsonParseError ||
+        error instanceof ConnectorOAuthRefreshTokenExpiredError
+      ) {
+        throw error;
+      }
+
+      // Otherwise, it's a network/connection error
+      throw new ConnectorOAuthNetworkError(
+        `Network error during OAuth ${isRefresh ? "token refresh" : "request"}: ${error.message}`,
+        error,
       );
     }
-
-    let parsedBody: unknown;
-    const responseText = await response.body.text();
-    try {
-      parsedBody = JSON.parse(responseText);
-    } catch {
-      throw new ConnectorOAuthJsonParseError(`Invalid JSON response: ${responseText}`, responseText);
-    }
-
-    return parsedBody as T;
   }
 }
 
@@ -106,6 +129,30 @@ export class ConnectorOAuthJsonParseError extends Error {
     this.name = "ConnectorOAuthJsonParseError";
     this.responseBody = responseBody;
     Object.setPrototypeOf(this, ConnectorOAuthJsonParseError.prototype);
+  }
+}
+
+export class ConnectorOAuthRefreshTokenExpiredError extends Error {
+  public statusCode: number;
+  public responseBody: string;
+
+  constructor(statusCode: number, responseBody: string) {
+    super("Refresh token has expired or been revoked. Re-authentication required.");
+    this.name = "ConnectorOAuthRefreshTokenExpiredError";
+    this.statusCode = statusCode;
+    this.responseBody = responseBody;
+    Object.setPrototypeOf(this, ConnectorOAuthRefreshTokenExpiredError.prototype);
+  }
+}
+
+export class ConnectorOAuthNetworkError extends Error {
+  public originalError: Error;
+
+  constructor(message: string, originalError: Error) {
+    super(message);
+    this.name = "ConnectorOAuthNetworkError";
+    this.originalError = originalError;
+    Object.setPrototypeOf(this, ConnectorOAuthNetworkError.prototype);
   }
 }
 export interface IConnectorOAuthConfig {

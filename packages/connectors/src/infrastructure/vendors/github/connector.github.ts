@@ -39,4 +39,8 @@ export class ConnectorGitHub extends BaseConnectorAbstract<
   protected async saveAuthenticatedData(response: { access_token: string }): Promise<void> {
     await this._store.saveAuthenticationData(response);
   }
+
+  protected async clearAuthenticatedData(): Promise<void> {
+    await this._repository.clearAuthenticationData();
+  }
 }

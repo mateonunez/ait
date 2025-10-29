@@ -22,7 +22,7 @@ interface ChatRequestBody {
 
 initAItClient({
   generation: {
-    model: GenerationModels.QWEN3,
+    model: GenerationModels.GPT_OSS_20B_CLOUD,
     temperature: 1,
   },
 });

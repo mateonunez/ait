@@ -11,4 +11,5 @@ export interface IConnectorRepositorySaveOptions {
 export interface IConnectorRepository {
   saveAuthenticationData(data: Partial<IConnectorOAuthTokenResponse>): Promise<void>;
   getAuthenticationData(): Promise<OAuthTokenDataTarget | null>;
+  clearAuthenticationData(): Promise<void>;
 }

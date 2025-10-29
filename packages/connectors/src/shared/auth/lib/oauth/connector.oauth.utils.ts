@@ -64,3 +64,7 @@ export async function getOAuthData(provider: string): Promise<OAuthTokenDataTarg
 
   return data[0] as OAuthTokenDataTarget;
 }
+
+export async function clearOAuthData(provider: string): Promise<void> {
+  await _pgClient.db.delete(oauthTokens).where(drizzleOrm.eq(oauthTokens.provider, provider)).execute();
+}

@@ -9,6 +9,7 @@ export enum Models {
 
 export enum GenerationModels {
   GPT_OSS_20B = "gpt-oss:20b",
+  GPT_OSS_20B_CLOUD = "gpt-oss:20b-cloud",
   QWEN3 = "qwen3:latest",
   DEEPSEEK_R1 = "deepseek-r1:latest",
   GEMMA_3 = "gemma3:latest",
@@ -43,6 +44,15 @@ export type ModelType = "generation" | "embedding";
 
 export const GENERATION_MODELS: Record<GenerationModelName, Omit<ModelSpec, "name">> = {
   [GenerationModels.GPT_OSS_20B]: {
+    vectorSize: 4096,
+    contextWindow: 128000,
+    description: "OpenAI's open-weight 20B model for powerful reasoning and agentic tasks",
+    supportsTools: true,
+    temperature: 0.7,
+    topP: 0.9,
+    topK: 40,
+  },
+  [GenerationModels.GPT_OSS_20B_CLOUD]: {
     vectorSize: 4096,
     contextWindow: 128000,
     description: "OpenAI's open-weight 20B model for powerful reasoning and agentic tasks",

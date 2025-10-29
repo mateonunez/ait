@@ -1,7 +1,7 @@
 import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
 import { connectorGithubRepositoryMapper } from "../../mappers/vendors/connector.github.mapper";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import { saveOAuthData, getOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
 import { randomUUID } from "node:crypto";
 import type {
   IConnectorGitHubRepoRepository,
@@ -107,11 +107,15 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    saveOAuthData(data, "github");
+    await saveOAuthData(data, "github");
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
     return getOAuthData("github");
+  }
+
+  public async clearAuthenticationData(): Promise<void> {
+    await clearOAuthData("github");
   }
 
   get repo(): ConnectorGitHubRepoRepository {
