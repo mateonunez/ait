@@ -1,9 +1,9 @@
 import { getQdrantClient, type qdrant } from "@ait/qdrant";
-import { EmbeddingsService } from "../services/embeddings/embeddings.service";
-import type { IEmbeddingsService } from "../services/embeddings/embeddings.service";
-import { getEmbeddingModelConfig } from "../client/ai-sdk.client";
-import type { Document, BaseMetadata } from "../types/documents";
-import { extractContentFromPayload, extractMetadataFromPayload } from "../types/qdrant";
+import type { IEmbeddingsService } from "../embeddings/embeddings.service";
+import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
+import type { Document, BaseMetadata } from "../../types/documents";
+import { extractContentFromPayload, extractMetadataFromPayload } from "../../types/qdrant";
+import { EmbeddingsService } from "../embeddings/embeddings.service";
 
 export interface QdrantProviderConfig {
   url?: string;
@@ -44,10 +44,32 @@ export class QdrantProvider {
       concurrencyLimit: 4,
     });
 
+    return this.similaritySearchWithVector(queryVector, k);
+  }
+
+  async similaritySearchWithVector(
+    vector: number[],
+    k: number,
+    filter?: { types?: string[] },
+  ): Promise<Document<BaseMetadata>[]> {
+    let qdrantFilter: any;
+    if (filter?.types && filter.types.length > 0) {
+      if (filter.types.length === 1) {
+        qdrantFilter = {
+          must: [{ key: "metadata.__type", match: { value: filter.types[0] } }],
+        };
+      } else {
+        qdrantFilter = {
+          should: filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })),
+        };
+      }
+    }
+
     const searchResult = await this._client.search(this._config.collectionName, {
-      vector: queryVector,
+      vector,
       limit: k,
       with_payload: true,
+      filter: qdrantFilter,
     });
 
     return searchResult.map((point) => ({

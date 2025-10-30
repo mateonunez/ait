@@ -64,27 +64,32 @@ export function ChatMessagesList({ messages, isLoading, onSuggestionClick }: Cha
               </div>
 
               <div className="flex flex-col gap-2 mt-4">
-                {["What music do I listen to?", "Tell me about my GitHub projects", "What are my recent tweets?"].map(
-                  (suggestion, i) => (
-                    <motion.button
-                      key={suggestion}
-                      type="button"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
-                      onClick={() => onSuggestionClick?.(suggestion)}
-                      className={cn(
-                        "px-3.5 py-2 rounded-xl text-sm text-left",
-                        "bg-muted/50 hover:bg-muted",
-                        "border border-border/50 hover:border-border",
-                        "transition-all duration-200",
-                        "text-foreground/80 hover:text-foreground",
-                      )}
-                    >
-                      {suggestion}
-                    </motion.button>
-                  ),
-                )}
+                {[
+                  "What was I doing on October 30? Show me tweets, songs, and PRs from that day",
+                  "When I was working on pull requests last week, what music was I listening to?",
+                  "Tell me the story of my activity over the last few days - what I tweeted, coded, and listened to",
+                  "During October 23-30, what songs were playing while I was pushing code?",
+                  "Show me my tweets and the songs I played around the same time",
+                  "What was the vibe when I was tweeting about AI last week? What music was on?",
+                ].map((suggestion, i) => (
+                  <motion.button
+                    key={suggestion}
+                    type="button"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 + i * 0.1, duration: 0.4 }}
+                    onClick={() => onSuggestionClick?.(suggestion)}
+                    className={cn(
+                      "px-3.5 py-2 rounded-xl text-sm text-left",
+                      "bg-muted/50 hover:bg-muted",
+                      "border border-border/50 hover:border-border",
+                      "transition-all duration-200",
+                      "text-foreground/80 hover:text-foreground",
+                    )}
+                  >
+                    {suggestion}
+                  </motion.button>
+                ))}
               </div>
 
               <p className="text-xs text-muted-foreground/60 mt-4">Powered by mateonunez</p>
@@ -120,7 +125,11 @@ export function ChatMessagesList({ messages, isLoading, onSuggestionClick }: Cha
                   <div className="flex items-center gap-2 pt-1">
                     <motion.div
                       animate={{ opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "easeInOut",
+                      }}
                       className="flex gap-1"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />

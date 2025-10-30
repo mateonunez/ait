@@ -1,3 +1,4 @@
+import type { QueryIntent } from "../services/rag/query-intent.service";
 import type { Document, BaseMetadata } from "./documents";
 
 /**
@@ -50,6 +51,8 @@ export interface MultiQueryConfig {
   concurrency?: number;
   /** Minimum score threshold (0-1, default: 0.3) */
   scoreThreshold?: number;
+  /** Use HyDE for query embedding (default: true) */
+  useHyDE?: boolean;
   /** Query planning configuration */
   queryPlanner?: QueryPlannerConfig;
   /** Diversity configuration */
@@ -64,10 +67,18 @@ export interface MultiQueryConfig {
 export interface QueryPlanResult {
   /** Generated query variants */
   queries: string[];
+  /** Optional semantic tags for domain inference */
+  tags?: string[];
   /** Source of queries (llm or heuristic) */
   source: "llm" | "heuristic";
   /** Whether diversity validation passed */
   isDiverse: boolean;
+  /** Whether heuristic fallback was applied */
+  usedFallback: boolean;
+  /** Original user query */
+  originalQuery: string;
+  /** LLM-extracted query intent (optional) */
+  intent?: QueryIntent;
 }
 
 /**

@@ -4,7 +4,7 @@ import type {
   IConnectorSpotifyArtistRepository,
   SpotifyArtistEntity,
 } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyArtists } from "@ait/postgres";
+import { getPostgresClient, spotifyArtists, type SpotifyArtistDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtistRepository {
@@ -22,17 +22,23 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
       artistDataTarget.id = artistId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<SpotifyArtistDataTarget> = {
+          name: artistDataTarget.name,
+          popularity: artistDataTarget.popularity,
+          genres: artistDataTarget.genres,
+          updatedAt: artistDataTarget.updatedAt ?? new Date(),
+        };
+
+        if (artistDataTarget.createdAt) {
+          updateValues.createdAt = artistDataTarget.createdAt;
+        }
+
         await tx
           .insert(spotifyArtists)
           .values(artistDataTarget)
           .onConflictDoUpdate({
             target: spotifyArtists.id,
-            set: {
-              name: artistDataTarget.name,
-              popularity: artistDataTarget.popularity,
-              genres: artistDataTarget.genres,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

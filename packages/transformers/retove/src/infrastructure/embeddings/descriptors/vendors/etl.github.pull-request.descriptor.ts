@@ -186,9 +186,10 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubPullRequestDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "pull_request",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }

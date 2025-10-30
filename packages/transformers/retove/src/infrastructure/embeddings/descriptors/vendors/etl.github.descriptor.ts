@@ -188,9 +188,10 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubRepositoryDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "repository",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }

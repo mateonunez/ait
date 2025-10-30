@@ -136,6 +136,36 @@ const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, Spoti
       dataTarget: (dataTarget) => dataTarget.addedAt ?? null,
     },
 
+    createdAt: connectorMapperPassThrough<
+      "createdAt",
+      Date | null,
+      SpotifyTrackExternal,
+      SpotifyTrackEntity,
+      SpotifyTrackDataTarget
+    >("createdAt", {
+      external: {
+        fallback: () => new Date(),
+      },
+      dataTarget: {
+        fallback: () => new Date(),
+      },
+    }),
+
+    updatedAt: connectorMapperPassThrough<
+      "updatedAt",
+      Date | null,
+      SpotifyTrackExternal,
+      SpotifyTrackEntity,
+      SpotifyTrackDataTarget
+    >("updatedAt", {
+      external: {
+        fallback: () => new Date(),
+      },
+      dataTarget: {
+        fallback: () => new Date(),
+      },
+    }),
+
     __type: {
       external: () => "track" as const,
       domain: (domain) => domain.__type,

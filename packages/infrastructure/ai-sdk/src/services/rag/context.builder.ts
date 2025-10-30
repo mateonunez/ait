@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { Document, BaseMetadata } from "../types/documents";
-import { buildTitleFromMetadata } from "../types/context";
+import type { Document, BaseMetadata } from "../../types/documents";
+import { buildTitleFromMetadata } from "../../types/context";
 import type {
   SpotifyTrackEntity,
   SpotifyArtistEntity,
@@ -12,6 +12,7 @@ import type {
   SpotifyRecentlyPlayedEntity,
 } from "@ait/connectors";
 import type { GitHubPullRequestEntity } from "@ait/connectors";
+import type { TemporalCluster } from "./temporal-correlation.service";
 
 type EntityType =
   | "track"
@@ -120,13 +121,22 @@ const buildSpotifyRecentlyPlayed: EntityContentBuilder<SpotifyRecentlyPlayedEnti
   const duration = safeNumber(meta.durationMs);
   const explicit = meta.explicit ? " [Explicit]" : "";
   const popularity = safeNumber(meta.popularity);
+  const durationFormatted = duration
+    ? `${Math.floor(duration / 60000)}:${String(Math.floor((duration % 60000) / 1000)).padStart(2, "0")}`
+    : null;
+  const vibeTag =
+    popularity !== null && popularity >= 70
+      ? " popular track"
+      : popularity !== null && popularity <= 30
+        ? " niche track"
+        : "";
 
   return joinParts(
-    `Recently Played: "${trackName}" by ${artist}`,
-    album ? ` from the album "${album}"` : null,
-    duration ? ` (${duration} seconds)` : null,
+    `I played "${trackName}" by ${artist}`,
+    album ? ` from ${album}` : null,
+    durationFormatted ? ` (${durationFormatted})` : null,
     explicit,
-    popularity !== null ? ` (popularity: ${popularity}/100)` : null,
+    vibeTag,
   );
 };
 
@@ -189,62 +199,34 @@ const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (m
   const additions = safeNumber(meta.additions);
   const deletions = safeNumber(meta.deletions);
   if (additions !== null || deletions !== null) {
-    stats.push(`+${additions ?? 0} -${deletions ?? 0} lines`);
+    stats.push(`+${additions ?? 0}/-${deletions ?? 0}`);
   }
 
   const changedFiles = safeNumber(meta.changedFiles);
-  if (changedFiles !== null) {
+  if (changedFiles !== null && changedFiles > 0) {
     stats.push(`${changedFiles} file${changedFiles === 1 ? "" : "s"}`);
   }
 
-  const comments = safeNumber(meta.comments);
-  const reviewComments = safeNumber(meta.reviewComments);
-  if (comments !== null && comments > 0) {
-    stats.push(`${comments} comment${comments === 1 ? "" : "s"}`);
-  }
-  if (reviewComments !== null && reviewComments > 0) {
-    stats.push(`${reviewComments} review${reviewComments === 1 ? "" : "s"}`);
-  }
+  // Build action verb based on state
+  let action = "I worked on PR";
+  if (merged) action = "I merged PR";
+  else if (state === "closed" && !merged) action = "I closed PR";
+  else if (draft) action = "I drafted PR";
+  else if (state === "open") action = "I opened PR";
 
-  // Build branches
-  const branchInfo =
-    meta.headRef && meta.baseRef ? `from ${safeString(meta.headRef)} to ${safeString(meta.baseRef)}` : null;
-
-  // Build labels
-  const labels =
-    meta.labels && Array.isArray(meta.labels) && meta.labels.length > 0
-      ? `Labels: ${meta.labels
-          .map((l: any) => l.name)
-          .filter(Boolean)
-          .slice(0, 3)
-          .join(", ")}`
-      : null;
-
-  return joinParts(
-    `Pull Request #${number ?? "?"}`,
-    `: "${title}"`,
-    state ? ` [${merged || draft || state}]` : null,
-    stats.length > 0 ? `. ${stats.join(", ")}` : null,
-    branchInfo ? `. ${branchInfo}` : null,
-    labels ? `. ${labels}` : null,
-  );
+  return joinParts(`${action} #${number ?? "?"}`, `: "${title}"`, stats.length > 0 ? `, ${stats.join(", ")}` : null);
 };
 
 const buildXTweet: EntityContentBuilder<XTweetEntity> = (meta, pageContent) => {
   const text = safeString(meta.text || pageContent, "");
   const retweetCount = safeNumber(meta.retweetCount);
   const likeCount = safeNumber(meta.likeCount);
-  const createdAt = formatDate(meta.createdAt);
 
   const engagement: string[] = [];
   if (retweetCount !== null && retweetCount > 0) engagement.push(`${retweetCount} retweets`);
   if (likeCount !== null && likeCount > 0) engagement.push(`${likeCount} likes`);
 
-  return joinParts(
-    `Tweet: ${text}`,
-    engagement.length > 0 ? ` (${engagement.join(", ")})` : null,
-    createdAt ? ` - ${createdAt}` : null,
-  );
+  return joinParts(`I tweeted: ${text}`, engagement.length > 0 ? ` (${engagement.join(", ")})` : null);
 };
 
 const buildLinearIssue: EntityContentBuilder<LinearIssueEntity> = (meta) => {
@@ -306,6 +288,125 @@ export class ContextBuilder {
 
     const cleaned = cleanPageContent(doc.pageContent);
     return cleaned || `${meta.__type || "Document"}: ${meta.id}`;
+  }
+
+  /**
+   * Build temporally-aware context from clusters of documents grouped by time
+   */
+  public buildTemporalContext(clusters: TemporalCluster[]): string {
+    if (clusters.length === 0) {
+      return "";
+    }
+
+    const sections: string[] = [];
+
+    for (const cluster of clusters) {
+      // Build a human-readable time label
+      const timeLabel = this._buildTimeLabel(cluster.centerTimestamp, cluster.timeWindow);
+
+      // Group entities by type within this cluster
+      const entityGroups = this._groupEntitiesByType(cluster.entities);
+
+      // Build content for this time cluster
+      const clusterContent: string[] = [];
+
+      for (const [entityType, entities] of Object.entries(entityGroups)) {
+        const entityLabels = this._getEntityTypeLabel(entityType);
+
+        for (const entity of entities) {
+          const naturalContent = this.buildNaturalContent(entity.document);
+          const header = buildTitleFromMetadata(entity.metadata);
+          clusterContent.push(`#### ${header}\n${naturalContent}`);
+        }
+      }
+
+      if (clusterContent.length > 0) {
+        sections.push(`### ${timeLabel}\n\n${clusterContent.join("\n\n")}`);
+      }
+    }
+
+    return sections.join("\n\n");
+  }
+
+  private _buildTimeLabel(centerTime: Date, window: { start: Date; end: Date }): string {
+    const now = new Date();
+    const diffMs = now.getTime() - centerTime.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    // Format the date
+    const dateStr = centerTime.toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    // Add time of day context if within the same day
+    const timeOfDay = this._getTimeOfDay(centerTime);
+
+    // Create relative time label
+    let relativeLabel = "";
+    if (diffMinutes < 60) {
+      relativeLabel = `${diffMinutes} minutes ago`;
+    } else if (diffHours < 24) {
+      relativeLabel = `${diffHours} hours ago`;
+    } else if (diffDays < 7) {
+      relativeLabel = `${diffDays} days ago`;
+    } else {
+      relativeLabel = dateStr;
+    }
+
+    // If there's a significant time span in the window, note it
+    const windowSpanHours = (window.end.getTime() - window.start.getTime()) / (1000 * 60 * 60);
+
+    if (windowSpanHours > 0.5) {
+      return `${dateStr} ${timeOfDay} (${relativeLabel})`;
+    }
+
+    return `${dateStr} ${timeOfDay}`;
+  }
+
+  private _getTimeOfDay(date: Date): string {
+    const hours = date.getHours();
+
+    if (hours < 6) return "(night)";
+    if (hours < 12) return "(morning)";
+    if (hours < 17) return "(afternoon)";
+    if (hours < 21) return "(evening)";
+    return "(night)";
+  }
+
+  private _groupEntitiesByType(
+    entities: Array<{ type: string; metadata: BaseMetadata; document: Document<BaseMetadata> }>,
+  ) {
+    const groups: Record<string, typeof entities> = {};
+
+    for (const entity of entities) {
+      const type = entity.type || "unknown";
+      if (!groups[type]) {
+        groups[type] = [];
+      }
+      groups[type].push(entity);
+    }
+
+    return groups;
+  }
+
+  private _getEntityTypeLabel(entityType: string): string {
+    const labels: Record<string, string> = {
+      tweet: "Tweets",
+      track: "Songs",
+      recently_played: "Recently Played",
+      repository: "Repositories",
+      pull_request: "Pull Requests",
+      issue: "Issues",
+      playlist: "Playlists",
+      album: "Albums",
+      artist: "Artists",
+    };
+
+    return labels[entityType] || entityType;
   }
 
   public buildContextFromDocuments(documents: Document<BaseMetadata>[]): string {

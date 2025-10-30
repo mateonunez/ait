@@ -4,7 +4,7 @@ import type {
   IConnectorSpotifyTrackRepository,
   SpotifyTrackEntity,
 } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyTracks } from "@ait/postgres";
+import { getPostgresClient, spotifyTracks, type SpotifyTrackDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRepository {
@@ -22,32 +22,38 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       trackDataTarget.id = trackId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<SpotifyTrackDataTarget> = {
+          name: trackDataTarget.name,
+          artist: trackDataTarget.artist,
+          album: trackDataTarget.album,
+          durationMs: trackDataTarget.durationMs,
+          explicit: trackDataTarget.explicit,
+          isPlayable: trackDataTarget.isPlayable,
+          previewUrl: trackDataTarget.previewUrl,
+          trackNumber: trackDataTarget.trackNumber,
+          discNumber: trackDataTarget.discNumber,
+          uri: trackDataTarget.uri,
+          href: trackDataTarget.href,
+          isLocal: trackDataTarget.isLocal,
+          popularity: trackDataTarget.popularity,
+          albumData: trackDataTarget.albumData,
+          artistsData: trackDataTarget.artistsData,
+          externalIds: trackDataTarget.externalIds,
+          externalUrls: trackDataTarget.externalUrls,
+          addedAt: trackDataTarget.addedAt,
+          updatedAt: trackDataTarget.updatedAt ?? new Date(),
+        };
+
+        if (trackDataTarget.createdAt) {
+          updateValues.createdAt = trackDataTarget.createdAt;
+        }
+
         await tx
           .insert(spotifyTracks)
           .values(trackDataTarget)
           .onConflictDoUpdate({
             target: spotifyTracks.id,
-            set: {
-              name: trackDataTarget.name,
-              artist: trackDataTarget.artist,
-              album: trackDataTarget.album,
-              durationMs: trackDataTarget.durationMs,
-              explicit: trackDataTarget.explicit,
-              isPlayable: trackDataTarget.isPlayable,
-              previewUrl: trackDataTarget.previewUrl,
-              trackNumber: trackDataTarget.trackNumber,
-              discNumber: trackDataTarget.discNumber,
-              uri: trackDataTarget.uri,
-              href: trackDataTarget.href,
-              isLocal: trackDataTarget.isLocal,
-              popularity: trackDataTarget.popularity,
-              albumData: trackDataTarget.albumData,
-              artistsData: trackDataTarget.artistsData,
-              externalIds: trackDataTarget.externalIds,
-              externalUrls: trackDataTarget.externalUrls,
-              addedAt: trackDataTarget.addedAt,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

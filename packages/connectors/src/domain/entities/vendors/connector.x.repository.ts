@@ -7,7 +7,7 @@ import type {
   IConnectorXTweetRepository,
   XTweetEntity,
 } from "../../../types/domain/entities/vendors/connector.x.repository.types";
-import { getPostgresClient, type OAuthTokenDataTarget, xTweets } from "@ait/postgres";
+import { getPostgresClient, type OAuthTokenDataTarget, type XTweetDataTarget, xTweets } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
@@ -22,20 +22,26 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
       tweetData.id = tweetId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<XTweetDataTarget> = {
+          text: tweetData.text,
+          authorId: tweetData.authorId,
+          lang: tweetData.lang,
+          retweetCount: tweetData.retweetCount,
+          likeCount: tweetData.likeCount,
+          jsonData: tweetData.jsonData,
+          updatedAt: tweetData.updatedAt ?? new Date(),
+        };
+
+        if (tweetData.createdAt) {
+          updateValues.createdAt = tweetData.createdAt;
+        }
+
         await tx
           .insert(xTweets)
           .values(tweetData)
           .onConflictDoUpdate({
             target: xTweets.id,
-            set: {
-              text: tweetData.text,
-              authorId: tweetData.authorId,
-              lang: tweetData.lang,
-              retweetCount: tweetData.retweetCount,
-              likeCount: tweetData.likeCount,
-              jsonData: tweetData.jsonData,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

@@ -4,7 +4,7 @@ import type {
   IConnectorLinearIssueRepository,
   LinearIssueEntity,
 } from "../../../../types/domain/entities/vendors/connector.linear.types";
-import { getPostgresClient, linearIssues } from "@ait/postgres";
+import { getPostgresClient, linearIssues, type LinearIssueDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepository {
@@ -22,23 +22,29 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
       issueDataTarget.id = issueId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<LinearIssueDataTarget> = {
+          title: issueDataTarget.title,
+          description: issueDataTarget.description,
+          state: issueDataTarget.state,
+          priority: issueDataTarget.priority,
+          assigneeId: issueDataTarget.assigneeId,
+          teamId: issueDataTarget.teamId,
+          projectId: issueDataTarget.projectId,
+          url: issueDataTarget.url,
+          labels: issueDataTarget.labels,
+          updatedAt: issueDataTarget.updatedAt ?? new Date(),
+        };
+
+        if (issueDataTarget.createdAt) {
+          updateValues.createdAt = issueDataTarget.createdAt;
+        }
+
         await tx
           .insert(linearIssues)
           .values(issueDataTarget)
           .onConflictDoUpdate({
             target: linearIssues.id,
-            set: {
-              title: issueDataTarget.title,
-              description: issueDataTarget.description,
-              state: issueDataTarget.state,
-              priority: issueDataTarget.priority,
-              assigneeId: issueDataTarget.assigneeId,
-              teamId: issueDataTarget.teamId,
-              projectId: issueDataTarget.projectId,
-              url: issueDataTarget.url,
-              labels: issueDataTarget.labels,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

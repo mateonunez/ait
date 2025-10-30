@@ -55,10 +55,10 @@ describe("ConnectorGitHubPullRequestRepository", () => {
           labels: [{ name: "feature", color: "00ff00" }],
           milestoneData: null,
           requestedReviewersData: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "pull_request",
-        } as GitHubPullRequestEntity;
+        } as unknown as GitHubPullRequestEntity;
 
         await prRepository.savePullRequest(pr);
 

@@ -13,9 +13,10 @@ export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTa
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: XTweetDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "tweet",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }

@@ -4,7 +4,12 @@ import type {
   IConnectorSpotifyRecentlyPlayedRepository,
   SpotifyRecentlyPlayedEntity,
 } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyRecentlyPlayed, drizzleOrm } from "@ait/postgres";
+import {
+  getPostgresClient,
+  spotifyRecentlyPlayed,
+  type SpotifyRecentlyPlayedDataTarget,
+  drizzleOrm,
+} from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpotifyRecentlyPlayedRepository {
@@ -22,23 +27,29 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       itemDataTarget.id = itemId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<SpotifyRecentlyPlayedDataTarget> = {
+          trackId: itemDataTarget.trackId,
+          trackName: itemDataTarget.trackName,
+          artist: itemDataTarget.artist,
+          album: itemDataTarget.album,
+          durationMs: itemDataTarget.durationMs,
+          explicit: itemDataTarget.explicit,
+          popularity: itemDataTarget.popularity,
+          playedAt: itemDataTarget.playedAt,
+          context: itemDataTarget.context,
+          updatedAt: itemDataTarget.updatedAt ?? new Date(),
+        };
+
+        if (itemDataTarget.createdAt) {
+          updateValues.createdAt = itemDataTarget.createdAt;
+        }
+
         await tx
           .insert(spotifyRecentlyPlayed)
           .values(itemDataTarget)
           .onConflictDoUpdate({
             target: spotifyRecentlyPlayed.id,
-            set: {
-              trackId: itemDataTarget.trackId,
-              trackName: itemDataTarget.trackName,
-              artist: itemDataTarget.artist,
-              album: itemDataTarget.album,
-              durationMs: itemDataTarget.durationMs,
-              explicit: itemDataTarget.explicit,
-              popularity: itemDataTarget.popularity,
-              playedAt: itemDataTarget.playedAt,
-              context: itemDataTarget.context,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

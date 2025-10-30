@@ -1,30 +1,20 @@
 import type { MultiQueryConfig, QueryResult } from "../../types/rag";
 import type { Document, BaseMetadata } from "../../types/documents";
-import type { QdrantProvider } from "../../rag/qdrant.provider";
+import type { QdrantProvider } from "./qdrant.provider";
 import type { IQueryPlannerService } from "./query-planner.service";
 import type { IDiversityService } from "./diversity.service";
 import type { ITypeFilterService } from "./type-filter.service";
 import type { IRankFusionService } from "./rank-fusion.service";
+import type { IHyDEService } from "./hyde.service";
+import type { IRerankService } from "./rerank.service";
 
-/**
- * Interface for multi-query retrieval service
- */
 export interface IMultiQueryRetrievalService {
-  /**
-   * Retrieve documents using multi-query approach with RRF and diversification
-   * @param vectorStore - Vector store provider for similarity search
-   * @param userQuery - User's search query
-   * @returns Array of relevant documents
-   */
   retrieve<TMetadata extends BaseMetadata = BaseMetadata>(
     vectorStore: QdrantProvider,
     userQuery: string,
   ): Promise<Document<TMetadata>[]>;
 }
 
-/**
- * Orchestrator service for multi-query retrieval with RRF and diversification
- */
 export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   private readonly _maxDocs: number;
   private readonly _concurrency: number;
@@ -33,6 +23,9 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   private readonly _diversity: IDiversityService;
   private readonly _typeFilter: ITypeFilterService;
   private readonly _rankFusion: IRankFusionService;
+  private readonly _hyde?: IHyDEService;
+  private readonly _reranker?: IRerankService;
+  private readonly _useHyDE: boolean;
 
   constructor(
     queryPlanner: IQueryPlannerService,
@@ -40,70 +33,108 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     typeFilter: ITypeFilterService,
     rankFusion: IRankFusionService,
     config: MultiQueryConfig = {},
+    hyde?: IHyDEService,
+    reranker?: IRerankService,
   ) {
     this._queryPlanner = queryPlanner;
     this._diversity = diversity;
     this._typeFilter = typeFilter;
     this._rankFusion = rankFusion;
+    this._hyde = hyde;
+    this._reranker = reranker;
 
     this._maxDocs = config.maxDocs ?? 100;
     this._concurrency = Math.min(Math.max(config.concurrency ?? 4, 1), 8);
     this._scoreThreshold = config.scoreThreshold ?? 0.3;
+    this._useHyDE = config.useHyDE ?? true;
   }
 
   async retrieve<TMetadata extends BaseMetadata = BaseMetadata>(
     vectorStore: QdrantProvider,
     userQuery: string,
   ): Promise<Document<TMetadata>[]> {
-    // Step 1: Plan diverse query variants
     const queryPlan = await this._queryPlanner.planQueries(userQuery);
-    const typeFilterResult = this._typeFilter.detectTypeFilter(userQuery);
+    const typeFilterResult = this._typeFilter.inferTypes(queryPlan.tags, queryPlan.originalQuery || userQuery, {
+      usedFallback: queryPlan.usedFallback,
+      intent: queryPlan.intent,
+    });
 
     console.debug("Multi-query retrieval initiated", {
       queryCount: queryPlan.queries.length,
-      querySource: queryPlan.source,
-      isDiverse: queryPlan.isDiverse,
+      tags: queryPlan.tags,
       typeFilter: typeFilterResult?.types,
+      useHyDE: this._useHyDE && !!this._hyde,
+      planSource: queryPlan.source,
+      usedFallback: queryPlan.usedFallback,
     });
 
-    // Step 2: Execute queries in parallel with worker pool
     const perQueryK = Math.max(20, Math.ceil((this._maxDocs * 1.5) / Math.max(1, queryPlan.queries.length)));
-    const allResults = await this._executeQueriesInParallel(
+
+    const parallelResults = await this._executeQueriesInParallel<TMetadata>(
       vectorStore,
       queryPlan.queries,
       perQueryK,
       typeFilterResult,
     );
 
+    const allResults: QueryResult<TMetadata>[] = [...parallelResults];
+
+    if (this._useHyDE && this._hyde) {
+      try {
+        const hydeVector = await this._hyde.generateHyDEEmbedding(userQuery);
+        const hydeDocs = await vectorStore.similaritySearchWithVector(hydeVector, perQueryK, typeFilterResult);
+        const hydeResults: QueryResult<TMetadata> = {
+          queryIdx: -1,
+          results: hydeDocs.map((doc) => [doc as Document<TMetadata>, 1.0]),
+        };
+        allResults.push(hydeResults);
+      } catch (error) {
+        console.warn("HyDE generation failed, continuing without it", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
     if (allResults.length === 0) {
-      console.warn("No results retrieved across query variants");
+      console.warn("No results retrieved");
       return [];
     }
 
-    // Step 3: Apply Reciprocal Rank Fusion
     const ranked = this._rankFusion.fuseResults(
       allResults as QueryResult<TMetadata>[],
       this._getDocumentId as (doc: Document<TMetadata>) => string,
     );
 
     if (ranked.length === 0) {
-      console.warn("No unique documents found after rank fusion");
+      console.warn("No unique documents after fusion");
       return [];
     }
 
-    console.debug("RRF ranking completed", {
+    console.debug("RRF completed", {
       totalHits: ranked.length,
-      avgHitsPerDoc: ranked.reduce((s, h) => s + h.hits, 0) / ranked.length,
-      topScores: ranked.slice(0, 3).map((r) => ({ score: r.finalScore.toFixed(3), hits: r.hits })),
+      topScores: ranked.slice(0, 3).map((r) => r.finalScore.toFixed(3)),
     });
 
-    // Step 4: Apply MMR for diversity if enabled
-    let finalResults = ranked.slice(0, this._maxDocs).map((h) => h.doc);
+    let finalResults = ranked.slice(0, this._maxDocs * 2).map((h) => h.doc);
 
-    if (finalResults.length > 5) {
-      const candidateDocs = ranked.slice(0, this._maxDocs * 2).map((h) => h.doc);
-      finalResults = this._diversity.applyMMR(finalResults, candidateDocs, this._maxDocs);
+    if (this._reranker && finalResults.length > 5) {
+      const baseResults = finalResults.slice();
+      try {
+        finalResults = await this._reranker.rerank(userQuery, baseResults, this._maxDocs);
+      } catch (error) {
+        console.warn("Reranker unavailable, applying MMR fallback", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        finalResults = this._diversity.applyMMR(baseResults, this._maxDocs);
+      }
+    } else {
+      finalResults = this._diversity.applyMMR(finalResults, this._maxDocs);
     }
+
+    console.debug("Final results", {
+      finalResults: finalResults.length,
+      finalResultsPreview: finalResults.slice(0, 3).map((r) => r.pageContent.slice(0, 200)),
+    });
 
     return finalResults;
   }

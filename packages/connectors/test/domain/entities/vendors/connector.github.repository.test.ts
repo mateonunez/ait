@@ -53,10 +53,10 @@ describe("ConnectorGitHubRepository", () => {
           ownerData: null,
           licenseData: null,
           metadata: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "repository",
-        } as GitHubRepositoryEntity;
+        } as unknown as GitHubRepositoryEntity;
 
         await repoRepository.saveRepository(repo);
 

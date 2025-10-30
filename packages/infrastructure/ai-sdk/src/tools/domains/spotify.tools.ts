@@ -93,7 +93,7 @@ export function createSpotifyTools(spotifyService?: ExtendedSpotifyService) {
   return {
     getCurrentlyPlaying: createTool({
       description:
-        "Fetch the user's CURRENTLY PLAYING track on Spotify RIGHT NOW. MUST be called when user asks: 'what am I listening to', 'what's playing now', 'current song', 'what's on', or similar queries about LIVE/CURRENT music playback. Returns real-time data directly from Spotify API showing exactly what is playing at this moment.",
+        "Fetch the user's CURRENTLY PLAYING track on Spotify RIGHT NOW at this exact moment. ONLY call this tool when user explicitly asks about PRESENT/CURRENT playback using present tense: 'what am I listening to', 'what's playing now', 'current song', 'what's on right now'. DO NOT call this tool for PAST queries ('what was playing', 'what were you listening', 'while tweeting') - those are answered from RAG context showing historical data. This tool is ONLY for real-time current playback status.",
       parameters: spotifyCurrentlyPlayingSchema,
       execute: async (): Promise<SearchResponse<SpotifyCurrentlyPlayingResult>> => {
         try {

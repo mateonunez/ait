@@ -31,7 +31,7 @@ export const LinearETLs = {
   issue: "RetoveLinearIssueETL",
 };
 
-const LIMIT = 1000;
+const LIMIT = 10_000;
 
 export async function runSpotifyTrackETL(
   qdrantClient: qdrant.QdrantClient,

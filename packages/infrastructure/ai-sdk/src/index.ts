@@ -1,5 +1,6 @@
 export * from "./client/ai-sdk.client";
 export { getTextGenerationService } from "./client/ai-sdk.client";
+export { getOllamaProvider } from "./client/ai-sdk-ollama.provider";
 
 export * from "./config/models.config";
 
@@ -15,16 +16,19 @@ export * from "./services/text-generation/conversation-manager.service";
 export * from "./services/text-generation/utils/stream.utils";
 export * from "./services/prompts/system.prompt";
 
-// RAG Services
 export * from "./services/rag/query-planner.service";
 export * from "./services/rag/diversity.service";
 export * from "./services/rag/type-filter.service";
 export * from "./services/rag/rank-fusion.service";
 export * from "./services/rag/multi-query-retrieval.service";
+export * from "./services/rag/hyde.service";
+export * from "./services/rag/rerank.service";
+export * from "./services/rag/qdrant.provider";
+export * from "./services/rag/temporal-correlation.service";
+export * from "./services/rag/query-heuristic.service";
+export * from "./services/rag/query-intent.service";
+export { ContextBuilder } from "./services/rag/context.builder";
 export { createMultiQueryRetrievalService } from "./services/rag/multi-query-retrieval.factory";
-
-export * from "./rag/qdrant.provider";
-export { ContextBuilder } from "./rag/context.builder";
 
 export * from "./tools/connectors.tools";
 export { convertToOllamaTools } from "./tools/tool.converter";
