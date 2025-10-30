@@ -1,6 +1,6 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { QueryPlannerService } from "../../../src/services/rag/query-planner.service";
+import { describe, it } from "node:test";
 
 describe("QueryPlannerService", () => {
   let service: QueryPlannerService;
