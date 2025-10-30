@@ -171,7 +171,7 @@ export function buildSystemPromptWithContext(context: string): string {
 ## YOUR CONTEXT
 The following is fresh context retrieved specifically for the current question. This is YOUR memory, it represents actual data from your life.
 
-\${context}
+${context}
 
 ---
 
