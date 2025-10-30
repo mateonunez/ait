@@ -35,8 +35,10 @@ export class ContextPreparationService implements IContextPreparationService {
   private readonly _cacheDurationMs: number;
   private readonly _topicSimilarityThreshold: number;
   private readonly _temporalWindowHours: number;
+  private readonly _maxCacheEntries: number;
+  private readonly _maxContextChars: number;
 
-  private _cachedContext: RAGContext | null = null;
+  private _contextCache: Map<string, RAGContext> = new Map();
 
   constructor(
     vectorStore: QdrantProvider,
@@ -53,17 +55,18 @@ export class ContextPreparationService implements IContextPreparationService {
     this._cacheDurationMs = Math.max(config.cacheDurationMs ?? 5 * 60 * 1000, 0);
     this._topicSimilarityThreshold = Math.max(Math.min(config.topicSimilarityThreshold ?? 0.7, 1), 0);
     this._temporalWindowHours = config.temporalWindowHours ?? 3;
+    this._maxCacheEntries = Math.min(Math.max((config as any).maxCacheEntries ?? 16, 1), 128);
+    this._maxContextChars = Math.min(Math.max((config as any).maxContextChars ?? 18000, 2000), 120000);
   }
 
   async prepareContext(query: string): Promise<RAGContext> {
     console.info("Preparing context for RAG", { query: query.slice(0, 50) });
 
-    // Check if we can reuse cached context
-    if (await this._canReuseCachedContext(query)) {
-      console.info("Reusing cached RAG context", {
-        age: Date.now() - this._cachedContext!.timestamp,
-      });
-      return this._cachedContext!;
+    // Check LRU cache first
+    const cached = this._getFromCache(query);
+    if (cached) {
+      console.info("Reusing cached RAG context", { age: Date.now() - cached.timestamp });
+      return cached;
     }
 
     // Retrieve fresh context
@@ -101,10 +104,11 @@ export class ContextPreparationService implements IContextPreparationService {
         console.info("Temporal correlation applicable, grouping by time windows", {
           documentCount: documents.length,
           entityTypes: Array.from(entityTypes),
-          windowHours: this._temporalWindowHours,
+          windowHours: this._inferWindowHours(query) ?? this._temporalWindowHours,
         });
 
-        const clusters = this._temporalCorrelation.correlateByTimeWindow(documents, this._temporalWindowHours);
+        const effectiveWindow = this._inferWindowHours(query) ?? this._temporalWindowHours;
+        const clusters = this._temporalCorrelation.correlateByTimeWindow(documents, effectiveWindow);
 
         if (clusters.length > 0) {
           context = this._contextBuilder.buildTemporalContext(clusters);
@@ -123,6 +127,12 @@ export class ContextPreparationService implements IContextPreparationService {
       }
     }
 
+    // Enforce context size budget
+    if (context.length > this._maxContextChars) {
+      const cut = context.lastIndexOf("\n", this._maxContextChars);
+      context = context.slice(0, cut > 0 ? cut : this._maxContextChars);
+    }
+
     const ragContext: RAGContext = {
       context,
       documents,
@@ -133,9 +143,7 @@ export class ContextPreparationService implements IContextPreparationService {
     };
 
     if (!fallbackUsed) {
-      this._cachedContext = ragContext;
-    } else {
-      this._cachedContext = null;
+      this._putInCache(query, ragContext);
     }
 
     console.info(fallbackUsed ? "RAG fallback context prepared" : "RAG context prepared", {
@@ -151,45 +159,37 @@ export class ContextPreparationService implements IContextPreparationService {
   }
 
   clearCache(): void {
-    this._cachedContext = null;
+    this._contextCache.clear();
   }
 
-  private async _canReuseCachedContext(query: string): Promise<boolean> {
-    if (!this._cachedContext || this._cachedContext.fallbackUsed) {
-      return false;
-    }
-
-    // Check if cache is expired
-    const age = Date.now() - this._cachedContext.timestamp;
+  private _getFromCache(query: string): RAGContext | null {
+    const key = this._buildCacheKey(query);
+    const entry = this._contextCache.get(key);
+    if (!entry) return null;
+    const age = Date.now() - entry.timestamp;
     if (age > this._cacheDurationMs) {
+      this._contextCache.delete(key);
       console.info("Cache expired", { age, maxAge: this._cacheDurationMs });
-      return false;
+      return null;
     }
+    // Touch LRU: reinsert
+    this._contextCache.delete(key);
+    this._contextCache.set(key, entry);
+    return entry;
+  }
 
-    // Check topic similarity
-    try {
-      const similarity = await this._calculateTopicSimilarity(query, this._cachedContext.query);
-
-      console.info("Topic similarity check", {
-        similarity: similarity.toFixed(3),
-        threshold: this._topicSimilarityThreshold,
-        willReuseCache: similarity >= this._topicSimilarityThreshold,
-        previousQuery: this._cachedContext.query.slice(0, 50),
-        currentQuery: query.slice(0, 50),
-      });
-
-      if (similarity < this._topicSimilarityThreshold) {
-        console.info("Topic changed significantly - fetching fresh context");
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.warn("Failed to calculate topic similarity, fetching fresh context", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return false;
+  private _putInCache(query: string, value: RAGContext): void {
+    const key = this._buildCacheKey(query);
+    this._contextCache.set(key, value);
+    // Evict LRU if over capacity
+    if (this._contextCache.size > this._maxCacheEntries) {
+      const oldestKey = this._contextCache.keys().next().value as string | undefined;
+      if (oldestKey) this._contextCache.delete(oldestKey);
     }
+  }
+
+  private _buildCacheKey(query: string): string {
+    return query.trim().toLowerCase().replace(/\s+/g, " ");
   }
 
   private async _calculateTopicSimilarity(query1: string, query2: string): Promise<number> {
@@ -218,5 +218,38 @@ export class ContextPreparationService implements IContextPreparationService {
 
     const magnitude = Math.sqrt(norm1) * Math.sqrt(norm2);
     return magnitude === 0 ? 0 : dotProduct / magnitude;
+  }
+
+  private _inferWindowHours(query: string): number | undefined {
+    const q = query.toLowerCase();
+    // Heuristic mappings
+    if (q.includes("last 24 hours") || q.includes("past 24 hours")) return 6;
+    if (q.includes("last 48 hours") || q.includes("past 48 hours")) return 8;
+    if (q.includes("last few days") || q.includes("past few days")) return 24;
+    if (q.includes("last 3 days") || q.includes("past 3 days")) return 12;
+    if (q.includes("last week") || q.includes("past week") || q.includes("last 7 days")) return 24;
+    if (q.includes("yesterday")) return 6;
+    if (q.includes("today")) return 3;
+
+    // Optional: try chrono-node if available to compute span
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const chrono = require("chrono-node");
+      const results = chrono.parse(query);
+      if (results && results.length > 0) {
+        const r = results[0];
+        const from = r.start?.date();
+        const to = r.end?.date() || new Date();
+        if (from && to) {
+          const spanHours = Math.max(1, Math.ceil((to.getTime() - from.getTime()) / 3600000));
+          // window should be smaller than span to find local correlations
+          return Math.min(24, Math.max(2, Math.ceil(spanHours / 8)));
+        }
+      }
+    } catch {
+      // chrono-node optional
+    }
+
+    return undefined;
   }
 }

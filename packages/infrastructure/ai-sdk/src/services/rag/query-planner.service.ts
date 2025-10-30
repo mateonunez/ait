@@ -25,9 +25,10 @@ export class QueryPlannerService implements IQueryPlannerService {
     heuristics: IQueryHeuristicService = new QueryHeuristicService(),
     intentService: IQueryIntentService = new QueryIntentService(),
   ) {
-    this._queriesCount = Math.min(Math.max(config.queriesCount ?? 12, 8), 16);
+    // Prefer a small initial set; retrieval layer can expand if recall is low
+    this._queriesCount = Math.min(Math.max(config.queriesCount ?? 6, 4), 12);
     this._temperature = Math.min(Math.max(config.temperature ?? 0.7, 0), 1);
-    const configuredMin = config.minQueryCount ?? Math.ceil(this._queriesCount * 0.5);
+    const configuredMin = config.minQueryCount ?? 4;
     this._minQueryCount = Math.min(Math.max(configuredMin, 1), this._queriesCount);
     this._heuristics = heuristics;
     this._intentService = intentService;
@@ -50,12 +51,14 @@ export class QueryPlannerService implements IQueryPlannerService {
 
     try {
       const basePrompt = [
-        "Generate diverse search queries for a KB with code, tasks, music, notes, tweets.",
-        "Preserve core meaning. Align to domain hints. Avoid forcing brands.",
-        "Rules: 2-8 words, lowercase, natural language, no IDs/URLs/hashtags/usernames/duplicates.",
+        "Generate search queries for a personal knowledge base with code (PRs, issues), tweets, and music (recently played).",
+        "Preserve the user's meaning. Align to the entities implied by the question.",
+        "Rules: 2-8 words, lowercase, natural language, no ids/urls/hashtags/usernames/duplicates.",
         `Return approximately ${this._queriesCount} unique queries.`,
         "",
-        "Vary facets: definition, implementation, workflow, metrics, timeline, troubleshooting, comparison.",
+        // Avoid generic knowledge queries that don't retrieve the user's data
+        "Avoid generic knowledge queries (no definitions, no troubleshooting, no comparisons) unless explicitly tied to the user's own activity.",
+        "Prefer activity-anchored phrasing like 'my tweets yesterday', 'recently played around noon', 'prs merged this week'.",
       ];
 
       // Add intent-specific instructions if available
@@ -64,8 +67,8 @@ export class QueryPlannerService implements IQueryPlannerService {
           "",
           `IMPORTANT: This query involves these entity types: ${intent.entityTypes.join(", ")}.`,
           "Generate queries that:",
-          "1. Target EACH entity type separately",
-          "2. Include varied perspectives and facets for each type",
+          "1. Target each entity type explicitly (tweet | pull_request | recently_played)",
+          "2. Use first-person or owner-anchored phrasing (my, me) when natural",
         );
 
         if (intent.isTemporalQuery) {
@@ -74,17 +77,18 @@ export class QueryPlannerService implements IQueryPlannerService {
             "3. Include temporal context and time-based variations",
             `4. Reference time period: ${timeRef}`,
             "5. Generate queries that help correlate entities by their timestamps",
+            "6. Prefer concrete windows (e.g., last 3 days, yesterday afternoon)",
           );
         }
 
-        basePrompt.push("Ensure BALANCED coverage of all entity types mentioned.");
+        basePrompt.push("Ensure balanced coverage of the entity types mentioned; avoid generic knowledge facets.");
       }
 
       basePrompt.push(
         "",
         "IMPORTANT: Return a valid JSON object with this exact structure:",
         '{"queries": ["query 1", "query 2", ...], "tags": ["tag1", "tag2", ...]}',
-        "The queries array must contain at least 4 queries. Tags are optional.",
+        "The queries array must contain at least 4 queries. Tags are optional. Exclude definitions, troubleshooting, and generic comparisons.",
         "",
         "User query:",
         userQuery,

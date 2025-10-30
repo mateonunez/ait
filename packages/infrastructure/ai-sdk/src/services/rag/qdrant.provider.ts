@@ -50,19 +50,34 @@ export class QdrantProvider {
   async similaritySearchWithVector(
     vector: number[],
     k: number,
-    filter?: { types?: string[] },
+    filter?: { types?: string[]; timeRange?: { from?: string; to?: string } },
   ): Promise<Document<BaseMetadata>[]> {
     let qdrantFilter: any;
+    const must: any[] = [];
+    const should: any[] = [];
+
     if (filter?.types && filter.types.length > 0) {
       if (filter.types.length === 1) {
-        qdrantFilter = {
-          must: [{ key: "metadata.__type", match: { value: filter.types[0] } }],
-        };
+        must.push({ key: "metadata.__type", match: { value: filter.types[0] } });
       } else {
-        qdrantFilter = {
-          should: filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })),
-        };
+        should.push(...filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })));
       }
+    }
+
+    if (filter?.timeRange && (filter.timeRange.from || filter.timeRange.to)) {
+      const { from, to } = filter.timeRange;
+      const fields = ["createdAt", "playedAt", "updatedAt", "mergedAt", "closedAt", "publishedAt", "timestamp", "date"];
+      const range: any = {};
+      if (from) range.gte = from;
+      if (to) range.lte = to;
+      const timeShould = fields.map((f) => ({ key: `metadata.${f}`, range }));
+      must.push({ should: timeShould });
+    }
+
+    if (must.length > 0 || should.length > 0) {
+      qdrantFilter = {};
+      if (must.length > 0) qdrantFilter.must = must;
+      if (should.length > 0) qdrantFilter.should = should;
     }
 
     const searchResult = await this._client.search(this._config.collectionName, {
@@ -81,7 +96,7 @@ export class QdrantProvider {
   async similaritySearchWithScore(
     query: string,
     k: number,
-    filter?: { types?: string[] },
+    filter?: { types?: string[]; timeRange?: { from?: string; to?: string } },
     scoreThreshold?: number,
   ): Promise<Array<[Document<BaseMetadata>, number]>> {
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
@@ -89,26 +104,31 @@ export class QdrantProvider {
     });
 
     let qdrantFilter: any;
+    const must: any[] = [];
+    const should: any[] = [];
+
     if (filter?.types && filter.types.length > 0) {
       if (filter.types.length === 1) {
-        // Single type - use must with match
-        qdrantFilter = {
-          must: [
-            {
-              key: "metadata.__type",
-              match: { value: filter.types[0] },
-            },
-          ],
-        };
+        must.push({ key: "metadata.__type", match: { value: filter.types[0] } });
       } else {
-        // Multiple types - use should (OR condition)
-        qdrantFilter = {
-          should: filter.types.map((type) => ({
-            key: "metadata.__type",
-            match: { value: type },
-          })),
-        };
+        should.push(...filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })));
       }
+    }
+
+    if (filter?.timeRange && (filter.timeRange.from || filter.timeRange.to)) {
+      const { from, to } = filter.timeRange;
+      const fields = ["createdAt", "playedAt", "updatedAt", "mergedAt", "closedAt", "publishedAt", "timestamp", "date"];
+      const range: any = {};
+      if (from) range.gte = from;
+      if (to) range.lte = to;
+      const timeShould = fields.map((f) => ({ key: `metadata.${f}`, range }));
+      must.push({ should: timeShould });
+    }
+
+    if (must.length > 0 || should.length > 0) {
+      qdrantFilter = {};
+      if (must.length > 0) qdrantFilter.must = must;
+      if (should.length > 0) qdrantFilter.should = should;
     }
 
     // Use provided threshold or default to 0.3 for better quality
@@ -125,7 +145,7 @@ export class QdrantProvider {
     console.debug("Qdrant search result", {
       query: `${query.slice(0, 50)}...`,
       scoreThreshold: effectiveThreshold,
-      filter: filter?.types,
+      filter: filter,
       resultsCount: searchResult.length,
       scoreRange:
         searchResult.length > 0

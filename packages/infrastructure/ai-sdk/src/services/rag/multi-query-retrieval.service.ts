@@ -69,17 +69,30 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     });
 
     const perQueryK = Math.max(20, Math.ceil((this._maxDocs * 1.5) / Math.max(1, queryPlan.queries.length)));
+    const targetUnique = this._maxDocs; // early-stop when we have enough unique docs
 
     const parallelResults = await this._executeQueriesInParallel<TMetadata>(
       vectorStore,
       queryPlan.queries,
       perQueryK,
       typeFilterResult,
+      targetUnique,
     );
 
     const allResults: QueryResult<TMetadata>[] = [...parallelResults];
 
-    if (this._useHyDE && this._hyde) {
+    // HyDE gating: only use when unique results appear low
+    const uniqueFromParallel = new Set<string>();
+    for (const pr of parallelResults) {
+      for (const [doc] of pr.results) {
+        uniqueFromParallel.add(this._getDocumentId(doc as Document<BaseMetadata>));
+      }
+    }
+    const uniqueCount = uniqueFromParallel.size;
+
+    const shouldUseHyDE = this._useHyDE && !!this._hyde && uniqueCount < Math.floor(this._maxDocs * 0.6);
+
+    if (shouldUseHyDE) {
       try {
         const hydeVector = await this._hyde.generateHyDEEmbedding(userQuery);
         const hydeDocs = await vectorStore.similaritySearchWithVector(hydeVector, perQueryK, typeFilterResult);
@@ -88,11 +101,20 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
           results: hydeDocs.map((doc) => [doc as Document<TMetadata>, 1.0]),
         };
         allResults.push(hydeResults);
+        console.debug("HyDE embedding generated", {
+          queryLength: userQuery.length,
+          hypoLength: hydeDocs.reduce((acc, d) => acc + (d.pageContent?.length || 0), 0),
+        });
       } catch (error) {
         console.warn("HyDE generation failed, continuing without it", {
           error: error instanceof Error ? error.message : String(error),
         });
       }
+    } else {
+      console.debug("Skipping HyDE due to sufficient recall", {
+        uniqueCount,
+        threshold: Math.floor(this._maxDocs * 0.6),
+      });
     }
 
     if (allResults.length === 0) {
@@ -144,10 +166,13 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     queries: string[],
     perQueryK: number,
     typeFilter?: { types?: string[] },
+    targetUnique?: number,
   ): Promise<QueryResult<TMetadata>[]> {
     const allResults: QueryResult<TMetadata>[] = [];
     const queue = queries.map((q, idx) => ({ query: q, queryIdx: idx }));
     const workers: Promise<void>[] = [];
+    const uniqueIds = new Set<string>();
+    let lowGainStreak = 0;
 
     const runWorker = async () => {
       while (queue.length) {
@@ -166,6 +191,26 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
             queryIdx: task.queryIdx,
             results: pairs as Array<[Document<TMetadata>, number]>,
           });
+
+          // Early-stop and marginal gain detection
+          const before = uniqueIds.size;
+          for (const [doc] of pairs as Array<[Document<TMetadata>, number]>) {
+            uniqueIds.add(this._getDocumentId(doc as Document<BaseMetadata>));
+          }
+          const gained = uniqueIds.size - before;
+          lowGainStreak = gained < 3 ? lowGainStreak + 1 : 0;
+
+          if (targetUnique && uniqueIds.size >= targetUnique) {
+            // Clear remaining queue to stop early
+            queue.length = 0;
+            break;
+          }
+
+          if (lowGainStreak >= 3) {
+            // Little marginal gain across recent queries, stop early
+            queue.length = 0;
+            break;
+          }
         } catch (e) {
           console.debug("Query variant failed", {
             query: task.query,

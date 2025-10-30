@@ -107,6 +107,11 @@ export interface RankedResult<TMetadata extends BaseMetadata = BaseMetadata> {
 export interface TypeFilter {
   /** Array of document types to filter by */
   types?: string[];
+  /** Optional time window for temporal filtering */
+  timeRange?: {
+    from?: string; // ISO string
+    to?: string; // ISO string
+  };
 }
 
 /**

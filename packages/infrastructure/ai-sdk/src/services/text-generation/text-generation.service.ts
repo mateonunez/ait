@@ -121,7 +121,8 @@ export class TextGenerationService implements ITextGenerationService {
 
     // Configuration
     this._enableRAGByDefault = config.contextPreparationConfig?.enableRAG ?? true;
-    this._maxToolRounds = config.toolExecutionConfig?.maxRounds ?? 2;
+    // Default to a single tool round; escalate via options when needed
+    this._maxToolRounds = config.toolExecutionConfig?.maxRounds ?? 1;
   }
 
   public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string> {
