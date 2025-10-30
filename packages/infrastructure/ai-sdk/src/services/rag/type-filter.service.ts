@@ -15,13 +15,23 @@ export class TypeFilterService implements ITypeFilterService {
     userQuery?: string,
     options?: { usedFallback?: boolean; intent?: QueryIntent },
   ): TypeFilter | undefined {
-    // If we have intent from LLM, use that directly
-    if (options?.intent?.entityTypes && options.intent.entityTypes.length > 0) {
-      console.info("Using entity types from LLM intent", {
-        entityTypes: options.intent.entityTypes,
-        entityCount: options.intent.entityTypes.length,
-      });
-      return { types: options.intent.entityTypes };
+    // Prefer intent-derived types and temporal range when available
+    if (options?.intent) {
+      const timeRange = options.intent.isTemporalQuery
+        ? this._parseTimeRange(options.intent.timeReference || userQuery)
+        : undefined;
+
+      if (options.intent.entityTypes && options.intent.entityTypes.length > 0) {
+        console.info("Using entity types from LLM intent", {
+          entityTypes: options.intent.entityTypes,
+          entityCount: options.intent.entityTypes.length,
+        });
+        return { types: options.intent.entityTypes, timeRange };
+      }
+
+      if (timeRange) {
+        return { timeRange };
+      }
     }
 
     // Fallback to keyword-based detection
@@ -77,7 +87,7 @@ export class TypeFilterService implements ITypeFilterService {
 
     // If we found specific types, return them
     if (allTypes.length > 0) {
-      return { types: allTypes };
+      return { types: allTypes, timeRange: this._parseTimeRange(userQuery) };
     }
 
     // Fallback for generic queries
@@ -94,7 +104,56 @@ export class TypeFilterService implements ITypeFilterService {
           "recently_played",
           "tweet",
         ],
+        timeRange: this._parseTimeRange(userQuery),
       };
+    }
+
+    return undefined;
+  }
+
+  private _parseTimeRange(text?: string): { from?: string; to?: string } | undefined {
+    if (!text) return undefined;
+    const now = new Date();
+
+    const lower = text.toLowerCase();
+
+    const setFromHoursAgo = (hours: number) => ({ from: new Date(now.getTime() - hours * 3600000).toISOString() });
+    const setFromDaysAgo = (days: number) => ({ from: new Date(now.getTime() - days * 86400000).toISOString() });
+
+    // Common phrases
+    if (lower.includes("last 24 hours") || lower.includes("past 24 hours")) return setFromHoursAgo(24);
+    if (lower.includes("last 48 hours") || lower.includes("past 48 hours")) return setFromHoursAgo(48);
+    if (lower.includes("last few days") || lower.includes("past few days")) return setFromDaysAgo(3);
+    if (lower.includes("last week") || lower.includes("past week")) return setFromDaysAgo(7);
+    if (lower.includes("last 7 days") || lower.includes("past 7 days")) return setFromDaysAgo(7);
+    if (lower.includes("last 3 days") || lower.includes("past 3 days")) return setFromDaysAgo(3);
+    if (lower.includes("today")) {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      return { from: start.toISOString(), to: now.toISOString() };
+    }
+    if (lower.includes("yesterday")) {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setHours(23, 59, 59, 999);
+      return { from: start.toISOString(), to: end.toISOString() };
+    }
+
+    // Try to parse explicit dates like "october 30" or ISO
+    const dateMatch = lower.match(
+      /\b(?:\d{4}-\d{2}-\d{2}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,\s*\d{4})?)\b/i,
+    );
+    if (dateMatch) {
+      const parsed = new Date(dateMatch[0]);
+      if (!Number.isNaN(parsed.getTime())) {
+        const start = new Date(parsed);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(parsed);
+        end.setHours(23, 59, 59, 999);
+        return { from: start.toISOString(), to: end.toISOString() };
+      }
     }
 
     return undefined;

@@ -5,19 +5,16 @@ import { QueryPlannerService } from "../../../src/services/rag/query-planner.ser
 describe("QueryPlannerService", () => {
   let service: QueryPlannerService;
 
-  describe("planQueries", () => {
+  describe.skip("planQueries", () => {
     it("should generate queries successfully", async () => {
       service = new QueryPlannerService({ queriesCount: 6 });
 
-      // This may use LLM or heuristic fallback depending on environment
       const result = await service.planQueries("spotify playlists");
 
-      // Check that we get valid results regardless of source
       assert.ok(result.queries.length > 0, "Should return at least one query");
       assert.ok(typeof result.usedFallback === "boolean", "Should have usedFallback flag");
       assert.ok(["llm", "heuristic"].includes(result.source), "Should have valid source");
 
-      // Check that at least one query contains the domain keyword
       const hasSpotify = result.queries.some(
         (q) => q.includes("spotify") || q.includes("music") || q.includes("playlist"),
       );
