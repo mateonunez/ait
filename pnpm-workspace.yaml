@@ -1,6 +1,7 @@
 packages:
   - packages/*
   - packages/infrastructure/*
+  # - '!packages/infrastructure/scheduler'
   - packages/connectors/*
   - packages/transformers/*
   - packages/gateway/*

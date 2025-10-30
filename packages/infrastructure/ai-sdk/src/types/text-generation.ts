@@ -23,6 +23,8 @@ export interface ContextPreparationConfig {
   cacheDurationMs?: number;
   /** Minimum topic similarity to reuse cache (0-1, default: 0.7) */
   topicSimilarityThreshold?: number;
+  /** Temporal correlation window in hours (default: 3) */
+  temporalWindowHours?: number;
 }
 
 /**
@@ -71,6 +73,10 @@ export interface RAGContext {
   timestamp: number;
   /** Query used to retrieve context */
   query: string;
+  /** Whether a fallback context (no RAG) was returned */
+  fallbackUsed?: boolean;
+  /** Optional reason for fallback */
+  fallbackReason?: string;
 }
 
 /**

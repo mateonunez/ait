@@ -37,10 +37,10 @@ describe("ConnectorGitHubStore", () => {
         forks: 50,
         language: "TypeScript",
         url: "https://github.com/mateonunez/ait",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         __type: "repository",
-      };
+      } as unknown as GitHubRepositoryEntity;
 
       await store.save(repo);
 
@@ -67,7 +67,7 @@ describe("ConnectorGitHubStore", () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           __type: "repository",
-        },
+        } as unknown as GitHubRepositoryEntity,
         {
           id: "repo-2",
           name: "Repository Two",
@@ -79,7 +79,7 @@ describe("ConnectorGitHubStore", () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           __type: "repository",
-        },
+        } as unknown as GitHubRepositoryEntity,
       ];
 
       await store.save(repos);

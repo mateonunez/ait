@@ -4,7 +4,7 @@ import type {
   IConnectorSpotifyAlbumRepository,
   SpotifyAlbumEntity,
 } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyAlbums } from "@ait/postgres";
+import { getPostgresClient, spotifyAlbums, type SpotifyAlbumDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRepository {
@@ -22,29 +22,35 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
       albumDataTarget.id = albumId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<SpotifyAlbumDataTarget> = {
+          name: albumDataTarget.name,
+          albumType: albumDataTarget.albumType,
+          artists: albumDataTarget.artists,
+          tracks: albumDataTarget.tracks,
+          totalTracks: albumDataTarget.totalTracks,
+          releaseDate: albumDataTarget.releaseDate,
+          releaseDatePrecision: albumDataTarget.releaseDatePrecision,
+          isPlayable: albumDataTarget.isPlayable,
+          uri: albumDataTarget.uri,
+          href: albumDataTarget.href,
+          popularity: albumDataTarget.popularity,
+          label: albumDataTarget.label,
+          copyrights: albumDataTarget.copyrights,
+          externalIds: albumDataTarget.externalIds,
+          genres: albumDataTarget.genres,
+          updatedAt: albumDataTarget.updatedAt ?? new Date(),
+        };
+
+        if (albumDataTarget.createdAt) {
+          updateValues.createdAt = albumDataTarget.createdAt;
+        }
+
         await tx
           .insert(spotifyAlbums)
           .values(albumDataTarget)
           .onConflictDoUpdate({
             target: spotifyAlbums.id,
-            set: {
-              name: albumDataTarget.name,
-              albumType: albumDataTarget.albumType,
-              artists: albumDataTarget.artists,
-              tracks: albumDataTarget.tracks,
-              totalTracks: albumDataTarget.totalTracks,
-              releaseDate: albumDataTarget.releaseDate,
-              releaseDatePrecision: albumDataTarget.releaseDatePrecision,
-              isPlayable: albumDataTarget.isPlayable,
-              uri: albumDataTarget.uri,
-              href: albumDataTarget.href,
-              popularity: albumDataTarget.popularity,
-              label: albumDataTarget.label,
-              copyrights: albumDataTarget.copyrights,
-              externalIds: albumDataTarget.externalIds,
-              genres: albumDataTarget.genres,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

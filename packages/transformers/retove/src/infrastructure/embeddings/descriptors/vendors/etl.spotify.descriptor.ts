@@ -59,9 +59,10 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "track",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }
@@ -77,9 +78,10 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyArtistDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "artist",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }
@@ -108,9 +110,10 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyPlaylistDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "playlist",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }
@@ -128,9 +131,10 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyAlbumDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "album",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }
@@ -172,9 +176,10 @@ export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescript
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyRecentlyPlayedDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "recently_played",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }

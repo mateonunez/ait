@@ -1,9 +1,10 @@
 import type { RAGContext, ContextPreparationConfig } from "../../types/text-generation";
 import type { Document, BaseMetadata } from "../../types/documents";
 import type { IMultiQueryRetrievalService } from "../rag/multi-query-retrieval.service";
-import type { QdrantProvider } from "../../rag/qdrant.provider";
+import type { QdrantProvider } from "../rag/qdrant.provider";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
-import { ContextBuilder } from "../../rag/context.builder";
+import { ContextBuilder } from "../rag/context.builder";
+import { TemporalCorrelationService, type ITemporalCorrelationService } from "../rag/temporal-correlation.service";
 
 /**
  * Interface for context preparation service
@@ -30,8 +31,10 @@ export class ContextPreparationService implements IContextPreparationService {
   private readonly _multiQueryRetrieval: IMultiQueryRetrievalService;
   private readonly _contextBuilder: ContextBuilder;
   private readonly _embeddingsService: IEmbeddingsService;
+  private readonly _temporalCorrelation: ITemporalCorrelationService;
   private readonly _cacheDurationMs: number;
   private readonly _topicSimilarityThreshold: number;
+  private readonly _temporalWindowHours: number;
 
   private _cachedContext: RAGContext | null = null;
 
@@ -45,9 +48,11 @@ export class ContextPreparationService implements IContextPreparationService {
     this._multiQueryRetrieval = multiQueryRetrieval;
     this._embeddingsService = embeddingsService;
     this._contextBuilder = new ContextBuilder();
+    this._temporalCorrelation = new TemporalCorrelationService(config.temporalWindowHours ?? 3);
 
     this._cacheDurationMs = Math.max(config.cacheDurationMs ?? 5 * 60 * 1000, 0);
     this._topicSimilarityThreshold = Math.max(Math.min(config.topicSimilarityThreshold ?? 0.7, 1), 0);
+    this._temporalWindowHours = config.temporalWindowHours ?? 3;
   }
 
   async prepareContext(query: string): Promise<RAGContext> {
@@ -63,23 +68,83 @@ export class ContextPreparationService implements IContextPreparationService {
 
     // Retrieve fresh context
     const startTime = Date.now();
-    const documents = await this._multiQueryRetrieval.retrieve<BaseMetadata>(this._vectorStore, query);
+    let documents: Document<BaseMetadata>[] = [];
+    let fallbackUsed = false;
+    let fallbackReason: string | undefined;
 
-    const context = this._contextBuilder.buildContextFromDocuments(documents as Document<BaseMetadata>[]);
+    try {
+      documents = await this._multiQueryRetrieval.retrieve<BaseMetadata>(this._vectorStore, query);
+    } catch (error) {
+      fallbackUsed = true;
+      fallbackReason = error instanceof Error ? error.message : String(error);
+      console.error("RAG retrieval failed, returning fallback context", {
+        error: fallbackReason,
+      });
+    }
+
+    let context = "";
+    let usedTemporalCorrelation = false;
+
+    if (documents.length > 0) {
+      // Check if this query has temporal intent (from LLM analysis)
+      const hasTemporalIntent = documents.some((doc) => {
+        // Documents might carry intent information from the query plan
+        // For now, we'll use a heuristic: if multiple entity types with timestamps exist, apply temporal correlation
+        return doc.metadata.createdAt || doc.metadata.playedAt || doc.metadata.mergedAt || doc.metadata.pushedAt;
+      });
+
+      // Apply temporal correlation for queries with multiple entity types that have timestamps
+      const entityTypes = new Set(documents.map((doc) => doc.metadata.__type).filter(Boolean));
+      const shouldApplyTemporal = hasTemporalIntent && entityTypes.size > 1;
+
+      if (shouldApplyTemporal) {
+        console.info("Temporal correlation applicable, grouping by time windows", {
+          documentCount: documents.length,
+          entityTypes: Array.from(entityTypes),
+          windowHours: this._temporalWindowHours,
+        });
+
+        const clusters = this._temporalCorrelation.correlateByTimeWindow(documents, this._temporalWindowHours);
+
+        if (clusters.length > 0) {
+          context = this._contextBuilder.buildTemporalContext(clusters);
+          usedTemporalCorrelation = true;
+          console.info("Temporal context built", {
+            clusterCount: clusters.length,
+            contextLength: context.length,
+          });
+        } else {
+          // Fallback to regular context if temporal correlation yields no results
+          console.warn("Temporal correlation yielded no results, using regular context");
+          context = this._contextBuilder.buildContextFromDocuments(documents);
+        }
+      } else {
+        context = this._contextBuilder.buildContextFromDocuments(documents);
+      }
+    }
 
     const ragContext: RAGContext = {
       context,
-      documents: documents as Document<BaseMetadata>[],
+      documents,
       timestamp: Date.now(),
       query,
+      fallbackUsed,
+      fallbackReason,
     };
 
-    this._cachedContext = ragContext;
+    if (!fallbackUsed) {
+      this._cachedContext = ragContext;
+    } else {
+      this._cachedContext = null;
+    }
 
-    console.info("RAG context prepared", {
+    console.info(fallbackUsed ? "RAG fallback context prepared" : "RAG context prepared", {
       documentCount: documents.length,
       contextLength: context.length,
       retrievalTimeMs: Date.now() - startTime,
+      fallbackUsed,
+      fallbackReason,
+      usedTemporalCorrelation,
     });
 
     return ragContext;
@@ -90,7 +155,7 @@ export class ContextPreparationService implements IContextPreparationService {
   }
 
   private async _canReuseCachedContext(query: string): Promise<boolean> {
-    if (!this._cachedContext) {
+    if (!this._cachedContext || this._cachedContext.fallbackUsed) {
       return false;
     }
 

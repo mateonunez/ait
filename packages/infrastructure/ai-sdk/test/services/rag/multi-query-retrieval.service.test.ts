@@ -6,8 +6,9 @@ import type { IQueryPlannerService } from "../../../src/services/rag/query-plann
 import type { IDiversityService } from "../../../src/services/rag/diversity.service";
 import type { ITypeFilterService } from "../../../src/services/rag/type-filter.service";
 import type { IRankFusionService } from "../../../src/services/rag/rank-fusion.service";
-import type { QdrantProvider } from "../../../src/rag/qdrant.provider";
 import type { Document, BaseMetadata } from "../../../src/types/documents";
+import type { QueryPlanResult } from "../../../src/types/rag";
+import type { QdrantProvider } from "../../../src/services/rag/qdrant.provider";
 
 describe("MultiQueryRetrievalService", () => {
   let service: MultiQueryRetrievalService;
@@ -28,12 +29,11 @@ describe("MultiQueryRetrievalService", () => {
     } as unknown as sinon.SinonStubbedInstance<IQueryPlannerService>;
 
     mockDiversity = {
-      validateQueryDiversity: sinon.stub(),
       applyMMR: sinon.stub(),
     } as unknown as sinon.SinonStubbedInstance<IDiversityService>;
 
     mockTypeFilter = {
-      detectTypeFilter: sinon.stub(),
+      inferTypes: sinon.stub(),
     } as unknown as sinon.SinonStubbedInstance<ITypeFilterService>;
 
     mockRankFusion = {
@@ -57,9 +57,9 @@ describe("MultiQueryRetrievalService", () => {
         queries,
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
 
       const doc1 = createMockDoc("doc1", "content 1");
       const doc2 = createMockDoc("doc2", "content 2");
@@ -90,12 +90,12 @@ describe("MultiQueryRetrievalService", () => {
         },
       ]);
 
-      mockDiversity.applyMMR.callsFake((selected, candidates, max) => selected);
+      mockDiversity.applyMMR.callsFake((selectedDocs, maxDocs) => selectedDocs);
 
       const result = await service.retrieve(mockVectorStore, "test query");
 
       assert.ok(mockQueryPlanner.planQueries.calledOnce);
-      assert.ok(mockTypeFilter.detectTypeFilter.calledOnce);
+      assert.ok(mockTypeFilter.inferTypes.calledOnce);
       assert.ok(mockVectorStore.similaritySearchWithScore.called);
       assert.ok(mockRankFusion.fuseResults.calledOnce);
       assert.equal(result.length, 2);
@@ -106,9 +106,9 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["query1", "query2", "query3", "query4"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
 
       const doc = createMockDoc("doc1", "content");
       mockVectorStore.similaritySearchWithScore.resolves([[doc, 0.9]]);
@@ -138,9 +138,9 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["query1", "query2"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
 
       const docs = Array.from({ length: 8 }, (_, i) => createMockDoc(`doc${i}`, `content ${i}`));
 
@@ -161,10 +161,11 @@ describe("MultiQueryRetrievalService", () => {
       const diversified = docs.slice(0, 6);
       mockDiversity.applyMMR.returns(diversified);
 
-      await service.retrieve(mockVectorStore, "test");
+      const result = await service.retrieve(mockVectorStore, "test");
 
       assert.ok(mockDiversity.applyMMR.calledOnce);
-      assert.equal(mockDiversity.applyMMR.firstCall.args[2], 10); // maxDocs
+      assert.equal(mockDiversity.applyMMR.firstCall.args[1], 10); // maxDocs (second parameter)
+      assert.equal(result.length, diversified.length);
     });
 
     it("should return empty array on no results", async () => {
@@ -172,9 +173,9 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["query1"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
       mockVectorStore.similaritySearchWithScore.resolves([]);
       mockRankFusion.fuseResults.returns([]);
 
@@ -188,9 +189,9 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["query1"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
       mockVectorStore.similaritySearchWithScore.resolves([[createMockDoc("doc1", "content"), 0.9]]);
       mockRankFusion.fuseResults.returns([]);
 
@@ -204,9 +205,9 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["query1", "query2"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
 
       let callCount = 0;
       mockVectorStore.similaritySearchWithScore.callsFake(async () => {
@@ -250,9 +251,9 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["query1"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
       mockVectorStore.similaritySearchWithScore.resolves([[createMockDoc("doc1", "content"), 0.9]]);
 
       mockRankFusion.fuseResults.returns([
@@ -280,10 +281,10 @@ describe("MultiQueryRetrievalService", () => {
         queries: ["github repos"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
       const typeFilter = { types: ["repository"] };
-      mockTypeFilter.detectTypeFilter.returns(typeFilter);
+      mockTypeFilter.inferTypes.returns(typeFilter);
 
       mockVectorStore.similaritySearchWithScore.resolves([[createMockDoc("doc1", "content"), 0.9]]);
 
@@ -307,14 +308,14 @@ describe("MultiQueryRetrievalService", () => {
       assert.deepEqual(callArgs[2], typeFilter);
     });
 
-    it("should not apply MMR for 5 or fewer results", async () => {
+    it("should apply MMR even for fewer results", async () => {
       mockQueryPlanner.planQueries.resolves({
         queries: ["query1"],
         source: "llm",
         isDiverse: true,
-      });
+      } as QueryPlanResult);
 
-      mockTypeFilter.detectTypeFilter.returns(undefined);
+      mockTypeFilter.inferTypes.returns(undefined);
 
       const docs = Array.from({ length: 3 }, (_, i) => createMockDoc(`doc${i}`, `content ${i}`));
 
@@ -332,10 +333,13 @@ describe("MultiQueryRetrievalService", () => {
         })),
       );
 
+      // MMR should return all docs when count is less than maxDocs
+      mockDiversity.applyMMR.callsFake((selected, max) => selected.slice(0, Math.min(selected.length, max)));
+
       const result = await service.retrieve(mockVectorStore, "test");
 
       assert.equal(result.length, 3);
-      assert.ok(mockDiversity.applyMMR.notCalled);
+      assert.ok(mockDiversity.applyMMR.calledOnce);
     });
   });
 

@@ -23,9 +23,10 @@ export class ETLLinearIssueDescriptor implements IETLEmbeddingDescriptor<LinearI
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: LinearIssueDataTarget): U {
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "issue",
-      ...entity,
+      ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }

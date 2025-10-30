@@ -4,7 +4,7 @@ import type {
   IConnectorSpotifyPlaylistRepository,
   SpotifyPlaylistEntity,
 } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyPlaylists } from "@ait/postgres";
+import { getPostgresClient, spotifyPlaylists, type SpotifyPlaylistDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlaylistRepository {
@@ -22,25 +22,31 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       playlistDataTarget.id = playlistId;
 
       await this._pgClient.db.transaction(async (tx) => {
+        const updateValues: Partial<SpotifyPlaylistDataTarget> = {
+          name: playlistDataTarget.name,
+          description: playlistDataTarget.description,
+          public: playlistDataTarget.public,
+          collaborative: playlistDataTarget.collaborative,
+          owner: playlistDataTarget.owner,
+          tracks: playlistDataTarget.tracks,
+          followers: playlistDataTarget.followers,
+          snapshotId: playlistDataTarget.snapshotId,
+          uri: playlistDataTarget.uri,
+          href: playlistDataTarget.href,
+          externalUrls: playlistDataTarget.externalUrls,
+          updatedAt: playlistDataTarget.updatedAt ?? new Date(),
+        };
+
+        if (playlistDataTarget.createdAt) {
+          updateValues.createdAt = playlistDataTarget.createdAt;
+        }
+
         await tx
           .insert(spotifyPlaylists)
           .values(playlistDataTarget)
           .onConflictDoUpdate({
             target: spotifyPlaylists.id,
-            set: {
-              name: playlistDataTarget.name,
-              description: playlistDataTarget.description,
-              public: playlistDataTarget.public,
-              collaborative: playlistDataTarget.collaborative,
-              owner: playlistDataTarget.owner,
-              tracks: playlistDataTarget.tracks,
-              followers: playlistDataTarget.followers,
-              snapshotId: playlistDataTarget.snapshotId,
-              uri: playlistDataTarget.uri,
-              href: playlistDataTarget.href,
-              externalUrls: playlistDataTarget.externalUrls,
-              updatedAt: new Date(),
-            },
+            set: updateValues,
           })
           .execute();
       });

@@ -1,5 +1,5 @@
 import { getAItClient, DEFAULT_RAG_COLLECTION } from "../../client/ai-sdk.client";
-import { QdrantProvider } from "../../rag/qdrant.provider";
+import { QdrantProvider } from "../rag/qdrant.provider";
 import { createMultiQueryRetrievalService } from "../rag/multi-query-retrieval.factory";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../prompts/system.prompt";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
@@ -16,6 +16,7 @@ import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import type { ChatMessage } from "../../types/chat";
 import type { Tool } from "../../types/tools";
 import type { TextGenerationFeatureConfig } from "../../types/config";
+import type { RAGContext } from "../../types/text-generation";
 
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
@@ -153,7 +154,18 @@ export class TextGenerationService implements ITextGenerationService {
       });
 
       // Prepare system message with RAG context if enabled
-      const systemMessage = await this._prepareSystemMessage(options, correlationId);
+      const { systemMessage, ragContext } = await this._prepareSystemMessage(options, correlationId);
+
+      if (ragContext?.fallbackUsed) {
+        const fallbackResponse = this._buildFallbackResponse(ragContext.fallbackReason);
+        console.info("Responding with fallback message", {
+          correlationId,
+          fallbackReason: ragContext.fallbackReason,
+        });
+        yield fallbackResponse;
+        console.info("Fallback response completed", { correlationId });
+        return;
+      }
 
       // Build initial prompt
       let currentPrompt = this._promptBuilderService.buildPrompt({
@@ -194,13 +206,13 @@ export class TextGenerationService implements ITextGenerationService {
         );
 
         const checkResult = await this._retryService.execute(async () => {
-          return await client.generationModel.doGenerate({
+          return await client.generateText({
             prompt: currentPrompt,
             messages,
+            tools: ollamaTools,
             temperature: client.config.generation.temperature,
             topP: client.config.generation.topP,
             topK: client.config.generation.topK,
-            tools: ollamaTools,
           });
         }, "tool-check");
 
@@ -229,7 +241,7 @@ export class TextGenerationService implements ITextGenerationService {
 
       // Generate streaming response
       const stream = await this._retryService.execute(async () => {
-        return client.generationModel.doStream({
+        return client.streamText({
           prompt: currentPrompt,
           temperature: client.config.generation.temperature,
           topP: client.config.generation.topP,
@@ -254,20 +266,51 @@ export class TextGenerationService implements ITextGenerationService {
       });
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      console.error("Stream generation failed", { error: errMsg, duration: Date.now() - overallStart });
-      throw new TextGenerationError(`Failed to generate stream text: ${errMsg}`, correlationId);
+      console.error("Stream generation failed", {
+        error: errMsg,
+        duration: Date.now() - overallStart,
+        correlationId,
+      });
+
+      const fallbackResponse = this._buildFallbackResponse(errMsg);
+      yield fallbackResponse;
+      console.info("Fallback response emitted after stream failure", { correlationId });
+      return;
     }
   }
 
-  private async _prepareSystemMessage(options: GenerateStreamOptions, correlationId: string): Promise<string> {
+  private async _prepareSystemMessage(
+    options: GenerateStreamOptions,
+    correlationId: string,
+  ): Promise<{ systemMessage: string; ragContext?: RAGContext }> {
     const enableRAG = options.enableRAG ?? this._enableRAGByDefault;
 
     if (!enableRAG) {
-      return buildSystemPromptWithoutContext();
+      return { systemMessage: buildSystemPromptWithoutContext() };
     }
 
-    const ragContext = await this._contextPreparationService.prepareContext(options.prompt);
-    return buildSystemPromptWithContext(ragContext.context);
+    try {
+      const ragContext = await this._contextPreparationService.prepareContext(options.prompt);
+      const systemMessage = ragContext.context
+        ? buildSystemPromptWithContext(ragContext.context)
+        : buildSystemPromptWithoutContext();
+
+      return { systemMessage, ragContext };
+    } catch (error) {
+      console.error("Failed to prepare RAG system message", {
+        error: error instanceof Error ? error.message : String(error),
+        correlationId,
+      });
+      return { systemMessage: buildSystemPromptWithoutContext() };
+    }
+  }
+
+  private _buildFallbackResponse(reason?: string): string {
+    const baseMessage = "I'm having trouble accessing my knowledge base right now, so I can't share specific results.";
+    if (!reason) {
+      return `${baseMessage} Please try again later or ask in a different way.`;
+    }
+    return `${baseMessage} (${reason}). Please try again later or ask in a different way.`;
   }
 
   private _formatConversationContext(conversationContext: {
