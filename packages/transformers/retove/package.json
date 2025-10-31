@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsc -p ./tsconfig.build.json --watch",
     "build": "tsc -p ./tsconfig.build.json",
+    "prepare": "pnpm build",
     "clean": "rm -rf dist coverage",
     "etl": "NODE_OPTIONS='--max_old_space_size=8192' tsx src/etl.retove.main.ts",
     "example:etl": "tsx src/etl/example.etl.ts",
