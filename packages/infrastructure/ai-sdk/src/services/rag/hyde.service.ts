@@ -25,7 +25,7 @@ export class HyDEService implements IHyDEService {
       this._embeddingsService.generateEmbeddings(hypotheticalAnswer),
     ]);
 
-    const hydeVector = queryEmbedding.map((v, i) => (v + hypoEmbedding[i]) / 2);
+    const hydeVector = queryEmbedding.map((v, i) => (v + (hypoEmbedding[i] ?? 0)) / 2);
 
     console.debug("HyDE embedding generated", {
       queryLength: query.length,

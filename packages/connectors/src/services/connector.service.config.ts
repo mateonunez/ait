@@ -1,4 +1,5 @@
 import type { IConnectorOAuthConfig } from "../shared/auth/lib/oauth/connector.oauth";
+import { AItError } from "@ait/core";
 import type { ConnectorType } from "./vendors/connector.vendors.config";
 
 const CONFIG_SUFFIXES = ["CLIENT_ID", "CLIENT_SECRET", "ENDPOINT", "REDIRECT_URI"] as const;
@@ -25,7 +26,7 @@ export function getConnectorConfig(serviceKey: ConnectorType): IConnectorOAuthCo
     const value = process.env[envKey];
 
     if (!value) {
-      throw new Error(`Missing environment variable: ${envKey}`);
+      throw new AItError("CONNECTOR_ENV", `Missing environment variable: ${envKey}`);
     }
 
     const configKey = keyMapping[suffix];

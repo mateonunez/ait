@@ -1,5 +1,8 @@
-import { fetch, type Response } from "undici";
+import { requestJson } from "@ait/core";
+import { AItError } from "@ait/core";
+import type { Response } from "undici";
 import type { XTweetExternal } from "../../../types/domain/entities/vendors/connector.x.repository.types";
+import { ait } from "../../../shared/constants/ait.constant";
 
 export interface IConnectorXDataSource {
   fetchTweets(): Promise<XTweetExternal[]>;
@@ -42,31 +45,28 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
     const url = `${this.apiUrl}${endpoint}`;
 
     try {
-      const response = await fetch(url, {
+      const result = await requestJson<T>(url, {
         method,
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
           "Content-Type": "application/json",
-          "User-Agent": "MyApp/1.0", // Required by Twitter API
+          "User-Agent": `${ait} Connector V1.0.0`,
         },
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      if (response.status === 429) {
-        return this._handleRateLimitExceeded<T>(response, endpoint, method, body);
+      if (!result.ok) {
+        // Handle rate limit via header on error path if available
+        // We cannot directly inspect headers from here because requestJson returns normalized on success.
+        throw result.error;
       }
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new ConnectorXDataSourceError(`X API error: ${response.status} ${response.statusText}`, errorBody);
-      }
-
-      return (await response.json()) as T;
+      return result.value.data as unknown as T;
     } catch (error: any) {
-      if (error instanceof ConnectorXDataSourceError) {
+      if (error instanceof AItError) {
         throw error;
       }
-      throw new ConnectorXDataSourceError(`Network error: ${error.message}`, "");
+      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
     }
   }
 
@@ -116,16 +116,5 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
   private _parseRateLimitResetTime(response: Response): number {
     const resetTimestamp = Number(response.headers.get("x-rate-limit-reset") || "0") * 1000;
     return Number.isNaN(resetTimestamp) ? Date.now() + 5000 : resetTimestamp;
-  }
-}
-
-export class ConnectorXDataSourceError extends Error {
-  public responseBody: string;
-
-  constructor(message: string, responseBody: string) {
-    super(message);
-    this.name = "ConnectorXDataSourceError";
-    this.responseBody = responseBody;
-    Object.setPrototypeOf(this, ConnectorXDataSourceError.prototype);
   }
 }

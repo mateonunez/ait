@@ -216,7 +216,7 @@ export class ErrorClassificationService {
         // Extract file and line number
         const match = line.match(/at\s+(?:.*?\s+\()?([^)]+):(\d+):(\d+)/);
         if (match) {
-          const file = match[1].split("/").pop() || match[1];
+          const file = match[1]?.split("/").pop() ?? match[1] ?? "unknown";
           return `${file}:${match[2]}`;
         }
       }

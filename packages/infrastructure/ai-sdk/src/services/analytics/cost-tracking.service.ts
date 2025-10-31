@@ -1,3 +1,9 @@
+import {
+  type EmbeddingModelName,
+  EmbeddingModels,
+  type GenerationModelName,
+  GenerationModels,
+} from "../../config/models.config";
 import type { CostBreakdown } from "./types";
 
 /**
@@ -13,31 +19,54 @@ interface ModelCosts {
  * Default cost structure (can be overridden)
  * Based on typical cloud LLM pricing
  */
-const DEFAULT_COSTS: Record<string, ModelCosts> = {
+const DEFAULT_COSTS: Record<GenerationModelName | EmbeddingModelName, ModelCosts> = {
+  // Open-source models - Pricing based on typical cloud provider rates
+  // Note: These are open-source models that can be self-hosted for free
+  // Costs reflect typical cloud API pricing (Together AI, Replicate, etc.)
   "gpt-oss:20b": {
-    generationCostPer1KTokens: 0.0, // Self-hosted, no per-token cost
+    generationCostPer1KTokens: 0.0003, // ~$0.30 per 1M tokens (typical for 20B models)
     embeddingCostPer1KTokens: 0.0,
     currency: "USD",
   },
-  "mxbai-embed-large": {
+  "gpt-oss:20b-cloud": {
+    generationCostPer1KTokens: 0.0003,
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
+  "qwen3:latest": {
+    generationCostPer1KTokens: 0.0002, // ~$0.20 per 1M tokens
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
+  "deepseek-r1:latest": {
+    generationCostPer1KTokens: 0.00014, // ~$0.14 per 1M tokens (input) via DeepSeek API
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
+  "gemma3:latest": {
+    generationCostPer1KTokens: 0.0001, // ~$0.10 per 1M tokens (Google's pricing)
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
+  "granite4:latest": {
+    generationCostPer1KTokens: 0.0002, // ~$0.20 per 1M tokens (IBM model)
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
+  // Embedding Models
+  "mxbai-embed-large:latest": {
     generationCostPer1KTokens: 0.0,
-    embeddingCostPer1KTokens: 0.0,
+    embeddingCostPer1KTokens: 0.00001, // ~$0.01 per 1M tokens (typical embedding cost)
     currency: "USD",
   },
-  // Cloud models (examples)
-  "gpt-4": {
-    generationCostPer1KTokens: 0.03,
-    embeddingCostPer1KTokens: 0.0,
-    currency: "USD",
-  },
-  "gpt-3.5-turbo": {
-    generationCostPer1KTokens: 0.002,
-    embeddingCostPer1KTokens: 0.0,
-    currency: "USD",
-  },
-  "text-embedding-ada-002": {
+  "qwen3-embedding:latest": {
     generationCostPer1KTokens: 0.0,
-    embeddingCostPer1KTokens: 0.0001,
+    embeddingCostPer1KTokens: 0.000007, // ~$0.007 per 1M tokens
+    currency: "USD",
+  },
+  "bge-m3:latest": {
+    generationCostPer1KTokens: 0.0,
+    embeddingCostPer1KTokens: 0.00001, // ~$0.01 per 1M tokens
     currency: "USD",
   },
 };
@@ -60,7 +89,7 @@ export class CostTrackingService {
   recordGeneration(tokens: number, model: string): number {
     this.totalGenerationTokens += tokens;
 
-    const costs = this.modelCosts[model] || DEFAULT_COSTS["gpt-oss:20b"];
+    const costs = this.modelCosts[model] || DEFAULT_COSTS["gpt-oss:20b"]!;
     return (tokens / 1000) * costs.generationCostPer1KTokens;
   }
 
@@ -70,7 +99,7 @@ export class CostTrackingService {
   recordEmbedding(tokens: number, model: string): number {
     this.totalEmbeddingTokens += tokens;
 
-    const costs = this.modelCosts[model] || DEFAULT_COSTS["mxbai-embed-large"];
+    const costs = this.modelCosts[model] || DEFAULT_COSTS[EmbeddingModels.MXBAI_EMBED_LARGE]!;
     return (tokens / 1000) * costs.embeddingCostPer1KTokens;
   }
 
@@ -87,8 +116,8 @@ export class CostTrackingService {
    * Calculate total cost
    */
   getTotalCost(generationModel = "gpt-oss:20b", embeddingModel = "mxbai-embed-large"): CostBreakdown {
-    const genCosts = this.modelCosts[generationModel] || DEFAULT_COSTS["gpt-oss:20b"];
-    const embCosts = this.modelCosts[embeddingModel] || DEFAULT_COSTS["mxbai-embed-large"];
+    const genCosts = this.modelCosts[generationModel] || DEFAULT_COSTS[GenerationModels.GPT_OSS_20B]!;
+    const embCosts = this.modelCosts[embeddingModel] || DEFAULT_COSTS[EmbeddingModels.MXBAI_EMBED_LARGE]!;
 
     const generationCost = (this.totalGenerationTokens / 1000) * genCosts.generationCostPer1KTokens;
     const embeddingCost = (this.totalEmbeddingTokens / 1000) * embCosts.embeddingCostPer1KTokens;

@@ -1,4 +1,5 @@
 import type { SpotifyEntity } from "../../../types/domain/entities/vendors/connector.spotify.types";
+import { AItError } from "@ait/core";
 import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
@@ -33,7 +34,7 @@ export class ConnectorSpotifyStore implements IConnectorStore {
           break;
         default:
           // @ts-ignore: Unreachable code error
-          throw new Error(`Type ${item.__type} is not supported`);
+          throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
       }
     }
   }

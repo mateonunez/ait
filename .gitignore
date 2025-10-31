@@ -4,6 +4,7 @@ coverage/
 .env.test
 .stuff
 dist/
+**/dist/
 .venv/
 .DS_Store
 ait_pgdata/

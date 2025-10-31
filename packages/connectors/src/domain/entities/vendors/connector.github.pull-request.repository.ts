@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { getPostgresClient, githubPullRequests } from "@ait/postgres";
 import { connectorGithubPullRequestMapper } from "../../mappers/vendors/connector.github.pull-request.mapper";
 import { randomUUID } from "node:crypto";
@@ -69,7 +70,12 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
       });
     } catch (error: any) {
       console.error("Failed to save pull request:", { prId: pullRequestId, error });
-      throw new Error(`Failed to save pull request ${pullRequestId}: ${error.message}`);
+      throw new AItError(
+        "GITHUB_SAVE_PULL_REQUEST",
+        `Failed to save pull request ${pullRequestId}: ${error.message}`,
+        { id: pullRequestId },
+        error,
+      );
     }
   }
 

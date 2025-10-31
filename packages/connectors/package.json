@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsc -p ./tsconfig.build.json --watch",
     "build": "tsc -p ./tsconfig.build.json",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit",
     "clean": "rm -rf dist coverage",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe",
@@ -19,6 +20,7 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/core": "workspace:*",
     "@ait/postgres": "workspace:*",
     "@fastify/secure-session": "^8.2.0",
     "@octokit/rest": "^22.0.0",

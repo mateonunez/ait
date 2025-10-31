@@ -18,7 +18,7 @@ export class DiversityService implements IDiversityService {
   ): Document<TMetadata>[] {
     if (selectedDocs.length <= maxDocs) return selectedDocs;
 
-    const result: Document<TMetadata>[] = [selectedDocs[0]];
+    const result: Document<TMetadata>[] = [selectedDocs[0]!];
     const remaining = [...selectedDocs];
     remaining.shift();
 
@@ -29,7 +29,7 @@ export class DiversityService implements IDiversityService {
       let bestScore = Number.NEGATIVE_INFINITY;
 
       for (let i = 0; i < remaining.length; i++) {
-        const candidateTokens = getTokens(remaining[i]);
+        const candidateTokens = getTokens(remaining[i]!);
 
         let maxSim = 0;
         for (const selected of result) {
@@ -50,7 +50,7 @@ export class DiversityService implements IDiversityService {
       }
 
       if (bestIdx >= 0) {
-        result.push(remaining[bestIdx]);
+        result.push(remaining[bestIdx]!);
         remaining.splice(bestIdx, 1);
       } else {
         break;

@@ -1,0 +1,30 @@
+{
+  "name": "@ait/core",
+  "version": "0.1.0",
+  "description": "Core building blocks for AIt: errors, result, http, shared types",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "dev": "tsc -p ./tsconfig.build.json --watch",
+    "build": "tsc -p ./tsconfig.build.json",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit",
+    "clean": "rm -rf dist coverage",
+    "lint": "biome format && biome lint",
+    "lint:fix": "biome format --write && biome lint --write --unsafe"
+  },
+  "keywords": ["core", "errors", "types", "http"],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

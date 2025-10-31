@@ -1,4 +1,5 @@
 import type { LinearEntity } from "../../../types/domain/entities/vendors/connector.linear.types";
+import { AItError } from "@ait/core";
 import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
@@ -21,7 +22,7 @@ export class ConnectorLinearStore implements IConnectorStore {
           break;
         default:
           // @ts-ignore: Unreachable code error
-          throw new Error(`Type ${item.__type} is not supported`);
+          throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
       }
     }
   }

@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import type { GenerationModel, EmbeddingsModel, ModelGenerateOptions, ModelStreamOptions } from "../types/models";
 import type {
   OllamaTool,
@@ -61,7 +62,9 @@ export class OllamaProvider {
         });
 
         if (!response.ok) {
-          throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+          throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
+            status: response.status,
+          });
         }
 
         const data = (await response.json()) as {
@@ -101,7 +104,9 @@ export class OllamaProvider {
         });
 
         if (!response.ok) {
-          throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+          throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
+            status: response.status,
+          });
         }
 
         const data = (await response.json()) as {
@@ -136,12 +141,14 @@ export class OllamaProvider {
         });
 
         if (!response.ok) {
-          throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+          throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
+            status: response.status,
+          });
         }
 
         const reader = response.body?.getReader();
         if (!reader) {
-          throw new Error("No response body");
+          throw new AItError("OLLAMA_NO_BODY", "No response body");
         }
 
         const decoder = new TextDecoder();
@@ -194,7 +201,9 @@ export class OllamaProvider {
         });
 
         if (!response.ok) {
-          throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+          throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
+            status: response.status,
+          });
         }
 
         const data = (await response.json()) as { embedding: number[] };

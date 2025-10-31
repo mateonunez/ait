@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { X_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type {
@@ -23,7 +24,7 @@ export class ConnectorXStore implements IConnectorStore {
           await this._connectorXRepository.tweet.saveTweet(item);
           break;
         default:
-          throw new Error(`Type ${item.__type} is not supported`);
+          throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
       }
     }
   }

@@ -10,93 +10,78 @@ import type {
 } from "@/types/stats.types";
 
 const API_BASE_URL = "http://localhost:3000/api";
+import { apiGet } from "./http-client";
 
 /**
  * Fetch health check metrics
  */
 export async function fetchHealthMetrics(): Promise<HealthData> {
-  const response = await fetch(`${API_BASE_URL}/observability/health`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch health metrics: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<HealthData>(`${API_BASE_URL}/observability/health`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch health metrics");
+  return res.data as HealthData;
 }
 
 /**
  * Fetch performance metrics
  */
 export async function fetchPerformanceMetrics(windowMinutes = 60): Promise<PerformanceData> {
-  const response = await fetch(`${API_BASE_URL}/observability/performance?window=${windowMinutes}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch performance metrics: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<PerformanceData>(`${API_BASE_URL}/observability/performance?window=${windowMinutes}`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch performance metrics");
+  return res.data as PerformanceData;
 }
 
 /**
  * Fetch cache metrics
  */
 export async function fetchCacheMetrics(windowMinutes = 60): Promise<CacheData> {
-  const response = await fetch(`${API_BASE_URL}/observability/cache?window=${windowMinutes}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch cache metrics: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<CacheData>(`${API_BASE_URL}/observability/cache?window=${windowMinutes}`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch cache metrics");
+  return res.data as CacheData;
 }
 
 /**
  * Fetch cost metrics
  */
 export async function fetchCostMetrics(): Promise<CostData> {
-  const response = await fetch(`${API_BASE_URL}/observability/cost`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch cost metrics: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<CostData>(`${API_BASE_URL}/observability/cost`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch cost metrics");
+  return res.data as CostData;
 }
 
 /**
  * Fetch error metrics
  */
 export async function fetchErrorMetrics(windowMinutes = 60): Promise<ErrorData> {
-  const response = await fetch(`${API_BASE_URL}/observability/errors?window=${windowMinutes}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch error metrics: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<ErrorData>(`${API_BASE_URL}/observability/errors?window=${windowMinutes}`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch error metrics");
+  return res.data as ErrorData;
 }
 
 /**
  * Fetch quality metrics
  */
 export async function fetchQualityMetrics(windowMinutes = 60): Promise<QualityData> {
-  const response = await fetch(`${API_BASE_URL}/observability/quality?window=${windowMinutes}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch quality metrics: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<QualityData>(`${API_BASE_URL}/observability/quality?window=${windowMinutes}`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch quality metrics");
+  return res.data as QualityData;
 }
 
 /**
  * Fetch feedback statistics
  */
 export async function fetchFeedbackStats(windowMinutes = 60): Promise<FeedbackData> {
-  const response = await fetch(`${API_BASE_URL}/feedback/stats?window=${windowMinutes}`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch feedback stats: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<FeedbackData>(`${API_BASE_URL}/feedback/stats?window=${windowMinutes}`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch feedback stats");
+  return res.data as FeedbackData;
 }
 
 /**
  * Fetch system information
  */
 export async function fetchSystemInfo(): Promise<SystemData> {
-  const response = await fetch(`${API_BASE_URL}/observability/system`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch system info: ${response.statusText}`);
-  }
-  return response.json();
+  const res = await apiGet<SystemData>(`${API_BASE_URL}/observability/system`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch system info");
+  return res.data as SystemData;
 }
 
 /**

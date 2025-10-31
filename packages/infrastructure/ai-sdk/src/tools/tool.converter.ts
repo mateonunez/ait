@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { z } from "zod";
 import type { OllamaTool } from "../client/ollama.provider";
 import type { Tool } from "../types/tools";
@@ -7,7 +8,7 @@ export function convertToOllamaTools(tools: Record<string, Tool>): OllamaTool[] 
     const schema = (tool as any).inputSchema || (tool as any).parameters;
 
     if (!schema) {
-      throw new Error(`Tool "${name}" missing inputSchema or parameters`);
+      throw new AItError("TOOL_CONVERSION", `Tool "${name}" missing inputSchema or parameters`);
     }
 
     const jsonSchema = z.toJSONSchema(schema, {

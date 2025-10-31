@@ -191,7 +191,7 @@ export class QdrantProvider {
       resultsCount: searchResult.length,
       scoreRange:
         searchResult.length > 0
-          ? `${searchResult[searchResult.length - 1].score.toFixed(3)} - ${searchResult[0].score.toFixed(3)}`
+          ? `${searchResult[searchResult.length - 1]?.score.toFixed(3) ?? "0"} - ${searchResult[0]?.score.toFixed(3) ?? "0"}`
           : "none",
     });
 
@@ -221,8 +221,8 @@ export class QdrantProvider {
             results.length > 0
               ? results.reduce((sum, [, score]) => sum + (typeof score === "number" ? score : 0), 0) / results.length
               : 0,
-          maxScore: results.length > 0 ? results[0][1] : 0,
-          minScore: results.length > 0 ? results[results.length - 1][1] : 0,
+          maxScore: results.length > 0 ? (results[0]?.[1] ?? 0) : 0,
+          minScore: results.length > 0 ? (results[results.length - 1]?.[1] ?? 0) : 0,
           duration: Date.now() - startTime,
         },
       );

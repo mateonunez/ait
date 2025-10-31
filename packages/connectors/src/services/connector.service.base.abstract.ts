@@ -1,4 +1,5 @@
 import type { BaseConnectorAbstract } from "../infrastructure/connector.base.abstract";
+import { AItError } from "@ait/core";
 import type { IConnectorOAuthConfig } from "../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
 
@@ -38,7 +39,7 @@ export abstract class ConnectorServiceBase<
   ): Promise<TEntityMap[K][]> {
     const config = this.entityConfigs.get(entityType) as EntityConfig<TEntityMap, K, E>;
     if (!config) {
-      throw new Error(`No configuration found for entity type: ${String(entityType)}`);
+      throw new AItError("CONNECTOR_ENTITY_CONFIG", `No configuration found for entity type: ${String(entityType)}`);
     }
 
     if (shouldConnect) {

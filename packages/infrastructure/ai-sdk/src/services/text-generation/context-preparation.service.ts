@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import type { RAGContext, ContextPreparationConfig } from "../../types/text-generation";
 import type { Document, BaseMetadata } from "../../types/documents";
 import type { IMultiQueryRetrievalService } from "../rag/multi-query-retrieval.service";
@@ -302,7 +303,7 @@ export class ContextPreparationService implements IContextPreparationService {
 
   private _cosineSimilarity(vec1: number[], vec2: number[]): number {
     if (vec1.length !== vec2.length) {
-      throw new Error("Vectors must have the same length");
+      throw new AItError("VECTOR_LENGTH_MISMATCH", "Vectors must have the same length");
     }
 
     let dotProduct = 0;
@@ -310,9 +311,11 @@ export class ContextPreparationService implements IContextPreparationService {
     let norm2 = 0;
 
     for (let i = 0; i < vec1.length; i++) {
-      dotProduct += vec1[i] * vec2[i];
-      norm1 += vec1[i] * vec1[i];
-      norm2 += vec2[i] * vec2[i];
+      const a = vec1[i]! as number;
+      const b = vec2[i]! as number;
+      dotProduct += a * b;
+      norm1 += a * a;
+      norm2 += b * b;
     }
 
     const magnitude = Math.sqrt(norm1) * Math.sqrt(norm2);

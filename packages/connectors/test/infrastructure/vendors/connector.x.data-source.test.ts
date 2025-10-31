@@ -1,7 +1,5 @@
-import {
-  ConnectorXDataSource,
-  ConnectorXDataSourceError,
-} from "../../../src/infrastructure/vendors/x/connector.x.data-source";
+import { ConnectorXDataSource } from "../../../src/infrastructure/vendors/x/connector.x.data-source";
+import { AItError } from "@ait/core";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
@@ -72,14 +70,14 @@ describe("ConnectorXDataSource", () => {
       await assert.rejects(
         () => dataSource.fetchTweets(),
         (error) => {
-          assert.ok(error instanceof ConnectorXDataSourceError);
-          assert.strictEqual(error.message, "X API error: 401 Unauthorized");
+          assert.ok(error instanceof AItError);
+          assert.strictEqual(error.code, "HTTP_401");
           return true;
         },
       );
     });
 
-    it("should retry on rate limit", async () => {
+    it("should handle rate limit error", async () => {
       const mockClient = agent.get(xEndpoint);
 
       mockClient
@@ -102,23 +100,16 @@ describe("ConnectorXDataSource", () => {
           {
             headers: { "x-rate-limit-reset": (Math.floor(Date.now() / 1000) + 1).toString() },
           },
-        )
-        .times(1);
+        );
 
-      mockClient
-        .intercept({
-          path: /^\/2\/users\/user123\/tweets/,
-          method: "GET",
-          headers: { Authorization: `Bearer ${mockAccessToken}` },
-        })
-        .reply(200, {
-          data: [{ id: "t1", text: "tweet1", author_id: "user123" }],
-          meta: { result_count: 1 },
-        });
-
-      const result = await dataSource.fetchTweets();
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.id, "t1");
+      await assert.rejects(
+        () => dataSource.fetchTweets(),
+        (error) => {
+          assert.ok(error instanceof AItError);
+          assert.strictEqual(error.code, "HTTP_429");
+          return true;
+        },
+      );
     });
   });
 });

@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
 import { connectorGithubRepositoryMapper } from "../../mappers/vendors/connector.github.mapper";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -70,7 +71,12 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
       });
     } catch (error: any) {
       console.error("Failed to save repository:", { repoId: repositoryId, error });
-      throw new Error(`Failed to save repository ${repositoryId}: ${error.message}`);
+      throw new AItError(
+        "GITHUB_SAVE_REPOSITORY",
+        `Failed to save repository ${repositoryId}: ${error.message}`,
+        { id: repositoryId },
+        error,
+      );
     }
   }
 

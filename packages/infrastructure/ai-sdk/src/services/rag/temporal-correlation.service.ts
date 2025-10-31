@@ -142,7 +142,7 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
     for (let i = 0; i < entities.length; i++) {
       if (processed.has(i)) continue;
 
-      const centerEntity = entities[i];
+      const centerEntity = entities[i]!;
       const centerTime = centerEntity.timestamp.getTime();
 
       // Define the time window around this entity
@@ -155,11 +155,11 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
       for (let j = 0; j < entities.length; j++) {
         if (processed.has(j)) continue;
 
-        const entityTime = entities[j].timestamp.getTime();
+        const entityTime = entities[j]?.timestamp.getTime() ?? 0;
 
         // Check if entity falls within the window
         if (entityTime >= windowStart.getTime() && entityTime <= windowEnd.getTime()) {
-          clusterEntities.push(entities[j]);
+          clusterEntities.push(entities[j]!);
           processed.add(j);
         }
       }
@@ -190,23 +190,23 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
     const gapMs = gapMinutes * 60 * 1000;
 
     // Clusters are sorted by recency; merge if windows overlap or are close
-    let current = clusters[0];
+    let current = clusters[0]!;
     for (let i = 1; i < clusters.length; i++) {
       const next = clusters[i];
-      const gap = current.timeWindow.start.getTime() - next.timeWindow.end.getTime();
-      const overlap = next.timeWindow.end.getTime() >= current.timeWindow.start.getTime();
+      const gap = current.timeWindow.start.getTime() - (next?.timeWindow.end.getTime() ?? 0);
+      const overlap = (next?.timeWindow.end.getTime() ?? 0) >= current.timeWindow.start.getTime();
       if (overlap || gap <= gapMs) {
         // merge
-        const start = new Date(Math.min(current.timeWindow.start.getTime(), next.timeWindow.start.getTime()));
-        const end = new Date(Math.max(current.timeWindow.end.getTime(), next.timeWindow.end.getTime()));
+        const start = new Date(Math.min(current.timeWindow.start.getTime(), next?.timeWindow.start.getTime() ?? 0));
+        const end = new Date(Math.max(current.timeWindow.end.getTime(), next?.timeWindow.end.getTime() ?? 0));
         current = {
           timeWindow: { start, end },
-          entities: [...current.entities, ...next.entities],
+          entities: [...current.entities, ...(next?.entities ?? [])],
           centerTimestamp: current.centerTimestamp,
         };
       } else {
         merged.push(current);
-        current = next;
+        current = next!;
       }
     }
     merged.push(current);

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm run:recursive --parallel dev",
     "build": "pnpm run:recursive build",
+    "typecheck": "pnpm run:recursive typecheck",
     "start": "pnpm run:recursive start",
     "test": "pnpm run:recursive test",
     "test:watch": "pnpm run:recursive --parallel test:watch",
@@ -21,6 +22,7 @@
     "clean:all": "pnpm clean && pnpm clean:services && pnpm clean:services:test",
     "run:recursive": "pnpm -r --workspace-concurrency=1 --if-present",
     "start:services": "docker compose up -d",
+    "generate:openapi": "pnpm --filter @ait/connectors run generate:openapi",
     "start:services:test": "docker compose -f docker-compose.test.yml up -d --wait",
     "stop:services": "docker compose down",
     "stop:services:test": "docker compose -f docker-compose.test.yml down"
