@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { z } from "zod";
 import { getAItClient } from "../../client/ai-sdk.client";
 import type { Document, BaseMetadata } from "../../types/documents";
@@ -60,7 +61,12 @@ export class RerankService implements IRerankService {
         error: error instanceof Error ? error.message : String(error),
         docCount: documents.length,
       });
-      throw new Error(`Rerank failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new AItError(
+        "RERANK_FAILED",
+        `Rerank failed: ${error instanceof Error ? error.message : String(error)}`,
+        undefined,
+        error,
+      );
     }
   }
 }

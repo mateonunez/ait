@@ -69,15 +69,15 @@ export class FailureAnalysisService {
     const stats: ErrorStats[] = [];
     for (const [category, records] of categoryMap.entries()) {
       const fingerprints = [...new Set(records.map((r) => r.error.fingerprint))];
-      const firstError = records[0].error;
+      const firstError = records[0]?.error;
 
       stats.push({
         category,
         count: records.length,
         percentage: (records.length / recentErrors.length) * 100,
         fingerprints,
-        isRetryable: firstError.isRetryable,
-        suggestedAction: firstError.suggestedAction,
+        isRetryable: firstError?.isRetryable ?? false,
+        suggestedAction: firstError?.suggestedAction ?? undefined,
       });
     }
 

@@ -1,4 +1,5 @@
 import type { ConnectorLevels } from "../../../types/domain/mappers/connector.mapper.interface";
+import { AItError } from "@ait/core";
 
 export interface PassThroughLevelOptions<T> {
   /**
@@ -68,7 +69,7 @@ export function connectorMapperPassThrough<FieldName extends string, Value, Exte
       }
 
       if (value === undefined) {
-        throw new Error(`Missing value for field "${fieldName}" at level "${level}".`);
+        throw new AItError("MAPPER_MISSING_VALUE", `Missing value for field "${fieldName}" at level "${level}".`);
       }
 
       // Apply transform if provided.

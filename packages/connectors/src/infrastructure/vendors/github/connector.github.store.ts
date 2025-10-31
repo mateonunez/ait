@@ -1,4 +1,5 @@
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import { AItError } from "@ait/core";
 import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 import type {
   GitHubEntity,
@@ -26,7 +27,7 @@ export class ConnectorGitHubStore implements IConnectorStore {
           await this._connectorGitHubRepository.pullRequest.savePullRequest(item, { incremental: false });
           break;
         default:
-          throw new Error(`Type ${item.__type} is not supported`);
+          throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
       }
     }
   }

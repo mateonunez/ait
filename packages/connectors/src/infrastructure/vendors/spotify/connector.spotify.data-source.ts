@@ -8,7 +8,8 @@ import type {
 } from "../../../types/domain/entities/vendors/connector.spotify.types";
 import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
 import dotenv from "dotenv";
-import { fetch } from "undici";
+import { requestJson } from "@ait/core";
+import { AItError } from "@ait/core";
 
 dotenv.config();
 
@@ -144,7 +145,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     const url = `${this.apiUrl}${endpoint}`;
 
     try {
-      const response = await fetch(url, {
+      const result = await requestJson<T>(url, {
         method,
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
@@ -153,31 +154,16 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new ConnectorSpotifyDataSourceError(
-          `Spotify API error: ${response.status} ${response.statusText}`,
-          errorBody,
-        );
+      if (!result.ok) {
+        throw result.error;
       }
 
-      return (await response.json()) as T;
+      return result.value.data as unknown as T;
     } catch (error: any) {
-      if (error instanceof ConnectorSpotifyDataSourceError) {
+      if (error instanceof AItError) {
         throw error;
       }
-      throw new ConnectorSpotifyDataSourceError(`Network error: ${error.message}`, "");
+      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
     }
-  }
-}
-
-export class ConnectorSpotifyDataSourceError extends Error {
-  public responseBody: string;
-
-  constructor(message: string, responseBody: string) {
-    super(message);
-    this.name = "ConnectorSpotifyDataSourceError";
-    this.responseBody = responseBody;
-    Object.setPrototypeOf(this, ConnectorSpotifyDataSourceError.prototype);
   }
 }

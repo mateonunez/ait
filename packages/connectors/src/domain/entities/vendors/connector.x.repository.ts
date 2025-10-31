@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorXTweetMapper } from "../../../domain/mappers/vendors/connector.x.mapper";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../shared/auth/lib/oauth/connector.oauth.utils";
@@ -47,7 +48,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
       });
     } catch (error: any) {
       console.error("Failed to save tweet:", { tweetId, error });
-      throw new Error(`Failed to save tweet ${tweetId}: ${error.message}`);
+      throw new AItError("X_SAVE_TWEET", `Failed to save tweet ${tweetId}: ${error.message}`, { id: tweetId }, error);
     }
   }
 

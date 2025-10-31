@@ -1,6 +1,7 @@
 import type { GitHubRepositoryExternal } from "../../../types/domain/entities/vendors/connector.github.repository.types";
 import type { GitHubPullRequestExternal } from "../../../types/domain/entities/vendors/connector.github.pull-request.types";
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
+import { AItError } from "@ait/core";
 
 export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
   private octokit: Octokit;
@@ -32,7 +33,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       }));
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Unknown error";
-      throw new ConnectorGitHubDataSourceFetchRepositoriesError(`Invalid fetch repositories: ${message}`, message);
+      throw new AItError("GITHUB_FETCH_REPOS", `Invalid fetch repositories: ${message}`, { message }, error);
     }
   }
 
@@ -76,33 +77,10 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       return allPullRequests;
     } catch (error: any) {
       const message = error.response?.data?.message || error.message || "Unknown error";
-      throw new ConnectorGitHubDataSourceFetchPullRequestsError(`Invalid fetch pull requests: ${message}`, message);
+      throw new AItError("GITHUB_FETCH_PRS", `Invalid fetch pull requests: ${message}`, { message }, error);
     }
   }
 }
-
-export class ConnectorGitHubDataSourceFetchRepositoriesError extends Error {
-  public responseBody: string;
-
-  constructor(message: string, responseBody: string) {
-    super(message);
-    this.name = "ConnectorGitHubDataSourceFetchRepositoriesError";
-    this.responseBody = responseBody;
-    Object.setPrototypeOf(this, ConnectorGitHubDataSourceFetchRepositoriesError.prototype);
-  }
-}
-
-export class ConnectorGitHubDataSourceFetchPullRequestsError extends Error {
-  public responseBody: string;
-
-  constructor(message: string, responseBody: string) {
-    super(message);
-    this.name = "ConnectorGitHubDataSourceFetchPullRequestsError";
-    this.responseBody = responseBody;
-    Object.setPrototypeOf(this, ConnectorGitHubDataSourceFetchPullRequestsError.prototype);
-  }
-}
-
 export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];
 

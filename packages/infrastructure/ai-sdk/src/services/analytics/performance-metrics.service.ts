@@ -79,7 +79,7 @@ export class PerformanceMetricsService {
 
     const percentile = (p: number): number => {
       const index = Math.ceil((p / 100) * count) - 1;
-      return sorted[Math.max(0, index)];
+      return sorted[Math.max(0, index)] ?? 0;
     };
 
     const sum = sorted.reduce((acc, val) => acc + val, 0);
@@ -91,8 +91,8 @@ export class PerformanceMetricsService {
       p90: percentile(90),
       p95: percentile(95),
       p99: percentile(99),
-      min: sorted[0],
-      max: sorted[count - 1],
+      min: sorted[0] ?? 0,
+      max: sorted[count - 1] ?? 0,
       mean,
       count,
     };

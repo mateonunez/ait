@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
@@ -50,7 +51,12 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
       });
     } catch (error: any) {
       console.error("Failed to save issue:", { issueId, error });
-      throw new Error(`Failed to save issue ${issueId}: ${error.message}`);
+      throw new AItError(
+        "LINEAR_SAVE_ISSUE",
+        `Failed to save issue ${issueId}: ${error.message}`,
+        { id: issueId },
+        error,
+      );
     }
   }
 
@@ -67,7 +73,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
       }
     } catch (error) {
       console.error("Error saving issues:", error);
-      throw new Error("Failed to save issues to repository");
+      throw new AItError("LINEAR_SAVE_ISSUE_BULK", "Failed to save issues to repository");
     }
   }
 

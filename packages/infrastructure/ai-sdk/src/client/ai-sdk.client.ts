@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import { AItError, getLogger } from "@ait/core";
 import { createOllama } from "ollama-ai-provider-v2";
 import { generateObject, generateText } from "ai";
 import type { ZodType } from "zod";
@@ -163,7 +164,7 @@ async function attemptStructuredRepair<T>(
 
     const jsonPayload = extractJson(text);
     if (!jsonPayload) {
-      throw new Error("No JSON object found in repair response");
+      throw new AItError("PARSE_ERROR", "No JSON object found in repair response");
     }
 
     const parsed = JSON.parse(jsonPayload);
@@ -231,8 +232,9 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
     : getEmbeddingModel();
 
   if (config.logger) {
-    console.log(`[AItClient] Initializing with generation model: ${generationModelName}`);
-    console.log(`[AItClient] Initializing with embeddings model: ${embeddingsModelName}`);
+    const logger = getLogger();
+    logger.info(`[AItClient] Initializing with generation model: ${generationModelName}`);
+    logger.info(`[AItClient] Initializing with embeddings model: ${embeddingsModelName}`);
   }
 
   // Initialize Ollama providers
@@ -311,7 +313,7 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
           lastError = error;
           const isFinalAttempt = attempt >= maxRetries;
 
-          console.warn("Structured generation attempt failed", {
+          getLogger().warn("Structured generation attempt failed", {
             attempt,
             maxRetries,
             error: error instanceof Error ? error.message : String(error),
@@ -336,8 +338,11 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
         }
       }
 
-      throw new Error(
+      throw new AItError(
+        "STRUCTURED_FAILED",
         `Structured generation failed: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+        undefined,
+        lastError,
       );
     },
   };

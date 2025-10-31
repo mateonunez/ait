@@ -112,7 +112,7 @@ export class ConversationManagerService implements IConversationManagerService {
 
     // Take messages from the end (most recent) until we hit the token limit
     for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
+      const msg = messages[i]!;
       const msgTokens = this._estimateTokens(`${msg.role}: ${msg.content}`);
 
       if (currentTokens + msgTokens <= maxTokens) {

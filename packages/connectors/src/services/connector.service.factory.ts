@@ -1,4 +1,5 @@
 import type { ConnectorServiceConstructor, ConnectorType } from "../types/infrastructure/connector.interface";
+import { AItError } from "@ait/core";
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
 import { ConnectorLinearService } from "./vendors/connector.linear.service";
@@ -19,7 +20,7 @@ export class ConnectorServiceFactory {
     if (!this.services.has(connectorType)) {
       const ConnectorServiceClass = connectorServices[connectorType] as ConnectorServiceConstructor<T>;
       if (!ConnectorServiceClass) {
-        throw new Error(`Unknown connector type: ${connectorType}`);
+        throw new AItError("CONNECTOR_UNKNOWN", `Unknown connector type: ${connectorType}`);
       }
       this.services.set(connectorType, new ConnectorServiceClass());
     }

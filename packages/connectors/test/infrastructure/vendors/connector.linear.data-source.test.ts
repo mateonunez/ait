@@ -1,7 +1,5 @@
-import {
-  ConnectorLinearDataSource,
-  ConnectorLinearDataSourceError,
-} from "../../../src/infrastructure/vendors/linear/connector.linear.data-source";
+import { ConnectorLinearDataSource } from "../../../src/infrastructure/vendors/linear/connector.linear.data-source";
+import { AItError } from "@ait/core";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
@@ -72,8 +70,8 @@ describe("ConnectorLinearDataSource", () => {
       await assert.rejects(
         () => dataSource.fetchIssues(),
         (error) => {
-          assert.ok(error instanceof ConnectorLinearDataSourceError);
-          assert.strictEqual(error.message, "Linear API error: 401 Unauthorized");
+          assert.ok(error instanceof AItError);
+          assert.strictEqual(error.code, "HTTP_401");
           return true;
         },
       );
@@ -94,8 +92,8 @@ describe("ConnectorLinearDataSource", () => {
       await assert.rejects(
         () => dataSource.fetchIssues(),
         (error) => {
-          assert.ok(error instanceof ConnectorLinearDataSourceError);
-          assert.ok(error.message.includes("Linear GraphQL errors"));
+          assert.ok(error instanceof AItError);
+          assert.strictEqual(error.code, "LINEAR_GRAPHQL");
           return true;
         },
       );

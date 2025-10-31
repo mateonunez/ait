@@ -1,4 +1,5 @@
-import { fetch } from "undici";
+import { requestJson } from "@ait/core";
+import { AItError } from "@ait/core";
 import type { LinearIssueExternal } from "../../../types/domain/entities/vendors/connector.linear.types";
 
 export interface IConnectorLinearDataSource {
@@ -58,7 +59,7 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
     `;
 
     try {
-      const response = await fetch(this.apiUrl, {
+      const result = await requestJson<LinearGraphQLResponse>(this.apiUrl, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
@@ -67,28 +68,19 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         body: JSON.stringify({ query }),
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new ConnectorLinearDataSourceError(
-          `Linear API error: ${response.status} ${response.statusText}`,
-          errorBody,
-        );
+      if (!result.ok) {
+        throw result.error;
       }
 
-      const data = (await response.json()) as LinearGraphQLResponse;
-
-      if (data.errors) {
-        throw new ConnectorLinearDataSourceError(
-          `Linear GraphQL errors: ${JSON.stringify(data.errors)}`,
-          JSON.stringify(data.errors),
-        );
+      const payload = result.value.data;
+      if (payload.errors) {
+        throw new AItError("LINEAR_GRAPHQL", `Linear GraphQL errors: ${JSON.stringify(payload.errors)}`);
       }
 
-      if (!data.data) {
-        throw new ConnectorLinearDataSourceError("Linear API returned no data", "");
+      if (!payload.data) {
+        throw new AItError("LINEAR_NO_DATA", "Linear API returned no data");
       }
-
-      const issues = data.data.issues.nodes.map((issue: any) => ({
+      const issues = payload.data.issues.nodes.map((issue: any) => ({
         ...issue,
         __type: "issue" as const,
       }));
@@ -120,21 +112,10 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
     } catch (error: any) {
-      if (error instanceof ConnectorLinearDataSourceError) {
+      if (error instanceof AItError) {
         throw error;
       }
-      throw new ConnectorLinearDataSourceError(`Network error: ${error.message}`, "");
+      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
     }
-  }
-}
-
-export class ConnectorLinearDataSourceError extends Error {
-  public responseBody: string;
-
-  constructor(message: string, responseBody: string) {
-    super(message);
-    this.name = "ConnectorLinearDataSourceError";
-    this.responseBody = responseBody;
-    Object.setPrototypeOf(this, ConnectorLinearDataSourceError.prototype);
   }
 }

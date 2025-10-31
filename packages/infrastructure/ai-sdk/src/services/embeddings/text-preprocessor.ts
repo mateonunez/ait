@@ -50,9 +50,9 @@ export class TextPreprocessor {
           const overlapSentences: string[] = [];
           let overlapLength = 0;
           for (let i = sentenceBuffer.length - 1; i >= 0; i--) {
-            const sentenceLen = sentenceBuffer[i].length + (overlapSentences.length > 0 ? 1 : 0);
+            const sentenceLen = sentenceBuffer[i]?.length ?? 0 + (overlapSentences.length > 0 ? 1 : 0);
             if (overlapLength + sentenceLen <= this.config.chunkOverlap) {
-              overlapSentences.unshift(sentenceBuffer[i]);
+              overlapSentences.unshift(sentenceBuffer[i]!);
               overlapLength += sentenceLen;
             } else {
               break;

@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorSpotifyRecentlyPlayedMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
@@ -55,7 +56,12 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       });
     } catch (error: any) {
       console.error("Failed to save recently played item:", { itemId: item.id, error });
-      throw new Error(`Failed to save recently played item ${item.id}: ${error.message}`);
+      throw new AItError(
+        "SPOTIFY_SAVE_RECENTLY_PLAYED",
+        `Failed to save recently played item ${item.id}: ${error.message}`,
+        { id: item.id },
+        error,
+      );
     }
   }
 
@@ -70,7 +76,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       }
     } catch (error) {
       console.error("Error saving recently played items:", error);
-      throw new Error("Failed to save recently played items to repository");
+      throw new AItError("SPOTIFY_SAVE_RECENTLY_PLAYED_BULK", "Failed to save recently played items to repository");
     }
   }
 

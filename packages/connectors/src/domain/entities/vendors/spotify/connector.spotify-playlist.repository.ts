@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
@@ -52,7 +53,12 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       });
     } catch (error: any) {
       console.error("Failed to save playlist:", { playlistId: playlist.id, error });
-      throw new Error(`Failed to save playlist ${playlist.id}: ${error.message}`);
+      throw new AItError(
+        "SPOTIFY_SAVE_PLAYLIST",
+        `Failed to save playlist ${playlist.id}: ${error.message}`,
+        { id: playlist.id },
+        error,
+      );
     }
   }
 
@@ -69,7 +75,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       }
     } catch (error) {
       console.error("Error saving playlists:", error);
-      throw new Error("Failed to save playlists to repository");
+      throw new AItError("SPOTIFY_SAVE_PLAYLIST_BULK", "Failed to save playlists to repository");
     }
   }
 

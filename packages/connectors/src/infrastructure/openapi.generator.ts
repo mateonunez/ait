@@ -1,4 +1,5 @@
 import { exec } from "node:child_process";
+import { AItError } from "@ait/core";
 import { openApiSchemas, type OpenApiSchemaConfig } from "./openapi.schemas.config";
 
 function generateTypesForSchema(schemaKey: string, config: OpenApiSchemaConfig): Promise<void> {
@@ -20,7 +21,7 @@ async function generateAllTypes(): Promise<void> {
   for (const schemaKey of Object.keys(openApiSchemas)) {
     const schema = openApiSchemas[schemaKey];
     if (!schema) {
-      throw new Error(`Schema configuration not found for key: ${schemaKey}`);
+      throw new AItError("OPENAPI_CONFIG_MISSING", `Schema configuration not found for key: ${schemaKey}`);
     }
 
     try {

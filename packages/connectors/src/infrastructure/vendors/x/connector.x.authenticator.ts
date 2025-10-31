@@ -1,12 +1,14 @@
 import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
+import { AItError } from "@ait/core";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
+import { generatePkcePair } from "../../../shared/auth/pkce.util";
 
 export class ConnectorXAuthenticator extends ConnectorAuthenticatorAbstract {
   private _pkceState: { verifier: string; challenge: string; method: string } | null = null;
 
   public getAuthorizationUrl(): string {
-    this._pkceState = this.generatePKCEPair();
+    this._pkceState = generatePkcePair();
     const { verifier, challenge, method } = this._pkceState;
 
     // Update OAuth config with PKCE verifier
@@ -31,7 +33,7 @@ export class ConnectorXAuthenticator extends ConnectorAuthenticatorAbstract {
 
   async authenticate(code: string): Promise<IConnectorOAuthTokenResponse> {
     if (!this._pkceState) {
-      throw new Error("PKCE state not initialized. Call getAuthorizationUrl first.");
+      throw new AItError("PKCE_NOT_INITIALIZED", "PKCE state not initialized. Call getAuthorizationUrl first.");
     }
 
     this.oauth.config = {
@@ -40,26 +42,5 @@ export class ConnectorXAuthenticator extends ConnectorAuthenticatorAbstract {
     };
 
     return super.authenticate(code);
-  }
-
-  // Move to a shared util
-  public generatePKCEPair(): {
-    verifier: string;
-    challenge: string;
-    method: "S256";
-  } {
-    // Generate a random verifier
-    const verifier = randomBytes(32).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-
-    // Generate challenge using SHA256
-    const challengeBuffer = createHash("sha256").update(verifier).digest();
-
-    const challenge = Buffer.from(challengeBuffer)
-      .toString("base64")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=/g, "");
-
-    return { verifier, challenge, method: "S256" };
   }
 }

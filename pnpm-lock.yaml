@@ -35,6 +35,9 @@ importers:
 
   packages/connectors:
     dependencies:
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../core
       '@ait/postgres':
         specifier: workspace:*
         version: link:../infrastructure/postgres
@@ -91,6 +94,12 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/core:
+    devDependencies:
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/gateway:
     dependencies:
       '@ait/ai-sdk':
@@ -124,6 +133,9 @@ importers:
 
   packages/infrastructure/ai-sdk:
     dependencies:
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../../core
       '@ait/qdrant':
         specifier: workspace:*
         version: link:../qdrant
@@ -273,6 +285,9 @@ importers:
       '@ai-sdk/react':
         specifier: ^1.2.12
         version: 1.2.12(react@19.2.0)(zod@4.1.12)
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../core
       '@radix-ui/react-dialog':
         specifier: ^1.1.15
         version: 1.1.15(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)

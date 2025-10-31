@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorSpotifyTrackMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
@@ -59,7 +60,12 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       });
     } catch (error: any) {
       console.error("Failed to save track:", { trackId: track.id, error });
-      throw new Error(`Failed to save track ${track.id}: ${error.message}`);
+      throw new AItError(
+        "SPOTIFY_SAVE_TRACK",
+        `Failed to save track ${track.id}: ${error.message}`,
+        { id: track.id },
+        error,
+      );
     }
   }
 
@@ -76,7 +82,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       }
     } catch (error) {
       console.error("Error saving tracks:", error);
-      throw new Error("Failed to save tracks to repository");
+      throw new AItError("SPOTIFY_SAVE_TRACK_BULK", "Failed to save tracks to repository");
     }
   }
 

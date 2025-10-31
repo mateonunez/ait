@@ -1,5 +1,7 @@
 import { getAItClient } from "../../client/ai-sdk.client";
+import { AItError } from "@ait/core";
 import { TextPreprocessor, type TextChunk } from "./text-preprocessor";
+import { getLogger } from "@ait/core";
 import { createEmbeddingsConfig, type EmbeddingsConfig } from "./embeddings.config";
 import { recordSpan, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
@@ -43,7 +45,10 @@ export class EmbeddingsService implements IEmbeddingsService {
       const chunks = this._textPreprocessor.chunkText(text);
 
       if (!this._textPreprocessor.validateChunks(chunks, text)) {
-        throw new Error("Chunk validation failed - text may have been corrupted during preprocessing");
+        throw new AItError(
+          "EMBEDDINGS_VALIDATION",
+          "Chunk validation failed - text may have been corrupted during preprocessing",
+        );
       }
 
       if (enableTelemetry && traceContext) {
@@ -69,7 +74,7 @@ export class EmbeddingsService implements IEmbeddingsService {
         : this._averageVectors(chunkVectors);
 
       if (averagedVector.length !== this._config.expectedVectorSize) {
-        throw new Error(`Unexpected embeddings size: ${averagedVector.length}`);
+        throw new AItError("EMBEDDINGS_SIZE", `Unexpected embeddings size: ${averagedVector.length}`);
       }
 
       const duration = Date.now() - startTime;
@@ -99,7 +104,7 @@ export class EmbeddingsService implements IEmbeddingsService {
 
       return averagedVector;
     } catch (err) {
-      console.error("Failed to generate embeddings", {
+      getLogger().error("Failed to generate embeddings", {
         correlationId,
         error: err instanceof Error ? err.message : String(err),
         model: this._config.model,
@@ -140,7 +145,7 @@ export class EmbeddingsService implements IEmbeddingsService {
       if (currentIndex >= tasks.length) return;
       const taskIndex = currentIndex;
       currentIndex++;
-      await tasks[taskIndex]();
+      await tasks[taskIndex]!();
       await runNext();
     };
 
@@ -162,7 +167,8 @@ export class EmbeddingsService implements IEmbeddingsService {
         const vec = await client.embeddingsModel.doEmbed(chunk.content);
 
         if (vec.length !== this._config.expectedVectorSize) {
-          throw new Error(
+          throw new AItError(
+            "EMBEDDINGS_SIZE",
             `Unexpected vector size for chunk. Expected ${this._config.expectedVectorSize}, got ${vec.length}`,
           );
         }
@@ -173,7 +179,7 @@ export class EmbeddingsService implements IEmbeddingsService {
 
         if (attempt < this._config.maxRetries) {
           const delay = this._config.retryDelayMs * attempt;
-          console.warn(`Retry attempt ${attempt} for chunk ${chunk.index}`, {
+          getLogger().warn(`Retry attempt ${attempt} for chunk ${chunk.index}`, {
             correlationId,
             error: lastError.message,
             delay,
@@ -189,19 +195,22 @@ export class EmbeddingsService implements IEmbeddingsService {
 
   private _averageVectors(vectors: number[][]): number[] {
     if (vectors.length === 0) {
-      throw new Error("No vectors to average.");
+      throw new AItError("AVERAGE_EMPTY", "No vectors to average.");
     }
-    return vectors[0].map((_, i) => vectors.reduce((sum, vec) => sum + vec[i], 0) / vectors.length);
+    return vectors[0]!.map((_, i) => vectors.reduce((sum, vec) => sum + (vec[i]! as number), 0) / vectors.length);
   }
 
   private _weightedAverageVectors(vectors: number[][], weights: number[]): number[] {
     if (vectors.length === 0) {
-      throw new Error("No vectors to average.");
+      throw new AItError("AVERAGE_EMPTY", "No vectors to average.");
     }
     if (vectors.length !== weights.length) {
-      throw new Error("Mismatch between number of vectors and weights.");
+      throw new AItError("WEIGHTS_MISMATCH", "Mismatch between number of vectors and weights.");
     }
     const totalWeight = weights.reduce((a, b) => a + b, 0);
-    return vectors[0].map((_, i) => vectors.reduce((sum, vec, idx) => sum + vec[i] * weights[idx], 0) / totalWeight);
+    return vectors[0]!.map(
+      (_, i) =>
+        vectors.reduce((sum, vec, idx) => sum + (vec[i]! as number) * (weights[idx]! as number), 0) / totalWeight,
+    );
   }
 }

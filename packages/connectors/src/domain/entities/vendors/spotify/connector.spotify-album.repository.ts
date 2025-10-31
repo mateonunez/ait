@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorSpotifyAlbumMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
@@ -56,7 +57,12 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
       });
     } catch (error: any) {
       console.error("Failed to save album:", { albumId: album.id, error });
-      throw new Error(`Failed to save album ${album.id}: ${error.message}`);
+      throw new AItError(
+        "SPOTIFY_SAVE_ALBUM",
+        `Failed to save album ${album.id}: ${error.message}`,
+        { id: album.id },
+        error,
+      );
     }
   }
 
@@ -71,7 +77,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
       }
     } catch (error) {
       console.error("Error saving albums:", error);
-      throw new Error("Failed to save albums to repository");
+      throw new AItError("SPOTIFY_SAVE_ALBUM_BULK", "Failed to save albums to repository");
     }
   }
 

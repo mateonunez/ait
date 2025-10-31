@@ -1,3 +1,4 @@
+import { AItError } from "@ait/core";
 import { connectorSpotifyArtistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
@@ -44,7 +45,12 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
       });
     } catch (error: any) {
       console.error("Failed to save artist:", { artistId: artist.id, error });
-      throw new Error(`Failed to save artist ${artist.id}: ${error.message}`);
+      throw new AItError(
+        "SPOTIFY_SAVE_ARTIST",
+        `Failed to save artist ${artist.id}: ${error.message}`,
+        { id: artist.id },
+        error,
+      );
     }
   }
 
@@ -61,7 +67,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
       }
     } catch (error) {
       console.error("Error saving artists:", error);
-      throw new Error("Failed to save artists to repository");
+      throw new AItError("SPOTIFY_SAVE_ARTIST_BULK", "Failed to save artists to repository");
     }
   }
 
