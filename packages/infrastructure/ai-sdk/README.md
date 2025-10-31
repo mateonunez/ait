@@ -369,6 +369,96 @@ console.log('Score info:', scoreInfo);
 - **Caching**: 24-hour TTL for embeddings with LRU eviction
 - **RAG**: Multi-query retrieval with score-based deduplication
 
+## Observability with Langfuse
+
+AIt integrates with [Langfuse](https://langfuse.com) to provide comprehensive observability for LLM operations, including text generation, embeddings, RAG queries, and tool calls.
+
+### Setup
+
+1. **Start Langfuse services:**
+
+```bash
+docker-compose up ait_langfuse ait_langfuse_db
+```
+
+Access Langfuse UI at `http://localhost:3000` and create a project to get your API keys.
+
+2. **Configure environment variables:**
+
+```bash
+LANGFUSE_PUBLIC_KEY=pk-lf-your-public-key
+LANGFUSE_SECRET_KEY=sk-lf-your-secret-key
+LANGFUSE_BASEURL=http://localhost:3000
+LANGFUSE_ENABLED=true
+```
+
+3. **Initialize with telemetry:**
+
+```typescript
+import { initAItClient } from '@ait/ai-sdk';
+
+initAItClient({
+  generation: { model: 'gemma3:latest' },
+  embeddings: { model: 'mxbai-embed-large:latest' },
+  rag: { collection: 'ait_embeddings_collection' },
+  telemetry: {
+    enabled: true,
+    publicKey: process.env.LANGFUSE_PUBLIC_KEY,
+    secretKey: process.env.LANGFUSE_SECRET_KEY,
+    baseURL: process.env.LANGFUSE_BASEURL,
+  },
+});
+```
+
+### Usage
+
+Telemetry is opt-in per request using the `enableTelemetry` flag:
+
+```typescript
+import { getTextGenerationService } from '@ait/ai-sdk';
+
+const service = getTextGenerationService();
+
+const stream = service.generateStream({
+  prompt: 'Tell me about my recent projects',
+  enableRAG: true,
+  enableTelemetry: true,
+  userId: 'user-123',
+  sessionId: 'session-456',
+  tags: ['development', 'projects'],
+});
+
+for await (const chunk of stream) {
+  process.stdout.write(chunk);
+}
+```
+
+### Tracked Operations
+
+Langfuse automatically tracks:
+
+- **Text Generation**: Prompts, responses, model parameters, streaming chunks
+- **Embeddings**: Text chunking, vector generation, model details
+- **RAG Operations**: Context preparation, document retrieval, similarity searches
+- **Conversation Management**: Message processing, context window management
+- **Performance Metrics**: Latency, token counts, chunk processing time
+
+### Trace Metadata
+
+Customize traces with metadata:
+
+```typescript
+const stream = service.generateStream({
+  prompt: 'Analyze my coding patterns',
+  enableTelemetry: true,
+  userId: 'user-123',
+  sessionId: 'session-456',
+  tags: ['analysis', 'coding'],
+});
+```
+
+All metadata is automatically captured and displayed in the Langfuse dashboard for analysis and debugging.
+
 ## Testing
 
 ```bash

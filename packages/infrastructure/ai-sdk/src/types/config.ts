@@ -1,6 +1,7 @@
 import type { ConversationConfig, ContextPreparationConfig, ToolExecutionConfig, RetryConfig } from "./text-generation";
 import type { MultiQueryConfig } from "./rag";
 import type { GenerationModelName, EmbeddingModelName } from "../config/models.config";
+import type { TelemetryConfig } from "./telemetry";
 
 /**
  * Configuration for generation model parameters
@@ -82,6 +83,8 @@ export interface ClientConfig {
   textGeneration?: TextGenerationFeatureConfig;
   /** Ollama provider configuration */
   ollama?: OllamaClientConfig;
+  /** Telemetry configuration */
+  telemetry?: TelemetryConfig;
   /** Enable logging */
   logger?: boolean;
 }

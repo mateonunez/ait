@@ -47,9 +47,13 @@ services:
       - app-network
 
   ait_redis:
-    image: redis:latest
+    image: redis:7
     container_name: ait_redis
-    command: redis-server --appendonly yes --appendfsync everysec
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --requirepass myredissecret
     ports:
       - "6379:6379"
     volumes:
@@ -58,19 +62,196 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
     networks:
       - app-network
+
+  ait_langfuse_db:
+    image: postgres:16-alpine
+    container_name: ait_langfuse_db
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    ports:
+      - "5433:5432"
+    volumes:
+      - ait_langfuse_pgdata:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  ait_langfuse_clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: ait_langfuse_clickhouse
+    user: "101:101"
+    environment:
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - ait_langfuse_clickhouse_data:/var/lib/clickhouse
+      - ait_langfuse_clickhouse_logs:/var/log/clickhouse-server
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8123/ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 1s
+
+  ait_langfuse_minio:
+    image: minio/minio:latest
+    container_name: ait_langfuse_minio
+    entrypoint: sh
+    command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniosecret
+    ports:
+      - "9090:9000"
+      - "127.0.0.1:9091:9001"
+    volumes:
+      - ait_langfuse_minio:/data
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 1s
+      timeout: 5s
+      retries: 5
+      start_period: 1s
+
+  ait_langfuse_web:
+    image: langfuse/langfuse:3
+    container_name: ait_langfuse_web
+    depends_on:
+      ait_langfuse_db:
+        condition: service_healthy
+      ait_langfuse_clickhouse:
+        condition: service_healthy
+      ait_langfuse_minio:
+        condition: service_healthy
+      ait_redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: changeme-nextauth-secret-min-32-chars-please-change
+      DATABASE_URL: postgresql://langfuse:langfuse@ait_langfuse_db:5432/langfuse
+      SALT: changeme-salt-min-32-chars-please-change-this-too
+      ENCRYPTION_KEY: 7ddc75a124e836906e233f163e0b67e322cc60c8fbf0347a0b3e363d9d28e602
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+      CLICKHOUSE_MIGRATION_URL: clickhouse://ait_langfuse_clickhouse:9000
+      CLICKHOUSE_URL: http://ait_langfuse_clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      LANGFUSE_USE_AZURE_BLOB: "false"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://ait_langfuse_minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://localhost:9090
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+      REDIS_HOST: ait_redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: myredissecret
+      REDIS_TLS_ENABLED: "false"
+    networks:
+      - app-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  ait_langfuse_worker:
+    image: langfuse/langfuse-worker:3
+    container_name: ait_langfuse_worker
+    depends_on:
+      ait_langfuse_db:
+        condition: service_healthy
+      ait_langfuse_clickhouse:
+        condition: service_healthy
+      ait_langfuse_minio:
+        condition: service_healthy
+      ait_redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3030:3030"
+    environment:
+      NEXTAUTH_URL: http://localhost:3000
+      DATABASE_URL: postgresql://langfuse:langfuse@ait_langfuse_db:5432/langfuse
+      SALT: changeme-salt-min-32-chars-please-change-this-too
+      ENCRYPTION_KEY: 7ddc75a124e836906e233f163e0b67e322cc60c8fbf0347a0b3e363d9d28e602
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: "false"
+      CLICKHOUSE_MIGRATION_URL: clickhouse://ait_langfuse_clickhouse:9000
+      CLICKHOUSE_URL: http://ait_langfuse_clickhouse:8123
+      CLICKHOUSE_USER: clickhouse
+      CLICKHOUSE_PASSWORD: clickhouse
+      CLICKHOUSE_CLUSTER_ENABLED: "false"
+      LANGFUSE_USE_AZURE_BLOB: "false"
+      LANGFUSE_S3_EVENT_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_EVENT_UPLOAD_REGION: auto
+      LANGFUSE_S3_EVENT_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_EVENT_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+      LANGFUSE_S3_EVENT_UPLOAD_ENDPOINT: http://ait_langfuse_minio:9000
+      LANGFUSE_S3_EVENT_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_EVENT_UPLOAD_PREFIX: events/
+      LANGFUSE_S3_MEDIA_UPLOAD_BUCKET: langfuse
+      LANGFUSE_S3_MEDIA_UPLOAD_REGION: auto
+      LANGFUSE_S3_MEDIA_UPLOAD_ACCESS_KEY_ID: minio
+      LANGFUSE_S3_MEDIA_UPLOAD_SECRET_ACCESS_KEY: miniosecret
+      LANGFUSE_S3_MEDIA_UPLOAD_ENDPOINT: http://localhost:9090
+      LANGFUSE_S3_MEDIA_UPLOAD_FORCE_PATH_STYLE: "true"
+      LANGFUSE_S3_MEDIA_UPLOAD_PREFIX: media/
+      LANGFUSE_S3_BATCH_EXPORT_ENABLED: "false"
+      REDIS_HOST: ait_redis
+      REDIS_PORT: "6379"
+      REDIS_AUTH: myredissecret
+      REDIS_TLS_ENABLED: "false"
+    networks:
+      - app-network
+    restart: always
 
 volumes:
   ait_pgdata:
   ait_qdrant_storage:
   ait_ollama:
   ait_redis:
+  ait_langfuse_pgdata:
+  ait_langfuse_clickhouse_data:
+  ait_langfuse_clickhouse_logs:
+  ait_langfuse_minio:
 
 networks:
   app-network:

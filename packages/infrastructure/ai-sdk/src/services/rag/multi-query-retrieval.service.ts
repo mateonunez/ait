@@ -7,11 +7,14 @@ import type { ITypeFilterService } from "./type-filter.service";
 import type { IRankFusionService } from "./rank-fusion.service";
 import type { IHyDEService } from "./hyde.service";
 import type { IRerankService } from "./rerank.service";
+import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 export interface IMultiQueryRetrievalService {
   retrieve<TMetadata extends BaseMetadata = BaseMetadata>(
     vectorStore: QdrantProvider,
     userQuery: string,
+    traceContext?: TraceContext | null,
   ): Promise<Document<TMetadata>[]>;
 }
 
@@ -52,8 +55,11 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   async retrieve<TMetadata extends BaseMetadata = BaseMetadata>(
     vectorStore: QdrantProvider,
     userQuery: string,
+    traceContext?: TraceContext | null,
   ): Promise<Document<TMetadata>[]> {
-    const queryPlan = await this._queryPlanner.planQueries(userQuery);
+    const startTime = Date.now();
+
+    const queryPlan = await this._queryPlanner.planQueries(userQuery, traceContext);
     const typeFilterResult = this._typeFilter.inferTypes(queryPlan.tags, queryPlan.originalQuery || userQuery, {
       usedFallback: queryPlan.usedFallback,
       intent: queryPlan.intent,
@@ -77,6 +83,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       perQueryK,
       typeFilterResult,
       targetUnique,
+      traceContext,
     );
 
     const allResults: QueryResult<TMetadata>[] = [...parallelResults];
@@ -158,6 +165,27 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       finalResultsPreview: finalResults.slice(0, 3).map((r) => r.pageContent.slice(0, 200)),
     });
 
+    // Record complete multi-query retrieval span
+    if (traceContext) {
+      recordSpan(
+        "multi-query-retrieval",
+        "rag",
+        traceContext,
+        {
+          query: userQuery.slice(0, 100),
+          queryCount: queryPlan.queries.length,
+          planSource: queryPlan.source,
+          typeFilter: typeFilterResult?.types,
+        },
+        {
+          documentCount: finalResults.length,
+          usedHyDE: shouldUseHyDE,
+          usedReranker: !!this._reranker && finalResults.length > 5,
+          duration: Date.now() - startTime,
+        },
+      );
+    }
+
     return finalResults;
   }
 
@@ -167,6 +195,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     perQueryK: number,
     typeFilter?: { types?: string[] },
     targetUnique?: number,
+    traceContext?: TraceContext | null,
   ): Promise<QueryResult<TMetadata>[]> {
     const allResults: QueryResult<TMetadata>[] = [];
     const queue = queries.map((q, idx) => ({ query: q, queryIdx: idx }));

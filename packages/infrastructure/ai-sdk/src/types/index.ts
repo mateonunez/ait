@@ -4,6 +4,7 @@ export * from "./tools";
 export * from "./context";
 export * from "./chat";
 export * from "./rag";
+export * from "./telemetry";
 export * from "./text-generation";
 export * from "./config";
 export * from "./models";

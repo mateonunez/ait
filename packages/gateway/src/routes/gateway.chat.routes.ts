@@ -3,6 +3,7 @@ import {
   GenerationModels,
   getTextGenerationService,
   initAItClient,
+  getLangfuseProvider,
   type TextGenerationService,
 } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -20,11 +21,31 @@ interface ChatRequestBody {
   messages: ChatMessage[];
 }
 
+// Initialize AI SDK with telemetry
+const telemetryEnabled = process.env.LANGFUSE_ENABLED === "true";
+const telemetryConfig = {
+  enabled: telemetryEnabled,
+  publicKey: process.env.LANGFUSE_PUBLIC_KEY,
+  secretKey: process.env.LANGFUSE_SECRET_KEY,
+  baseURL: process.env.LANGFUSE_BASEURL || "http://localhost:3000",
+  flushAt: 1, // Flush immediately
+  flushInterval: 1000, // Flush every second
+};
+
 initAItClient({
   generation: {
     model: GenerationModels.GPT_OSS_20B_CLOUD,
     temperature: 1,
   },
+  telemetry: telemetryConfig,
+});
+
+// Log telemetry status on startup
+console.log("[Gateway] Telemetry configuration:", {
+  enabled: telemetryEnabled,
+  hasPublicKey: !!telemetryConfig.publicKey,
+  hasSecretKey: !!telemetryConfig.secretKey,
+  baseURL: telemetryConfig.baseURL,
 });
 
 export default async function chatRoutes(fastify: FastifyInstance) {
@@ -73,6 +94,10 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           messages: conversationHistory,
           tools,
           maxToolRounds: 2,
+          enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
+          userId: request.headers["x-user-id"] as string | undefined,
+          sessionId: request.headers["x-session-id"] as string | undefined,
+          tags: ["gateway", "chat"],
         });
 
         for await (const chunk of stream) {
@@ -80,6 +105,14 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         }
 
         reply.raw.write(`d:${JSON.stringify({ finishReason: "stop" })}\n`);
+
+        // Flush telemetry data to Langfuse
+        const langfuseProvider = getLangfuseProvider();
+        if (langfuseProvider?.isEnabled()) {
+          console.log("[Gateway] Flushing telemetry data to Langfuse...");
+          await langfuseProvider.flush();
+          console.log("[Gateway] Telemetry flushed successfully");
+        }
       } catch (streamError: any) {
         fastify.log.error({ err: streamError, route: "/chat" }, "Stream error occurred.");
         reply.raw.write(`3:${JSON.stringify(streamError.message || "Stream generation failed")}\n`);

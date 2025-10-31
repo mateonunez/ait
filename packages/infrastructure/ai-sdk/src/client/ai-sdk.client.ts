@@ -20,6 +20,7 @@ import type {
   ModelGenerateResult,
 } from "../types/models";
 import type { OllamaTool } from "../types/providers/ollama.types";
+import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 
 dotenv.config();
 
@@ -412,8 +413,22 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
       baseURL: DEFAULT_OLLAMA_BASE_URL,
       ...configOverrides.ollama,
     },
+    telemetry: {
+      enabled: false,
+      publicKey: undefined,
+      secretKey: undefined,
+      baseURL: undefined,
+      flushAt: 1,
+      flushInterval: 1000,
+      ...configOverrides.telemetry,
+    },
     logger: configOverrides.logger ?? true,
   };
+
+  resetLangfuseProvider();
+  if (_config.telemetry.enabled) {
+    initLangfuseProvider(_config.telemetry);
+  }
 
   _clientInstance = null;
   _textGenerationServiceInstance = null;

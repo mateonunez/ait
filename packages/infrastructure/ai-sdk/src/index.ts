@@ -36,6 +36,9 @@ export type { OllamaTool, OllamaToolCall } from "./client/ollama.provider";
 
 export * from "./cache/lru-cache";
 
+export * from "./telemetry/langfuse.provider";
+export * from "./telemetry/telemetry.middleware";
+
 export * from "./types";
 export type { ChatMessage, MessageRole } from "./types/chat";
 export { formatConversationHistory } from "./types/chat";

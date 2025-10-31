@@ -5,6 +5,16 @@ import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from ".
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import { convertToOllamaTools } from "../../tools/tool.converter";
 import { randomUUID } from "node:crypto";
+import {
+  createTraceContext,
+  recordSpan,
+  recordGeneration,
+  shouldEnableTelemetry,
+  updateTraceInput,
+  endTraceWithOutput,
+  endTraceWithError,
+} from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 import { RetryService, type IRetryService } from "./retry.service";
 import { ToolExecutionService, type IToolExecutionService } from "./tool-execution.service";
@@ -59,6 +69,11 @@ export interface GenerateStreamOptions {
   maxToolRounds?: number;
   enableRAG?: boolean;
   messages?: ChatMessage[];
+  enableTelemetry?: boolean;
+  traceId?: string;
+  userId?: string;
+  sessionId?: string;
+  tags?: string[];
 }
 
 export interface ITextGenerationService {
@@ -133,11 +148,34 @@ export class TextGenerationService implements ITextGenerationService {
     const correlationId = randomUUID();
     const overallStart = Date.now();
 
+    let traceContext: TraceContext | null = null;
+    const enableTelemetry = shouldEnableTelemetry(options);
+
+    if (enableTelemetry) {
+      traceContext = createTraceContext("text-generation", {
+        userId: options.userId,
+        sessionId: options.sessionId,
+        tags: options.tags,
+      });
+
+      // Set trace input immediately after creation
+      if (traceContext) {
+        updateTraceInput(traceContext, {
+          prompt: options.prompt,
+          messages: options.messages,
+          enableRAG: options.enableRAG,
+          tools: options.tools ? Object.keys(options.tools) : undefined,
+          maxToolRounds: options.maxToolRounds,
+        });
+      }
+    }
+
     try {
       console.info("Starting stream text generation", {
         prompt: options.prompt.slice(0, 100),
         hasMessages: !!options.messages && options.messages.length > 0,
         messageCount: options.messages?.length || 0,
+        telemetryEnabled: enableTelemetry,
       });
 
       const client = getAItClient();
@@ -154,8 +192,24 @@ export class TextGenerationService implements ITextGenerationService {
         estimatedTokens: conversationContext.estimatedTokens,
       });
 
-      // Prepare system message with RAG context if enabled
-      const { systemMessage, ragContext } = await this._prepareSystemMessage(options, correlationId);
+      if (enableTelemetry && traceContext) {
+        recordSpan(
+          "conversation-processing",
+          "conversation",
+          traceContext,
+          {
+            messageCount: options.messages?.length || 0,
+          },
+          {
+            recentMessageCount: conversationContext.recentMessages.length,
+            hasSummary: !!conversationContext.summary,
+            estimatedTokens: conversationContext.estimatedTokens,
+          },
+        );
+      }
+
+      // Prepare system message with RAG context if enabled (pass traceContext)
+      const { systemMessage, ragContext } = await this._prepareSystemMessage(options, correlationId, traceContext);
 
       if (ragContext?.fallbackUsed) {
         const fallbackResponse = this._buildFallbackResponse(ragContext.fallbackReason);
@@ -225,7 +279,12 @@ export class TextGenerationService implements ITextGenerationService {
         if (checkResult.toolCalls && checkResult.toolCalls.length > 0) {
           hasToolCalls = true;
 
-          const toolResults = await this._toolExecutionService.executeToolCalls(checkResult.toolCalls, options.tools);
+          // Pass traceContext to tool execution for telemetry
+          const toolResults = await this._toolExecutionService.executeToolCalls(
+            checkResult.toolCalls,
+            options.tools,
+            traceContext,
+          );
           const formattedToolResults = this._toolExecutionService.formatToolResults(toolResults);
 
           currentPrompt = this._promptBuilderService.buildPrompt({
@@ -265,6 +324,36 @@ export class TextGenerationService implements ITextGenerationService {
         chunkCount,
         responseLength: fullResponse.length,
       });
+
+      if (enableTelemetry && traceContext) {
+        // Record generation observation with full data
+        recordGeneration(
+          traceContext,
+          "llm-generation",
+          {
+            prompt: currentPrompt,
+            model: client.generationModelConfig.name,
+          },
+          {
+            text: fullResponse,
+          },
+          {
+            model: client.generationModelConfig.name,
+            temperature: client.config.generation.temperature,
+            topP: client.config.generation.topP,
+            topK: client.config.generation.topK,
+          },
+        );
+
+        // End trace with complete output
+        endTraceWithOutput(traceContext, {
+          response: fullResponse,
+          chunkCount,
+          responseLength: fullResponse.length,
+          duration: Date.now() - overallStart,
+          hasToolCalls,
+        });
+      }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       console.error("Stream generation failed", {
@@ -272,6 +361,11 @@ export class TextGenerationService implements ITextGenerationService {
         duration: Date.now() - overallStart,
         correlationId,
       });
+
+      // End trace with error info
+      if (enableTelemetry && traceContext) {
+        endTraceWithError(traceContext, error);
+      }
 
       const fallbackResponse = this._buildFallbackResponse(errMsg);
       yield fallbackResponse;
@@ -283,6 +377,7 @@ export class TextGenerationService implements ITextGenerationService {
   private async _prepareSystemMessage(
     options: GenerateStreamOptions,
     correlationId: string,
+    traceContext?: TraceContext | null,
   ): Promise<{ systemMessage: string; ragContext?: RAGContext }> {
     const enableRAG = options.enableRAG ?? this._enableRAGByDefault;
 
@@ -291,7 +386,8 @@ export class TextGenerationService implements ITextGenerationService {
     }
 
     try {
-      const ragContext = await this._contextPreparationService.prepareContext(options.prompt);
+      // Pass traceContext to context preparation for full RAG telemetry
+      const ragContext = await this._contextPreparationService.prepareContext(options.prompt, traceContext);
       const systemMessage = ragContext.context
         ? buildSystemPromptWithContext(ragContext.context)
         : buildSystemPromptWithoutContext();

@@ -3,9 +3,11 @@ import type { QueryPlannerConfig, QueryPlanResult } from "../../types/rag";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { QueryHeuristicService, type IQueryHeuristicService } from "./query-heuristic.service";
 import { type QueryIntent, QueryIntentService, type IQueryIntentService } from "./query-intent.service";
+import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 export interface IQueryPlannerService {
-  planQueries(userQuery: string): Promise<QueryPlanResult>;
+  planQueries(userQuery: string, traceContext?: TraceContext | null): Promise<QueryPlanResult>;
 }
 
 const QueryPlanSchema = z.object({
@@ -34,7 +36,8 @@ export class QueryPlannerService implements IQueryPlannerService {
     this._intentService = intentService;
   }
 
-  async planQueries(userQuery: string): Promise<QueryPlanResult> {
+  async planQueries(userQuery: string, traceContext?: TraceContext | null): Promise<QueryPlanResult> {
+    const startTime = Date.now();
     console.info("Query planning started", { userQuery: userQuery.slice(0, 100) });
 
     const client = getAItClient();
@@ -43,6 +46,20 @@ export class QueryPlannerService implements IQueryPlannerService {
     let intent: QueryIntent | undefined;
     try {
       intent = await this._intentService.analyzeIntent(userQuery);
+
+      if (traceContext && intent) {
+        recordSpan(
+          "query-intent-analysis",
+          "query_planning",
+          traceContext,
+          { query: userQuery.slice(0, 100) },
+          {
+            entityTypes: intent.entityTypes,
+            isTemporalQuery: intent.isTemporalQuery,
+            timeReference: intent.timeReference,
+          },
+        );
+      }
     } catch (error) {
       console.warn("Failed to analyze query intent, continuing without it", {
         error: error instanceof Error ? error.message : String(error),
@@ -145,6 +162,42 @@ export class QueryPlannerService implements IQueryPlannerService {
         usedFallback: fallbackApplied,
       });
 
+      // Record query planning span
+      if (traceContext) {
+        recordGeneration(
+          traceContext,
+          "query-decomposition",
+          {
+            query: userQuery.slice(0, 100),
+            targetQueryCount: this._queriesCount,
+          },
+          {
+            queries: cleaned,
+            tags,
+          },
+          {
+            model: client.generationModelConfig.name,
+            temperature: this._temperature,
+          },
+        );
+
+        recordSpan(
+          "query-planning",
+          "query_planning",
+          traceContext,
+          {
+            query: userQuery.slice(0, 100),
+          },
+          {
+            queryCount: cleaned.length,
+            planSource,
+            isDiverse,
+            usedFallback: fallbackApplied,
+            duration: Date.now() - startTime,
+          },
+        );
+      }
+
       return {
         queries: cleaned,
         tags,
@@ -159,11 +212,11 @@ export class QueryPlannerService implements IQueryPlannerService {
         error: error instanceof Error ? error.message : String(error),
         userQuery: userQuery.slice(0, 100),
       });
-      return this._buildHeuristicPlan(userQuery);
+      return this._buildHeuristicPlan(userQuery, traceContext);
     }
   }
 
-  private _buildHeuristicPlan(userQuery: string): QueryPlanResult {
+  private _buildHeuristicPlan(userQuery: string, traceContext?: TraceContext | null): QueryPlanResult {
     const fallback = this._heuristics.buildFallbackPlan(userQuery, this._queriesCount);
     const ensuredQueries = this._ensureUserQuery(userQuery, fallback.queries || []);
     const deduped = this._deduplicateQueries(ensuredQueries, this._queriesCount);

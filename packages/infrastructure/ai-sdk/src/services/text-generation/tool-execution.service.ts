@@ -1,6 +1,8 @@
 import type { ToolExecutionResult, ToolExecutionConfig } from "../../types/text-generation";
 import type { Tool } from "../../types/tools";
 import type { OllamaToolCall } from "../../client/ollama.provider";
+import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 /**
  * Interface for tool execution service
@@ -10,9 +12,14 @@ export interface IToolExecutionService {
    * Execute multiple tool calls
    * @param toolCalls - Tool calls to execute
    * @param tools - Available tools
+   * @param traceContext - Optional trace context for telemetry
    * @returns Execution results
    */
-  executeToolCalls(toolCalls: OllamaToolCall[], tools: Record<string, Tool>): Promise<ToolExecutionResult[]>;
+  executeToolCalls(
+    toolCalls: OllamaToolCall[],
+    tools: Record<string, Tool>,
+    traceContext?: TraceContext | null,
+  ): Promise<ToolExecutionResult[]>;
 
   /**
    * Format tool results for prompt injection
@@ -32,7 +39,11 @@ export class ToolExecutionService implements IToolExecutionService {
     this._toolTimeoutMs = Math.max(config.toolTimeoutMs ?? 30000, 1000);
   }
 
-  async executeToolCalls(toolCalls: OllamaToolCall[], tools: Record<string, Tool>): Promise<ToolExecutionResult[]> {
+  async executeToolCalls(
+    toolCalls: OllamaToolCall[],
+    tools: Record<string, Tool>,
+    traceContext?: TraceContext | null,
+  ): Promise<ToolExecutionResult[]> {
     console.info("Executing tools...", {
       toolNames: toolCalls.map((tc) => tc.function.name),
     });
@@ -56,6 +67,7 @@ export class ToolExecutionService implements IToolExecutionService {
         const maxAttempts = 2;
         let attempt = 0;
         let lastError: unknown;
+        let finalResult: ToolExecutionResult | null = null;
 
         while (attempt < maxAttempts) {
           try {
@@ -72,11 +84,31 @@ export class ToolExecutionService implements IToolExecutionService {
             const executionTimeMs = Date.now() - startTime;
             console.info(`Tool ${toolName} completed`, { executionTimeMs });
 
-            return {
+            finalResult = {
               name: toolName,
               result,
               executionTimeMs,
             };
+
+            // Record successful tool execution
+            if (traceContext) {
+              recordSpan(
+                `tool-${toolName}`,
+                "tool",
+                traceContext,
+                {
+                  toolName,
+                  parameters: toolCall.function.arguments,
+                },
+                {
+                  result: typeof result === "object" ? JSON.stringify(result).slice(0, 500) : String(result),
+                  executionTimeMs,
+                  success: true,
+                },
+              );
+            }
+
+            return finalResult;
           } catch (error) {
             lastError = error;
             attempt++;
@@ -85,12 +117,32 @@ export class ToolExecutionService implements IToolExecutionService {
               const errMsg = error instanceof Error ? error.message : String(error);
               console.error(`Tool ${toolName} failed`, { error: errMsg, executionTimeMs });
 
-              return {
+              finalResult = {
                 name: toolName,
                 result: null,
                 error: errMsg,
                 executionTimeMs,
               };
+
+              // Record failed tool execution
+              if (traceContext) {
+                recordSpan(
+                  `tool-${toolName}`,
+                  "tool",
+                  traceContext,
+                  {
+                    toolName,
+                    parameters: toolCall.function.arguments,
+                  },
+                  {
+                    error: errMsg,
+                    executionTimeMs,
+                    success: false,
+                  },
+                );
+              }
+
+              return finalResult;
             }
             // small jitter before retry
             await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 200)));
