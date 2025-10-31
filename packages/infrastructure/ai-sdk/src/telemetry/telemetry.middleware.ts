@@ -215,9 +215,9 @@ export function endTraceWithOutput(traceContext: TraceContext, output: SpanOutpu
 }
 
 /**
- * End trace with error
+ * End trace with error and optional metadata
  */
-export function endTraceWithError(traceContext: TraceContext, error: unknown): void {
+export function endTraceWithError(traceContext: TraceContext, error: unknown, errorMetadata?: SpanMetadata): void {
   const provider = getLangfuseProvider();
 
   if (!provider || !provider.isEnabled()) {
@@ -225,7 +225,7 @@ export function endTraceWithError(traceContext: TraceContext, error: unknown): v
   }
 
   const err = error instanceof Error ? error : new Error(String(error));
-  provider.endTrace(traceContext.traceId, undefined, err);
+  provider.endTrace(traceContext.traceId, undefined, err, errorMetadata);
 }
 
 /**

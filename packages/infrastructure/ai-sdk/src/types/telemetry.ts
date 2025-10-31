@@ -16,6 +16,22 @@ export interface SpanMetadata {
   maxTokens?: number;
   topP?: number;
   topK?: number;
+  // Error tracking
+  errorCategory?: string;
+  errorSeverity?: string;
+  errorFingerprint?: string;
+  isRetryable?: boolean;
+  retryAttempt?: number;
+  suggestedAction?: string;
+  // Cost tracking
+  generationTokens?: number;
+  embeddingTokens?: number;
+  estimatedCost?: number;
+  // Version tracking
+  version?: string;
+  release?: string;
+  environment?: string;
+  deploymentTimestamp?: string;
   [key: string]: unknown;
 }
 

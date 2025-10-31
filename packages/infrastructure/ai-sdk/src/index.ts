@@ -30,6 +30,18 @@ export * from "./services/rag/query-intent.service";
 export { ContextBuilder } from "./services/rag/context.builder";
 export { createMultiQueryRetrievalService } from "./services/rag/multi-query-retrieval.factory";
 
+export * from "./services/errors/error-classification.service";
+
+export * from "./services/feedback/feedback.service";
+export * from "./services/feedback/types";
+
+export * from "./services/analytics/analytics.service";
+export * from "./services/analytics/cost-tracking.service";
+export * from "./services/analytics/performance-metrics.service";
+export * from "./services/analytics/failure-analysis.service";
+export * from "./services/analytics/cache-analytics.service";
+export * from "./services/analytics/types";
+
 export * from "./tools/connectors.tools";
 export { convertToOllamaTools } from "./tools/tool.converter";
 export type { OllamaTool, OllamaToolCall } from "./client/ollama.provider";
