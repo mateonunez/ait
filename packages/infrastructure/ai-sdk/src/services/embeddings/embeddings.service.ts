@@ -1,6 +1,8 @@
 import { getAItClient } from "../../client/ai-sdk.client";
 import { TextPreprocessor, type TextChunk } from "./text-preprocessor";
 import { createEmbeddingsConfig, type EmbeddingsConfig } from "./embeddings.config";
+import { recordSpan, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 export interface IEmbeddingsService {
   generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]>;
@@ -12,6 +14,8 @@ export interface EmbeddingsServiceOptions {
   concurrencyLimit?: number;
   weightChunks?: boolean;
   correlationId?: string;
+  enableTelemetry?: boolean;
+  traceContext?: any;
 }
 
 export class EmbeddingsService implements IEmbeddingsService {
@@ -30,6 +34,10 @@ export class EmbeddingsService implements IEmbeddingsService {
 
   public async generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]> {
     const correlationId = options?.correlationId;
+    const enableTelemetry = shouldEnableTelemetry(options);
+    const traceContext = options?.traceContext as TraceContext | null;
+
+    const startTime = Date.now();
 
     try {
       const chunks = this._textPreprocessor.chunkText(text);
@@ -37,6 +45,21 @@ export class EmbeddingsService implements IEmbeddingsService {
       if (!this._textPreprocessor.validateChunks(chunks, text)) {
         throw new Error("Chunk validation failed - text may have been corrupted during preprocessing");
       }
+
+      if (enableTelemetry && traceContext) {
+        recordSpan(
+          "text-chunking",
+          "embedding",
+          traceContext,
+          {
+            text: text.slice(0, 100),
+          },
+          {
+            chunkCount: chunks.length,
+          },
+        );
+      }
+
       const chunkVectors = await this._processChunks(chunks, correlationId);
       const averagedVector = this._config.weightChunks
         ? this._weightedAverageVectors(
@@ -47,6 +70,25 @@ export class EmbeddingsService implements IEmbeddingsService {
 
       if (averagedVector.length !== this._config.expectedVectorSize) {
         throw new Error(`Unexpected embeddings size: ${averagedVector.length}`);
+      }
+
+      if (enableTelemetry && traceContext) {
+        recordSpan(
+          "embedding-generation",
+          "embedding",
+          traceContext,
+          {
+            text: text.slice(0, 100),
+            chunkCount: chunks.length,
+          },
+          {
+            vectorSize: averagedVector.length,
+            duration: Date.now() - startTime,
+          },
+          {
+            model: this._config.model,
+          },
+        );
       }
 
       return averagedVector;

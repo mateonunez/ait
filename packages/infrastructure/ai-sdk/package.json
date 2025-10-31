@@ -22,6 +22,7 @@
     "ai": "^5.0.82",
     "cohere-ai": "^7.19.0",
     "dotenv": "^17.2.3",
+    "langfuse": "^3.30.3",
     "ollama-ai-provider-v2": "^1.5.2",
     "zod": "^4.1.12"
   },

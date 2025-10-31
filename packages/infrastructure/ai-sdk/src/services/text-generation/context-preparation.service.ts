@@ -5,6 +5,8 @@ import type { QdrantProvider } from "../rag/qdrant.provider";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import { ContextBuilder } from "../rag/context.builder";
 import { TemporalCorrelationService, type ITemporalCorrelationService } from "../rag/temporal-correlation.service";
+import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 /**
  * Interface for context preparation service
@@ -13,9 +15,10 @@ export interface IContextPreparationService {
   /**
    * Prepare context for a query with smart caching
    * @param query - User query
+   * @param traceContext - Optional trace context for telemetry
    * @returns RAG context
    */
-  prepareContext(query: string): Promise<RAGContext>;
+  prepareContext(query: string, traceContext?: TraceContext | null): Promise<RAGContext>;
 
   /**
    * Clear cached context
@@ -59,24 +62,39 @@ export class ContextPreparationService implements IContextPreparationService {
     this._maxContextChars = Math.min(Math.max((config as any).maxContextChars ?? 18000, 2000), 120000);
   }
 
-  async prepareContext(query: string): Promise<RAGContext> {
+  async prepareContext(query: string, traceContext?: TraceContext | null): Promise<RAGContext> {
+    const startTime = Date.now();
     console.info("Preparing context for RAG", { query: query.slice(0, 50) });
 
     // Check LRU cache first
     const cached = this._getFromCache(query);
     if (cached) {
       console.info("Reusing cached RAG context", { age: Date.now() - cached.timestamp });
+
+      if (traceContext) {
+        recordSpan(
+          "rag-cache-hit",
+          "rag",
+          traceContext,
+          { query: query.slice(0, 100) },
+          {
+            cached: true,
+            cacheAge: Date.now() - cached.timestamp,
+            documentCount: cached.documents.length,
+          },
+        );
+      }
+
       return cached;
     }
 
     // Retrieve fresh context
-    const startTime = Date.now();
     let documents: Document<BaseMetadata>[] = [];
     let fallbackUsed = false;
     let fallbackReason: string | undefined;
 
     try {
-      documents = await this._multiQueryRetrieval.retrieve<BaseMetadata>(this._vectorStore, query);
+      documents = await this._multiQueryRetrieval.retrieve<BaseMetadata>(this._vectorStore, query, traceContext);
     } catch (error) {
       fallbackUsed = true;
       fallbackReason = error instanceof Error ? error.message : String(error);
@@ -117,6 +135,23 @@ export class ContextPreparationService implements IContextPreparationService {
             clusterCount: clusters.length,
             contextLength: context.length,
           });
+
+          if (traceContext) {
+            recordSpan(
+              "temporal-correlation",
+              "rag",
+              traceContext,
+              {
+                documentCount: documents.length,
+                entityTypes: Array.from(entityTypes),
+                windowHours: effectiveWindow,
+              },
+              {
+                clusterCount: clusters.length,
+                contextLength: context.length,
+              },
+            );
+          }
         } else {
           // Fallback to regular context if temporal correlation yields no results
           console.warn("Temporal correlation yielded no results, using regular context");
@@ -154,6 +189,26 @@ export class ContextPreparationService implements IContextPreparationService {
       fallbackReason,
       usedTemporalCorrelation,
     });
+
+    // Record final context preparation span
+    if (traceContext) {
+      recordSpan(
+        "context-preparation",
+        "rag",
+        traceContext,
+        {
+          query: query.slice(0, 100),
+        },
+        {
+          documentCount: documents.length,
+          contextLength: context.length,
+          duration: Date.now() - startTime,
+          fallbackUsed,
+          usedTemporalCorrelation,
+          cached: false,
+        },
+      );
+    }
 
     return ragContext;
   }

@@ -4,6 +4,8 @@ import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
 import type { Document, BaseMetadata } from "../../types/documents";
 import { extractContentFromPayload, extractMetadataFromPayload } from "../../types/qdrant";
 import { EmbeddingsService } from "../embeddings/embeddings.service";
+import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { TraceContext } from "../../types/telemetry";
 
 export interface QdrantProviderConfig {
   url?: string;
@@ -11,10 +13,17 @@ export interface QdrantProviderConfig {
   embeddingsModel?: string;
   expectedVectorSize?: number;
   embeddingsService?: IEmbeddingsService;
+  enableTelemetry?: boolean;
+  traceContext?: TraceContext;
 }
 
 export class QdrantProvider {
-  private readonly _config: Required<QdrantProviderConfig>;
+  private readonly _config: QdrantProviderConfig & {
+    url: string;
+    embeddingsModel: string;
+    expectedVectorSize: number;
+    embeddingsService: IEmbeddingsService;
+  };
   private readonly _embeddingsService: IEmbeddingsService;
   private readonly _client: qdrant.QdrantClient;
 
@@ -33,18 +42,46 @@ export class QdrantProvider {
           config.expectedVectorSize || embeddingModelConfig.vectorSize,
           { concurrencyLimit: 4 },
         ),
+      enableTelemetry: config.enableTelemetry,
+      traceContext: config.traceContext,
     };
 
     this._embeddingsService = this._config.embeddingsService;
     this._client = getQdrantClient();
   }
 
-  async similaritySearch(query: string, k: number): Promise<Document<BaseMetadata>[]> {
+  async similaritySearch(
+    query: string,
+    k: number,
+    options?: { enableTelemetry?: boolean; traceContext?: TraceContext },
+  ): Promise<Document<BaseMetadata>[]> {
+    const startTime = Date.now();
+
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
+      enableTelemetry: options?.enableTelemetry,
+      traceContext: options?.traceContext,
     });
 
-    return this.similaritySearchWithVector(queryVector, k);
+    const results = await this.similaritySearchWithVector(queryVector, k);
+
+    if (options?.enableTelemetry && options?.traceContext) {
+      recordSpan(
+        "similarity-search",
+        "search",
+        options.traceContext,
+        {
+          query: query.slice(0, 100),
+          k,
+        },
+        {
+          resultCount: results.length,
+          duration: Date.now() - startTime,
+        },
+      );
+    }
+
+    return results;
   }
 
   async similaritySearchWithVector(
@@ -98,9 +135,14 @@ export class QdrantProvider {
     k: number,
     filter?: { types?: string[]; timeRange?: { from?: string; to?: string } },
     scoreThreshold?: number,
+    options?: { enableTelemetry?: boolean; traceContext?: TraceContext },
   ): Promise<Array<[Document<BaseMetadata>, number]>> {
+    const startTime = Date.now();
+
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
+      enableTelemetry: options?.enableTelemetry,
+      traceContext: options?.traceContext,
     });
 
     let qdrantFilter: any;
@@ -153,13 +195,40 @@ export class QdrantProvider {
           : "none",
     });
 
-    return searchResult.map((point) => [
+    const results = searchResult.map((point) => [
       {
         pageContent: extractContentFromPayload(point.payload || undefined),
         metadata: extractMetadataFromPayload(point.payload || undefined),
       },
       point.score,
     ]);
+
+    if (options?.enableTelemetry && options?.traceContext) {
+      recordSpan(
+        "vector-search",
+        "search",
+        options.traceContext,
+        {
+          query: query.slice(0, 100),
+          k,
+          scoreThreshold: effectiveThreshold,
+          filterTypes: filter?.types,
+          hasTimeRange: !!filter?.timeRange,
+        },
+        {
+          resultCount: results.length,
+          avgScore:
+            results.length > 0
+              ? results.reduce((sum, [, score]) => sum + (typeof score === "number" ? score : 0), 0) / results.length
+              : 0,
+          maxScore: results.length > 0 ? results[0][1] : 0,
+          minScore: results.length > 0 ? results[results.length - 1][1] : 0,
+          duration: Date.now() - startTime,
+        },
+      );
+    }
+
+    return results as Array<[Document<BaseMetadata>, number]>;
   }
 
   reset(): void {
