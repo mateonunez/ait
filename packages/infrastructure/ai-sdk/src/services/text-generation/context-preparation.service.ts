@@ -7,6 +7,7 @@ import { ContextBuilder } from "../rag/context.builder";
 import { TemporalCorrelationService, type ITemporalCorrelationService } from "../rag/temporal-correlation.service";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { getCacheAnalyticsService } from "../analytics/cache-analytics.service";
 
 /**
  * Interface for context preparation service
@@ -69,7 +70,12 @@ export class ContextPreparationService implements IContextPreparationService {
     // Check LRU cache first
     const cached = this._getFromCache(query);
     if (cached) {
+      const cacheLatency = Date.now() - startTime;
       console.info("Reusing cached RAG context", { age: Date.now() - cached.timestamp });
+
+      // Track cache hit for analytics
+      const cacheAnalytics = getCacheAnalyticsService();
+      cacheAnalytics.recordCacheHit(query, cacheLatency, cached.documents.length);
 
       if (traceContext) {
         recordSpan(
@@ -93,14 +99,25 @@ export class ContextPreparationService implements IContextPreparationService {
     let fallbackUsed = false;
     let fallbackReason: string | undefined;
 
+    const retrievalStart = Date.now();
     try {
       documents = await this._multiQueryRetrieval.retrieve<BaseMetadata>(this._vectorStore, query, traceContext);
+
+      // Track cache miss with actual retrieval time
+      const retrievalLatency = Date.now() - retrievalStart;
+      const cacheAnalytics = getCacheAnalyticsService();
+      cacheAnalytics.recordCacheMiss(query, retrievalLatency);
     } catch (error) {
       fallbackUsed = true;
       fallbackReason = error instanceof Error ? error.message : String(error);
       console.error("RAG retrieval failed, returning fallback context", {
         error: fallbackReason,
       });
+
+      // Still track cache miss even on failure
+      const retrievalLatency = Date.now() - retrievalStart;
+      const cacheAnalytics = getCacheAnalyticsService();
+      cacheAnalytics.recordCacheMiss(query, retrievalLatency);
     }
 
     let context = "";
@@ -215,6 +232,13 @@ export class ContextPreparationService implements IContextPreparationService {
 
   clearCache(): void {
     this._contextCache.clear();
+
+    // Update cache analytics stats
+    const cacheAnalytics = getCacheAnalyticsService();
+    cacheAnalytics.updateCacheStats({
+      entryCount: 0,
+      estimatedMemoryMB: 0,
+    });
   }
 
   private _getFromCache(query: string): RAGContext | null {
@@ -235,12 +259,32 @@ export class ContextPreparationService implements IContextPreparationService {
 
   private _putInCache(query: string, value: RAGContext): void {
     const key = this._buildCacheKey(query);
-    this._contextCache.set(key, value);
-    // Evict LRU if over capacity
-    if (this._contextCache.size > this._maxCacheEntries) {
+
+    // Check if eviction is needed
+    let didEvict = false;
+    if (this._contextCache.size >= this._maxCacheEntries) {
       const oldestKey = this._contextCache.keys().next().value as string | undefined;
-      if (oldestKey) this._contextCache.delete(oldestKey);
+      if (oldestKey) {
+        this._contextCache.delete(oldestKey);
+        didEvict = true;
+      }
     }
+
+    this._contextCache.set(key, value);
+
+    // Update cache analytics
+    const cacheAnalytics = getCacheAnalyticsService();
+    if (didEvict) {
+      cacheAnalytics.recordEviction();
+    }
+
+    // Estimate memory: ~2KB per document + context string
+    const estimatedMemoryMB = (this._contextCache.size * 2) / 1024;
+    cacheAnalytics.updateCacheStats({
+      entryCount: this._contextCache.size,
+      estimatedMemoryMB,
+      maxEntries: this._maxCacheEntries,
+    });
   }
 
   private _buildCacheKey(query: string): string {

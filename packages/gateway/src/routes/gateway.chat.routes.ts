@@ -9,6 +9,15 @@ import {
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
 import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/connectors";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { randomUUID } from "node:crypto";
+
+// Read version from package.json
+const packageJson = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
+const APP_VERSION = packageJson.version;
+const APP_ENVIRONMENT = process.env.NODE_ENV || "development";
+const DEPLOYMENT_TIMESTAMP = new Date().toISOString();
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -47,6 +56,12 @@ console.log("[Gateway] Telemetry configuration:", {
   hasSecretKey: !!telemetryConfig.secretKey,
   baseURL: telemetryConfig.baseURL,
 });
+
+// Global message-to-trace mapping for feedback correlation
+// In production, this should be stored in a database or cache
+if (!(global as any).__messageToTraceMap) {
+  (global as any).__messageToTraceMap = {};
+}
 
 export default async function chatRoutes(fastify: FastifyInstance) {
   if (!fastify.textGenerationService) {
@@ -88,6 +103,9 @@ export default async function chatRoutes(fastify: FastifyInstance) {
       reply.hijack();
 
       try {
+        // Generate custom traceId for telemetry
+        const traceId = `trace-${Date.now()}-${randomUUID().slice(0, 8)}`;
+
         const stream = textGenerationService.generateStream({
           prompt,
           enableRAG: true,
@@ -95,27 +113,74 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           tools,
           maxToolRounds: 2,
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
+          traceId, // Pass custom traceId
           userId: request.headers["x-user-id"] as string | undefined,
           sessionId: request.headers["x-session-id"] as string | undefined,
           tags: ["gateway", "chat"],
+          metadata: {
+            version: APP_VERSION,
+            environment: APP_ENVIRONMENT,
+            deploymentTimestamp: DEPLOYMENT_TIMESTAMP,
+          },
         });
 
+        let firstChunk = true;
         for await (const chunk of stream) {
           reply.raw.write(`0:${JSON.stringify(chunk)}\n`);
+
+          // On first chunk, store the traceId mapping for feedback
+          // We'll use a simple approach: store by timestamp and match later
+          if (firstChunk) {
+            const timestamp = Date.now();
+            (global as any).__messageToTraceMap[timestamp] = traceId;
+            // Clean up old mappings (older than 5 minutes)
+            const fiveMinutesAgo = timestamp - 5 * 60 * 1000;
+            for (const key of Object.keys((global as any).__messageToTraceMap)) {
+              if (Number.parseInt(key) < fiveMinutesAgo) {
+                delete (global as any).__messageToTraceMap[key];
+              }
+            }
+            firstChunk = false;
+          }
         }
 
-        reply.raw.write(`d:${JSON.stringify({ finishReason: "stop" })}\n`);
+        reply.raw.write(`d:${JSON.stringify({ finishReason: "stop", traceId })}\n`);
 
-        // Flush telemetry data to Langfuse
+        // Flush telemetry data to Langfuse with proper timing
         const langfuseProvider = getLangfuseProvider();
         if (langfuseProvider?.isEnabled()) {
           console.log("[Gateway] Flushing telemetry data to Langfuse...");
-          await langfuseProvider.flush();
-          console.log("[Gateway] Telemetry flushed successfully");
+
+          try {
+            // Give a small delay to ensure all trace updates are processed
+            await new Promise((resolve) => setTimeout(resolve, 100));
+
+            // Flush with timeout protection
+            const flushTimeout = 15000; // 15 seconds
+            await Promise.race([
+              langfuseProvider.flush(),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Flush timeout in gateway")), flushTimeout)),
+            ]);
+
+            console.log("[Gateway] Telemetry flushed successfully");
+          } catch (flushError: any) {
+            console.error("[Gateway] Telemetry flush failed:", flushError.message);
+            // Don't fail the request if telemetry flush fails
+          }
         }
       } catch (streamError: any) {
         fastify.log.error({ err: streamError, route: "/chat" }, "Stream error occurred.");
         reply.raw.write(`3:${JSON.stringify(streamError.message || "Stream generation failed")}\n`);
+
+        // Attempt to flush telemetry even on error
+        const langfuseProvider = getLangfuseProvider();
+        if (langfuseProvider?.isEnabled()) {
+          try {
+            await Promise.race([langfuseProvider.flush(), new Promise((resolve) => setTimeout(resolve, 5000))]);
+          } catch {
+            // Silently fail telemetry flush on error
+          }
+        }
       } finally {
         reply.raw.end();
       }

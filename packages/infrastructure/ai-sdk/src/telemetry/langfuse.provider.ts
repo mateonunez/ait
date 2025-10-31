@@ -9,11 +9,22 @@ import type {
   SpanEvent,
 } from "../types/telemetry";
 
+interface TraceState {
+  trace: any;
+  hasInput: boolean;
+  hasOutput: boolean;
+  isComplete: boolean;
+  createdAt: number;
+  spanCount: number;
+}
+
 export class LangfuseProvider {
   private client: Langfuse | null = null;
   private config: Required<TelemetryConfig>;
-  private activeTraces: Map<string, any> = new Map();
-  private activeSpans: Map<string, any> = new Map();
+  private activeTraces = new Map<string, TraceState>();
+  private activeSpans = new Map<string, any>();
+  private flushRetries = 3;
+  private flushTimeout = 10000; // 10 seconds
 
   constructor(config?: TelemetryConfig) {
     const enabled = config?.enabled ?? process.env.LANGFUSE_ENABLED === "true";
@@ -77,7 +88,14 @@ export class LangfuseProvider {
         metadata: metadata as Record<string, unknown>,
       });
 
-      this.activeTraces.set(traceId, trace);
+      this.activeTraces.set(traceId, {
+        trace,
+        hasInput: false,
+        hasOutput: false,
+        isComplete: false,
+        createdAt: Date.now(),
+        spanCount: 0,
+      });
 
       console.log("[Langfuse] Trace created", {
         traceId,
@@ -109,13 +127,13 @@ export class LangfuseProvider {
     }
 
     try {
-      const trace = this.activeTraces.get(traceContext.traceId);
-      if (!trace) {
+      const traceState = this.activeTraces.get(traceContext.traceId);
+      if (!traceState) {
         console.warn(`Trace ${traceContext.traceId} not found for span ${spanId}`);
         return null;
       }
 
-      const span = trace.span({
+      const span = traceState.trace.span({
         id: spanId,
         name,
         metadata: {
@@ -125,6 +143,7 @@ export class LangfuseProvider {
       });
 
       this.activeSpans.set(spanId, span);
+      traceState.spanCount++;
 
       return spanId;
     } catch (error) {
@@ -166,7 +185,7 @@ export class LangfuseProvider {
     }
   }
 
-  endSpan(spanId: string, output?: SpanOutput, error?: Error | string): void {
+  endSpan(spanId: string, output?: SpanOutput, error?: Error | string, errorMetadata?: SpanMetadata): void {
     if (!this.isEnabled() || !this.client) {
       return;
     }
@@ -184,9 +203,20 @@ export class LangfuseProvider {
       }
 
       if (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
+
         span.update({
           level: "ERROR",
-          statusMessage: error instanceof Error ? error.message : String(error),
+          statusMessage: errorMessage,
+          metadata: {
+            errorStack: errorStack?.split("\n").slice(0, 5).join("\n"), // First 5 lines
+            errorCategory: errorMetadata?.errorCategory,
+            errorSeverity: errorMetadata?.errorSeverity,
+            errorFingerprint: errorMetadata?.errorFingerprint,
+            isRetryable: errorMetadata?.isRetryable,
+            suggestedAction: errorMetadata?.suggestedAction,
+          } as Record<string, unknown>,
         });
       }
 
@@ -203,15 +233,16 @@ export class LangfuseProvider {
     }
 
     try {
-      const trace = this.activeTraces.get(traceId);
-      if (!trace) {
+      const traceState = this.activeTraces.get(traceId);
+      if (!traceState) {
         console.warn(`[Langfuse] Trace ${traceId} not found for input update`);
         return;
       }
 
-      trace.update({
+      traceState.trace.update({
         input: input as Record<string, unknown>,
       });
+      traceState.hasInput = true;
 
       console.log("[Langfuse] Trace input updated", { traceId });
     } catch (error) {
@@ -225,15 +256,16 @@ export class LangfuseProvider {
     }
 
     try {
-      const trace = this.activeTraces.get(traceId);
-      if (!trace) {
+      const traceState = this.activeTraces.get(traceId);
+      if (!traceState) {
         console.warn(`[Langfuse] Trace ${traceId} not found for output update`);
         return;
       }
 
-      trace.update({
+      traceState.trace.update({
         output: output as Record<string, unknown>,
       });
+      traceState.hasOutput = true;
 
       console.log("[Langfuse] Trace output updated", { traceId });
     } catch (error) {
@@ -241,33 +273,51 @@ export class LangfuseProvider {
     }
   }
 
-  endTrace(traceId: string, output?: SpanOutput, error?: Error): void {
+  endTrace(traceId: string, output?: SpanOutput, error?: Error, errorMetadata?: SpanMetadata): void {
     if (!this.isEnabled() || !this.client) {
       return;
     }
 
     try {
-      const trace = this.activeTraces.get(traceId);
-      if (!trace) {
+      const traceState = this.activeTraces.get(traceId);
+      if (!traceState) {
         console.warn(`[Langfuse] Trace ${traceId} not found for ending`);
         return;
       }
 
       if (output) {
-        trace.update({
+        traceState.trace.update({
           output: output as Record<string, unknown>,
         });
+        traceState.hasOutput = true;
       }
 
       if (error) {
-        trace.update({
+        traceState.trace.update({
           level: "ERROR",
           statusMessage: error.message,
+          metadata: {
+            errorStack: error.stack?.split("\n").slice(0, 5).join("\n"),
+            errorCategory: errorMetadata?.errorCategory,
+            errorSeverity: errorMetadata?.errorSeverity,
+            errorFingerprint: errorMetadata?.errorFingerprint,
+            isRetryable: errorMetadata?.isRetryable,
+            suggestedAction: errorMetadata?.suggestedAction,
+          } as Record<string, unknown>,
         });
       }
 
-      this.activeTraces.delete(traceId);
-      console.log("[Langfuse] Trace ended", { traceId, hasError: !!error });
+      traceState.isComplete = true;
+
+      // Keep trace in map until flush for state validation
+      console.log("[Langfuse] Trace marked complete", {
+        traceId,
+        hasError: !!error,
+        hasInput: traceState.hasInput,
+        hasOutput: traceState.hasOutput,
+        spanCount: traceState.spanCount,
+        errorFingerprint: errorMetadata?.errorFingerprint,
+      });
     } catch (err) {
       console.warn("[Langfuse] Failed to end trace:", err);
     }
@@ -327,21 +377,97 @@ export class LangfuseProvider {
     }
   }
 
+  /**
+   * Validate trace state before flush
+   */
+  private validateTraces(): { valid: number; invalid: number; warnings: string[] } {
+    const warnings: string[] = [];
+    let valid = 0;
+    let invalid = 0;
+
+    for (const [traceId, state] of this.activeTraces.entries()) {
+      if (!state.isComplete) {
+        warnings.push(`Trace ${traceId} is not marked complete`);
+        invalid++;
+        continue;
+      }
+
+      if (!state.hasInput) {
+        warnings.push(`Trace ${traceId} missing input data`);
+        invalid++;
+        continue;
+      }
+
+      if (!state.hasOutput) {
+        warnings.push(`Trace ${traceId} missing output data`);
+        invalid++;
+        continue;
+      }
+
+      valid++;
+    }
+
+    return { valid, invalid, warnings };
+  }
+
+  /**
+   * Flush with retry logic and exponential backoff
+   */
   async flush(): Promise<void> {
     if (!this.isEnabled() || !this.client) {
       return;
     }
 
-    try {
-      console.log("[Langfuse] Flushing telemetry data...", {
-        activeTraces: this.activeTraces.size,
-        activeSpans: this.activeSpans.size,
-      });
-      await this.client.flushAsync();
-      console.log("[Langfuse] Flush completed successfully");
-    } catch (error) {
-      console.warn("[Langfuse] Failed to flush client:", error);
+    // Validate traces before flush
+    const validation = this.validateTraces();
+
+    console.log("[Langfuse] Pre-flush validation", {
+      activeTraces: this.activeTraces.size,
+      activeSpans: this.activeSpans.size,
+      validTraces: validation.valid,
+      invalidTraces: validation.invalid,
+    });
+
+    if (validation.warnings.length > 0) {
+      console.warn("[Langfuse] Trace validation warnings:", validation.warnings);
     }
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 1; attempt <= this.flushRetries; attempt++) {
+      try {
+        console.log(`[Langfuse] Flush attempt ${attempt}/${this.flushRetries}...`);
+
+        // Use Promise.race to enforce timeout
+        await Promise.race([
+          this.client.flushAsync(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Flush timeout")), this.flushTimeout)),
+        ]);
+
+        console.log("[Langfuse] Flush completed successfully");
+
+        // Clear completed traces after successful flush
+        for (const [traceId, state] of this.activeTraces.entries()) {
+          if (state.isComplete) {
+            this.activeTraces.delete(traceId);
+          }
+        }
+
+        return;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        console.warn(`[Langfuse] Flush attempt ${attempt} failed:`, lastError.message);
+
+        if (attempt < this.flushRetries) {
+          // Exponential backoff: 100ms, 200ms, 400ms
+          const backoffMs = 100 * 2 ** (attempt - 1);
+          console.log(`[Langfuse] Retrying in ${backoffMs}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        }
+      }
+    }
+
+    console.error("[Langfuse] Failed to flush after all retries:", lastError);
   }
 
   async shutdown(): Promise<void> {

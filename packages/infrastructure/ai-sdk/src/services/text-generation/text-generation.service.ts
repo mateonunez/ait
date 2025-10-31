@@ -14,7 +14,10 @@ import {
   endTraceWithOutput,
   endTraceWithError,
 } from "../../telemetry/telemetry.middleware";
+import { getLangfuseProvider } from "../../telemetry/langfuse.provider";
 import type { TraceContext } from "../../types/telemetry";
+import { getErrorClassificationService } from "../errors/error-classification.service";
+import { getAnalyticsService } from "../analytics/analytics.service";
 
 import { RetryService, type IRetryService } from "./retry.service";
 import { ToolExecutionService, type IToolExecutionService } from "./tool-execution.service";
@@ -74,6 +77,12 @@ export interface GenerateStreamOptions {
   userId?: string;
   sessionId?: string;
   tags?: string[];
+  metadata?: {
+    version?: string;
+    environment?: string;
+    deploymentTimestamp?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface ITextGenerationService {
@@ -156,6 +165,9 @@ export class TextGenerationService implements ITextGenerationService {
         userId: options.userId,
         sessionId: options.sessionId,
         tags: options.tags,
+        version: options.metadata?.version,
+        environment: options.metadata?.environment,
+        deploymentTimestamp: options.metadata?.deploymentTimestamp,
       });
 
       // Set trace input immediately after creation
@@ -318,8 +330,10 @@ export class TextGenerationService implements ITextGenerationService {
         yield chunk;
       }
 
+      const duration = Date.now() - overallStart;
+
       console.info("Stream generation completed", {
-        duration: Date.now() - overallStart,
+        duration,
         hasToolCalls,
         chunkCount,
         responseLength: fullResponse.length,
@@ -350,26 +364,78 @@ export class TextGenerationService implements ITextGenerationService {
           response: fullResponse,
           chunkCount,
           responseLength: fullResponse.length,
-          duration: Date.now() - overallStart,
+          duration,
           hasToolCalls,
         });
       }
+
+      // Track analytics
+      const analytics = getAnalyticsService();
+      const estimatedTokens = analytics.getCostTracking().estimateTokens(fullResponse);
+      const estimatedCost = analytics
+        .getCostTracking()
+        .calculateCost(estimatedTokens, client.generationModelConfig.name, "generation");
+
+      analytics.trackRequest({
+        latencyMs: duration,
+        success: true,
+        generationTokens: estimatedTokens,
+        cacheHit: ragContext?.fallbackUsed === false && ragContext?.documents && ragContext.documents.length > 0,
+      });
+
+      // Update trace with cost metadata
+      if (enableTelemetry && traceContext) {
+        const langfuseProvider = getLangfuseProvider();
+        if (langfuseProvider?.isEnabled()) {
+          langfuseProvider.updateTraceOutput(traceContext.traceId, {
+            generationTokens: estimatedTokens,
+            estimatedCost,
+          });
+        }
+      }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
+
+      // Classify error for better tracking
+      const errorClassifier = getErrorClassificationService();
+      const classifiedError = errorClassifier.classify(error, "text-generation");
+
       console.error("Stream generation failed", {
         error: errMsg,
         duration: Date.now() - overallStart,
         correlationId,
+        errorCategory: classifiedError.category,
+        errorSeverity: classifiedError.severity,
+        errorFingerprint: classifiedError.fingerprint,
+        isRetryable: classifiedError.isRetryable,
+        suggestedAction: classifiedError.suggestedAction,
       });
 
-      // End trace with error info
+      // End trace with classified error metadata
       if (enableTelemetry && traceContext) {
-        endTraceWithError(traceContext, error);
+        endTraceWithError(traceContext, error, {
+          errorCategory: classifiedError.category,
+          errorSeverity: classifiedError.severity,
+          errorFingerprint: classifiedError.fingerprint,
+          isRetryable: classifiedError.isRetryable,
+          suggestedAction: classifiedError.suggestedAction,
+        });
       }
+
+      // Track analytics for failed request
+      const analytics = getAnalyticsService();
+      analytics.trackRequest({
+        latencyMs: Date.now() - overallStart,
+        success: false,
+        error: classifiedError,
+      });
 
       const fallbackResponse = this._buildFallbackResponse(errMsg);
       yield fallbackResponse;
-      console.info("Fallback response emitted after stream failure", { correlationId });
+      console.info("Fallback response emitted after stream failure", {
+        correlationId,
+        errorFingerprint: classifiedError.fingerprint,
+      });
       return;
     }
   }
@@ -394,10 +460,17 @@ export class TextGenerationService implements ITextGenerationService {
 
       return { systemMessage, ragContext };
     } catch (error) {
+      // Classify RAG error
+      const errorClassifier = getErrorClassificationService();
+      const classifiedError = errorClassifier.classify(error, "rag-preparation");
+
       console.error("Failed to prepare RAG system message", {
         error: error instanceof Error ? error.message : String(error),
         correlationId,
+        errorCategory: classifiedError.category,
+        errorFingerprint: classifiedError.fingerprint,
       });
+
       return { systemMessage: buildSystemPromptWithoutContext() };
     }
   }

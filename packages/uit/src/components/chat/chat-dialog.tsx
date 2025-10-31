@@ -3,18 +3,25 @@ import { useChat } from "@ai-sdk/react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useChatDialog } from "@/contexts/chat.context";
 import { ChatMessagesList } from "./chat-messages-list";
-import { ArrowUp, Maximize, Minimize } from "lucide-react";
+import { ArrowUp, Maximize, Minimize, Activity } from "lucide-react";
 import { cn } from "@/styles/utils";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { StatsDashboard } from "@/components/stats/stats-dashboard";
 
 export function ChatDialog() {
-  const { isOpen, isFullscreen, closeChat, openChat, toggleFullscreen } = useChatDialog();
+  const { isOpen, isFullscreen, userId, sessionId, closeChat, openChat, toggleFullscreen } = useChatDialog();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [textareaHeight, setTextareaHeight] = useState("auto");
+  const [showStats, setShowStats] = useState(false);
+  const messageToTraceMap = useRef<Record<string, string>>({});
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error, stop } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, error, stop, data } = useChat({
     api: "http://localhost:3000/api/chat",
+    headers: {
+      "x-user-id": userId,
+      "x-session-id": sessionId,
+    },
     onError: (error) => {
       console.error("Chat error:", error);
     },
@@ -22,7 +29,15 @@ export function ChatDialog() {
       console.log("Response received:", response.status, response.headers.get("content-type"));
     },
     onFinish: (message) => {
-      console.log("Message finished:", message);
+      console.log("Message finished:", message, "data:", data);
+      // Store traceId mapping if available in data
+      if (data && Array.isArray(data) && data.length > 0) {
+        const lastData = data[data.length - 1];
+        if (lastData && typeof lastData === "object" && "traceId" in lastData) {
+          messageToTraceMap.current[message.id] = lastData.traceId as string;
+          console.log("[ChatDialog] Stored trace mapping:", message.id, "->", lastData.traceId);
+        }
+      }
     },
   });
 
@@ -54,6 +69,11 @@ export function ChatDialog() {
       if ((e.metaKey || e.ctrlKey) && e.key === "f" && isOpen) {
         e.preventDefault();
         toggleFullscreen();
+      }
+      // Stats dashboard shortcut: Cmd/Ctrl + Shift + S
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "S") {
+        e.preventDefault();
+        setShowStats((prev) => !prev);
       }
     };
 
@@ -145,6 +165,16 @@ export function ChatDialog() {
               type="button"
               size="icon"
               variant="ghost"
+              onClick={() => setShowStats(true)}
+              className="h-8 w-8 rounded-lg hover:bg-muted/50"
+              title="Stats Dashboard (⌘⇧S)"
+            >
+              <Activity className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
               onClick={toggleFullscreen}
               className="h-8 w-8 rounded-lg hover:bg-muted/50"
               title={isFullscreen ? "Exit fullscreen (Cmd/Ctrl + F)" : "Enter fullscreen (Cmd/Ctrl + F)"}
@@ -156,7 +186,12 @@ export function ChatDialog() {
         </motion.div>
 
         {/* Messages */}
-        <ChatMessagesList messages={messages} isLoading={isLoading} onSuggestionClick={handleSuggestionClick} />
+        <ChatMessagesList
+          messages={messages}
+          isLoading={isLoading}
+          onSuggestionClick={handleSuggestionClick}
+          messageToTraceMap={messageToTraceMap.current}
+        />
 
         {/* Error */}
         <AnimatePresence>
@@ -235,6 +270,9 @@ export function ChatDialog() {
           </form>
         </motion.div>
       </DialogContent>
+
+      {/* Stats Dashboard */}
+      <StatsDashboard isOpen={showStats} onClose={() => setShowStats(false)} />
     </Dialog>
   );
 }

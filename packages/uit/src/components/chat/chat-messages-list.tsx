@@ -9,9 +9,15 @@ interface ChatMessagesListProps {
   messages: Message[];
   isLoading: boolean;
   onSuggestionClick?: (suggestion: string) => void;
+  messageToTraceMap?: Record<string, string>;
 }
 
-export function ChatMessagesList({ messages, isLoading, onSuggestionClick }: ChatMessagesListProps) {
+export function ChatMessagesList({
+  messages,
+  isLoading,
+  onSuggestionClick,
+  messageToTraceMap = {},
+}: ChatMessagesListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<Message | null>(null);
 
@@ -107,7 +113,14 @@ export function ChatMessagesList({ messages, isLoading, onSuggestionClick }: Cha
               const isLastMessage = index === messages.length - 1;
               const isStreamingThis = isLastMessage && message.role === "assistant" && isStreaming;
 
-              return <ChatMessage key={message.id} message={message} isStreaming={isStreamingThis} />;
+              return (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  isStreaming={isStreamingThis}
+                  traceId={messageToTraceMap[message.id]}
+                />
+              );
             })}
 
             <AnimatePresence>

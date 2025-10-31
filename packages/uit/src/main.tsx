@@ -5,14 +5,17 @@ import App from "./App.tsx";
 import { ThemeProvider } from "./components/theme-provider";
 import AItRoot from "./components/uit.root.tsx";
 import ChatRoot from "./components/chat.root.tsx";
+import { StatsProvider } from "./contexts/stats.context";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AItRoot>
       <ThemeProvider defaultTheme="system" storageKey="uit-theme">
-        <ChatRoot>
-          <App />
-        </ChatRoot>
+        <StatsProvider>
+          <ChatRoot>
+            <App />
+          </ChatRoot>
+        </StatsProvider>
       </ThemeProvider>
     </AItRoot>
   </StrictMode>,

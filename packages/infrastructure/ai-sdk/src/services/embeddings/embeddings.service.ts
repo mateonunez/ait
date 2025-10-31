@@ -72,6 +72,11 @@ export class EmbeddingsService implements IEmbeddingsService {
         throw new Error(`Unexpected embeddings size: ${averagedVector.length}`);
       }
 
+      const duration = Date.now() - startTime;
+
+      // Track embedding tokens for cost analysis
+      const estimatedTokens = Math.ceil(text.length / 4); // Rough estimate: ~4 chars per token
+
       if (enableTelemetry && traceContext) {
         recordSpan(
           "embedding-generation",
@@ -83,7 +88,8 @@ export class EmbeddingsService implements IEmbeddingsService {
           },
           {
             vectorSize: averagedVector.length,
-            duration: Date.now() - startTime,
+            duration,
+            estimatedTokens,
           },
           {
             model: this._config.model,

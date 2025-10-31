@@ -1,23 +1,51 @@
 import { useState } from "react";
 import { cn } from "@/styles/utils";
 import type { Message } from "@ai-sdk/react";
-import { Copy, Check } from "lucide-react";
+import { Copy, Check, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { motion } from "framer-motion";
+import { submitFeedback, type FeedbackRating } from "@/utils/feedback.utils";
 
 interface ChatMessageProps {
   message: Message;
   isStreaming?: boolean;
+  traceId?: string;
 }
 
-export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) {
+export function ChatMessage({ message, isStreaming = false, traceId }: ChatMessageProps) {
   const isUser = message.role === "user";
   const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackRating | null>(null);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleFeedback = async (rating: FeedbackRating) => {
+    if (feedbackSubmitting || feedback) return; // Prevent multiple submissions
+
+    setFeedbackSubmitting(true);
+    try {
+      const result = await submitFeedback({
+        messageId: message.id,
+        traceId,
+        rating,
+      });
+
+      if (result.success) {
+        setFeedback(rating);
+        console.log("[ChatMessage] Feedback submitted:", rating);
+      } else {
+        console.error("[ChatMessage] Failed to submit feedback:", result.error);
+      }
+    } catch (error) {
+      console.error("[ChatMessage] Error submitting feedback:", error);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
 
   return (
@@ -52,22 +80,73 @@ export function ChatMessage({ message, isStreaming = false }: ChatMessageProps) 
           })}
         >
           {!isUser && !isStreaming && (
-            <button
-              type="button"
-              onClick={handleCopy}
-              className={cn(
-                "absolute -top-2 -right-2 p-1.5 rounded-lg bg-background border border-border shadow-sm",
-                "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-                "hover:bg-muted",
-              )}
-              title="Copy"
-            >
-              {copied ? (
-                <Check className="h-3 w-3 text-green-600" />
-              ) : (
-                <Copy className="h-3 w-3 text-muted-foreground" />
-              )}
-            </button>
+            <div className="absolute -top-2 -right-2 flex gap-1">
+              {/* Thumbs Down Button */}
+              <button
+                type="button"
+                onClick={() => handleFeedback("thumbs_down")}
+                disabled={!!feedback}
+                className={cn(
+                  "p-1.5 rounded-lg bg-background border border-border shadow-sm",
+                  "opacity-0 group-hover:opacity-100 transition-all duration-200",
+                  "hover:bg-muted disabled:cursor-not-allowed",
+                  feedback === "thumbs_down" &&
+                    "opacity-100 bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800",
+                )}
+                title="Thumbs down"
+              >
+                <ThumbsDown
+                  className={cn(
+                    "h-3 w-3",
+                    feedback === "thumbs_down"
+                      ? "text-red-600 dark:text-red-400 fill-current"
+                      : "text-muted-foreground",
+                  )}
+                />
+              </button>
+
+              {/* Thumbs Up Button */}
+              <button
+                type="button"
+                onClick={() => handleFeedback("thumbs_up")}
+                disabled={!!feedback}
+                className={cn(
+                  "p-1.5 rounded-lg bg-background border border-border shadow-sm",
+                  "opacity-0 group-hover:opacity-100 transition-all duration-200",
+                  "hover:bg-muted disabled:cursor-not-allowed",
+                  feedback === "thumbs_up" &&
+                    "opacity-100 bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
+                )}
+                title="Thumbs up"
+              >
+                <ThumbsUp
+                  className={cn(
+                    "h-3 w-3",
+                    feedback === "thumbs_up"
+                      ? "text-green-600 dark:text-green-400 fill-current"
+                      : "text-muted-foreground",
+                  )}
+                />
+              </button>
+
+              {/* Copy Button */}
+              <button
+                type="button"
+                onClick={handleCopy}
+                className={cn(
+                  "p-1.5 rounded-lg bg-background border border-border shadow-sm",
+                  "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                  "hover:bg-muted",
+                )}
+                title="Copy"
+              >
+                {copied ? (
+                  <Check className="h-3 w-3 text-green-600" />
+                ) : (
+                  <Copy className="h-3 w-3 text-muted-foreground" />
+                )}
+              </button>
+            </div>
           )}
 
           {isUser ? (
