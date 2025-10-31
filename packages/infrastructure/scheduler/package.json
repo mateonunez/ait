@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx --watch src/scheduler.entrypoint.ts",
     "build": "tsc -p ./tsconfig.build.json",
+    "prepare": "pnpm build",
     "clean": "rm -rf dist coverage",
     "start": "node ./dist/scheduler.entrypoint.js",
     "start:manual": "tsx src/scheduler.entrypoint.ts --manual",
