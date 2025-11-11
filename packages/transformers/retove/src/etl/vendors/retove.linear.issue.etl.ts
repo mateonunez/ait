@@ -5,7 +5,7 @@ import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract"
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLLinearIssueDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.linear.descriptor";
-import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<LinearIssueDataTarget> = new ETLLinearIssueDescriptor();
@@ -16,7 +16,7 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, getCollectionNameByVendor("linear"), retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<LinearIssueDataTarget[]> {

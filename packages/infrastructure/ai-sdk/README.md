@@ -260,8 +260,11 @@ DEFAULT_RAG_COLLECTION=ait_embeddings_collection
 |-------|-------------|----------------|-------------|
 | `gemma3:latest` | 4096 | 32,768 | Gemma 3 model (default) |
 | `gpt-oss:20b` | 4096 | 128,000 | OpenAI's open-weight 20B model |
+| `gpt-oss:20b-cloud` | 4096 | 128,000 | OpenAI's open-weight 20B model (cloud) |
 | `qwen3:latest` | 4096 | 32,768 | Qwen3 general-purpose |
 | `deepseek-r1:latest` | 4096 | 32,768 | DeepSeek R1 reasoning |
+| `kimi-k2-thinking:cloud` | 4096 | 128,000 | Kimi K2 Thinking for advanced reasoning |
+| `granite4:latest` | 4096 | 32,768 | Granite 4 general-purpose |
 
 #### Embedding Models
 
@@ -536,6 +539,151 @@ Key differences:
 - Streaming returns async iterators directly
 - Tools use AI SDK's native tool system
 - Better TypeScript types throughout
+
+## Multi-Collection RAG Architecture
+
+AIt uses a sophisticated multi-collection RAG system that organizes embeddings by domain/vendor for better semantic clarity and routing.
+
+### Overview
+
+Instead of storing all embeddings in a single collection, data is separated into domain-specific collections:
+
+- **`ait_spotify_collection`**: Music tracks, artists, playlists, albums
+- **`ait_github_collection`**: Repositories, pull requests
+- **`ait_linear_collection`**: Issues and tasks
+- **`ait_x_collection`**: Tweets and social media
+- **`ait_general_collection`**: General-purpose data
+
+### Query Processing Pipeline
+
+```
+User Query
+    ↓
+Query Planner (generates variants)
+    ↓
+Collection Router (LLM-powered)
+    ↓
+Parallel Multi-Collection Search
+    ↓
+Weighted Rank Fusion
+    ↓
+Collection-Specific Reranking
+    ↓
+Response
+```
+
+### Usage Example
+
+```typescript
+import {
+  CollectionRouterService,
+  MultiCollectionProvider,
+  WeightedRankFusionService,
+  getGenerativeModel,
+} from '@ait/ai-sdk';
+
+// 1. Route query to relevant collections
+const router = new CollectionRouterService(getGenerativeModel());
+const routing = await router.route("Show me my favorite tracks from last week");
+// Returns: [{ vendor: "spotify", weight: 0.9 }]
+
+// 2. Search across selected collections in parallel
+const provider = new MultiCollectionProvider();
+const results = await provider.searchAcrossCollections(
+  query,
+  routing.collections,
+  50
+);
+
+// 3. Fuse results with weighted scoring
+const fusion = new WeightedRankFusionService();
+const fusedResults = fusion.fuseResults(
+  results.results.map(r => ({
+    vendor: r.vendor,
+    documents: r.documents.map(d => [d, d.metadata.score || 0]),
+    collectionWeight: routing.collections.find(c => c.vendor === r.vendor)?.weight || 1.0,
+  })),
+  20
+);
+```
+
+### Adding New Collections
+
+1. Define collection config in `src/config/collections.config.ts`:
+
+```typescript
+const NEW_COLLECTION: CollectionConfig = {
+  vendor: "new_vendor",
+  name: "ait_new_vendor_collection",
+  description: "Your collection description",
+  entityTypes: ["entity_type_1"],
+  defaultWeight: 1.0,
+  enabled: true,
+};
+```
+
+2. Create ETL to populate collection:
+
+```typescript
+import { RetoveBaseETLAbstract, getCollectionNameByVendor } from '@ait/ai-sdk';
+
+export class RetoveNewVendorETL extends RetoveBaseETLAbstract {
+  constructor(pgClient, qdrantClient) {
+    super(pgClient, qdrantClient, getCollectionNameByVendor("new_vendor"));
+  }
+  // Implement extract, getTextForEmbedding, getPayload
+}
+```
+
+3. Run ETL to populate:
+
+```typescript
+const etl = new RetoveNewVendorETL(pgClient, qdrantClient);
+await etl.run(10_000);
+```
+
+### Pipeline Architecture
+
+Build composable RAG pipelines using the pipeline framework:
+
+```typescript
+import { PipelineBuilder, PipelineStageAbstract } from '@ait/ai-sdk';
+
+// Define custom stages
+class QueryPlannerStage extends PipelineStageAbstract<string, QueryPlan> {
+  name = "query-planner";
+  
+  protected async process(query: string, context: PipelineContext) {
+    return await this.queryPlanner.planQuery(query);
+  }
+}
+
+class CollectionRouterStage extends PipelineStageAbstract<QueryPlan, Route> {
+  name = "collection-router";
+  
+  protected async process(plan: QueryPlan, context: PipelineContext) {
+    return await this.router.route(plan.primaryQuery);
+  }
+}
+
+// Build and execute pipeline
+const pipeline = PipelineBuilder.create()
+  .addStage(new QueryPlannerStage(queryPlanner))
+  .addStage(new CollectionRouterStage(router))
+  .addStage(new SearchStage(provider))
+  .addStage(new FusionStage(fusion))
+  .build();
+
+const result = await pipeline.execute("user query", { traceContext });
+```
+
+**Benefits:**
+- **Domain Specialization**: Each collection focuses on specific data types
+- **Reduced Noise**: No semantic pollution between unrelated entities
+- **Intelligent Routing**: LLM selects relevant collections dynamically
+- **Weighted Fusion**: Results combined with configurable importance weights
+- **Parallel Search**: Multiple collections queried simultaneously
+- **Composable Pipelines**: Build custom RAG workflows with reusable stages
 
 ## License
 

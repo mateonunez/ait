@@ -57,7 +57,11 @@ export type SpanType =
   | "query_planning"
   | "reranking"
   | "conversation"
-  | "context_preparation";
+  | "context_preparation"
+  | "pipeline"
+  | "routing"
+  | "retrieval"
+  | "fusion";
 
 export interface SpanInput {
   prompt?: string;

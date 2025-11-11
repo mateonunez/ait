@@ -50,6 +50,86 @@ export class QdrantProvider {
     this._client = getQdrantClient();
   }
 
+  /**
+   * Build a Qdrant filter that combines entity type matching with entity-specific date field filtering.
+   * This ensures that for each entity type, only its relevant date field is checked (e.g., playedAt for recently_played).
+   */
+  private _buildQdrantFilter(filter?: {
+    types?: string[];
+    timeRange?: { from?: string; to?: string };
+  }): any | undefined {
+    const must: any[] = [];
+    const should: any[] = [];
+
+    // Entity-type-specific date field mapping
+    const entityDateFields: Record<string, string> = {
+      recently_played: "playedAt",
+      tweet: "createdAt",
+      pull_request: "mergedAt",
+      repository: "pushedAt",
+      issue: "updatedAt",
+      track: "createdAt",
+      artist: "createdAt",
+      playlist: "createdAt",
+      album: "createdAt",
+    };
+
+    if (
+      filter?.timeRange &&
+      (filter.timeRange.from || filter.timeRange.to) &&
+      filter?.types &&
+      filter.types.length > 0
+    ) {
+      // Build type-specific date filters: match documents where type AND its specific date field are both in range
+      const { from, to } = filter.timeRange;
+      const range: any = {};
+      if (from) range.gte = from;
+      if (to) range.lte = to;
+
+      const typeSpecificConditions: any[] = [];
+      for (const type of filter.types) {
+        const dateField = entityDateFields[type] || "createdAt";
+        typeSpecificConditions.push({
+          must: [
+            { key: "metadata.__type", match: { value: type } },
+            { key: `metadata.${dateField}`, range },
+          ],
+        });
+      }
+
+      // At least one type+date combination must match (OR of all type-specific conditions)
+      must.push({ should: typeSpecificConditions });
+    } else {
+      // No date filter or no type filter - use simpler logic
+      if (filter?.types && filter.types.length > 0) {
+        if (filter.types.length === 1) {
+          must.push({ key: "metadata.__type", match: { value: filter.types[0] } });
+        } else {
+          should.push(...filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })));
+        }
+      }
+
+      if (filter?.timeRange && (filter.timeRange.from || filter.timeRange.to)) {
+        const { from, to } = filter.timeRange;
+        const fallbackFields = ["createdAt", "playedAt", "updatedAt", "mergedAt", "pushedAt"];
+        const range: any = {};
+        if (from) range.gte = from;
+        if (to) range.lte = to;
+        const timeShould = fallbackFields.map((f) => ({ key: `metadata.${f}`, range }));
+        must.push({ should: timeShould });
+      }
+    }
+
+    if (must.length > 0 || should.length > 0) {
+      const qdrantFilter: any = {};
+      if (must.length > 0) qdrantFilter.must = must;
+      if (should.length > 0) qdrantFilter.should = should;
+      return qdrantFilter;
+    }
+
+    return undefined;
+  }
+
   async similaritySearch(
     query: string,
     k: number,
@@ -89,33 +169,7 @@ export class QdrantProvider {
     k: number,
     filter?: { types?: string[]; timeRange?: { from?: string; to?: string } },
   ): Promise<Document<BaseMetadata>[]> {
-    let qdrantFilter: any;
-    const must: any[] = [];
-    const should: any[] = [];
-
-    if (filter?.types && filter.types.length > 0) {
-      if (filter.types.length === 1) {
-        must.push({ key: "metadata.__type", match: { value: filter.types[0] } });
-      } else {
-        should.push(...filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })));
-      }
-    }
-
-    if (filter?.timeRange && (filter.timeRange.from || filter.timeRange.to)) {
-      const { from, to } = filter.timeRange;
-      const fields = ["createdAt", "playedAt", "updatedAt", "mergedAt", "closedAt", "publishedAt", "timestamp", "date"];
-      const range: any = {};
-      if (from) range.gte = from;
-      if (to) range.lte = to;
-      const timeShould = fields.map((f) => ({ key: `metadata.${f}`, range }));
-      must.push({ should: timeShould });
-    }
-
-    if (must.length > 0 || should.length > 0) {
-      qdrantFilter = {};
-      if (must.length > 0) qdrantFilter.must = must;
-      if (should.length > 0) qdrantFilter.should = should;
-    }
+    const qdrantFilter = this._buildQdrantFilter(filter);
 
     const searchResult = await this._client.search(this._config.collectionName, {
       vector,
@@ -145,35 +199,17 @@ export class QdrantProvider {
       traceContext: options?.traceContext,
     });
 
-    let qdrantFilter: any;
-    const must: any[] = [];
-    const should: any[] = [];
-
-    if (filter?.types && filter.types.length > 0) {
-      if (filter.types.length === 1) {
-        must.push({ key: "metadata.__type", match: { value: filter.types[0] } });
-      } else {
-        should.push(...filter.types.map((type) => ({ key: "metadata.__type", match: { value: type } })));
-      }
-    }
-
-    if (filter?.timeRange && (filter.timeRange.from || filter.timeRange.to)) {
-      const { from, to } = filter.timeRange;
-      const fields = ["createdAt", "playedAt", "updatedAt", "mergedAt", "closedAt", "publishedAt", "timestamp", "date"];
-      const range: any = {};
-      if (from) range.gte = from;
-      if (to) range.lte = to;
-      const timeShould = fields.map((f) => ({ key: `metadata.${f}`, range }));
-      must.push({ should: timeShould });
-    }
-
-    if (must.length > 0 || should.length > 0) {
-      qdrantFilter = {};
-      if (must.length > 0) qdrantFilter.must = must;
-      if (should.length > 0) qdrantFilter.should = should;
-    }
+    const qdrantFilter = this._buildQdrantFilter(filter);
 
     const effectiveThreshold = scoreThreshold ?? 0.2;
+
+    // Log the exact Qdrant filter for debugging
+    if (qdrantFilter) {
+      console.debug("Qdrant filter being applied", {
+        collection: this._config.collectionName,
+        filter: JSON.stringify(qdrantFilter, null, 2),
+      });
+    }
 
     const searchResult = await this._client.search(this._config.collectionName, {
       vector: queryVector,

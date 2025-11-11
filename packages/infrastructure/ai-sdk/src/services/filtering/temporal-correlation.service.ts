@@ -87,19 +87,44 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
   }
 
   private _getTimestampFromMetadata(metadata: BaseMetadata): Date | null {
-    // Try different timestamp fields in order of preference
-    const timestampFields = [
+    // Entity-type-specific primary timestamp fields (matches Qdrant filter logic)
+    const entityDateFields: Record<string, string> = {
+      recently_played: "playedAt",
+      tweet: "createdAt",
+      pull_request: "mergedAt",
+      repository: "pushedAt",
+      issue: "updatedAt",
+      track: "createdAt",
+      artist: "createdAt",
+      playlist: "createdAt",
+      album: "createdAt",
+    };
+
+    const entityType = metadata.__type;
+
+    // Try entity-specific field first
+    if (entityType && entityDateFields[entityType]) {
+      const primaryField = entityDateFields[entityType];
+      const value = (metadata as any)[primaryField];
+      if (value) {
+        const date = this._parseDate(value);
+        if (date) return date;
+      }
+    }
+
+    // Fallback: try common timestamp fields
+    const fallbackFields = [
       "createdAt",
       "playedAt",
       "updatedAt",
       "mergedAt",
+      "pushedAt",
       "closedAt",
       "publishedAt",
       "timestamp",
       "date",
     ];
-
-    for (const field of timestampFields) {
+    for (const field of fallbackFields) {
       const value = (metadata as any)[field];
       if (value) {
         const date = this._parseDate(value);

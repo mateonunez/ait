@@ -1,5 +1,4 @@
 import {
-  createAllConnectorTools,
   GenerationModels,
   getTextGenerationService,
   initAItClient,
@@ -7,10 +6,7 @@ import {
   type TextGenerationService,
   type StreamEvent,
   STREAM_EVENT,
-  isTextChunk,
-  isMetadataChunk,
-  isCompletionData,
-  isErrorEvent,
+  createAllConnectorTools,
 } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
@@ -64,6 +60,23 @@ console.log("[Gateway] Telemetry configuration:", {
   hasSecretKey: !!telemetryConfig.secretKey,
   baseURL: telemetryConfig.baseURL,
 });
+
+// Type guard functions for StreamEvent
+function isTextChunk(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.TEXT } {
+  return event.type === STREAM_EVENT.TEXT;
+}
+
+function isMetadataChunk(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.METADATA } {
+  return event.type === STREAM_EVENT.METADATA;
+}
+
+function isCompletionData(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.DATA } {
+  return event.type === STREAM_EVENT.DATA;
+}
+
+function isErrorEvent(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.ERROR } {
+  return event.type === STREAM_EVENT.ERROR;
+}
 
 // Global message-to-trace mapping for feedback correlation
 // In production, this should be stored in a database or cache

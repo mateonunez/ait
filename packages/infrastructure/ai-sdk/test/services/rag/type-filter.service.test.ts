@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { TypeFilterService } from "../../../src/services/rag/type-filter.service";
+import { TypeFilterService } from "../../../src/services/filtering/type-filter.service";
 
 describe("TypeFilterService", () => {
   let service: TypeFilterService;

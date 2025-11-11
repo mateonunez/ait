@@ -1,5 +1,8 @@
 // Re-export all types for convenient access
 
+// Config types
+export * from "../config/collections.config";
+
 // Constants
 export * from "../constants/stream.constants";
 
@@ -22,3 +25,5 @@ export * from "./tools";
 export * from "./config";
 export * from "./text-generation";
 export * from "./telemetry";
+export * from "./collections";
+export * from "./rag";

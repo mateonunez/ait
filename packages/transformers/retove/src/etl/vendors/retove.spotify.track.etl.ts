@@ -2,10 +2,10 @@ import type { getPostgresClient, SpotifyTrackDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { spotifyTracks } from "@ait/postgres";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import { RetoveBaseETLAbstract, type BaseVectorPoint, type RetryOptions } from "../retove.base-etl.abstract";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
 
 export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
@@ -16,7 +16,7 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<SpotifyTrackDataTarget[]> {

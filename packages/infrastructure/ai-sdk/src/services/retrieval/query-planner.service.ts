@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { QueryPlannerConfig, QueryPlanResult } from "../../types/rag";
 import { getAItClient } from "../../client/ai-sdk.client";
-import { QueryHeuristicService, type IQueryHeuristicService } from "./query-heuristic.service";
-import { type QueryIntent, QueryIntentService, type IQueryIntentService } from "./query-intent.service";
+import { QueryHeuristicService, type IQueryHeuristicService } from "../routing/query-heuristic.service";
+import { type QueryIntent, QueryIntentService, type IQueryIntentService } from "../routing/query-intent.service";
 import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 

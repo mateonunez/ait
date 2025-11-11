@@ -23,6 +23,7 @@
     "@ait/core": "workspace:*",
     "@ait/qdrant": "workspace:*",
     "ai": "^5.0.82",
+    "chrono-node": "^2.7.7",
     "cohere-ai": "^7.19.0",
     "dotenv": "^17.2.3",
     "langfuse": "^3.30.3",

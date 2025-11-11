@@ -417,45 +417,46 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
 
         const feedbackService = getFeedbackService();
         const stats = feedbackService.getFeedbackStats(windowMs);
-        const problematicTraces = feedbackService.getProblematicTraces(5, windowMs);
-        const trend = feedbackService.getQualityTrend(60 * 60 * 1000, 24 * 60 * 60 * 1000); // 1-hour buckets, 24-hour window
+        const trend = feedbackService.getQualityTrend(60 * 60 * 1000, windowMs); // 1-hour buckets
+        const problematicTraces = feedbackService.getProblematicTraces(10);
         const isDegrading = feedbackService.isQualityDegrading();
+
+        // Determine health status based on quality score
+        const getHealthStatus = (score: number): "excellent" | "good" | "fair" | "poor" => {
+          if (score >= 85) return "excellent";
+          if (score >= 70) return "good";
+          if (score >= 50) return "fair";
+          return "poor";
+        };
 
         return reply.send({
           timestamp: new Date().toISOString(),
           window: `${windowMinutes} minutes`,
-          qualityScore: Number.parseFloat(stats.qualityScore.toFixed(1)),
+          qualityScore: stats.qualityScore,
           feedback: {
             total: stats.total,
             thumbsUp: stats.thumbsUp,
             thumbsDown: stats.thumbsDown,
             neutral: stats.neutral,
-            thumbsUpRate: `${stats.thumbsUpRate.toFixed(1)}%`,
+            thumbsUpRate: `${stats.thumbsUpRate.toFixed(2)}%`,
           },
           health: {
             isDegrading,
-            status:
-              stats.qualityScore >= 75
-                ? "excellent"
-                : stats.qualityScore >= 60
-                  ? "good"
-                  : stats.qualityScore >= 40
-                    ? "fair"
-                    : "poor",
+            status: getHealthStatus(stats.qualityScore),
           },
-          trend: trend.map((t) => ({
-            timestamp: new Date(t.timestamp).toISOString(),
-            score: Number.parseFloat(t.score.toFixed(1)),
-            totalFeedback: t.totalFeedback,
-            thumbsUp: t.thumbsUpCount,
-            thumbsDown: t.thumbsDownCount,
+          trend: trend.map((point) => ({
+            timestamp: new Date(point.timestamp).toISOString(),
+            score: point.score,
+            totalFeedback: point.totalFeedback,
+            thumbsUp: point.thumbsUpCount,
+            thumbsDown: point.thumbsDownCount,
           })),
           problematicTraces: problematicTraces.map((trace) => ({
             traceId: trace.traceId,
             messageId: trace.messageId,
             rating: trace.rating,
-            comment: trace.comment,
             timestamp: new Date(trace.timestamp).toISOString(),
+            comment: trace.comment,
             userId: trace.userId,
           })),
         });

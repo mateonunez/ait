@@ -9,6 +9,7 @@ import { RetoveSpotifyRecentlyPlayedETL } from "../../etl/vendors/retove.spotify
 import { RetoveSpotifyArtistETL } from "../../etl/vendors/retove.spotify.artist.etl";
 import { RetoveSpotifyPlaylistETL } from "../../etl/vendors/retove.spotify.playlist.etl";
 import { RetoveSpotifyAlbumETL } from "../../etl/vendors/retove.spotify.album.etl";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export const SpotifyETLs = {
   track: "RetoveSpotifyTrackETL",
@@ -37,10 +38,11 @@ export async function runSpotifyTrackETL(
   qdrantClient: qdrant.QdrantClient,
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
+  const collection = getCollectionNameByVendor("spotify");
   const etl = new RetoveSpotifyTrackETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveSpotifyTrackETL with limit of ${LIMIT}...`);
+  console.log(`🔍 Running RetoveSpotifyTrackETL → ${collection} with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log("✅ RetoveSpotifyTrackETL process completed successfully!");
+  console.log(`✅ RetoveSpotifyTrackETL → ${collection} completed successfully!`);
 }
 
 export async function runSpotifyArtistETL(
@@ -87,11 +89,12 @@ export async function runGitHubRepositoryETL(
   qdrantClient: qdrant.QdrantClient,
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
+  const collection = getCollectionNameByVendor("github");
   const githubETL = new RetoveGitHubRepositoryETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveGitHubRepositoryETL with limit of ${LIMIT}...`);
+  console.log(`🔍 Running RetoveGitHubRepositoryETL → ${collection} with limit of ${LIMIT}...`);
   await githubETL.run(LIMIT);
-  console.log("✅ RetoveGitHubRepositoryETL process completed successfully!");
+  console.log(`✅ RetoveGitHubRepositoryETL → ${collection} completed successfully!`);
 }
 
 export async function runGitHubPullRequestETL(
@@ -105,17 +108,19 @@ export async function runGitHubPullRequestETL(
 }
 
 export async function runXETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
+  const collection = getCollectionNameByVendor("x");
   const xETL = new RetoveXTweetETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveXTweetETL with limit of ${LIMIT}...`);
+  console.log(`🔍 Running RetoveXTweetETL → ${collection} with limit of ${LIMIT}...`);
   await xETL.run(LIMIT);
-  console.log("✅ RetoveXTweetETL process completed successfully!");
+  console.log(`✅ RetoveXTweetETL → ${collection} completed successfully!`);
 }
 
 export async function runLinearETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
+  const collection = getCollectionNameByVendor("linear");
   const linearETL = new RetoveLinearIssueETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveLinearIssueETL with limit of ${LIMIT}...`);
+  console.log(`🔍 Running RetoveLinearIssueETL → ${collection} with limit of ${LIMIT}...`);
   await linearETL.run(LIMIT);
-  console.log("✅ RetoveLinearIssueETL process completed successfully!");
+  console.log(`✅ RetoveLinearIssueETL → ${collection} completed successfully!`);
 }

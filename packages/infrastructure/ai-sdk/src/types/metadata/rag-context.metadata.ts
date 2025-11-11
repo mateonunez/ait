@@ -17,10 +17,11 @@ export interface DocumentSource {
 export interface RAGContextMetadata {
   documents: RetrievedDocument[];
   query: string;
-  fallbackUsed: boolean;
+  fallbackUsed?: boolean;
   fallbackReason?: string;
-  timestamp: number;
+  timestamp?: number;
   usedTemporalCorrelation?: boolean;
   contextLength: number;
   retrievalTimeMs?: number;
+  documentCount?: number;
 }

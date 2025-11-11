@@ -17,16 +17,13 @@ describe("AIt Personality Integration (AI SDK)", () => {
       generation: { model: GenerationModels.GEMMA_3, temperature: 0.7 },
       embeddings: { model: EmbeddingModels.MXBAI_EMBED_LARGE },
       rag: {
-        collection: "ait_embeddings_collection",
-        strategy: "multi-query",
+        strategy: "multi-collection",
         maxDocs: 100,
       },
       logger: true,
     });
 
-    service = new TextGenerationService({
-      collectionName: "ait_embeddings_collection",
-    });
+    service = new TextGenerationService();
   });
 
   it.only(

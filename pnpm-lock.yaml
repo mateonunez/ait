@@ -142,6 +142,9 @@ importers:
       ai:
         specifier: ^5.0.82
         version: 5.0.82(zod@4.1.12)
+      chrono-node:
+        specifier: ^2.7.7
+        version: 2.9.0
       cohere-ai:
         specifier: ^7.19.0
         version: 7.19.0
@@ -2586,6 +2589,10 @@ packages:
   chownr@3.0.0:
     resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
     engines: {node: '>=18'}
+
+  chrono-node@2.9.0:
+    resolution: {integrity: sha512-glI4YY2Jy6JII5l3d5FN6rcrIbKSQqKPhWsIRYPK2IK8Mm4Q1ZZFdYIaDqglUNf7gNwG+kWIzTn0omzzE0VkvQ==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   class-variance-authority@0.7.1:
     resolution: {integrity: sha512-Ka+9Trutv7G8M6WT6SeiRWz792K5qEqIGEGzXKhAE6xOWAY6pPH8U+9IY3oCMv6kqTmLsv7Xh/2w2RigkePMsg==}
@@ -7262,6 +7269,8 @@ snapshots:
       lodash-es: 4.17.21
 
   chownr@3.0.0: {}
+
+  chrono-node@2.9.0: {}
 
   class-variance-authority@0.7.1:
     dependencies:

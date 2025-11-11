@@ -12,7 +12,7 @@ import type {
   SpotifyRecentlyPlayedEntity,
 } from "@ait/connectors";
 import type { GitHubPullRequestEntity } from "@ait/connectors";
-import type { TemporalCluster } from "./temporal-correlation.service";
+import type { TemporalCluster } from "../filtering/temporal-correlation.service";
 
 type EntityType =
   | "track"

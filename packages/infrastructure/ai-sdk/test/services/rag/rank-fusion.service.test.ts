@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { RankFusionService } from "../../../src/services/rag/rank-fusion.service";
+import { RankFusionService } from "../../../src/services/ranking/rank-fusion.service";
 import type { Document, BaseMetadata } from "../../../src/types/documents";
 import type { QueryResult } from "../../../src/types/rag";
 

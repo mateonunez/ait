@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { ConversationManagerService } from "../../../src/services/text-generation/conversation-manager.service";
+import { ConversationManagerService } from "../../../src/services/generation/conversation-manager.service";
 import type { ChatMessage } from "../../../src/types/chat";
 
 describe("ConversationManagerService", () => {
