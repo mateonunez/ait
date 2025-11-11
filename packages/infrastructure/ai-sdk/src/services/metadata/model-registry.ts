@@ -87,6 +87,16 @@ export const MODEL_REGISTRY = new Map<string, ModelMetadata>([
     "gemma3:latest",
     createModelMetadata("gemma3:latest", "Gemma 3 Latest", "ollama", GENERATION_MODELS[GenerationModels.GEMMA_3]),
   ],
+
+  [
+    "kimi-k2-thinking:cloud",
+    createModelMetadata(
+      "kimi-k2-thinking:cloud",
+      "Kimi K2 Thinking (Cloud)",
+      "ollama-cloud",
+      GENERATION_MODELS[GenerationModels.KIMI_K2_THINKING_CLOUD],
+    ),
+  ],
 ]);
 
 export function getModelMetadata(modelId: string): ModelMetadata | null {

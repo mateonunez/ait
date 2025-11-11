@@ -12,6 +12,7 @@ import {
   type GenerationModelName,
   type EmbeddingModelName,
 } from "../config/models.config";
+import { getPreset, mergePresetWithOverrides, type PresetName } from "../config/presets.config";
 import type { ClientConfig } from "../types/config";
 import type {
   GenerationModel,
@@ -22,18 +23,12 @@ import type {
 } from "../types/models";
 import type { OllamaTool } from "../types/providers/ollama.types";
 import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
+import type { TextGenerationService } from "../services/text-generation/text-generation.service";
 
 dotenv.config();
 
-// ============================================================================
-// TYPES & INTERFACES
-// ============================================================================
-
 export type AItClientConfig = ClientConfig;
 
-/**
- * Options for generating free-form text
- */
 export interface LlmGenerateTextOptions {
   prompt: string;
   messages?: ModelGenerateOptions["messages"];
@@ -43,9 +38,6 @@ export interface LlmGenerateTextOptions {
   tools?: OllamaTool[];
 }
 
-/**
- * Options for streaming text generation
- */
 export interface LlmStreamOptions {
   prompt: string;
   temperature?: number;
@@ -54,9 +46,6 @@ export interface LlmStreamOptions {
   tools?: OllamaTool[];
 }
 
-/**
- * Options for structured JSON generation with schema validation
- */
 export interface LlmStructuredGenerationOptions<T> {
   prompt: string;
   schema: ZodType<T>;
@@ -65,75 +54,29 @@ export interface LlmStructuredGenerationOptions<T> {
   maxRetries?: number;
 }
 
-/**
- * Main AI Client interface
- * Provides unified access to generation models, embeddings, and helper methods
- */
 export interface AItClient {
-  // Configuration
-  /** Client configuration */
   config: Required<AItClientConfig>;
-
-  // Model instances
-  /** Generation model instance */
   generationModel: GenerationModel;
-  /** Embeddings model instance */
   embeddingsModel: EmbeddingsModel;
-
-  // Model configuration
-  /** Generation model configuration */
   generationModelConfig: ModelSpec;
-  /** Embedding model configuration */
   embeddingModelConfig: ModelSpec;
-
-  // Generation methods
-  /**
-   * Generate free-form text using the configured model
-   * Uses the underlying Ollama provider for direct generation
-   */
   generateText(options: LlmGenerateTextOptions): Promise<ModelGenerateResult>;
-
-  /**
-   * Stream text using the configured model
-   * Returns an async generator for real-time token streaming
-   */
   streamText(options: LlmStreamOptions): AsyncGenerator<string>;
-
-  /**
-   * Generate structured JSON adhering to the provided Zod schema
-   * Includes automatic retry logic and repair mechanisms for malformed JSON
-   */
   generateStructured<T>(options: LlmStructuredGenerationOptions<T>): Promise<T>;
 }
 
-// ============================================================================
-// CONSTANTS
-// ============================================================================
-
 export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-export const DEFAULT_RAG_COLLECTION = process.env.DEFAULT_RAG_COLLECTION || "ait_embeddings_collection";
-
 const DEFAULT_JSON_INSTRUCTION =
   "IMPORTANT: Respond ONLY with valid JSON that matches the expected schema. Do not include explanations.";
 const DEFAULT_STRUCTURED_MAX_RETRIES = 2;
 
 type StructuredModel = ReturnType<ReturnType<typeof createOllama>>;
-
-// ============================================================================
-// INTERNAL STATE
-// ============================================================================
+type TextGenerationServiceType = typeof TextGenerationService;
 
 let _clientInstance: AItClient | null = null;
-let _textGenerationServiceInstance: any = null; // TextGenerationService - typed as any to avoid circular dependency
+let _textGenerationServiceInstance: InstanceType<TextGenerationServiceType> | null = null;
 let _config: Required<AItClientConfig>;
 
-// ============================================================================
-// INTERNAL HELPERS - Structured Generation Utilities
-// ============================================================================
-
-/**
- * Augments a prompt with JSON instruction if not already present
- */
 function augmentPrompt(prompt: string, customInstruction?: string): string {
   if (prompt.includes(DEFAULT_JSON_INSTRUCTION)) {
     return prompt;
@@ -146,9 +89,6 @@ function augmentPrompt(prompt: string, customInstruction?: string): string {
   return [prompt.trim(), customInstruction ?? DEFAULT_JSON_INSTRUCTION].join("\n\n");
 }
 
-/**
- * Attempts to repair malformed JSON responses by extracting and validating JSON
- */
 async function attemptStructuredRepair<T>(
   model: StructuredModel,
   prompt: string,
@@ -179,9 +119,6 @@ async function attemptStructuredRepair<T>(
   }
 }
 
-/**
- * Extracts the first JSON object from text (handles markdown code blocks, etc.)
- */
 function extractJson(text: string): string | null {
   const firstBrace = text.indexOf("{");
   const lastBrace = text.lastIndexOf("}");
@@ -194,17 +131,11 @@ function extractJson(text: string): string | null {
   return candidate.trim().length ? candidate : null;
 }
 
-/**
- * Calculates exponential backoff delay for retries
- */
 function nextDelay(attempt: number, baseDelay?: number): number {
   const delay = baseDelay ?? 500;
   return delay * Math.max(1, attempt + 1);
 }
 
-/**
- * Async wait utility
- */
 async function wait(ms?: number): Promise<void> {
   if (!ms || ms <= 0) {
     return;
@@ -212,15 +143,7 @@ async function wait(ms?: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ============================================================================
-// CLIENT BUILDER
-// ============================================================================
-
-/**
- * Builds and initializes the AI client with all necessary models and methods
- */
 function buildAItClient(config: Required<AItClientConfig>): AItClient {
-  // Model configuration
   const generationModelName = config.generation.model;
   const embeddingsModelName = config.embeddings.model;
 
@@ -237,7 +160,6 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
     logger.info(`[AItClient] Initializing with embeddings model: ${embeddingsModelName}`);
   }
 
-  // Initialize Ollama providers
   const ollama = new OllamaProvider({
     baseURL: config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL,
   });
@@ -245,13 +167,11 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
   const generationModel = ollama.createTextModel(String(generationModelName));
   const embeddingsModel = ollama.createEmbeddingsModel(String(embeddingsModelName));
 
-  // Initialize structured generation provider (ai SDK)
   const rawBaseURL = config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL;
   const apiBaseURL = rawBaseURL.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
   const structuredProvider = createOllama({ baseURL: apiBaseURL });
   const structuredModel = structuredProvider(String(generationModelName));
 
-  // Build client instance with all methods
   const clientInstance: AItClient = {
     config,
     generationModel,
@@ -259,7 +179,6 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
     generationModelConfig,
     embeddingModelConfig,
 
-    // Generate free-form text
     async generateText(options: LlmGenerateTextOptions): Promise<ModelGenerateResult> {
       const generateOptions: ModelGenerateOptions = {
         prompt: options.prompt,
@@ -273,7 +192,6 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
       return generationModel.doGenerate(generateOptions);
     },
 
-    // Stream text generation
     async *streamText(options: LlmStreamOptions): AsyncGenerator<string> {
       const streamOptions: ModelStreamOptions = {
         prompt: options.prompt,
@@ -289,7 +207,6 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
       }
     },
 
-    // Generate structured JSON with retry and repair
     async generateStructured<T>(options: LlmStructuredGenerationOptions<T>): Promise<T> {
       const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
       const configuredRetries = config.textGeneration.retryConfig?.maxRetries ?? DEFAULT_STRUCTURED_MAX_RETRIES;
@@ -323,7 +240,6 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
             break;
           }
 
-          // Attempt repair before retrying
           try {
             const repaired = await attemptStructuredRepair(structuredModel, prompt, options.schema, baseTemperature);
             if (repaired.success) {
@@ -350,85 +266,84 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
   return clientInstance;
 }
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
+export interface InitOptions {
+  preset?: PresetName;
+  overrides?: Partial<ClientConfig>;
+}
 
-/**
- * Initialize the AI client with optional configuration overrides
- * Must be called before using getAItClient()
- */
-export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): void {
-  const generationModelConfig = getGenerationModel();
-  const embeddingModelConfig = getEmbeddingModel();
+export function initAItClient(options: InitOptions | Partial<AItClientConfig> = {}): void {
+  let finalConfig: Required<AItClientConfig>;
 
-  _config = {
-    generation: {
-      model: generationModelConfig.name as GenerationModelName,
-      temperature: generationModelConfig.temperature || 0.7,
-      topP: generationModelConfig.topP || 0.9,
-      topK: generationModelConfig.topK,
-      frequencyPenalty: generationModelConfig.frequencyPenalty,
-      presencePenalty: generationModelConfig.presencePenalty,
-      ...configOverrides.generation,
-    },
-    embeddings: {
-      model: embeddingModelConfig.name as EmbeddingModelName,
-      vectorSize: embeddingModelConfig.vectorSize,
-      ...configOverrides.embeddings,
-    },
-    rag: {
-      collection: DEFAULT_RAG_COLLECTION,
-      strategy: "multi-query",
-      maxDocs: 100,
-      ...configOverrides.rag,
-    },
-    textGeneration: {
-      multipleQueryPlannerConfig: {
-        maxDocs: 100,
-        queriesCount: 12,
-        concurrency: 4,
-        ...configOverrides.textGeneration?.multipleQueryPlannerConfig,
+  if ("preset" in options && options.preset) {
+    finalConfig = mergePresetWithOverrides(options.preset, options.overrides);
+  } else {
+    const presetConfig = getPreset("rag-optimized");
+    const generationModelConfig = getGenerationModel();
+    const embeddingModelConfig = getEmbeddingModel();
+
+    finalConfig = {
+      generation: {
+        model: generationModelConfig.name as GenerationModelName,
+        temperature: generationModelConfig.temperature || 0.7,
+        topP: generationModelConfig.topP || 0.9,
+        topK: generationModelConfig.topK,
+        frequencyPenalty: generationModelConfig.frequencyPenalty,
+        presencePenalty: generationModelConfig.presencePenalty,
+        ...(options as Partial<ClientConfig>).generation,
       },
-      conversationConfig: {
-        maxRecentMessages: 10,
-        maxHistoryTokens: 4000,
-        enableSummarization: false,
-        ...configOverrides.textGeneration?.conversationConfig,
+      embeddings: {
+        model: embeddingModelConfig.name as EmbeddingModelName,
+        vectorSize: embeddingModelConfig.vectorSize,
+        ...(options as Partial<ClientConfig>).embeddings,
       },
-      contextPreparationConfig: {
-        enableRAG: true,
-        cacheDurationMs: 0, // Disable caching by default
-        topicSimilarityThreshold: 0.95,
-        ...configOverrides.textGeneration?.contextPreparationConfig,
+      rag: {
+        ...presetConfig.rag,
+        ...(options as Partial<ClientConfig>).rag,
+        collectionRouting: {
+          ...presetConfig.rag.collectionRouting,
+          ...((options as Partial<ClientConfig>).rag?.collectionRouting || {}),
+        },
       },
-      toolExecutionConfig: {
-        maxRounds: 2,
-        toolTimeoutMs: 30000,
-        ...configOverrides.textGeneration?.toolExecutionConfig,
+      textGeneration: {
+        multipleQueryPlannerConfig: {
+          ...presetConfig.textGeneration.multipleQueryPlannerConfig,
+          ...((options as Partial<ClientConfig>).textGeneration?.multipleQueryPlannerConfig || {}),
+        },
+        conversationConfig: {
+          ...presetConfig.textGeneration.conversationConfig,
+          ...((options as Partial<ClientConfig>).textGeneration?.conversationConfig || {}),
+        },
+        contextPreparationConfig: {
+          ...presetConfig.textGeneration.contextPreparationConfig,
+          ...((options as Partial<ClientConfig>).textGeneration?.contextPreparationConfig || {}),
+        },
+        toolExecutionConfig: {
+          ...presetConfig.textGeneration.toolExecutionConfig,
+          ...((options as Partial<ClientConfig>).textGeneration?.toolExecutionConfig || {}),
+        },
+        retryConfig: {
+          ...presetConfig.textGeneration.retryConfig,
+          ...((options as Partial<ClientConfig>).textGeneration?.retryConfig || {}),
+        },
       },
-      retryConfig: {
-        maxRetries: 3,
-        delayMs: 1000,
-        backoffMultiplier: 2,
-        ...configOverrides.textGeneration?.retryConfig,
+      ollama: {
+        baseURL: DEFAULT_OLLAMA_BASE_URL,
+        ...(options as Partial<ClientConfig>).ollama,
       },
-    },
-    ollama: {
-      baseURL: DEFAULT_OLLAMA_BASE_URL,
-      ...configOverrides.ollama,
-    },
-    telemetry: {
-      enabled: false,
-      publicKey: undefined,
-      secretKey: undefined,
-      baseURL: undefined,
-      flushAt: 1,
-      flushInterval: 1000,
-      ...configOverrides.telemetry,
-    },
-    logger: configOverrides.logger ?? true,
-  };
+      telemetry: {
+        enabled: false,
+        publicKey: undefined,
+        secretKey: undefined,
+        baseURL: undefined,
+        flushAt: 1,
+        flushInterval: 1000,
+        ...(options as Partial<ClientConfig>).telemetry,
+      },
+      logger: (options as Partial<ClientConfig>).logger ?? true,
+    };
+  }
+
+  _config = finalConfig;
 
   resetLangfuseProvider();
   if (_config.telemetry.enabled) {
@@ -439,10 +354,6 @@ export function initAItClient(configOverrides: Partial<AItClientConfig> = {}): v
   _textGenerationServiceInstance = null;
 }
 
-/**
- * Get the singleton AI client instance
- * Automatically initializes with defaults if not already initialized
- */
 export function getAItClient(): AItClient {
   if (!_clientInstance) {
     if (!_config) {
@@ -453,14 +364,8 @@ export function getAItClient(): AItClient {
   return _clientInstance;
 }
 
-/**
- * Get the singleton text generation service instance
- * Lazy-loaded to avoid circular dependencies
- */
-export function getTextGenerationService(): any {
+export function getTextGenerationService(): InstanceType<TextGenerationServiceType> {
   if (!_textGenerationServiceInstance) {
-    // Lazy import to avoid circular dependency
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { TextGenerationService } = require("../services/text-generation/text-generation.service");
 
     if (!_config) {
@@ -468,7 +373,6 @@ export function getTextGenerationService(): any {
     }
 
     _textGenerationServiceInstance = new TextGenerationService({
-      collectionName: _config.rag.collection,
       multipleQueryPlannerConfig: _config.textGeneration.multipleQueryPlannerConfig,
       conversationConfig: _config.textGeneration.conversationConfig,
       contextPreparationConfig: _config.textGeneration.contextPreparationConfig,
@@ -476,51 +380,31 @@ export function getTextGenerationService(): any {
       retryConfig: _config.textGeneration.retryConfig,
     });
   }
-  return _textGenerationServiceInstance;
+  return _textGenerationServiceInstance as InstanceType<TextGenerationServiceType>;
 }
 
-/**
- * Reset the client instance (useful for testing or reconfiguration)
- */
-export function resetAItClientInstance() {
+export function resetAItClientInstance(): void {
   _clientInstance = null;
   _textGenerationServiceInstance = null;
 }
 
-/**
- * Get the current client configuration
- */
 export function getClientConfig(): Required<AItClientConfig> {
   return _config;
 }
 
-/**
- * Get the generation model configuration
- */
 export function getGenerationModelConfig(): ModelSpec {
   return getAItClient().generationModelConfig;
 }
 
-/**
- * Get the embedding model configuration
- */
 export function getEmbeddingModelConfig(): ModelSpec {
   return getAItClient().embeddingModelConfig;
 }
 
-/**
- * Check if the current generation model supports tool/function calling
- * @returns true if the model supports tools, false otherwise
- */
 export function modelSupportsTools(): boolean {
   const config = getGenerationModelConfig();
-  return config.supportsTools ?? true; // Default to true for backwards compatibility
+  return config.supportsTools ?? true;
 }
 
-/**
- * Get model capabilities for validation
- * @returns Object with model capability flags
- */
 export function getModelCapabilities(): {
   supportsTools: boolean;
   contextWindow?: number;

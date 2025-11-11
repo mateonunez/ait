@@ -1,5 +1,6 @@
 import type { TypeFilter } from "../../types/rag";
-import type { QueryIntent } from "./query-intent.service";
+import type { QueryIntent } from "../routing/query-intent.service";
+import { TemporalDateParser, type ITemporalDateParser } from "./temporal-date-parser.service";
 
 export interface ITypeFilterService {
   inferTypes(
@@ -10,6 +11,12 @@ export interface ITypeFilterService {
 }
 
 export class TypeFilterService implements ITypeFilterService {
+  private readonly _dateParser: ITemporalDateParser;
+
+  constructor(dateParser?: ITemporalDateParser) {
+    this._dateParser = dateParser || new TemporalDateParser();
+  }
+
   inferTypes(
     tags?: string[],
     userQuery?: string,
@@ -113,50 +120,19 @@ export class TypeFilterService implements ITypeFilterService {
 
   private _parseTimeRange(text?: string): { from?: string; to?: string } | undefined {
     if (!text) return undefined;
-    const now = new Date();
 
-    const lower = text.toLowerCase();
+    // Delegate to the dedicated temporal date parser
+    const result = this._dateParser.parseTimeRange(text);
 
-    const setFromHoursAgo = (hours: number) => ({ from: new Date(now.getTime() - hours * 3600000).toISOString() });
-    const setFromDaysAgo = (days: number) => ({ from: new Date(now.getTime() - days * 86400000).toISOString() });
-
-    // Common phrases
-    if (lower.includes("last 24 hours") || lower.includes("past 24 hours")) return setFromHoursAgo(24);
-    if (lower.includes("last 48 hours") || lower.includes("past 48 hours")) return setFromHoursAgo(48);
-    if (lower.includes("last few days") || lower.includes("past few days")) return setFromDaysAgo(3);
-    if (lower.includes("last week") || lower.includes("past week")) return setFromDaysAgo(7);
-    if (lower.includes("last 7 days") || lower.includes("past 7 days")) return setFromDaysAgo(7);
-    if (lower.includes("last 3 days") || lower.includes("past 3 days")) return setFromDaysAgo(3);
-    if (lower.includes("today")) {
-      const start = new Date(now);
-      start.setHours(0, 0, 0, 0);
-      return { from: start.toISOString(), to: now.toISOString() };
-    }
-    if (lower.includes("yesterday")) {
-      const start = new Date(now);
-      start.setDate(now.getDate() - 1);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(start);
-      end.setHours(23, 59, 59, 999);
-      return { from: start.toISOString(), to: end.toISOString() };
+    if (result) {
+      console.info("Time range parsed for filtering", {
+        input: text.slice(0, 50),
+        from: result.from,
+        to: result.to,
+      });
     }
 
-    // Try to parse explicit dates like "october 30" or ISO
-    const dateMatch = lower.match(
-      /\b(?:\d{4}-\d{2}-\d{2}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\s+\d{1,2}(?:,\s*\d{4})?)\b/i,
-    );
-    if (dateMatch) {
-      const parsed = new Date(dateMatch[0]);
-      if (!Number.isNaN(parsed.getTime())) {
-        const start = new Date(parsed);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(parsed);
-        end.setHours(23, 59, 59, 999);
-        return { from: start.toISOString(), to: end.toISOString() };
-      }
-    }
-
-    return undefined;
+    return result;
   }
 
   private _buildKeywordSet(tags?: string[], userQuery?: string): Set<string> {

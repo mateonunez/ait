@@ -1,38 +1,27 @@
 import { AItError } from "@ait/core";
 import type { RAGContext, ContextPreparationConfig } from "../../types/text-generation";
 import type { Document, BaseMetadata } from "../../types/documents";
-import type { IMultiQueryRetrievalService } from "../rag/multi-query-retrieval.service";
-import type { QdrantProvider } from "../rag/qdrant.provider";
+import type { IMultiQueryRetrievalService } from "../retrieval/multi-query-retrieval.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
-import { ContextBuilder } from "../rag/context.builder";
-import { TemporalCorrelationService, type ITemporalCorrelationService } from "../rag/temporal-correlation.service";
+import { ContextBuilder } from "../context/context.builder";
+import {
+  TemporalCorrelationService,
+  type ITemporalCorrelationService,
+} from "../filtering/temporal-correlation.service";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { getCacheAnalyticsService } from "../analytics/cache-analytics.service";
+import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
+import type { ICollectionRouterService } from "../routing/collection-router.service";
 
-/**
- * Interface for context preparation service
- */
 export interface IContextPreparationService {
-  /**
-   * Prepare context for a query with smart caching
-   * @param query - User query
-   * @param traceContext - Optional trace context for telemetry
-   * @returns RAG context
-   */
   prepareContext(query: string, traceContext?: TraceContext | null): Promise<RAGContext>;
-
-  /**
-   * Clear cached context
-   */
   clearCache(): void;
 }
 
-/**
- * Service for preparing RAG context with smart caching
- */
 export class ContextPreparationService implements IContextPreparationService {
-  private readonly _vectorStore: QdrantProvider;
+  private readonly _multiCollectionProvider: MultiCollectionProvider;
+  private readonly _collectionRouter: ICollectionRouterService;
   private readonly _multiQueryRetrieval: IMultiQueryRetrievalService;
   private readonly _contextBuilder: ContextBuilder;
   private readonly _embeddingsService: IEmbeddingsService;
@@ -46,12 +35,14 @@ export class ContextPreparationService implements IContextPreparationService {
   private _contextCache: Map<string, RAGContext> = new Map();
 
   constructor(
-    vectorStore: QdrantProvider,
+    multiCollectionProvider: MultiCollectionProvider,
+    collectionRouter: ICollectionRouterService,
     multiQueryRetrieval: IMultiQueryRetrievalService,
     embeddingsService: IEmbeddingsService,
     config: ContextPreparationConfig = {},
   ) {
-    this._vectorStore = vectorStore;
+    this._multiCollectionProvider = multiCollectionProvider;
+    this._collectionRouter = collectionRouter;
     this._multiQueryRetrieval = multiQueryRetrieval;
     this._embeddingsService = embeddingsService;
     this._contextBuilder = new ContextBuilder();
@@ -95,14 +86,33 @@ export class ContextPreparationService implements IContextPreparationService {
       return cached;
     }
 
-    // Retrieve fresh context
+    // Retrieve fresh context with multi-collection support
     let documents: Document<BaseMetadata>[] = [];
     let fallbackUsed = false;
     let fallbackReason: string | undefined;
 
     const retrievalStart = Date.now();
     try {
-      documents = await this._multiQueryRetrieval.retrieve<BaseMetadata>(this._vectorStore, query, traceContext);
+      // Step 1: Route to appropriate collections based on query
+      const routingResult = await this._collectionRouter.routeCollections(query, undefined, traceContext || undefined);
+
+      console.info("Collection routing completed", {
+        strategy: routingResult.strategy,
+        selectedCollections: routingResult.selectedCollections
+          .map((c: { vendor: string; weight: number }) => `${c.vendor}:${c.weight}`)
+          .join(", "),
+        confidence: routingResult.confidence,
+      });
+
+      // Step 2: Execute multi-collection search
+      const multiCollectionResults = await this._multiQueryRetrieval.retrieveAcrossCollections<BaseMetadata>(
+        this._multiCollectionProvider,
+        routingResult.selectedCollections,
+        query,
+        traceContext,
+      );
+
+      documents = multiCollectionResults;
 
       // Track cache miss with actual retrieval time
       const retrievalLatency = Date.now() - retrievalStart;

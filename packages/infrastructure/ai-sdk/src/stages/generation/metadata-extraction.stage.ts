@@ -1,0 +1,41 @@
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import type { MetadataExtractionInput, MetadataExtractionOutput } from "../../types/stages";
+import { getReasoningExtractionService } from "../../services/metadata/reasoning-extraction.service";
+import { getTaskBreakdownService } from "../../services/metadata/task-breakdown.service";
+import { getSuggestionsService } from "../../services/metadata/suggestions.service";
+import { getModelInfoService } from "../../services/metadata/model-info.service";
+import { getAItClient } from "../../client/ai-sdk.client";
+
+export class MetadataExtractionStage implements IPipelineStage<MetadataExtractionInput, MetadataExtractionOutput> {
+  readonly name = "metadata-extraction";
+
+  async canExecute(input: MetadataExtractionInput): Promise<boolean> {
+    return input.enableMetadata;
+  }
+
+  async execute(input: MetadataExtractionInput, context: PipelineContext): Promise<MetadataExtractionOutput> {
+    const reasoningService = getReasoningExtractionService();
+    const taskService = getTaskBreakdownService();
+    const suggestionsService = getSuggestionsService();
+    const modelInfoService = getModelInfoService();
+
+    const reasoning = reasoningService.detectReasoningPatterns(input.fullResponse)
+      ? reasoningService.extractReasoning(input.fullResponse)
+      : [];
+
+    const tasks = taskService.isComplexQuery(input.prompt) ? taskService.breakdownQuery(input.prompt) : [];
+
+    const suggestions = suggestionsService.generateSuggestions(input.prompt, input.fullResponse, input.messages);
+
+    const client = getAItClient();
+    const modelInfo = modelInfoService.getModelInfo(client.generationModelConfig.name);
+
+    return {
+      ...input,
+      reasoning,
+      tasks,
+      suggestions,
+      modelInfo,
+    };
+  }
+}

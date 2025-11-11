@@ -1,5 +1,5 @@
 import type { ConversationConfig, ContextPreparationConfig, ToolExecutionConfig, RetryConfig } from "./text-generation";
-import type { MultiQueryConfig } from "./rag";
+import type { MultiQueryConfig, CollectionRoutingConfig } from "./rag";
 import type { GenerationModelName, EmbeddingModelName } from "../config/models.config";
 import type { TelemetryConfig } from "./telemetry";
 
@@ -35,12 +35,12 @@ export interface EmbeddingModelConfig {
  * Configuration for RAG (Retrieval Augmented Generation)
  */
 export interface RAGConfig {
-  /** Collection name for vector store */
-  collection?: string;
   /** Retrieval strategy */
-  strategy?: "single" | "multi-query";
+  strategy?: "single" | "multi-query" | "multi-collection";
   /** Maximum documents to retrieve */
   maxDocs?: number;
+  /** Collection routing configuration */
+  collectionRouting?: CollectionRoutingConfig;
 }
 
 /**

@@ -65,7 +65,6 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
   const maxContextWindow = currentModelInfo?.contextWindow || 128000;
 
   const streamingMessageId = isLoading ? messages[messages.length - 1]?.id : undefined;
-  const hasSuggestions = currentMetadata?.suggestions && currentMetadata.suggestions.length > 0;
 
   // Get metadata from the latest assistant message for display in settings
   const latestAssistantMessage = useMemo(() => {
@@ -76,6 +75,16 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
     }
     return null;
   }, [messages]);
+
+  // Get suggestions from the latest assistant message or current metadata during streaming
+  const suggestions = useMemo(() => {
+    if (isLoading && currentMetadata?.suggestions) {
+      return currentMetadata.suggestions;
+    }
+    return latestAssistantMessage?.metadata?.suggestions || [];
+  }, [isLoading, currentMetadata, latestAssistantMessage]);
+
+  const hasSuggestions = suggestions.length > 0;
 
   const handleSuggestionClick = (suggestion: any) => {
     // If suggestion has an action, handle it
@@ -163,7 +172,7 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
             {/* Dynamic Suggestions (after messages) */}
             {hasSuggestions && !isLoading && messages.length > 0 && (
               <div className="px-6 py-3 border-t border-border">
-                <Suggestions suggestions={currentMetadata.suggestions} onSuggestionClick={handleSuggestionClick} />
+                <Suggestions suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />
               </div>
             )}
 

@@ -5,7 +5,7 @@ import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract"
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubPullRequestDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.pull-request.descriptor";
-import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> =
@@ -17,7 +17,7 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, getCollectionNameByVendor("github"), retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<GitHubPullRequestDataTarget[]> {

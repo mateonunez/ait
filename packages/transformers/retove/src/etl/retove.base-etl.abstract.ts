@@ -1,6 +1,6 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { EmbeddingsService, getEmbeddingModelConfig, type IEmbeddingsService } from "@ait/ai-sdk";
+import { EmbeddingsService, getEmbeddingModelConfig, type IEmbeddingsService, getCollectionsNames } from "@ait/ai-sdk";
 
 export interface BaseVectorPoint {
   id: number;
@@ -44,18 +44,26 @@ export abstract class RetoveBaseETLAbstract {
     ),
   ) {
     this.retryOptions = retryOptions;
+    this.validateCollectionName(_collectionName);
+  }
+
+  private validateCollectionName(collectionName: string): void {
+    const validCollections = getCollectionsNames();
+    if (!validCollections.includes(collectionName)) {
+      throw new Error(`Invalid collection name: ${collectionName}. Must be one of: ${validCollections.join(", ")}`);
+    }
   }
 
   public async run(limit: number): Promise<void> {
     try {
-      console.info(`Starting ETL process. Limit: ${limit}`);
+      console.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
       const data = await this.extract(limit);
       const transformedData = await this.transform(data);
       await this.load(transformedData);
-      console.info("ETL process completed successfully");
+      console.info(`ETL process completed successfully for collection: ${this._collectionName}`);
     } catch (error) {
-      console.error("ETL process failed:", error);
+      console.error(`ETL process failed for collection: ${this._collectionName}`, error);
       throw error;
     }
   }
@@ -177,6 +185,7 @@ export abstract class RetoveBaseETLAbstract {
                     ...payloadObj,
                     __source: "retove",
                     __type: payloadObj.__type,
+                    __collection: this._collectionName,
                     __chunk_info: {
                       index: chunkVector.chunkIndex,
                       total: textChunks.length,

@@ -1,5 +1,7 @@
-import type { QueryIntent } from "../services/rag/query-intent.service";
+import type { QueryIntent } from "../services/routing/query-intent.service";
 import type { Document, BaseMetadata } from "./documents";
+import type { CollectionVendor } from "../config/collections.config";
+import type { CollectionWeight } from "./collections";
 
 /**
  * Configuration for query planning service
@@ -42,6 +44,27 @@ export interface RankFusionConfig {
 }
 
 /**
+ * Collection routing strategy
+ */
+export type CollectionRoutingStrategy = "llm" | "heuristic" | "all";
+
+/**
+ * Configuration for collection routing
+ */
+export interface CollectionRoutingConfig {
+  /** Routing strategy: 'llm' (LLM-based), 'heuristic' (rule-based), 'all' (search all collections) */
+  strategy?: CollectionRoutingStrategy;
+  /** Enable LLM-based collection routing (default: true) */
+  enableLLMRouting?: boolean;
+  /** Fallback to heuristic routing if LLM fails (default: true) */
+  fallbackToHeuristic?: boolean;
+  /** Minimum confidence threshold for collection selection (0-1, default: 0.4) */
+  minConfidenceThreshold?: number;
+  /** Temperature for LLM routing decisions (0-1, default: 0.3) */
+  temperature?: number;
+}
+
+/**
  * Top-level configuration for multi-query retrieval
  */
 export interface MultiQueryConfig {
@@ -59,6 +82,8 @@ export interface MultiQueryConfig {
   diversity?: DiversityConfig;
   /** Rank fusion configuration */
   rankFusion?: RankFusionConfig;
+  /** Collection routing configuration */
+  collectionRouting?: CollectionRoutingConfig;
 }
 
 /**
@@ -79,6 +104,8 @@ export interface QueryPlanResult {
   originalQuery: string;
   /** LLM-extracted query intent (optional) */
   intent?: QueryIntent;
+  /** Suggested collections for query execution (optional) */
+  suggestedCollections?: CollectionWeight[];
 }
 
 /**
@@ -109,9 +136,11 @@ export interface TypeFilter {
   types?: string[];
   /** Optional time window for temporal filtering */
   timeRange?: {
-    from?: string; // ISO string
-    to?: string; // ISO string
+    from?: string;
+    to?: string;
   };
+  /** Optional collection context for multi-collection queries */
+  collections?: CollectionVendor[];
 }
 
 /**

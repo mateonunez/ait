@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { z } from "zod";
-import { ToolExecutionService } from "../../../src/services/text-generation/tool-execution.service";
+import { ToolExecutionService } from "../../../src/services/generation/tool-execution.service";
 import type { Tool } from "../../../src/types/tools";
 import type { OllamaToolCall } from "../../../src/client/ollama.provider";
 

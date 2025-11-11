@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { PromptBuilderService } from "../../../src/services/text-generation/prompt-builder.service";
+import { PromptBuilderService } from "../../../src/services/generation/prompt-builder.service";
 import type { PromptComponents } from "../../../src/types/text-generation";
 import type { ChatMessage } from "../../../src/types/chat";
 

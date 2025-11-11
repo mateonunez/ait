@@ -5,7 +5,7 @@ import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { ETLSpotifyPlaylistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { RETOVE_COLLECTION_NAME } from "../../config/retove.config";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> = new ETLSpotifyPlaylistDescriptor();
@@ -16,7 +16,7 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
     retryOptions?: RetryOptions,
     embeddingsService?: IEmbeddingsService,
   ) {
-    super(pgClient, qdrantClient, RETOVE_COLLECTION_NAME, retryOptions, embeddingsService);
+    super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
   protected async extract(limit: number): Promise<SpotifyPlaylistDataTarget[]> {

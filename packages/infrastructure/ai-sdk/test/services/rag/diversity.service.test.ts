@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { DiversityService } from "../../../src/services/rag/diversity.service";
+import { DiversityService } from "../../../src/services/filtering/diversity.service";
 import type { Document, BaseMetadata } from "../../../src/types/documents";
 
 describe("DiversityService", () => {

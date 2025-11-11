@@ -1,0 +1,45 @@
+import type { CollectionVendor, EntityType } from "../config/collections.config";
+import type { Document, BaseMetadata } from "./documents";
+
+export type { CollectionVendor, EntityType };
+
+export interface CollectionWeight {
+  vendor: CollectionVendor;
+  weight: number;
+  reasoning?: string;
+}
+
+export interface MultiCollectionQuery {
+  query: string;
+  collections: CollectionWeight[];
+  maxDocumentsPerCollection: number;
+  totalMaxDocuments: number;
+}
+
+export interface CollectionRouterResult {
+  selectedCollections: CollectionWeight[];
+  reasoning: string;
+  strategy: "single-collection" | "multi-collection" | "all-collections";
+  confidence: number;
+  suggestedEntityTypes?: EntityType[];
+}
+
+export interface WeightedDocument<TMetadata extends BaseMetadata = BaseMetadata> extends Document<TMetadata> {
+  collectionVendor: CollectionVendor;
+  collectionWeight: number;
+  finalScore: number;
+}
+
+export interface CollectionSearchResult<TMetadata extends BaseMetadata = BaseMetadata> {
+  vendor: CollectionVendor;
+  documents: Document<TMetadata>[];
+  searchDuration: number;
+  totalResults: number;
+}
+
+export interface MultiCollectionSearchResult<TMetadata extends BaseMetadata = BaseMetadata> {
+  results: CollectionSearchResult<TMetadata>[];
+  totalDocuments: number;
+  totalDuration: number;
+  queriesExecuted: number;
+}

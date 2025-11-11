@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { RetryService } from "../../../src/services/text-generation/retry.service";
+import { RetryService } from "../../../src/services/generation/retry.service";
 
 describe("RetryService", () => {
   describe("execute", () => {

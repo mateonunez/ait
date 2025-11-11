@@ -14,6 +14,7 @@ export enum GenerationModels {
   DEEPSEEK_R1 = "deepseek-r1:latest",
   GEMMA_3 = "gemma3:latest",
   GRANITE_4 = "granite4:latest",
+  KIMI_K2_THINKING_CLOUD = "kimi-k2-thinking:cloud",
 }
 
 export enum EmbeddingModels {
@@ -92,6 +93,15 @@ export const GENERATION_MODELS: Record<GenerationModelName, Omit<ModelSpec, "nam
     vectorSize: 4096,
     contextWindow: 32768,
     description: "Granite 4 model for general-purpose text generation",
+    supportsTools: true,
+    temperature: 0.7,
+    topP: 0.9,
+    topK: 40,
+  },
+  [GenerationModels.KIMI_K2_THINKING_CLOUD]: {
+    vectorSize: 4096,
+    contextWindow: 128000,
+    description: "Kimi K2 Thinking model for advanced reasoning and complex problem-solving",
     supportsTools: true,
     temperature: 0.7,
     topP: 0.9,

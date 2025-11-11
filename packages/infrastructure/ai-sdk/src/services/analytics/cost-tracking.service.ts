@@ -53,6 +53,11 @@ const DEFAULT_COSTS: Record<GenerationModelName | EmbeddingModelName, ModelCosts
     embeddingCostPer1KTokens: 0.0,
     currency: "USD",
   },
+  "kimi-k2-thinking:cloud": {
+    generationCostPer1KTokens: 0.0003, // ~$0.30 per 1M tokens (cloud-hosted thinking model)
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
   // Embedding Models
   "mxbai-embed-large:latest": {
     generationCostPer1KTokens: 0.0,

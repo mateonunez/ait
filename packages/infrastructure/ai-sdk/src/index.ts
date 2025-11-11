@@ -1,66 +1,128 @@
-export * from "./client/ai-sdk.client";
-export { getTextGenerationService } from "./client/ai-sdk.client";
+export {
+  initAItClient,
+  getAItClient,
+  getTextGenerationService,
+  resetAItClientInstance,
+  getClientConfig,
+  getGenerationModelConfig,
+  getEmbeddingModelConfig,
+  modelSupportsTools,
+  getModelCapabilities,
+  type AItClient,
+  type AItClientConfig,
+  type InitOptions,
+  type LlmGenerateTextOptions,
+  type LlmStreamOptions,
+  type LlmStructuredGenerationOptions,
+} from "./client/ai-sdk.client";
+
 export { getOllamaProvider } from "./client/ai-sdk-ollama.provider";
 
-export * from "./config/models.config";
+export {
+  getGenerationModel,
+  getEmbeddingModel,
+  getModelSpec,
+  GenerationModels,
+  EmbeddingModels,
+  type GenerationModelName,
+  type EmbeddingModelName,
+  type ModelName,
+  type ModelSpec,
+  type ModelType,
+} from "./config/models.config";
 
-export * from "./services/embeddings/embeddings.service";
-export * from "./services/embeddings/embeddings.config";
-export * from "./services/embeddings/text-preprocessor";
-export * from "./services/text-generation/text-generation.service";
-export * from "./services/text-generation/retry.service";
-export * from "./services/text-generation/tool-execution.service";
-export * from "./services/text-generation/prompt-builder.service";
-export * from "./services/text-generation/context-preparation.service";
-export * from "./services/text-generation/conversation-manager.service";
-export * from "./services/text-generation/utils/stream.utils";
-export * from "./services/prompts/system.prompt";
+export {
+  getPreset,
+  listPresets,
+  mergePresetWithOverrides,
+  type PresetName,
+  type PresetConfig,
+} from "./config/presets.config";
 
-export * from "./services/rag/query-planner.service";
-export * from "./services/rag/diversity.service";
-export * from "./services/rag/type-filter.service";
-export * from "./services/rag/rank-fusion.service";
-export * from "./services/rag/multi-query-retrieval.service";
-export * from "./services/rag/hyde.service";
-export * from "./services/rag/rerank.service";
-export * from "./services/rag/qdrant.provider";
-export * from "./services/rag/temporal-correlation.service";
-export * from "./services/rag/query-heuristic.service";
-export * from "./services/rag/query-intent.service";
-export { ContextBuilder } from "./services/rag/context.builder";
-export { createMultiQueryRetrievalService } from "./services/rag/multi-query-retrieval.factory";
+export {
+  getAllCollections,
+  getCollectionsByEntityTypes,
+  getCollectionConfig,
+  getCollectionNameByVendor,
+  getCollectionsNames,
+  getCollectionByEntityType,
+  getCollectionNameByEntityType,
+  getCollectionVendorByName,
+  type CollectionVendor,
+  type EntityType,
+  type CollectionConfig,
+} from "./config/collections.config";
 
-export * from "./services/errors/error-classification.service";
+export {
+  type TextGenerationService,
+  type ITextGenerationService,
+  type GenerateOptions,
+  type GenerateStreamOptions,
+  TextGenerationError,
+} from "./services/text-generation/text-generation.service";
 
-export * from "./services/feedback/feedback.service";
-export * from "./services/feedback/types";
+export { type IEmbeddingsService, EmbeddingsService } from "./services/embeddings/embeddings.service";
 
-export * from "./services/analytics/analytics.service";
-export * from "./services/analytics/cost-tracking.service";
-export * from "./services/analytics/performance-metrics.service";
-export * from "./services/analytics/failure-analysis.service";
-export * from "./services/analytics/cache-analytics.service";
-export * from "./services/analytics/types";
+export { type ChatMessage, type MessageRole, formatConversationHistory } from "./types/chat";
+export { type Tool, type ToolResult, createTool, createSuccessResult, createErrorResult } from "./types/tools";
+export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
 
-export * from "./services/metadata/reasoning-extraction.service";
-export * from "./services/metadata/task-breakdown.service";
-export * from "./services/metadata/suggestions.service";
-export * from "./services/metadata/model-info.service";
-
-export * from "./tools/connectors.tools";
 export { convertToOllamaTools } from "./tools/tool.converter";
-export type { OllamaTool, OllamaToolCall } from "./client/ollama.provider";
+export { createAllConnectorTools, createSpotifyTools } from "./tools/connectors.tools";
+export type { SpotifySearchResult } from "./tools/domains/spotify.tools";
+export type { ModelMetadata, ModelCapabilities, ModelParameters } from "./types/models/model.metadata";
 
-export * from "./cache/lru-cache";
+export {
+  STREAM_EVENT,
+  METADATA_TYPE,
+  type StreamEvent,
+  type RAGContextMetadata,
+  type TaskStep,
+  type ToolCallMetadata,
+  type ReasoningStep,
+  type SuggestionItem,
+} from "./types";
 
-export * from "./telemetry/langfuse.provider";
-export * from "./telemetry/telemetry.middleware";
+export { createRAGPipeline, type RAGPipelineConfig } from "./pipelines/rag.pipeline";
+export { createGenerationPipeline, type GenerationPipelineConfig } from "./pipelines/generation.pipeline";
+export { createCompletePipeline, type CompletePipelineConfig } from "./pipelines/complete.pipeline";
 
-export * from "./types";
-export type { ChatMessage, MessageRole } from "./types/chat";
-export { formatConversationHistory } from "./types/chat";
+export { PipelineBuilder } from "./services/rag/pipeline/pipeline.builder";
+export { PipelineOrchestrator } from "./services/rag/pipeline/pipeline.orchestrator";
+export type {
+  IPipelineStage,
+  PipelineConfig,
+  PipelineContext,
+  PipelineResult,
+  StageResult,
+  PipelineExecutionOptions,
+  FailureMode,
+} from "./services/rag/pipeline/pipeline.types";
 
-// Utilities
-export * from "./utils/stream-parser.util";
-export * from "./utils/metadata-formatter.util";
-export * from "./utils/model-capabilities.util";
+export { initLangfuseProvider, resetLangfuseProvider, getLangfuseProvider } from "./telemetry/langfuse.provider";
+export {
+  createTraceContext,
+  recordSpan,
+  recordGeneration,
+  updateTraceInput,
+  endTraceWithOutput,
+  endTraceWithError,
+  shouldEnableTelemetry,
+} from "./telemetry/telemetry.middleware";
+export type { TraceContext, TelemetryConfig } from "./types/telemetry";
+
+export { getAnalyticsService } from "./services/analytics/analytics.service";
+
+export { getModelInfoService, type IModelInfoService } from "./services/metadata/model-info.service";
+
+export { getFeedbackService, resetFeedbackService, FeedbackService } from "./services/feedback/feedback.service";
+export type {
+  Feedback,
+  FeedbackRating,
+  FeedbackStats,
+  FeedbackMetadata,
+  QualityTrendPoint,
+  ProblematicTrace,
+} from "./services/feedback/types";
+
+export { smoothStream } from "./services/text-generation/utils/stream.utils";
