@@ -31,7 +31,7 @@ export function SystemTab() {
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Process Information
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Uptime"
             value={system.process.uptime}
@@ -46,7 +46,7 @@ export function SystemTab() {
       {/* Platform information */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Platform</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard label="Platform" value={system.process.platform} status="neutral" detail="Operating system" />
           <MetricCard label="Architecture" value={system.process.arch} status="neutral" detail="CPU architecture" />
           <MetricCard label="Runtime" value="Node.js" status="neutral" detail={system.process.nodeVersion} />
@@ -56,7 +56,7 @@ export function SystemTab() {
       {/* Memory usage */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Memory Usage</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard label="RSS (Total)" value={system.memory.rss} status="neutral" detail="Resident set size" />
           <MetricCard
             label="Heap Used"
@@ -71,7 +71,7 @@ export function SystemTab() {
       {/* Memory details */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Memory Details</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard label="External" value={system.memory.external} status="neutral" detail="C++ objects" />
           <MetricCard label="Heap Limit" value={system.memory.heapTotal} status="neutral" detail="Max heap size" />
           <MetricCard
@@ -113,7 +113,7 @@ export function SystemTab() {
       {/* System timestamp */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">System Timestamp</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Current Time"
             value={new Date(system.timestamp).toLocaleTimeString()}

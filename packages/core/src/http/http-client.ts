@@ -6,8 +6,8 @@ export interface HttpRequestOptions {
   headers?: Record<string, string>;
   body?: string | Uint8Array;
   signal?: AbortSignal;
-  /** milliseconds */
   timeoutMs?: number;
+  isSuccessStatus?: (status: number) => boolean;
 }
 
 export interface HttpResponse<T> {
@@ -17,14 +17,14 @@ export interface HttpResponse<T> {
 }
 
 function normalizeHeaders(headers: Headers | Record<string, string>): Record<string, string> {
-  if (typeof (headers as any).forEach === "function") {
+  if (headers instanceof Headers) {
     const out: Record<string, string> = {};
-    (headers as Headers).forEach((v, k) => {
+    headers.forEach((v, k) => {
       out[k] = v;
     });
     return out;
   }
-  return headers as Record<string, string>;
+  return headers;
 }
 
 export async function requestJson<T>(
@@ -41,18 +41,17 @@ export async function requestJson<T>(
     timeout = setTimeout(() => controller.abort(), options.timeoutMs);
   }
 
-  try {
-    const response = await fetch(
-      url as any,
-      {
-        method: options.method ?? "GET",
-        headers: options.headers,
-        body: options.body as any,
-        signal: signals.length === 1 ? signals[0] : (undefined as any),
-      } as any,
-    );
+  const isSuccessStatus = options.isSuccessStatus ?? ((status: number) => status >= 200 && status < 300);
 
-    if (!response.ok) {
+  try {
+    const response = await fetch(url, {
+      method: options.method ?? "GET",
+      headers: options.headers,
+      body: options.body,
+      signal: signals.length === 1 ? signals[0] : undefined,
+    });
+
+    if (!isSuccessStatus(response.status)) {
       return err(
         new AItError(`HTTP_${response.status}`, "HTTP error", {
           status: response.status,
@@ -64,12 +63,41 @@ export async function requestJson<T>(
     const data = (await response.json()) as T;
     return ok({
       status: response.status,
-      headers: normalizeHeaders(response.headers as any),
+      headers: normalizeHeaders(response.headers),
       data,
     });
   } catch (e) {
     return err(new AItError("NETWORK", "Network failure", { url: String(url) }, e));
   } finally {
     if (timeout) clearTimeout(timeout);
+  }
+}
+
+export async function requestStream(
+  url: string | URL,
+  options: HttpRequestOptions = {},
+): Promise<Result<Response, AItError>> {
+  const isSuccessStatus = options.isSuccessStatus ?? ((status: number) => status >= 200 && status < 300);
+
+  try {
+    const response = await fetch(url, {
+      method: options.method ?? "GET",
+      headers: options.headers,
+      body: options.body,
+      signal: options.signal,
+    });
+
+    if (!isSuccessStatus(response.status)) {
+      return err(
+        new AItError(`HTTP_${response.status}`, "HTTP error", {
+          status: response.status,
+          url: String(url),
+        }),
+      );
+    }
+
+    return ok(response);
+  } catch (e) {
+    return err(new AItError("NETWORK", "Network failure", { url: String(url) }, e));
   }
 }

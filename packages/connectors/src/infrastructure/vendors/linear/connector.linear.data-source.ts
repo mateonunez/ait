@@ -38,12 +38,15 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
             priority
             assignee {
               id
+              name
             }
             team {
               id
+              name
             }
             project {
               id
+              name
             }
             url
             labels {

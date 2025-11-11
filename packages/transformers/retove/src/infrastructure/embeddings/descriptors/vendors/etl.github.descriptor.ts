@@ -1,5 +1,6 @@
 import type { GitHubRepositoryDataTarget } from "@ait/postgres";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 
 export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> {
   public getEmbeddingText(repository: GitHubRepositoryDataTarget): string {
@@ -8,6 +9,14 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
     // Repository name and description
     const repoName = repository.fullName || repository.name;
     parts.push(`I maintain ${repoName}`);
+
+    // CRITICAL: Include the repository description for semantic understanding
+    if (repository.description) {
+      const sanitizedDescription = TextSanitizer.sanitize(repository.description, 300);
+      if (sanitizedDescription) {
+        parts.push(`${sanitizedDescription}`);
+      }
+    }
 
     // Activity status and state
     const activityStatus = this._getActivityStatus(repository);
@@ -189,9 +198,22 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubRepositoryDataTarget): U {
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
+
+    // CRITICAL: Sanitize all text fields in the payload to prevent JSON encoding errors
+    const sanitizedPayload = {
+      ...entityWithoutInternalTimestamps,
+      name: TextSanitizer.sanitize(entityWithoutInternalTimestamps.name, 255),
+      fullName: entityWithoutInternalTimestamps.fullName
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.fullName, 512)
+        : null,
+      description: entityWithoutInternalTimestamps.description
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.description, 1000)
+        : null,
+    };
+
     return {
       __type: "repository",
-      ...entityWithoutInternalTimestamps,
+      ...sanitizedPayload,
     } as unknown as U;
   }
 }

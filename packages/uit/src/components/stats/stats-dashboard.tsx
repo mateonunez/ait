@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/styles/utils";
 import { RefreshCw, Activity } from "lucide-react";
 import { useStats } from "@/contexts/stats.context";
@@ -47,6 +47,13 @@ export function StatsDashboard({ isOpen, onClose }: StatsDashboardProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Fetch stats when dialog opens
+  useEffect(() => {
+    if (isOpen) {
+      refreshStats();
+    }
+  }, [isOpen, refreshStats]);
+
   // Format last updated time
   const getLastUpdatedText = () => {
     if (!lastUpdated) return "Never";
@@ -81,9 +88,10 @@ export function StatsDashboard({ isOpen, onClose }: StatsDashboardProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[85vh] p-0 gap-0 border-border/50 bg-background/95 backdrop-blur-lg">
+      <DialogContent className="w-[90vw] !max-w-[1200px] sm:!max-w-[1200px] h-[90vh] max-h-[90vh] p-0 gap-0 border-border/50 bg-background/95 backdrop-blur-lg flex flex-col">
+        <DialogTitle className="sr-only">Stats Dashboard</DialogTitle>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-border/50 shrink-0">
           <div className="flex items-center gap-2">
             <Activity className="h-4 w-4 text-muted-foreground" />
             <h2 className="text-sm font-semibold">Stats Dashboard</h2>
@@ -125,7 +133,7 @@ export function StatsDashboard({ isOpen, onClose }: StatsDashboardProps) {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 px-6 py-2 border-b border-border/50 bg-muted/30">
+        <div className="flex items-center gap-1 px-4 sm:px-6 py-2 border-b border-border/50 bg-muted/30 overflow-x-auto shrink-0">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -151,7 +159,7 @@ export function StatsDashboard({ isOpen, onClose }: StatsDashboardProps) {
         </div>
 
         {/* Tab content */}
-        <div className="overflow-y-auto p-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar min-h-0">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

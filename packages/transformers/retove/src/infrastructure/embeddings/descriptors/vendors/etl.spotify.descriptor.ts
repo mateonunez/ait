@@ -69,9 +69,23 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
 
 export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<SpotifyArtistDataTarget> {
   public getEmbeddingText(artist: SpotifyArtistDataTarget): string {
+    // Add popularity context
+    let popularityContext = "";
+    const popularity = artist.popularity ?? 0;
+    if (popularity > 80) {
+      popularityContext = "a globally renowned artist";
+    } else if (popularity > 60) {
+      popularityContext = "a well-known artist";
+    } else if (popularity > 40) {
+      popularityContext = "an emerging artist";
+    } else if (popularity > 0) {
+      popularityContext = "an underground artist";
+    }
+
     const parts = [
       `I follow ${artist.name}`,
-      artist.genres && artist.genres.length > 0 ? `exploring ${artist.genres.slice(0, 3).join(", ")}` : null,
+      popularityContext ? popularityContext : null,
+      artist.genres && artist.genres.length > 0 ? `creating ${artist.genres.slice(0, 3).join(", ")} music` : null,
     ].filter(Boolean);
 
     return parts.join(", ");
@@ -99,11 +113,21 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
       }
     }
 
+    // Add ownership and sharing context
+    const ownershipText = playlist.collaborative
+      ? "I collaborate on the playlist"
+      : playlist.public
+        ? "I curate the public playlist"
+        : "I maintain the private playlist";
+
     const parts = [
-      `My playlist "${playlist.name}"`,
+      `${ownershipText} "${playlist.name}"`,
       playlist.description ? `${playlist.description}` : null,
-      trackCount > 0 ? `${trackCount} tracks I curated` : null,
-      playlist.followers && playlist.followers > 0 ? `${playlist.followers} people following it` : null,
+      trackCount > 0 ? `containing ${trackCount} carefully selected tracks` : null,
+      playlist.followers && playlist.followers > 0
+        ? `followed by ${playlist.followers} listener${playlist.followers === 1 ? "" : "s"}`
+        : null,
+      playlist.owner ? `created by ${playlist.owner}` : null,
     ].filter(Boolean);
 
     return parts.join(", ");
@@ -120,11 +144,30 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
 
 export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> {
   public getEmbeddingText(album: SpotifyAlbumDataTarget): string {
+    // Add album type context (album, single, compilation)
+    let albumTypeText = "album";
+    if (album.albumType === "single") {
+      albumTypeText = "single";
+    } else if (album.albumType === "compilation") {
+      albumTypeText = "compilation";
+    }
+
+    // Add popularity context if available
+    let popularityContext = "";
+    if (album.popularity && album.popularity > 70) {
+      popularityContext = "widely acclaimed";
+    } else if (album.popularity && album.popularity < 30) {
+      popularityContext = "a deep cut";
+    }
+
     const parts = [
-      `I have ${album.name}`,
-      album.artists && album.artists.length > 0 ? `by ${album.artists.slice(0, 2).join(", ")}` : null,
-      album.releaseDate ? `from ${album.releaseDate.split("-")[0]}` : null,
-      album.genres && album.genres.length > 0 ? `${album.genres.slice(0, 2).join(", ")}` : null,
+      `I have the ${albumTypeText} "${album.name}"`,
+      album.artists && album.artists.length > 0 ? `by ${album.artists.slice(0, 2).join(" & ")}` : null,
+      album.releaseDate ? `released in ${album.releaseDate.split("-")[0]}` : null,
+      popularityContext ? popularityContext : null,
+      album.totalTracks ? `featuring ${album.totalTracks} tracks` : null,
+      album.genres && album.genres.length > 0 ? `exploring ${album.genres.slice(0, 2).join(", ")}` : null,
+      album.label ? `on ${album.label}` : null,
     ].filter(Boolean);
 
     return parts.join(", ");
@@ -163,13 +206,33 @@ export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescript
     const seconds = Math.floor((item.durationMs % 60000) / 1000);
     const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
+    // CRITICAL: Extract listening context (playlist, album, artist radio, etc.)
+    let contextInfo = "";
+    if (item.context && typeof item.context === "object") {
+      const ctx = item.context as { type?: string; uri?: string };
+      const contextType = ctx.type;
+      const contextUri = ctx.uri;
+
+      if (contextType === "playlist" && contextUri) {
+        contextInfo = "from a playlist";
+      } else if (contextType === "album") {
+        contextInfo = "from the album";
+      } else if (contextType === "artist") {
+        contextInfo = "from artist radio";
+      } else if (contextType === "collection") {
+        contextInfo = "from my liked songs";
+      }
+    }
+
     const parts = [
       `I played ${temporalContext}`,
       `"${item.trackName}" by ${item.artist}`,
-      item.album ? `from ${item.album}` : null,
+      contextInfo ? contextInfo : null,
+      item.album ? `${item.album}` : null,
       durationStr ? `(${durationStr})` : null,
-      item.explicit ? "explicit track" : null,
-      item.popularity && item.popularity > 70 ? "popular track" : null,
+      item.explicit ? "explicit" : null,
+      item.popularity && item.popularity > 70 ? "highly popular" : null,
+      item.popularity && item.popularity < 30 ? "niche discovery" : null,
     ].filter(Boolean);
 
     return parts.join(" ");

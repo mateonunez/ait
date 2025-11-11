@@ -17,7 +17,7 @@ export function CacheTab() {
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Cache Effectiveness
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Hit Rate"
             value={cache.effectiveness.hitRate}
@@ -50,7 +50,7 @@ export function CacheTab() {
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Performance Savings
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Avg Latency Saved"
             value={cache.effectiveness.avgLatencySaving}
@@ -75,7 +75,7 @@ export function CacheTab() {
       {/* Cost savings */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cost Savings</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Embeddings Saved"
             value={cache.costSavings.embeddingsSaved}
@@ -101,7 +101,7 @@ export function CacheTab() {
       {/* Cache management */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cache Management</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Entry Count"
             value={cache.size.entryCount}
@@ -132,7 +132,6 @@ export function CacheTab() {
           </h3>
           <div className="space-y-2">
             {cache.topQueries.slice(0, 5).map((query, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: yup
               <div
                 key={`top-cached-query-${query.query}-${i}`}
                 className="flex items-center justify-between p-2 rounded border border-border/50 bg-muted/30"

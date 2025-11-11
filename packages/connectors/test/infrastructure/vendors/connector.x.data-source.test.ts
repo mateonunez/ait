@@ -24,11 +24,11 @@ describe("ConnectorXDataSource", () => {
       const mockClient = agent.get(xEndpoint);
       mockClient
         .intercept({
-          path: "/2/users/me",
+          path: "/2/users/me?user.fields=username%2Cname",
           method: "GET",
           headers: { Authorization: `Bearer ${mockAccessToken}` },
         })
-        .reply(200, { data: { id: "user123" } });
+        .reply(200, { data: { id: "user123", username: "testuser", name: "Test User" } });
 
       mockClient
         .intercept({
@@ -55,13 +55,15 @@ describe("ConnectorXDataSource", () => {
       assert.equal(result.length, 1);
       assert.equal(result[0]?.id, "t1");
       assert.equal(result[0]?.__type, "tweet");
+      assert.equal(result[0]?.username, "testuser");
+      assert.equal(result[0]?.name, "Test User");
     });
 
     it("should handle invalid access token error", async () => {
       const mockClient = agent.get(xEndpoint);
       mockClient
         .intercept({
-          path: "/2/users/me",
+          path: "/2/users/me?user.fields=username%2Cname",
           method: "GET",
           headers: { Authorization: `Bearer ${mockAccessToken}` },
         })
@@ -82,11 +84,11 @@ describe("ConnectorXDataSource", () => {
 
       mockClient
         .intercept({
-          path: "/2/users/me",
+          path: "/2/users/me?user.fields=username%2Cname",
           method: "GET",
           headers: { Authorization: `Bearer ${mockAccessToken}` },
         })
-        .reply(200, { data: { id: "user123" } });
+        .reply(200, { data: { id: "user123", username: "testuser", name: "Test User" } });
 
       mockClient
         .intercept({

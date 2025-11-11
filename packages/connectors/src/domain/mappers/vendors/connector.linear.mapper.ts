@@ -44,16 +44,34 @@ const linearIssueMapping: ConnectorMapperDefinition<LinearIssueExternal, LinearI
     dataTarget: (dataTarget) => dataTarget.assigneeId!,
   },
 
+  assigneeName: {
+    external: (external) => external.assignee?.name ?? null,
+    domain: (domain) => domain.assigneeName,
+    dataTarget: (dataTarget) => dataTarget.assigneeName ?? null,
+  },
+
   teamId: {
     external: (external) => external.team.id,
     domain: (domain) => domain.teamId,
     dataTarget: (dataTarget) => dataTarget.teamId,
   },
 
+  teamName: {
+    external: (external) => external.team.name ?? null,
+    domain: (domain) => domain.teamName,
+    dataTarget: (dataTarget) => dataTarget.teamName ?? null,
+  },
+
   projectId: {
     external: (external) => external.project?.id ?? null,
     domain: (domain) => domain.projectId,
     dataTarget: (dataTarget) => dataTarget.projectId!,
+  },
+
+  projectName: {
+    external: (external) => external.project?.name ?? null,
+    domain: (domain) => domain.projectName,
+    dataTarget: (dataTarget) => dataTarget.projectName ?? null,
   },
 
   url: connectorMapperPassThrough<"url", string, LinearIssueExternal, LinearIssueEntity, LinearIssueDataTarget>("url"),

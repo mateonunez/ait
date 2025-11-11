@@ -10,9 +10,9 @@ export interface LinearIssueExternal extends BaseLinearEntity {
   description?: string;
   state: { name: string };
   priority: number;
-  assignee?: { id: string };
-  team: { id: string };
-  project?: { id: string };
+  assignee?: { id: string; name: string };
+  team: { id: string; name: string };
+  project?: { id: string; name: string };
   url: string;
   labels: { nodes: Array<{ name: string }> };
   createdAt: string;
@@ -27,8 +27,11 @@ export interface LinearIssueEntity extends BaseLinearEntity {
   state: string;
   priority: number | null;
   assigneeId: string | null;
+  assigneeName: string | null;
   teamId: string;
+  teamName: string | null;
   projectId: string | null;
+  projectName: string | null;
   url: string;
   labels: string[];
   createdAt: Date;

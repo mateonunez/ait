@@ -19,7 +19,7 @@ export function PerformanceTab() {
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Latency Percentiles
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="P50 (Median)"
             value={performance.latency.seconds.p50}
@@ -70,7 +70,7 @@ export function PerformanceTab() {
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Throughput & Errors
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Requests/Second"
             value={performance.throughput.requestsPerSecond.toFixed(2)}
@@ -97,7 +97,7 @@ export function PerformanceTab() {
       {/* Error breakdown */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Error Breakdown</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Error Rate"
             value={performance.errorRate.percentage.toFixed(2)}
@@ -129,7 +129,7 @@ export function PerformanceTab() {
       {/* Latency range */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Latency Range</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Minimum"
             value={performance.latency.milliseconds.min.toFixed(0)}

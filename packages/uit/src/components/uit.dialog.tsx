@@ -119,9 +119,9 @@ export default function AItDialog({ className, ...props }: AItDialogProps) {
     <Dialog open={isOpen} onOpenChange={handleDialogClose}>
       <DialogContent
         className={cn(
-          "border-0 shadow-xl",
-          "h-[100dvh] max-h-[100dvh] w-screen max-w-screen p-0",
-          "sm:h-[90dvh] sm:max-h-[90dvh] sm:w-[90vw] sm:max-w-[90vw]",
+          "!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0",
+          "h-[100dvh] max-h-[100dvh] w-screen !max-w-none p-0",
+          "!rounded-none !border-0 shadow-xl",
           className,
         )}
         {...props}

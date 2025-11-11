@@ -1,5 +1,6 @@
 import type { GitHubPullRequestDataTarget } from "@ait/postgres";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 
 export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> {
   public getEmbeddingText(pullRequest: GitHubPullRequestDataTarget): string {
@@ -10,8 +11,20 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
     parts.push(`I ${this._getAuthorAction(pullRequest)} ${prIdentifier}`);
 
     // Repository context (if available)
-    if (pullRequest.repositoryId) {
+    const repoName = pullRequest.repositoryFullName || pullRequest.repositoryName;
+    if (repoName) {
+      parts.push(`in \`${repoName}\``);
+    } else if (pullRequest.repositoryId) {
       parts.push(`in repository ${pullRequest.repositoryId}`);
+    }
+
+    // CRITICAL: Include PR body/description for context about WHY changes were made
+    if (pullRequest.body && pullRequest.body.trim().length > 0) {
+      // Sanitize and truncate to prevent JSON encoding errors
+      const sanitizedBody = TextSanitizer.sanitize(pullRequest.body, 300);
+      if (sanitizedBody) {
+        parts.push(`Description: ${sanitizedBody}`);
+      }
     }
 
     // State and draft status
@@ -187,9 +200,19 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubPullRequestDataTarget): U {
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
+
+    // CRITICAL: Sanitize all text fields in the payload to prevent JSON encoding errors
+    const sanitizedPayload = {
+      ...entityWithoutInternalTimestamps,
+      title: TextSanitizer.sanitize(entityWithoutInternalTimestamps.title, 500),
+      body: entityWithoutInternalTimestamps.body
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.body, 2000)
+        : null,
+    };
+
     return {
       __type: "pull_request",
-      ...entityWithoutInternalTimestamps,
+      ...sanitizedPayload,
     } as unknown as U;
   }
 }

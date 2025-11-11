@@ -16,7 +16,7 @@ export function ErrorsTab() {
       {/* Error summary */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Error Summary</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Total Errors"
             value={errors.summary.totalErrors}
@@ -61,7 +61,6 @@ export function ErrorsTab() {
           </h3>
           <div className="space-y-2">
             {errors.byCategory.map((category, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: yup
               <div
                 key={`error-category-${category.category}-${i}`}
                 className="p-3 rounded border border-border/50 bg-muted/30"
@@ -107,7 +106,6 @@ export function ErrorsTab() {
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Top Errors</h3>
           <div className="space-y-2">
             {errors.topErrors.slice(0, 5).map((error, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: yup
               <div
                 key={`top-error-${error.fingerprint}-${i}`}
                 className="p-3 rounded border border-border/50 bg-muted/30"

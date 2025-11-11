@@ -46,6 +46,8 @@ export interface GitHubPullRequestEntity {
   baseRef: string | null;
   baseSha: string | null;
   repositoryId: string | null;
+  repositoryName: string | null;
+  repositoryFullName: string | null;
   mergeable: boolean | null;
   maintainerCanModify: boolean;
 

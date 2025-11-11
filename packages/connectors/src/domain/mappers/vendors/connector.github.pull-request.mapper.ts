@@ -167,6 +167,18 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget) => dataTarget.repositoryId ?? null,
   },
 
+  repositoryName: {
+    external: (external) => external.base?.repo?.name ?? null,
+    domain: (domain) => domain.repositoryName,
+    dataTarget: (dataTarget) => dataTarget.repositoryName ?? null,
+  },
+
+  repositoryFullName: {
+    external: (external) => external.base?.repo?.full_name ?? null,
+    domain: (domain) => domain.repositoryFullName,
+    dataTarget: (dataTarget) => dataTarget.repositoryFullName ?? null,
+  },
+
   mergeable: {
     external: (external) => external.mergeable ?? null,
     domain: (domain) => domain.mergeable,

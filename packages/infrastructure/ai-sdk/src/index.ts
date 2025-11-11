@@ -42,6 +42,11 @@ export * from "./services/analytics/failure-analysis.service";
 export * from "./services/analytics/cache-analytics.service";
 export * from "./services/analytics/types";
 
+export * from "./services/metadata/reasoning-extraction.service";
+export * from "./services/metadata/task-breakdown.service";
+export * from "./services/metadata/suggestions.service";
+export * from "./services/metadata/model-info.service";
+
 export * from "./tools/connectors.tools";
 export { convertToOllamaTools } from "./tools/tool.converter";
 export type { OllamaTool, OllamaToolCall } from "./client/ollama.provider";
@@ -54,3 +59,8 @@ export * from "./telemetry/telemetry.middleware";
 export * from "./types";
 export type { ChatMessage, MessageRole } from "./types/chat";
 export { formatConversationHistory } from "./types/chat";
+
+// Utilities
+export * from "./utils/stream-parser.util";
+export * from "./utils/metadata-formatter.util";
+export * from "./utils/model-capabilities.util";

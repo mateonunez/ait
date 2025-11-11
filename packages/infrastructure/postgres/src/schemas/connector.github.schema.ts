@@ -68,6 +68,8 @@ export const githubPullRequests = pgTable("github_pull_requests", {
   baseRef: varchar("base_ref", { length: 255 }),
   baseSha: varchar("base_sha", { length: 255 }),
   repositoryId: varchar("repository_id", { length: 255 }),
+  repositoryName: varchar("repository_name", { length: 255 }),
+  repositoryFullName: varchar("repository_full_name", { length: 512 }),
   mergeable: boolean("mergeable"),
   maintainerCanModify: boolean("maintainer_can_modify").default(false),
 

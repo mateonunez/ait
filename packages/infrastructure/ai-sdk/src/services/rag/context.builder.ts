@@ -193,6 +193,8 @@ const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (m
   const state = safeString(meta.state);
   const merged = meta.merged ? "merged" : null;
   const draft = meta.draft ? "draft" : null;
+  const repositoryName = safeString(meta.repositoryFullName || meta.repositoryName);
+  const body = safeString(meta.body);
 
   // Build stats
   const stats: string[] = [];
@@ -207,6 +209,11 @@ const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (m
     stats.push(`${changedFiles} file${changedFiles === 1 ? "" : "s"}`);
   }
 
+  const commits = safeNumber(meta.commits);
+  if (commits !== null && commits > 0) {
+    stats.push(`${commits} commit${commits === 1 ? "" : "s"}`);
+  }
+
   // Build action verb based on state
   let action = "I worked on PR";
   if (merged) action = "I merged PR";
@@ -214,19 +221,36 @@ const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (m
   else if (draft) action = "I drafted PR";
   else if (state === "open") action = "I opened PR";
 
-  return joinParts(`${action} #${number ?? "?"}`, `: "${title}"`, stats.length > 0 ? `, ${stats.join(", ")}` : null);
+  // Build repository context
+  const repoContext = repositoryName ? ` in \`${repositoryName}\`` : "";
+
+  // Include truncated body if available
+  const bodyPreview = body && body.length > 0 ? `\nDescription: ${truncate(body, 150)}` : "";
+
+  return joinParts(
+    `${action} #${number ?? "?"}${repoContext}`,
+    `: "${title}"`,
+    stats.length > 0 ? `. Changes: ${stats.join(", ")}` : null,
+    bodyPreview,
+  );
 };
 
 const buildXTweet: EntityContentBuilder<XTweetEntity> = (meta, pageContent) => {
   const text = safeString(meta.text || pageContent, "");
   const retweetCount = safeNumber(meta.retweetCount);
   const likeCount = safeNumber(meta.likeCount);
+  const replyCount = safeNumber(meta.replyCount);
+  const authorName = safeString(meta.authorName);
+  const authorUsername = safeString(meta.authorUsername);
 
   const engagement: string[] = [];
   if (retweetCount !== null && retweetCount > 0) engagement.push(`${retweetCount} retweets`);
   if (likeCount !== null && likeCount > 0) engagement.push(`${likeCount} likes`);
+  if (replyCount !== null && replyCount > 0) engagement.push(`${replyCount} replies`);
 
-  return joinParts(`I tweeted: ${text}`, engagement.length > 0 ? ` (${engagement.join(", ")})` : null);
+  const authorInfo = authorName || authorUsername ? ` (@${authorUsername || authorName})` : "";
+
+  return joinParts(`I tweeted${authorInfo}: ${text}`, engagement.length > 0 ? ` (${engagement.join(", ")})` : null);
 };
 
 const buildLinearIssue: EntityContentBuilder<LinearIssueEntity> = (meta) => {
@@ -235,12 +259,25 @@ const buildLinearIssue: EntityContentBuilder<LinearIssueEntity> = (meta) => {
   const state = safeString(meta.state);
   const priority = safeNumber(meta.priority);
   const labels = safeArray<string>(meta.labels);
-  const assigneeId = safeString(meta.assigneeId);
+  const assigneeName = safeString(meta.assigneeName);
+  const teamName = safeString(meta.teamName);
+  const projectName = safeString(meta.projectName);
+
+  const priorityLabels: Record<number, string> = {
+    0: "Urgent",
+    1: "High",
+    2: "Medium",
+    3: "Low",
+    4: "No priority",
+  };
+  const priorityLabel = priority !== null ? priorityLabels[priority] || `Priority ${priority}` : null;
 
   const parts: string[] = [`Issue: "${title}"`];
   if (state) parts.push(` [${state}]`);
-  if (priority !== null) parts.push(` (Priority: ${priority})`);
-  if (assigneeId) parts.push(`, assigned to ${assigneeId}`);
+  if (teamName) parts.push(` in ${teamName}`);
+  if (priorityLabel) parts.push(` (${priorityLabel})`);
+  if (assigneeName) parts.push(`, assigned to ${assigneeName}`);
+  if (projectName) parts.push(`, project: ${projectName}`);
   if (description) parts.push(`\n${truncate(description, 200)}`);
   if (labels.length > 0) parts.push(`\nLabels: ${labels.join(", ")}`);
 
