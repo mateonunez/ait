@@ -3,12 +3,33 @@ import { MetricCard } from "../metric-card";
 import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export function OverviewTab() {
-  const { health, performance, cache, cost, quality, system } = useStats();
+  const { health, performance, cache, cost, quality, system, isLoading } = useStats();
 
-  if (!health || !performance || !cost || !system) {
+  // Show loading state
+  if (isLoading && !health && !performance && !cost && !system) {
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">Loading overview...</div>
     );
+  }
+
+  // Show error state if critical data is missing after loading
+  if (!isLoading && (!health || !performance || !cost || !system)) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 space-y-2">
+        <div className="text-sm font-medium text-muted-foreground">Failed to load some metrics</div>
+        <div className="text-xs text-muted-foreground">
+          Missing:{" "}
+          {[!health && "Health", !performance && "Performance", !cost && "Cost", !system && "System"]
+            .filter(Boolean)
+            .join(", ")}
+        </div>
+      </div>
+    );
+  }
+
+  // At this point, we have all required data
+  if (!health || !performance || !cost || !system) {
+    return null;
   }
 
   const getHealthStatus = (): "good" | "warning" | "critical" => {
@@ -44,7 +65,7 @@ export function OverviewTab() {
   return (
     <div className="space-y-6">
       {/* Key metrics grid */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <MetricCard
           label="Health Status"
           value={health.health.healthy ? "Healthy" : "Degraded"}
@@ -68,7 +89,7 @@ export function OverviewTab() {
       </div>
 
       {/* Performance metrics */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <MetricCard
           label="P95 Latency"
           value={performance.latency.seconds.p95}
@@ -94,7 +115,7 @@ export function OverviewTab() {
       </div>
 
       {/* Cost and Quality */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <MetricCard
           label="Total Cost"
           value={cost.cost.total.formatted}

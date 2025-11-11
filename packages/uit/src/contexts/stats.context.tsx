@@ -42,7 +42,7 @@ export function StatsProvider({ children }: { children: ReactNode }) {
   const [system, setSystem] = useState<SystemData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const [windowMinutes, setWindowMinutes] = useState(60);
 
   const refreshStats = useCallback(async () => {
@@ -78,11 +78,6 @@ export function StatsProvider({ children }: { children: ReactNode }) {
 
     return () => clearInterval(interval);
   }, [autoRefresh, refreshStats]);
-
-  // Initial load
-  useEffect(() => {
-    refreshStats();
-  }, [refreshStats]);
 
   return (
     <StatsContext.Provider

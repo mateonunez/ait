@@ -48,7 +48,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
 
     this._maxDocs = config.maxDocs ?? 100;
     this._concurrency = Math.min(Math.max(config.concurrency ?? 4, 1), 8);
-    this._scoreThreshold = config.scoreThreshold ?? 0.3;
+    this._scoreThreshold = config.scoreThreshold ?? 0.2;
     this._useHyDE = config.useHyDE ?? true;
   }
 
@@ -75,9 +75,9 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     });
 
     const perQueryK = Math.max(20, Math.ceil((this._maxDocs * 1.5) / Math.max(1, queryPlan.queries.length)));
-    const targetUnique = this._maxDocs; // early-stop when we have enough unique docs
+    const targetUnique = this._maxDocs;
 
-    const parallelResults = await this._executeQueriesInParallel<TMetadata>(
+    let parallelResults = await this._executeQueriesInParallel<TMetadata>(
       vectorStore,
       queryPlan.queries,
       perQueryK,
@@ -86,16 +86,40 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       traceContext,
     );
 
-    const allResults: QueryResult<TMetadata>[] = [...parallelResults];
+    let allResults: QueryResult<TMetadata>[] = [...parallelResults];
 
-    // HyDE gating: only use when unique results appear low
     const uniqueFromParallel = new Set<string>();
     for (const pr of parallelResults) {
       for (const [doc] of pr.results) {
         uniqueFromParallel.add(this._getDocumentId(doc as Document<BaseMetadata>));
       }
     }
-    const uniqueCount = uniqueFromParallel.size;
+    let uniqueCount = uniqueFromParallel.size;
+
+    if (uniqueCount === 0 && typeFilterResult?.timeRange) {
+      console.warn("No results with time filter, retrying without time constraints...");
+      const typeFilterWithoutTime = typeFilterResult.types ? { types: typeFilterResult.types } : undefined;
+
+      parallelResults = await this._executeQueriesInParallel<TMetadata>(
+        vectorStore,
+        queryPlan.queries,
+        perQueryK,
+        typeFilterWithoutTime,
+        targetUnique,
+        traceContext,
+      );
+
+      allResults = [...parallelResults];
+      uniqueFromParallel.clear();
+      for (const pr of parallelResults) {
+        for (const [doc] of pr.results) {
+          uniqueFromParallel.add(this._getDocumentId(doc as Document<BaseMetadata>));
+        }
+      }
+      uniqueCount = uniqueFromParallel.size;
+
+      console.info("Retry without time filter completed", { uniqueCount });
+    }
 
     const shouldUseHyDE = this._useHyDE && !!this._hyde && uniqueCount < Math.floor(this._maxDocs * 0.6);
 
@@ -144,7 +168,16 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       topScores: ranked.slice(0, 3).map((r) => r.finalScore.toFixed(3)),
     });
 
-    let finalResults = ranked.slice(0, this._maxDocs * 2).map((h) => h.doc);
+    let finalResults = ranked.slice(0, this._maxDocs * 2).map((h) => {
+      const doc = h.doc;
+      doc.metadata = {
+        ...doc.metadata,
+        score: h.finalScore,
+        bestScore: h.bestScore,
+        rrfScore: h.rrfScore,
+      };
+      return doc;
+    });
 
     if (this._reranker && finalResults.length > 5) {
       const baseResults = finalResults.slice();

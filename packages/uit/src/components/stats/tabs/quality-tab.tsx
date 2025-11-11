@@ -24,7 +24,7 @@ export function QualityTab() {
       {/* Quality overview */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Quality Overview</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Quality Score"
             value={quality.qualityScore.toFixed(1)}
@@ -63,7 +63,7 @@ export function QualityTab() {
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Feedback Breakdown
         </h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Thumbs Up"
             value={quality.feedback.thumbsUp}
@@ -173,7 +173,6 @@ export function QualityTab() {
           </h3>
           <div className="space-y-1">
             {quality.trend.slice(-5).map((point, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: yup
               <div
                 key={`quality-trend-${point.timestamp}-${i}`}
                 className="flex items-center gap-2 p-2 rounded border border-border/50 bg-muted/30"

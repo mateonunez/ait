@@ -1,0 +1,318 @@
+import { useState, useMemo, useEffect } from "react";
+import {
+  X,
+  Settings,
+  Activity,
+  BarChart3,
+  Database,
+  Brain,
+  ListChecks,
+  Wrench,
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
+import { Conversation, PromptInput, ModelSelector, Suggestions } from "./ai-elements";
+import { StatsDashboard } from "./stats/stats-dashboard";
+import { ContextWindowTracker } from "./context-window-tracker";
+import { useAItChat } from "@/hooks/useAItChat";
+import { cn } from "@/styles/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
+import { listModels } from "@/utils/api";
+
+interface AIChatDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+type SidePanel = "settings" | null;
+
+export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
+  const { messages, isLoading, currentMetadata, tokenUsage, sendMessage, selectedModel, setSelectedModel } = useAItChat(
+    {
+      enableMetadata: true,
+    },
+  );
+
+  const [sidePanel, setSidePanel] = useState<SidePanel>(null);
+  const [showMetrics, setShowMetrics] = useState(false);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [_modelsLoading, setModelsLoading] = useState(true);
+
+  // Fetch available models on mount
+  useEffect(() => {
+    setModelsLoading(true);
+    listModels()
+      .then((models) => {
+        setAvailableModels(models);
+        setModelsLoading(false);
+      })
+      .catch((error) => {
+        console.error("[AIChatDialog] Failed to fetch models:", error);
+        setModelsLoading(false);
+      });
+  }, []);
+
+  // Get current model's context window
+  const currentModelInfo = useMemo(
+    () => availableModels.find((m) => m.id === selectedModel),
+    [availableModels, selectedModel],
+  );
+
+  // Use 128K as default (matches GPT-OSS) until models load
+  const maxContextWindow = currentModelInfo?.contextWindow || 128000;
+
+  const streamingMessageId = isLoading ? messages[messages.length - 1]?.id : undefined;
+  const hasSuggestions = currentMetadata?.suggestions && currentMetadata.suggestions.length > 0;
+
+  // Get metadata from the latest assistant message for display in settings
+  const latestAssistantMessage = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "assistant") {
+        return messages[i];
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const handleSuggestionClick = (suggestion: any) => {
+    // If suggestion has an action, handle it
+    if (suggestion.action?.type === "prompt") {
+      sendMessage(suggestion.text);
+    } else {
+      // Default: use suggestion text as prompt
+      sendMessage(suggestion.text);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 h-[100dvh] max-h-[100dvh] w-screen !max-w-none p-0 gap-0 flex flex-col [&>button]:hidden !rounded-none !border-0">
+        <DialogTitle className="sr-only">AIt Chat</DialogTitle>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-semibold">AIt Chat</h2>
+            <ModelSelector selectedModelId={selectedModel} onModelSelect={setSelectedModel} />
+          </div>
+
+          {/* Context window tracker */}
+          <div className="flex items-center gap-3">
+            <ContextWindowTracker tokenUsage={tokenUsage} maxContextWindow={maxContextWindow} compact />
+          </div>
+
+          {/* Header controls */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSidePanel(sidePanel === "settings" ? null : "settings")}
+              className={cn("p-2 rounded-lg hover:bg-muted transition-colors", sidePanel === "settings" && "bg-muted")}
+              title="Settings"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="p-2 rounded-lg hover:bg-muted transition-colors"
+              title="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="flex-1 flex min-h-0">
+          {/* Chat area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto custom-scrollbar">
+              {messages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full px-6 py-12 space-y-6">
+                  <div className="text-center space-y-2">
+                    <h2 className="text-2xl font-semibold">Start a conversation</h2>
+                    <p className="text-muted-foreground">
+                      Ask me anything and I'll help you with context-aware responses
+                      <br />
+                      powered by RAG and tool calling.
+                    </p>
+                  </div>
+                  <div className="w-full max-w-2xl mx-auto">
+                    <p className="text-xs text-muted-foreground mb-3 text-center">Try asking:</p>
+                    <Suggestions
+                      variant="simple"
+                      suggestions={[
+                        { id: "1", type: "question", text: "What are you listening to right now?" },
+                        { id: "2", type: "question", text: "Show me my recent GitHub activity" },
+                        { id: "3", type: "question", text: "What did I tweet about today?" },
+                        { id: "4", type: "question", text: "Summarize my day based on my activity" },
+                      ]}
+                      onSuggestionClick={handleSuggestionClick}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Conversation messages={messages} streamingMessageId={streamingMessageId} />
+              )}
+            </div>
+
+            {/* Dynamic Suggestions (after messages) */}
+            {hasSuggestions && !isLoading && messages.length > 0 && (
+              <div className="px-6 py-3 border-t border-border">
+                <Suggestions suggestions={currentMetadata.suggestions} onSuggestionClick={handleSuggestionClick} />
+              </div>
+            )}
+
+            {/* Input */}
+            <div className="px-6 py-4 border-t border-border">
+              <PromptInput onSubmit={sendMessage} disabled={isLoading} />
+            </div>
+          </div>
+
+          {/* Side panel */}
+          <AnimatePresence>
+            {sidePanel === "settings" && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 400, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="border-l border-border overflow-hidden"
+              >
+                <div className="w-[400px] h-full overflow-y-auto custom-scrollbar p-4 space-y-4">
+                  {/* Always show context window tracker in side panel */}
+                  <ContextWindowTracker tokenUsage={tokenUsage} maxContextWindow={maxContextWindow} />
+
+                  {/* Settings content */}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-3">Model Selection</h3>
+                      <ModelSelector
+                        selectedModelId={selectedModel}
+                        onModelSelect={setSelectedModel}
+                        className="w-full"
+                      />
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4">
+                      <h3 className="text-sm font-medium mb-3">Features</h3>
+                      <div className="space-y-2.5">
+                        {/* RAG Context */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Database className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">RAG Context</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {latestAssistantMessage?.metadata?.context ? (
+                              <>
+                                <Badge variant="secondary" className="text-xs">
+                                  {latestAssistantMessage.metadata.context.documents?.length || 0} docs
+                                </Badge>
+                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </>
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground/30" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Chain of Thought */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Brain className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">Chain of Thought</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {latestAssistantMessage?.metadata?.reasoning &&
+                            latestAssistantMessage.metadata.reasoning.length > 0 ? (
+                              <>
+                                <Badge variant="secondary" className="text-xs">
+                                  {latestAssistantMessage.metadata.reasoning.length} steps
+                                </Badge>
+                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </>
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground/30" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Task Breakdown */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <ListChecks className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">Task Breakdown</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {latestAssistantMessage?.metadata?.tasks &&
+                            latestAssistantMessage.metadata.tasks.length > 0 ? (
+                              <>
+                                <Badge variant="secondary" className="text-xs">
+                                  {latestAssistantMessage.metadata.tasks.length} tasks
+                                </Badge>
+                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </>
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground/30" />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Tool Calls */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Wrench className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm">Tool Calls</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {latestAssistantMessage?.metadata?.toolCalls &&
+                            latestAssistantMessage.metadata.toolCalls.length > 0 ? (
+                              <>
+                                <Badge variant="secondary" className="text-xs">
+                                  {latestAssistantMessage.metadata.toolCalls.length} tools
+                                </Badge>
+                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                              </>
+                            ) : (
+                              <Circle className="h-4 w-4 text-muted-foreground/30" />
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground pt-2 border-t">
+                          Features are auto-detected per message
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4">
+                      <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
+                        <Activity className="h-4 w-4" />
+                        System Metrics
+                      </h3>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        Monitor performance, health, and quality metrics in real-time.
+                      </p>
+                      <Button onClick={() => setShowMetrics(true)} variant="outline" className="w-full" size="sm">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Open Metrics Dashboard
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </DialogContent>
+
+      {/* Metrics Dashboard */}
+      <StatsDashboard isOpen={showMetrics} onClose={() => setShowMetrics(false)} />
+    </Dialog>
+  );
+}

@@ -15,7 +15,7 @@ export function CostTab() {
       {/* Current costs */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Current Costs</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard label="Total Cost" value={cost.cost.total.formatted} status="neutral" detail="Since startup" />
           <MetricCard
             label="Generation Cost"
@@ -35,7 +35,7 @@ export function CostTab() {
       {/* Token usage */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Token Usage</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Generation Tokens"
             value={cost.cost.generation.tokens.toLocaleString()}
@@ -60,7 +60,7 @@ export function CostTab() {
       {/* Projections */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cost Projections</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Daily Projection"
             value={cost.projections.daily.formatted}
@@ -128,7 +128,7 @@ export function CostTab() {
       {/* Cost efficiency */}
       <div>
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Cost Efficiency</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MetricCard
             label="Cost per 1K Tokens"
             value={(

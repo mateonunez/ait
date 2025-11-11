@@ -15,6 +15,18 @@ const xTweetMapping: ConnectorMapperDefinition<XTweetExternal, XTweetEntity, XTw
     dataTarget: (dataTarget) => dataTarget.authorId,
   },
 
+  authorUsername: {
+    external: (external) => external.username ?? null,
+    domain: (domain) => domain.authorUsername,
+    dataTarget: (dataTarget) => dataTarget.authorUsername ?? null,
+  },
+
+  authorName: {
+    external: (external) => external.name ?? null,
+    domain: (domain) => domain.authorName,
+    dataTarget: (dataTarget) => dataTarget.authorName ?? null,
+  },
+
   lang: connectorMapperPassThrough<"lang", string | null | undefined, XTweetExternal, XTweetEntity, XTweetDataTarget>(
     "lang",
     {
@@ -42,6 +54,18 @@ const xTweetMapping: ConnectorMapperDefinition<XTweetExternal, XTweetEntity, XTw
     external: (external) => external.public_metrics?.like_count ?? 0,
     domain: (domain) => domain.likeCount,
     dataTarget: (dataTarget) => dataTarget.likeCount ?? 0,
+  },
+
+  replyCount: {
+    external: (external) => external.public_metrics?.reply_count ?? 0,
+    domain: (domain) => domain.replyCount,
+    dataTarget: (dataTarget) => dataTarget.replyCount ?? 0,
+  },
+
+  quoteCount: {
+    external: (external) => external.public_metrics?.quote_count ?? 0,
+    domain: (domain) => domain.quoteCount,
+    dataTarget: (dataTarget) => dataTarget.quoteCount ?? 0,
   },
 
   createdAt: {

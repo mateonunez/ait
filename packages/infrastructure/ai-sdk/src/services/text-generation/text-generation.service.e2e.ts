@@ -5,6 +5,7 @@ import { initAItClient } from "../../client/ai-sdk.client";
 import { smoothStream } from "./utils/stream.utils";
 import type { ChatMessage } from "../../types/chat";
 import { GenerationModels, EmbeddingModels } from "../../config/models.config";
+import type { StreamEvent } from "../../types/streaming/stream-events";
 
 describe("AIt Personality Integration (AI SDK)", () => {
   const timeout = 1800000;
@@ -39,17 +40,25 @@ describe("AIt Personality Integration (AI SDK)", () => {
       salta il linguaggio corporate.
     `;
 
-      const result = await smoothStream(
-        service.generateStream({
-          prompt,
-          enableRAG: true,
-        }),
-        {
-          delay: 50,
-          prefix: "AIt:",
-          cursor: "▌",
-        },
-      );
+      const stream = service.generateStream({
+        prompt,
+        enableRAG: true,
+      });
+
+      // Filter to only get text chunks
+      async function* textOnly(source: AsyncGenerator<string | StreamEvent>) {
+        for await (const chunk of source) {
+          if (typeof chunk === "string") {
+            yield chunk;
+          }
+        }
+      }
+
+      const result = await smoothStream(textOnly(stream), {
+        delay: 50,
+        prefix: "AIt:",
+        cursor: "▌",
+      });
 
       console.log("Generated stream text:", result);
 
@@ -65,18 +74,26 @@ describe("AIt Personality Integration (AI SDK)", () => {
 
     const prompt = "E di cosa ti occupi?";
 
-    const result = await smoothStream(
-      service.generateStream({
-        prompt,
-        enableRAG: true,
-        messages: messages,
-      }),
-      {
-        delay: 50,
-        prefix: "AIt:",
-        cursor: "▌",
-      },
-    );
+    const stream = service.generateStream({
+      prompt,
+      enableRAG: true,
+      messages: messages,
+    });
+
+    // Filter to only get text chunks
+    async function* textOnly(source: AsyncGenerator<string | StreamEvent>) {
+      for await (const chunk of source) {
+        if (typeof chunk === "string") {
+          yield chunk;
+        }
+      }
+    }
+
+    const result = await smoothStream(textOnly(stream), {
+      delay: 50,
+      prefix: "AIt:",
+      cursor: "▌",
+    });
 
     console.log("\n=== Streaming with History ===");
     console.log("Result:", result);

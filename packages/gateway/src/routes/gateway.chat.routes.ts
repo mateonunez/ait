@@ -5,6 +5,12 @@ import {
   initAItClient,
   getLangfuseProvider,
   type TextGenerationService,
+  type StreamEvent,
+  STREAM_EVENT,
+  isTextChunk,
+  isMetadataChunk,
+  isCompletionData,
+  isErrorEvent,
 } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { ChatMessage } from "@ait/ai-sdk";
@@ -28,6 +34,8 @@ declare module "fastify" {
 
 interface ChatRequestBody {
   messages: ChatMessage[];
+  model?: string;
+  enableMetadata?: boolean;
 }
 
 // Initialize AI SDK with telemetry
@@ -78,7 +86,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
   fastify.post("/", async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
     try {
-      const { messages } = request.body;
+      const { messages, model, enableMetadata = true } = request.body;
 
       if (!messages || !Array.isArray(messages) || messages.length === 0) {
         return reply.status(400).send({ error: "Messages array is required" });
@@ -111,8 +119,9 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           enableRAG: true,
           messages: conversationHistory,
           tools,
-          maxToolRounds: 2,
+          maxToolRounds: 1,
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
+          enableMetadata, // Enable metadata streaming
           traceId, // Pass custom traceId
           userId: request.headers["x-user-id"] as string | undefined,
           sessionId: request.headers["x-session-id"] as string | undefined,
@@ -121,15 +130,36 @@ export default async function chatRoutes(fastify: FastifyInstance) {
             version: APP_VERSION,
             environment: APP_ENVIRONMENT,
             deploymentTimestamp: DEPLOYMENT_TIMESTAMP,
+            model: model || "default",
           },
         });
 
         let firstChunk = true;
         for await (const chunk of stream) {
-          reply.raw.write(`0:${JSON.stringify(chunk)}\n`);
+          // Check if chunk is a string (old format) or StreamEvent (new format)
+          if (typeof chunk === "string") {
+            // Text chunk - use text event type
+            reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(chunk)}\n`);
+          } else {
+            // StreamEvent - handle different event types
+            const event = chunk as StreamEvent;
+
+            if (isTextChunk(event)) {
+              // Text content
+              reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(event.data)}\n`);
+            } else if (isMetadataChunk(event)) {
+              // Metadata (context, reasoning, tasks, suggestions, etc.)
+              reply.raw.write(`${STREAM_EVENT.METADATA}:${JSON.stringify(event.data)}\n`);
+            } else if (isCompletionData(event)) {
+              // Completion data
+              reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify(event.data)}\n`);
+            } else if (isErrorEvent(event)) {
+              // Error event
+              reply.raw.write(`${STREAM_EVENT.ERROR}:${JSON.stringify(event.data)}\n`);
+            }
+          }
 
           // On first chunk, store the traceId mapping for feedback
-          // We'll use a simple approach: store by timestamp and match later
           if (firstChunk) {
             const timestamp = Date.now();
             (global as any).__messageToTraceMap[timestamp] = traceId;
@@ -144,7 +174,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           }
         }
 
-        reply.raw.write(`d:${JSON.stringify({ finishReason: "stop", traceId })}\n`);
+        reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify({ finishReason: "stop", traceId })}\n`);
 
         // Flush telemetry data to Langfuse with proper timing
         const langfuseProvider = getLangfuseProvider();
@@ -170,7 +200,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         }
       } catch (streamError: any) {
         fastify.log.error({ err: streamError, route: "/chat" }, "Stream error occurred.");
-        reply.raw.write(`3:${JSON.stringify(streamError.message || "Stream generation failed")}\n`);
+        reply.raw.write(`${STREAM_EVENT.ERROR}:${JSON.stringify(streamError.message || "Stream generation failed")}\n`);
 
         // Attempt to flush telemetry even on error
         const langfuseProvider = getLangfuseProvider();

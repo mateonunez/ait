@@ -47,7 +47,16 @@ export class RerankService implements IRerankService {
 
       scored.sort((a, b) => b.score - a.score);
 
-      const result = scored.slice(0, topK).map((s) => s.doc);
+      // Attach rerank scores to documents (normalized to 0-1 range)
+      const result = scored.slice(0, topK).map((s) => {
+        const doc = s.doc;
+        doc.metadata = {
+          ...doc.metadata,
+          score: s.score / 10, // Normalize 0-10 to 0-1
+          rerankScore: s.score,
+        };
+        return doc;
+      });
 
       console.debug("Reranking completed", {
         inputDocs: documents.length,

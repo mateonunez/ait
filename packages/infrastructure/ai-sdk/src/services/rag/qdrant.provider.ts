@@ -173,8 +173,7 @@ export class QdrantProvider {
       if (should.length > 0) qdrantFilter.should = should;
     }
 
-    // Use provided threshold or default to 0.3 for better quality
-    const effectiveThreshold = scoreThreshold ?? 0.3;
+    const effectiveThreshold = scoreThreshold ?? 0.2;
 
     const searchResult = await this._client.search(this._config.collectionName, {
       vector: queryVector,

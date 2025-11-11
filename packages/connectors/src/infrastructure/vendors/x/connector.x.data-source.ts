@@ -1,5 +1,4 @@
 import { requestJson } from "@ait/core";
-import { AItError } from "@ait/core";
 import type { Response } from "undici";
 import type { XTweetExternal } from "../../../types/domain/entities/vendors/connector.x.repository.types";
 import { ait } from "../../../shared/constants/ait.constant";
@@ -11,7 +10,7 @@ export interface IConnectorXDataSource {
 export class ConnectorXDataSource implements IConnectorXDataSource {
   private readonly apiUrl: string;
   private accessToken: string;
-  private _userId: string | null = null;
+  private _userInfo: { id: string; username: string; name: string } | null = null;
 
   constructor(accessToken: string) {
     this.apiUrl = process.env.X_API_ENDPOINT || "https://api.x.com/2";
@@ -19,20 +18,23 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
   }
 
   async fetchTweets(): Promise<XTweetExternal[]> {
-    const userId = await this._fetchUserId();
+    const userInfo = await this._fetchUserInfo();
+
     const params = new URLSearchParams({
       "tweet.fields": "author_id,created_at,id,text,public_metrics,entities,lang",
       max_results: "5",
     });
 
-    const endpoint = `/users/${userId}/tweets?${params.toString()}`;
+    const endpoint = `/users/${userInfo.id}/tweets?${params.toString()}`;
     const response = await this._fetchFromX<{
-      data: XTweetExternal[];
+      data: Record<string, unknown>[];
       meta: { result_count: number };
     }>(endpoint);
 
     return response.data.map((tweet) => ({
       ...tweet,
+      username: userInfo.username,
+      name: userInfo.name,
       __type: "tweet" as const,
     }));
   }
@@ -44,38 +46,35 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
   ): Promise<T> {
     const url = `${this.apiUrl}${endpoint}`;
 
-    try {
-      const result = await requestJson<T>(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/json",
-          "User-Agent": `${ait} Connector V1.0.0`,
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
+    const result = await requestJson<T>(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
+        "User-Agent": `${ait} Connector V1.0.0`,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
 
-      if (!result.ok) {
-        // Handle rate limit via header on error path if available
-        // We cannot directly inspect headers from here because requestJson returns normalized on success.
-        throw result.error;
-      }
-
-      return result.value.data as unknown as T;
-    } catch (error: any) {
-      if (error instanceof AItError) {
-        throw error;
-      }
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
+    if (!result.ok) {
+      throw result.error;
     }
+
+    return result.value.data as unknown as T;
   }
 
-  private async _fetchUserId(): Promise<string> {
-    if (this._userId) return this._userId;
+  private async _fetchUserInfo(): Promise<{ id: string; username: string; name: string }> {
+    if (this._userInfo) return this._userInfo;
 
-    const response = await this._fetchFromX<{ data: { id: string } }>("/users/me");
-    this._userId = response.data.id;
-    return this._userId;
+    const response = await this._fetchFromX<{ data: { id: string; username: string; name: string } }>(
+      "/users/me?user.fields=username,name",
+    );
+    this._userInfo = {
+      id: response.data.id,
+      username: response.data.username,
+      name: response.data.name,
+    };
+    return this._userInfo;
   }
 
   private async _handleRateLimitExceeded<T>(

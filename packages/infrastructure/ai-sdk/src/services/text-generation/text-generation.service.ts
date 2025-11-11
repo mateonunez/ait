@@ -24,12 +24,24 @@ import { ToolExecutionService, type IToolExecutionService } from "./tool-executi
 import { PromptBuilderService, type IPromptBuilderService } from "./prompt-builder.service";
 import { ContextPreparationService, type IContextPreparationService } from "./context-preparation.service";
 import { ConversationManagerService, type IConversationManagerService } from "./conversation-manager.service";
-
+import { getReasoningExtractionService } from "../metadata/reasoning-extraction.service";
+import { getTaskBreakdownService } from "../metadata/task-breakdown.service";
+import { getSuggestionsService } from "../metadata/suggestions.service";
+import { getModelInfoService } from "../metadata/model-info.service";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import type { ChatMessage } from "../../types/chat";
 import type { Tool } from "../../types/tools";
 import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { RAGContext } from "../../types/text-generation";
+import type { StreamEvent, RAGContextMetadata, TaskStep } from "../../types";
+import {
+  STREAM_EVENT,
+  METADATA_TYPE,
+  updateTaskStatus,
+  createToolCallMetadata,
+  completeToolCall,
+  failToolCall,
+} from "../../types";
 
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
@@ -81,12 +93,36 @@ export interface GenerateStreamOptions {
     version?: string;
     environment?: string;
     deploymentTimestamp?: string;
+    model?: string;
     [key: string]: unknown;
   };
+  /** Enable metadata streaming (context, reasoning, tasks, suggestions) */
+  enableMetadata?: boolean;
 }
 
 export interface ITextGenerationService {
-  generateStream(options: GenerateStreamOptions): AsyncGenerator<string>;
+  generateStream(options: GenerateStreamOptions): AsyncGenerator<string | StreamEvent>;
+}
+
+function detectSourceType(doc: any): string {
+  const metadata = doc.metadata || {};
+
+  // Check for explicit source indicators
+  if (metadata.spotifyTrack || metadata.track) return "spotify";
+  if (metadata.twitterTweet || metadata.tweet) return "twitter";
+  if (metadata.githubPR || metadata.pull_request) return "github";
+  if (metadata.url) {
+    if (metadata.url.includes("spotify.com")) return "spotify";
+    if (metadata.url.includes("twitter.com") || metadata.url.includes("x.com")) return "twitter";
+    if (metadata.url.includes("github.com")) return "github";
+  }
+
+  // Check content type
+  if (metadata.content_type === "music" || metadata.type === "track") return "spotify";
+  if (metadata.content_type === "social" || metadata.type === "tweet") return "twitter";
+  if (metadata.content_type === "code" || metadata.type === "pr") return "github";
+
+  return "document";
 }
 
 /**
@@ -149,13 +185,20 @@ export class TextGenerationService implements ITextGenerationService {
     this._maxToolRounds = config.toolExecutionConfig?.maxRounds ?? 1;
   }
 
-  public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string> {
+  public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string | StreamEvent> {
     if (!options.prompt || !options.prompt.trim()) {
       throw new TextGenerationError("Prompt cannot be empty");
     }
 
     const correlationId = randomUUID();
     const overallStart = Date.now();
+    const enableMetadata = options.enableMetadata ?? false;
+
+    // Initialize metadata services
+    const reasoningService = getReasoningExtractionService();
+    const taskService = getTaskBreakdownService();
+    const suggestionsService = getSuggestionsService();
+    const modelInfoService = getModelInfoService();
 
     let traceContext: TraceContext | null = null;
     const enableTelemetry = shouldEnableTelemetry(options);
@@ -192,6 +235,21 @@ export class TextGenerationService implements ITextGenerationService {
 
       const client = getAItClient();
 
+      // Yield model metadata if enabled
+      if (enableMetadata) {
+        const modelId = options.metadata?.model || client.generationModelConfig.name;
+        const modelInfo = modelInfoService.getModelInfo(modelId);
+        if (modelInfo) {
+          yield {
+            type: STREAM_EVENT.METADATA,
+            data: {
+              type: METADATA_TYPE.MODEL,
+              data: modelInfo,
+            },
+          };
+        }
+      }
+
       // Process conversation history
       const conversationContext = await this._conversationManagerService.processConversation(
         options.messages,
@@ -222,6 +280,103 @@ export class TextGenerationService implements ITextGenerationService {
 
       // Prepare system message with RAG context if enabled (pass traceContext)
       const { systemMessage, ragContext } = await this._prepareSystemMessage(options, correlationId, traceContext);
+
+      // Track metadata for Langfuse
+      let ragMetadata: RAGContextMetadata | null = null;
+      const collectedReasoningSteps: any[] = [];
+      const collectedTasks: TaskStep[] = [];
+      const collectedToolCalls: any[] = [];
+      const collectedSuggestions: any[] = [];
+
+      // Yield RAG context metadata if enabled
+      if (enableMetadata && ragContext) {
+        ragMetadata = {
+          documents: ragContext.documents.map((doc: any) => ({
+            id: doc.id || `doc-${Date.now()}`,
+            content: doc.pageContent || doc.content || "",
+            score: typeof doc.score === "number" ? doc.score : doc.metadata?.score || 0.5,
+            source: {
+              type: doc.metadata?.source || doc.metadata?.type || detectSourceType(doc),
+              identifier: doc.metadata?.id || doc.metadata?.identifier,
+              url: doc.metadata?.url,
+              metadata: doc.metadata,
+            },
+            timestamp: doc.metadata?.timestamp || doc.metadata?.created_at || Date.now(),
+            entityTypes: doc.metadata?.entityTypes || doc.metadata?.entity_types || [],
+          })),
+          query: ragContext.query,
+          fallbackUsed: ragContext.fallbackUsed ?? false,
+          fallbackReason: ragContext.fallbackReason,
+          timestamp: ragContext.timestamp,
+          usedTemporalCorrelation: Boolean(ragContext.documents.length > 0),
+          contextLength: ragContext.context.length,
+          retrievalTimeMs: Date.now() - ragContext.timestamp,
+        };
+
+        yield {
+          type: STREAM_EVENT.METADATA,
+          data: {
+            type: METADATA_TYPE.CONTEXT,
+            data: ragMetadata,
+          },
+        };
+
+        // Record RAG context in Langfuse
+        if (enableTelemetry && traceContext) {
+          recordSpan(
+            "rag-context",
+            "rag",
+            traceContext,
+            { query: ragContext.query },
+            {
+              documentsCount: ragMetadata.documents.length,
+              contextLength: ragMetadata.contextLength,
+              retrievalTimeMs: ragMetadata.retrievalTimeMs,
+              fallbackUsed: ragMetadata.fallbackUsed,
+              documents: ragMetadata.documents.map((doc) => ({
+                id: doc.id,
+                score: doc.score,
+                sourceType: doc.source?.type,
+                contentPreview: doc.content.substring(0, 200),
+              })),
+            },
+          );
+        }
+      }
+
+      // Break down complex queries into tasks if enabled
+      let tasks: TaskStep[] = [];
+      if (enableMetadata && taskService.isComplexQuery(options.prompt)) {
+        tasks = taskService.breakdownQuery(options.prompt);
+        collectedTasks.push(...tasks);
+        for (const task of tasks) {
+          yield {
+            type: STREAM_EVENT.METADATA,
+            data: {
+              type: METADATA_TYPE.TASK,
+              data: task,
+            },
+          };
+        }
+
+        // Record task breakdown in Langfuse
+        if (enableTelemetry && traceContext) {
+          recordSpan(
+            "task-breakdown",
+            "generation",
+            traceContext,
+            { query: options.prompt },
+            {
+              taskCount: tasks.length,
+              tasks: tasks.map((t) => ({
+                id: t.id,
+                description: t.description,
+                status: t.status,
+              })),
+            },
+          );
+        }
+      }
 
       if (ragContext?.fallbackUsed) {
         const fallbackResponse = this._buildFallbackResponse(ragContext.fallbackReason);
@@ -291,12 +446,58 @@ export class TextGenerationService implements ITextGenerationService {
         if (checkResult.toolCalls && checkResult.toolCalls.length > 0) {
           hasToolCalls = true;
 
+          // Yield tool call metadata if enabled
+          if (enableMetadata) {
+            for (const toolCall of checkResult.toolCalls) {
+              const toolMeta = createToolCallMetadata(toolCall.function.name, toolCall.function.arguments);
+              const executingMeta = { ...toolMeta, status: "executing" as const };
+              collectedToolCalls.push(executingMeta);
+              yield {
+                type: STREAM_EVENT.METADATA,
+                data: {
+                  type: METADATA_TYPE.TOOL_CALL,
+                  data: executingMeta,
+                },
+              };
+            }
+          }
+
           // Pass traceContext to tool execution for telemetry
           const toolResults = await this._toolExecutionService.executeToolCalls(
             checkResult.toolCalls,
             options.tools,
             traceContext,
           );
+
+          // Yield completed tool call metadata if enabled
+          if (enableMetadata) {
+            for (let i = 0; i < checkResult.toolCalls.length; i++) {
+              const toolCall = checkResult.toolCalls[i];
+              const result = toolResults[i];
+
+              if (toolCall && result) {
+                const toolMeta = createToolCallMetadata(toolCall.function.name, toolCall.function.arguments);
+                const completedMeta = result.error
+                  ? failToolCall(toolMeta, result.error)
+                  : completeToolCall(toolMeta, result.result);
+
+                // Update collected tool calls (replace executing status with completed/failed)
+                const toolIndex = collectedToolCalls.findIndex((t) => t.name === toolCall.function.name);
+                if (toolIndex >= 0) {
+                  collectedToolCalls[toolIndex] = completedMeta;
+                }
+
+                yield {
+                  type: STREAM_EVENT.METADATA,
+                  data: {
+                    type: METADATA_TYPE.TOOL_CALL,
+                    data: completedMeta,
+                  },
+                };
+              }
+            }
+          }
+
           const formattedToolResults = this._toolExecutionService.formatToolResults(toolResults);
 
           currentPrompt = this._promptBuilderService.buildPrompt({
@@ -324,10 +525,104 @@ export class TextGenerationService implements ITextGenerationService {
       let chunkCount = 0;
       let fullResponse = "";
 
+      // Update task status if we're tracking tasks
+      if (enableMetadata && tasks.length > 0 && tasks[0]) {
+        const firstTask = updateTaskStatus(tasks[0], "in_progress");
+        yield {
+          type: STREAM_EVENT.METADATA,
+          data: {
+            type: METADATA_TYPE.TASK,
+            data: firstTask,
+          },
+        };
+      }
+
       for await (const chunk of stream) {
         chunkCount++;
         fullResponse += chunk;
         yield chunk;
+      }
+
+      // Mark tasks as completed if tracking
+      if (enableMetadata && tasks.length > 0) {
+        for (const task of tasks) {
+          const completedTask = updateTaskStatus(task, "completed", fullResponse.slice(0, 100));
+          yield {
+            type: STREAM_EVENT.METADATA,
+            data: {
+              type: METADATA_TYPE.TASK,
+              data: completedTask,
+            },
+          };
+        }
+      }
+
+      // Extract reasoning if enabled
+      if (enableMetadata && reasoningService.detectReasoningPatterns(fullResponse)) {
+        const reasoningSteps = reasoningService.extractReasoning(fullResponse);
+        collectedReasoningSteps.push(...reasoningSteps);
+        for (const step of reasoningSteps) {
+          yield {
+            type: STREAM_EVENT.METADATA,
+            data: {
+              type: METADATA_TYPE.REASONING,
+              data: step,
+            },
+          };
+        }
+
+        // Record reasoning in Langfuse
+        if (enableTelemetry && traceContext) {
+          recordSpan(
+            "reasoning-extraction",
+            "generation",
+            traceContext,
+            { responseText: fullResponse.substring(0, 500) },
+            {
+              stepCount: reasoningSteps.length,
+              steps: reasoningSteps.map((s) => ({
+                id: s.id,
+                type: s.type,
+                order: s.order,
+                contentPreview: s.content.substring(0, 100),
+                confidence: s.confidence,
+              })),
+            },
+          );
+        }
+      }
+
+      // Generate suggestions if enabled
+      if (enableMetadata) {
+        const suggestions = suggestionsService.generateSuggestions(options.prompt, fullResponse, options.messages);
+        collectedSuggestions.push(...suggestions);
+        if (suggestions.length > 0) {
+          yield {
+            type: STREAM_EVENT.METADATA,
+            data: {
+              type: METADATA_TYPE.SUGGESTION,
+              data: suggestions,
+            },
+          };
+
+          // Record suggestions in Langfuse
+          if (enableTelemetry && traceContext) {
+            recordSpan(
+              "suggestions-generation",
+              "generation",
+              traceContext,
+              { userQuery: options.prompt, responseText: fullResponse.substring(0, 200) },
+              {
+                suggestionCount: suggestions.length,
+                suggestions: suggestions.map((s) => ({
+                  id: s.id,
+                  type: s.type,
+                  text: s.text,
+                })),
+              },
+            );
+          }
+        }
       }
 
       const duration = Date.now() - overallStart;
@@ -359,13 +654,57 @@ export class TextGenerationService implements ITextGenerationService {
           },
         );
 
-        // End trace with complete output
+        // End trace with complete output including all metadata
         endTraceWithOutput(traceContext, {
           response: fullResponse,
           chunkCount,
           responseLength: fullResponse.length,
           duration,
           hasToolCalls,
+          // Include all collected metadata for comprehensive tracking
+          metadata: {
+            ragContext: ragMetadata
+              ? {
+                  documentsCount: ragMetadata.documents.length,
+                  contextLength: ragMetadata.contextLength,
+                  retrievalTimeMs: ragMetadata.retrievalTimeMs,
+                  fallbackUsed: ragMetadata.fallbackUsed,
+                  query: ragMetadata.query,
+                }
+              : undefined,
+            reasoning:
+              collectedReasoningSteps.length > 0
+                ? {
+                    stepCount: collectedReasoningSteps.length,
+                    types: collectedReasoningSteps.map((s) => s.type),
+                  }
+                : undefined,
+            tasks:
+              collectedTasks.length > 0
+                ? {
+                    taskCount: collectedTasks.length,
+                    statuses: collectedTasks.map((t) => t.status),
+                  }
+                : undefined,
+            toolCalls:
+              collectedToolCalls.length > 0
+                ? {
+                    toolCount: collectedToolCalls.length,
+                    tools: collectedToolCalls.map((t) => ({
+                      name: t.name,
+                      status: t.status,
+                      durationMs: t.durationMs,
+                    })),
+                  }
+                : undefined,
+            suggestions:
+              collectedSuggestions.length > 0
+                ? {
+                    suggestionCount: collectedSuggestions.length,
+                    types: collectedSuggestions.map((s) => s.type),
+                  }
+                : undefined,
+          },
         });
       }
 
