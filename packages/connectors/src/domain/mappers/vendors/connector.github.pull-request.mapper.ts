@@ -243,6 +243,69 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget) => (dataTarget.requestedReviewersData as Record<string, unknown> | null) ?? null,
   },
 
+  requestedTeamsData: {
+    external: (external) =>
+      external.requested_teams && external.requested_teams.length > 0
+        ? (external.requested_teams.map((t) => ({ ...t })) as unknown as Record<string, unknown>)
+        : null,
+    domain: (domain) => domain.requestedTeamsData,
+    dataTarget: (dataTarget) => (dataTarget.requestedTeamsData as Record<string, unknown> | null) ?? null,
+  },
+
+  rebaseable: {
+    external: (external) => external.rebaseable ?? null,
+    domain: (domain) => domain.rebaseable,
+    dataTarget: (dataTarget) => dataTarget.rebaseable ?? null,
+  },
+
+  mergeableState: {
+    external: (external) => external.mergeable_state ?? null,
+    domain: (domain) => domain.mergeableState,
+    dataTarget: (dataTarget) => dataTarget.mergeableState ?? null,
+  },
+
+  authorAssociation: {
+    external: (external) => external.author_association ?? null,
+    domain: (domain) => domain.authorAssociation,
+    dataTarget: (dataTarget) => dataTarget.authorAssociation ?? null,
+  },
+
+  autoMerge: {
+    external: (external) => (external.auto_merge ? true : null),
+    domain: (domain) => domain.autoMerge,
+    dataTarget: (dataTarget) => dataTarget.autoMerge ?? null,
+  },
+
+  activeLockReason: {
+    external: (external) => external.active_lock_reason ?? null,
+    domain: (domain) => domain.activeLockReason,
+    dataTarget: (dataTarget) => dataTarget.activeLockReason ?? null,
+  },
+
+  prCreatedAt: {
+    external: (external) => (external.created_at ? new Date(external.created_at) : null),
+    domain: (domain) => domain.prCreatedAt,
+    dataTarget: (dataTarget) => dataTarget.prCreatedAt ?? null,
+  },
+
+  prUpdatedAt: {
+    external: (external) => (external.updated_at ? new Date(external.updated_at) : null),
+    domain: (domain) => domain.prUpdatedAt,
+    dataTarget: (dataTarget) => dataTarget.prUpdatedAt ?? null,
+  },
+
+  headRepoData: {
+    external: (external) => (external.head?.repo ? ({ ...external.head.repo } as Record<string, unknown>) : null),
+    domain: (domain) => domain.headRepoData,
+    dataTarget: (dataTarget) => (dataTarget.headRepoData as Record<string, unknown> | null) ?? null,
+  },
+
+  baseRepoData: {
+    external: (external) => (external.base?.repo ? ({ ...external.base.repo } as Record<string, unknown>) : null),
+    domain: (domain) => domain.baseRepoData,
+    dataTarget: (dataTarget) => (dataTarget.baseRepoData as Record<string, unknown> | null) ?? null,
+  },
+
   __type: {
     external: () => "pull_request" as const,
     domain: (domain) => domain.__type,

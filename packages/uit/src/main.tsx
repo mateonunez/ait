@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { Router } from "wouter";
 import "./index.css";
 import App from "./App.tsx";
 import { ThemeProvider } from "./components/theme-provider";
@@ -10,16 +11,18 @@ import { ErrorBoundary } from "./components/error-boundary";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AItRoot>
-      <ThemeProvider defaultTheme="system" storageKey="uit-theme">
-        <StatsProvider>
-          <ErrorBoundary>
-            <ChatRoot>
-              <App />
-            </ChatRoot>
-          </ErrorBoundary>
-        </StatsProvider>
-      </ThemeProvider>
-    </AItRoot>
+    <Router>
+      <AItRoot>
+        <ThemeProvider defaultTheme="system" storageKey="uit-theme">
+          <StatsProvider>
+            <ErrorBoundary>
+              <ChatRoot>
+                <App />
+              </ChatRoot>
+            </ErrorBoundary>
+          </StatsProvider>
+        </ThemeProvider>
+      </AItRoot>
+    </Router>
   </StrictMode>,
 );

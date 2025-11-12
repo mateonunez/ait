@@ -9,6 +9,7 @@ import type {
   SpotifyAlbumEntity,
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
+  SpotifyImage,
 } from "../../../types/domain/entities/vendors/connector.spotify.types";
 import type {
   SpotifyArtistDataTarget,
@@ -203,6 +204,13 @@ const spotifyArtistMapping: ConnectorMapperDefinition<
     domain: (domain: SpotifyArtistEntity) => domain.genres,
     dataTarget: (dataTarget: SpotifyArtistDataTarget) => dataTarget.genres ?? [],
   },
+  images: {
+    external: (external: SpotifyArtistExternal) =>
+      external.images ? (external.images as unknown as SpotifyImage[]) : null,
+    domain: (domain: SpotifyArtistEntity) => domain.images,
+    dataTarget: (dataTarget: SpotifyArtistDataTarget) =>
+      (dataTarget.images as unknown as SpotifyImage[] | null) ?? null,
+  },
   createdAt: connectorMapperPassThrough<
     "createdAt",
     Date | null,
@@ -341,6 +349,14 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
     external: (external) => mapObjectToStringArray(external.external_urls),
     domain: (domain) => domain.externalUrls,
     dataTarget: (dataTarget) => dataTarget.externalUrls ?? [],
+  },
+
+  images: {
+    external: (external: SpotifyPlaylistExternal) =>
+      external.images ? (external.images as unknown as SpotifyImage[]) : null,
+    domain: (domain: SpotifyPlaylistEntity) => domain.images,
+    dataTarget: (dataTarget: SpotifyPlaylistDataTarget) =>
+      (dataTarget.images as unknown as SpotifyImage[] | null) ?? null,
   },
 
   createdAt: connectorMapperPassThrough<
@@ -569,6 +585,14 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
       dataTarget: (dataTarget) => dataTarget.genres ?? [],
     },
 
+    images: {
+      external: (external: SpotifyAlbumExternal) =>
+        external.images ? (external.images as unknown as SpotifyImage[]) : null,
+      domain: (domain: SpotifyAlbumEntity) => domain.images,
+      dataTarget: (dataTarget: SpotifyAlbumDataTarget) =>
+        (dataTarget.images as unknown as SpotifyImage[] | null) ?? null,
+    },
+
     createdAt: connectorMapperPassThrough<
       "createdAt",
       Date | null,
@@ -683,6 +707,25 @@ const spotifyRecentlyPlayedMapping: ConnectorMapperDefinition<
     domain: (domain: SpotifyRecentlyPlayedEntity) => domain.context,
     dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) =>
       dataTarget.context as { type: string; uri: string } | null,
+  },
+
+  albumData: {
+    external: (external: SpotifyRecentlyPlayedExternal): Record<string, unknown> | null => {
+      const album = external.track?.album;
+      if (!album) return null;
+
+      return {
+        name: album.name,
+        images: album.images,
+        id: album.id,
+        uri: album.uri,
+        href: album.href,
+        release_date: album.release_date,
+        total_tracks: album.total_tracks,
+      };
+    },
+    domain: (domain: SpotifyRecentlyPlayedEntity) => domain.albumData,
+    dataTarget: (dataTarget: SpotifyRecentlyPlayedDataTarget) => dataTarget.albumData as Record<string, unknown> | null,
   },
 
   createdAt: connectorMapperPassThrough<

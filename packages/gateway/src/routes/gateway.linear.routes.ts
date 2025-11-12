@@ -1,4 +1,5 @@
 import { type ConnectorLinearService, connectorServiceFactory } from "@ait/connectors";
+import { getPostgresClient, linearIssues, drizzleOrm } from "@ait/postgres";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -9,6 +10,11 @@ declare module "fastify" {
 
 interface AuthCallbackQuery {
   code: string;
+}
+
+interface PaginationQuery {
+  page?: string;
+  limit?: string;
 }
 
 const connectorType = "linear";
@@ -67,9 +73,58 @@ export default async function linearRoutes(fastify: FastifyInstance) {
     try {
       const issues = await linearService.getIssues();
       reply.send(issues);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/issues" }, "Failed to fetch issues.");
       reply.status(500).send({ error: "Failed to fetch issues." });
+    }
+  });
+
+  // Paginated data route
+  fastify.get(
+    "/data/issues",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+        const offset = (page - 1) * limit;
+
+        const { db } = getPostgresClient();
+
+        const [issues, totalResult] = await Promise.all([
+          db.select().from(linearIssues).orderBy(drizzleOrm.desc(linearIssues.updatedAt)).limit(limit).offset(offset),
+          db.select({ count: drizzleOrm.count() }).from(linearIssues),
+        ]);
+
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        reply.send({
+          data: issues,
+          pagination: { page, limit, total, totalPages },
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/issues" }, "Failed to fetch issues from DB.");
+        reply.status(500).send({ error: "Failed to fetch issues from database." });
+      }
+    },
+  );
+
+  // Refresh endpoint
+  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const issues = await linearService.getIssues();
+      await linearService.connector.store.save(issues);
+
+      reply.send({
+        success: true,
+        message: "Linear data refreshed successfully",
+        counts: {
+          issues: issues.length,
+        },
+      });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Linear data.");
+      reply.status(500).send({ error: "Failed to refresh Linear data." });
     }
   });
 }

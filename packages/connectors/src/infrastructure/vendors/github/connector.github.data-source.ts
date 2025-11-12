@@ -39,11 +39,9 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
   async fetchPullRequests(): Promise<GitHubPullRequestExternal[]> {
     try {
-      // First, get all repositories
       const repositories = await this.fetchRepositories();
       const allPullRequests: GitHubPullRequestExternal[] = [];
 
-      // Fetch pull requests for each repository
       for (const repo of repositories) {
         try {
           const owner = repo.owner?.login;
@@ -54,21 +52,42 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             continue;
           }
 
-          const response = await this.octokit.pulls.list({
+          const listResponse = await this.octokit.pulls.list({
             owner,
             repo: repoName,
             state: "all",
-            per_page: 33,
+            per_page: 15, // Reduced to avoid rate limits when fetching details
             sort: "updated",
             direction: "desc",
           });
 
-          const prs = response.data.map((pr) => ({
-            ...pr,
-            __type: "pull_request" as const,
-          }));
+          console.log(`Fetched ${listResponse.data.length} PRs for ${repo.full_name}`);
 
-          allPullRequests.push(...(prs as GitHubPullRequestExternal[]));
+          for (const pr of listResponse.data) {
+            try {
+              const detailedResponse = await this.octokit.pulls.get({
+                owner,
+                repo: repoName,
+                pull_number: pr.number,
+              });
+
+              allPullRequests.push({
+                ...detailedResponse.data,
+                __type: "pull_request" as const,
+              } as GitHubPullRequestExternal);
+
+              console.log(`Fetched PR #${pr.number} details for ${repo.full_name}`);
+            } catch (prError: unknown) {
+              console.error(
+                `Failed to fetch PR #${pr.number} details for ${repo.full_name}:`,
+                prError instanceof Error ? prError.message : String(prError),
+              );
+              allPullRequests.push({
+                ...pr,
+                __type: "pull_request" as const,
+              } as GitHubPullRequestExternal);
+            }
+          }
         } catch (error: any) {
           console.error(`Failed to fetch PRs for ${repo.full_name}:`, error.message);
         }

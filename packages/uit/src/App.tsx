@@ -1,31 +1,33 @@
 import "./App.css";
-import { theme } from "@/styles/theme";
-import AItButton from "./components/ait.button";
-import { ThemeToggle } from "./components/theme-toggle";
-import { Heading } from "./components/ui/heading";
-import { ChatInput } from "./components/chat/chat-input";
+import { Route, Switch } from "wouter";
+import HomePage from "./pages/home-page";
+import GitHubPage from "./pages/integrations/github-page";
+import SpotifyPage from "./pages/integrations/spotify-page";
+import XPage from "./pages/integrations/x-page";
+import LinearPage from "./pages/integrations/linear-page";
 import { AIChatDialog } from "./components/ai-chat-dialog";
 import { useChatDialog } from "./contexts/chat.context";
-
-const text = "I'm";
 
 export default function App() {
   const { isOpen, closeChat } = useChatDialog();
 
   return (
-    <main className={`${theme.layout.container} ${theme.layout.content} ${theme.animations.base}`}>
-      <div className="absolute top-6 right-6 z-10">
-        <ThemeToggle />
-      </div>
+    <>
+      <Switch>
+        <Route path="/" component={HomePage} />
+        <Route path="/integrations/github" component={GitHubPage} />
+        <Route path="/integrations/spotify" component={SpotifyPage} />
+        <Route path="/integrations/x" component={XPage} />
+        <Route path="/integrations/linear" component={LinearPage} />
+        <Route>
+          <div className="min-h-dvh flex items-center justify-center">
+            <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
+          </div>
+        </Route>
+      </Switch>
 
-      <div className="mx-4 sm:mx-6 md:mx-8 text-center flex flex-col items-center justify-center w-full">
-        <Heading variant="hero" gradient>
-          {text} <AItButton />
-        </Heading>
-        <ChatInput />
-      </div>
-
+      {/* Global AI Chat Dialog */}
       <AIChatDialog open={isOpen} onOpenChange={(open) => !open && closeChat()} />
-    </main>
+    </>
   );
 }

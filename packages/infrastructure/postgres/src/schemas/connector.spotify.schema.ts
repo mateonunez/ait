@@ -35,6 +35,7 @@ export const spotifyArtists = pgTable("spotify_artists", {
   name: varchar("name", { length: 255 }).notNull(),
   popularity: integer("popularity"),
   genres: text("genres").array(),
+  images: jsonb("images"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -54,6 +55,7 @@ export const spotifyPlaylists = pgTable("spotify_playlists", {
   uri: varchar("uri", { length: 255 }).notNull(),
   href: varchar("href", { length: 512 }).notNull(),
   externalUrls: text("external_urls").array(),
+  images: jsonb("images"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -77,6 +79,7 @@ export const spotifyAlbums = pgTable("spotify_albums", {
   copyrights: text("copyrights").array(),
   externalIds: text("external_ids").array(),
   genres: text("genres").array(),
+  images: jsonb("images"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -98,6 +101,7 @@ export const spotifyRecentlyPlayed = pgTable("spotify_recently_played", {
   popularity: integer("popularity"),
   playedAt: timestamp("played_at").notNull(), // When the user played this track
   context: jsonb("context"), // Playlist/album/artist context
+  albumData: jsonb("album_data"), // Album data with images
   createdAt: timestamp("created_at").defaultNow(), // When we stored this record
   updatedAt: timestamp("updated_at").defaultNow(),
 });
