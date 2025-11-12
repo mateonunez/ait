@@ -1,8 +1,8 @@
 import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm, xTweets } from "@ait/postgres";
-import type { XTweetEntity } from "../../../../src/types/domain/entities/vendors/connector.x.repository.types";
-import { ConnectorXTweetRepository } from "../../../../src/domain/entities/vendors/connector.x.repository";
+import type { XTweetEntity } from "@ait/core";
+import { ConnectorXTweetRepository } from "../../../../src/domain/entities/vendors/x/connector.x.repository";
 
 describe("ConnectorXRepository", () => {
   const repository = new ConnectorXTweetRepository();
@@ -23,6 +23,8 @@ describe("ConnectorXRepository", () => {
           id: "test-tweet",
           text: "Test tweet content",
           authorId: "test-author",
+          authorUsername: "testuser",
+          authorName: "Test User",
           likeCount: 100,
           retweetCount: 20,
           createdAt: new Date(),
@@ -56,6 +58,8 @@ describe("ConnectorXRepository", () => {
             id: "tweet-1",
             text: "First tweet",
             authorId: "author-1",
+            authorUsername: "user1",
+            authorName: "User One",
             likeCount: 50,
             retweetCount: 10,
             createdAt: now,
@@ -67,6 +71,8 @@ describe("ConnectorXRepository", () => {
             id: "tweet-2",
             text: "Second tweet",
             authorId: "author-2",
+            authorUsername: "user2",
+            authorName: "User Two",
             likeCount: 200,
             retweetCount: 40,
             createdAt: now,

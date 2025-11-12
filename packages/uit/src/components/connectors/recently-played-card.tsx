@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { SpotifyRecentlyPlayed } from "@/services/types";
+import type { SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed } from "@ait/core";
 
 interface RecentlyPlayedCardProps {
   recentlyPlayed: SpotifyRecentlyPlayed;
@@ -24,7 +24,8 @@ export function RecentlyPlayedCard({ recentlyPlayed, onClick, className }: Recen
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const albumImage = recentlyPlayed.albumData?.images?.[1]?.url || recentlyPlayed.albumData?.images?.[0]?.url;
+  const albumImage =
+    (recentlyPlayed.albumData?.images as any)?.[1]?.url || (recentlyPlayed.albumData?.images as any)?.[0]?.url;
 
   return (
     <Card

@@ -1,6 +1,6 @@
 import { requestStream } from "@ait/core";
-import type { AggregatedMetadata } from "../../types/streaming.types";
-import { STREAM_EVENT, METADATA_TYPE } from "../../types/streaming.types";
+import type { AggregatedMetadata } from "@ait/core";
+import { STREAM_EVENT, METADATA_TYPE } from "@ait/core";
 import { parseGatewayStream } from "../stream-parser.utils";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";

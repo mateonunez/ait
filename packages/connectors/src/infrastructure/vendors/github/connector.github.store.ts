@@ -1,10 +1,8 @@
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { AItError } from "@ait/core";
 import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
-import type {
-  GitHubEntity,
-  IConnectorGitHubRepository,
-} from "../../../types/domain/entities/vendors/connector.github.repository.types";
+import type { IConnectorGitHubRepository } from "../../../types/domain/entities/vendors/connector.github.repository.types";
+import type { GitHubEntity } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { GITHUB_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 

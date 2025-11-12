@@ -3,12 +3,18 @@ import type {
   PaginationParams,
   PaginatedResponse,
   RefreshResponse,
-  SpotifyTrack,
-  SpotifyArtist,
-  SpotifyPlaylist,
-  SpotifyAlbum,
-  SpotifyRecentlyPlayed,
-} from "./types";
+  SpotifyTrackEntity,
+  SpotifyArtistEntity,
+  SpotifyPlaylistEntity,
+  SpotifyAlbumEntity,
+  SpotifyRecentlyPlayedEntity,
+} from "@ait/core";
+
+type SpotifyTrack = SpotifyTrackEntity;
+type SpotifyArtist = SpotifyArtistEntity;
+type SpotifyPlaylist = SpotifyPlaylistEntity;
+type SpotifyAlbum = SpotifyAlbumEntity;
+type SpotifyRecentlyPlayed = SpotifyRecentlyPlayedEntity;
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 

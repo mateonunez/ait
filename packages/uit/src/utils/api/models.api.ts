@@ -1,4 +1,4 @@
-import type { ModelMetadata } from "../../types/streaming.types";
+import type { ModelMetadata } from "@ait/core";
 import { apiGet, apiPost } from "../http-client";
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL || "http://localhost:3000";

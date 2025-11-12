@@ -1,4 +1,4 @@
-import type { LinearEntity } from "../../../types/domain/entities/vendors/connector.linear.types";
+import type { LinearEntity } from "@ait/core";
 import { AItError } from "@ait/core";
 import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";

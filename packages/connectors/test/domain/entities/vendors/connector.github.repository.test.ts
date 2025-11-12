@@ -2,7 +2,7 @@ import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
 import { githubRepositories } from "@ait/postgres";
-import { ConnectorGitHubRepoRepository } from "../../../../src/domain/entities/vendors/connector.github.repository";
+import { ConnectorGitHubRepoRepository } from "../../../../src/domain/entities/vendors/github/connector.github.repository";
 import type { GitHubRepositoryEntity } from "../../../../src/types/domain/entities/vendors/connector.github.repository.types";
 
 describe("ConnectorGitHubRepository", () => {

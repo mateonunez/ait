@@ -1,6 +1,6 @@
 import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
 import { ConnectorGitHubAuthenticator } from "./connector.github.authenticator";
-import { ConnectorGitHubRepository } from "../../../domain/entities/vendors/connector.github.repository";
+import { ConnectorGitHubRepository } from "../../../domain/entities/vendors/github/connector.github.repository";
 import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { ConnectorGitHubDataSource } from "./connector.github.data-source";

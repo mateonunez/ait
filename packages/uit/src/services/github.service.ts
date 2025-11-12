@@ -3,9 +3,12 @@ import type {
   PaginationParams,
   PaginatedResponse,
   RefreshResponse,
-  GitHubRepository,
-  GitHubPullRequest,
-} from "./types";
+  GitHubRepositoryEntity,
+  GitHubPullRequestEntity,
+} from "@ait/core";
+
+type GitHubRepository = GitHubRepositoryEntity;
+type GitHubPullRequest = GitHubPullRequestEntity;
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 

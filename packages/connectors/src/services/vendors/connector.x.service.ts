@@ -2,7 +2,7 @@ import { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { connectorEntityConfigs, X_ENTITY_TYPES_ENUM, type XServiceEntityMap } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type { XTweetEntity, XTweetExternal } from "../../types/domain/entities/vendors/connector.x.repository.types";
+import type { XTweetEntity, XTweetExternal } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export class ConnectorXService extends ConnectorServiceBase<ConnectorX, XServiceEntityMap> {

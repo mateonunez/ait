@@ -1,7 +1,7 @@
 import { CheckCircle, Circle, Loader2, XCircle, ListChecks } from "lucide-react";
 import { cn } from "@/styles/utils";
 import { Badge } from "../ui/badge";
-import type { TaskStep } from "../../types/streaming.types";
+import type { TaskStep } from "@ait/core";
 import { motion } from "framer-motion";
 
 interface TaskManagerProps {

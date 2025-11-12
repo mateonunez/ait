@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { GitHubPullRequest } from "@/services/types";
+import type { GitHubPullRequestEntity as GitHubPullRequest } from "@ait/core";
 
 interface PullRequestCardProps {
   pullRequest: GitHubPullRequest;
@@ -48,8 +48,8 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
     return "Open";
   };
 
-  const userAvatar = pullRequest.userData?.avatar_url;
-  const userLogin = pullRequest.userData?.login;
+  const userAvatar = pullRequest.userData?.avatar_url as string | undefined;
+  const userLogin = pullRequest.userData?.login as string | undefined;
 
   return (
     <Card

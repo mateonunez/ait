@@ -1,7 +1,7 @@
 import { Brain, Lightbulb, Play, CheckCircle } from "lucide-react";
 import { cn } from "@/styles/utils";
 import { Badge } from "../ui/badge";
-import type { ReasoningStep } from "../../types/streaming.types";
+import type { ReasoningStep } from "@ait/core";
 import { motion } from "framer-motion";
 
 interface ChainOfThoughtProps {

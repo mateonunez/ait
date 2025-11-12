@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { LinearIssue } from "@/services/types";
+import type { LinearIssueEntity as LinearIssue } from "@ait/core";
 
 interface IssueCardProps {
   issue: LinearIssue;

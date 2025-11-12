@@ -9,7 +9,7 @@ import type {
   QualityData,
   FeedbackData,
   SystemData,
-} from "@/types/stats.types";
+} from "@ait/core";
 
 interface StatsContextType {
   health: HealthData | null;

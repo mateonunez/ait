@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { SpotifyAlbum } from "@/services/types";
+import type { SpotifyAlbumEntity as SpotifyAlbum } from "@ait/core";
 
 interface AlbumCardProps {
   album: SpotifyAlbum;
@@ -62,7 +62,7 @@ export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Music className="h-3.5 w-3.5" />
               <span className="font-medium tabular-nums">
-                {album.totalTracks} {album.totalTracks === 1 ? "track" : "tracks"}
+                {album.tracks.length} {album.tracks.length === 1 ? "track" : "tracks"}
               </span>
             </div>
             {album.releaseDate && (

@@ -1,11 +1,7 @@
 import { z } from "zod";
 import { createTool } from "../../types/tools";
-import type {
-  ConnectorSpotifyService,
-  SpotifyCurrentlyPlayingExternal,
-  SpotifyTrackEntity,
-  SpotifyTrackExternal,
-} from "@ait/connectors";
+import type { ConnectorSpotifyService } from "@ait/connectors";
+import type { SpotifyCurrentlyPlayingExternal, SpotifyTrackEntity, SpotifyTrackExternal } from "@ait/core";
 
 // Spotify Schemas
 export const spotifySearchSchema = z.object({

@@ -1,6 +1,6 @@
 import { requestJson } from "@ait/core";
 import type { Response } from "undici";
-import type { XTweetExternal } from "../../../types/domain/entities/vendors/connector.x.repository.types";
+import type { XTweetExternal } from "@ait/core";
 import { ait } from "../../../shared/constants/ait.constant";
 
 export interface IConnectorXDataSource {

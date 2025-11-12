@@ -4,7 +4,7 @@ import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { TweetCard } from "@/components/connectors/tweet-card";
 import { xService } from "@/services";
-import type { XTweet } from "@/services/types";
+import type { XTweetEntity as XTweet } from "@ait/core";
 
 export default function XPage() {
   const [tweets, setTweets] = useState<XTweet[]>([]);

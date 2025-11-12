@@ -13,8 +13,7 @@
     "pretest": "test -f .env.test || cp .env.example .env.test",
     "test": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --test-concurrency=1'",
     "test:watch": "glob ./**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'",
-    "prepare": "pnpm generate:openapi && pnpm build",
-    "generate:openapi": "tsx ./src/infrastructure/openapi.generator.ts"
+    "prepare": "pnpm build"
   },
   "keywords": [],
   "author": "@mateonunez <mateonunez95@gmail.com>",

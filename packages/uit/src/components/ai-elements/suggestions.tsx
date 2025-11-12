@@ -1,6 +1,6 @@
 import { Sparkles, ArrowRight } from "lucide-react";
 import { cn } from "@/styles/utils";
-import type { SuggestionItem } from "../../types/streaming.types";
+import type { SuggestionItem } from "@ait/core";
 import { motion } from "framer-motion";
 import * as Icons from "lucide-react";
 

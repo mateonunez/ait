@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { Message } from "./message";
-import type { ChatMessageWithMetadata } from "../../types/streaming.types";
+import type { ChatMessageWithMetadata } from "@ait/core";
 import { motion } from "framer-motion";
 
 interface ConversationProps {

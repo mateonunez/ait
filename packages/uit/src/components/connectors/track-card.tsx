@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { SpotifyTrack } from "@/services/types";
+import type { SpotifyTrackEntity as SpotifyTrack } from "@ait/core";
 
 interface TrackCardProps {
   track: SpotifyTrack;
@@ -24,7 +24,7 @@ export function TrackCard({ track, onClick, className }: TrackCardProps) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
-  const albumImage = track.albumData?.images?.[1]?.url || track.albumData?.images?.[0]?.url;
+  const albumImage = (track.albumData?.images as any)?.[1]?.url || (track.albumData?.images as any)?.[0]?.url;
 
   return (
     <Card
