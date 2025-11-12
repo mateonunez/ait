@@ -1,7 +1,5 @@
-import type { GitHubRepositoryExternal } from "../../../types/domain/entities/vendors/connector.github.repository.types";
-import type { GitHubPullRequestExternal } from "../../../types/domain/entities/vendors/connector.github.pull-request.types";
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
-import { AItError } from "@ait/core";
+import { AItError, type GitHubPullRequestExternal, type GitHubRepositoryExternal } from "@ait/core";
 
 export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
   private octokit: Octokit;

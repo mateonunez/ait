@@ -1,11 +1,8 @@
 import type { LinearIssueDataTarget } from "@ait/postgres";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
-import type {
-  LinearIssueExternal,
-  LinearIssueEntity,
-} from "../../../types/domain/entities/vendors/connector.linear.types";
 import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
+import type { LinearIssueEntity, LinearIssueExternal } from "@ait/core";
 
 const linearIssueMapping: ConnectorMapperDefinition<LinearIssueExternal, LinearIssueEntity, LinearIssueDataTarget> = {
   id: connectorMapperPassThrough<"id", string, LinearIssueExternal, LinearIssueEntity, LinearIssueDataTarget>("id"),

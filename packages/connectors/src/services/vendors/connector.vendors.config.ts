@@ -15,16 +15,10 @@ import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
-} from "../../types/domain/entities/vendors/connector.github.repository.types";
-import type {
   GitHubPullRequestEntity,
   GitHubPullRequestExternal,
-} from "../../types/domain/entities/vendors/connector.github.pull-request.types";
-import type {
   LinearIssueEntity,
   LinearIssueExternal,
-} from "../../types/domain/entities/vendors/connector.linear.types";
-import type {
   SpotifyArtistEntity,
   SpotifyArtistExternal,
   SpotifyTrackEntity,
@@ -35,8 +29,9 @@ import type {
   SpotifyAlbumExternal,
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
-} from "../../types/domain/entities/vendors/connector.spotify.types";
-import type { XTweetEntity, XTweetExternal } from "../../types/domain/entities/vendors/connector.x.repository.types";
+  XTweetEntity,
+  XTweetExternal,
+} from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {

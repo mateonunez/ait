@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { SpotifyPlaylist } from "@/services/types";
+import type { SpotifyPlaylistEntity as SpotifyPlaylist } from "@ait/core";
 
 interface PlaylistCardProps {
   playlist: SpotifyPlaylist;

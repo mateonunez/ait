@@ -1,10 +1,7 @@
-import { AItError } from "@ait/core";
+import { AItError, type SpotifyTrackEntity } from "@ait/core";
 import { connectorSpotifyTrackMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import type {
-  IConnectorSpotifyTrackRepository,
-  SpotifyTrackEntity,
-} from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorSpotifyTrackRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyTracks, type SpotifyTrackDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 

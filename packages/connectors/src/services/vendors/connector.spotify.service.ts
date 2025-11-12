@@ -10,7 +10,7 @@ import type {
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
   SpotifyCurrentlyPlayingExternal,
-} from "../../types/domain/entities/vendors/connector.spotify.types";
+} from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import { getConnectorConfig } from "../connector.service.config";

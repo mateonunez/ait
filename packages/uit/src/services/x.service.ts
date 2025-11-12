@@ -1,5 +1,7 @@
 import { requestJson } from "@ait/core";
-import type { PaginationParams, PaginatedResponse, RefreshResponse, XTweet } from "./types";
+import type { PaginationParams, PaginatedResponse, RefreshResponse, XTweetEntity } from "@ait/core";
+
+type XTweet = XTweetEntity;
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 

@@ -1,6 +1,6 @@
 import { requestJson } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { LinearIssueExternal } from "../../../types/domain/entities/vendors/connector.linear.types";
+import type { LinearIssueExternal } from "@ait/core";
 
 export interface IConnectorLinearDataSource {
   fetchIssues(): Promise<LinearIssueExternal[]>;

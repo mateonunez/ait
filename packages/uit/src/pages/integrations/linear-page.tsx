@@ -4,7 +4,7 @@ import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { IssueCard } from "@/components/connectors/issue-card";
 import { linearService } from "@/services";
-import type { LinearIssue } from "@/services/types";
+import type { LinearIssueEntity as LinearIssue } from "@ait/core";
 
 export default function LinearPage() {
   const [issues, setIssues] = useState<LinearIssue[]>([]);

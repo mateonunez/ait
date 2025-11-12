@@ -7,7 +7,7 @@ import type {
   QualityData,
   FeedbackData,
   SystemData,
-} from "@/types/stats.types";
+} from "@ait/core";
 
 import { apiGet } from "./http-client";
 

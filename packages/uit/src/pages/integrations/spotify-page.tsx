@@ -10,12 +10,12 @@ import { AlbumCard } from "@/components/connectors/album-card";
 import { RecentlyPlayedCard } from "@/components/connectors/recently-played-card";
 import { spotifyService } from "@/services";
 import type {
-  SpotifyTrack,
-  SpotifyArtist,
-  SpotifyPlaylist,
-  SpotifyAlbum,
-  SpotifyRecentlyPlayed,
-} from "@/services/types";
+  SpotifyTrackEntity as SpotifyTrack,
+  SpotifyArtistEntity as SpotifyArtist,
+  SpotifyPlaylistEntity as SpotifyPlaylist,
+  SpotifyAlbumEntity as SpotifyAlbum,
+  SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed,
+} from "@ait/core";
 
 type TabId = "tracks" | "artists" | "playlists" | "albums" | "recently-played";
 

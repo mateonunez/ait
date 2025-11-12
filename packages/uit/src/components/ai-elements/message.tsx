@@ -15,7 +15,7 @@ import {
 import { Streamdown } from "streamdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { submitFeedback, type FeedbackRating } from "@/utils/feedback.utils";
-import type { ChatMessageWithMetadata } from "../../types/streaming.types";
+import type { ChatMessageWithMetadata } from "@ait/core";
 import { Badge } from "../ui/badge";
 
 interface MessageProps {

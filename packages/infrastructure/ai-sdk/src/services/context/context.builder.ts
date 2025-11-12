@@ -10,8 +10,8 @@ import type {
   XTweetEntity,
   LinearIssueEntity,
   SpotifyRecentlyPlayedEntity,
-} from "@ait/connectors";
-import type { GitHubPullRequestEntity } from "@ait/connectors";
+  GitHubPullRequestEntity,
+} from "@ait/core";
 import type { TemporalCluster } from "../filtering/temporal-correlation.service";
 
 type EntityType =

@@ -1,10 +1,7 @@
-import { AItError } from "@ait/core";
+import { AItError, type SpotifyRecentlyPlayedEntity } from "@ait/core";
 import { connectorSpotifyRecentlyPlayedMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import type {
-  IConnectorSpotifyRecentlyPlayedRepository,
-  SpotifyRecentlyPlayedEntity,
-} from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorSpotifyRecentlyPlayedRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import {
   getPostgresClient,
   spotifyRecentlyPlayed,

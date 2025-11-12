@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
-import type { XTweet } from "@/services/types";
+import type { XTweetEntity as XTweet } from "@ait/core";
 
 interface TweetCardProps {
   tweet: XTweet;
@@ -23,7 +23,7 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
   };
 
   const totalEngagement =
-    (tweet.likeCount || 0) + (tweet.retweetCount || 0) + (tweet.replyCount || 0) + (tweet.quoteCount || 0);
+    (tweet.likeCount ?? 0) + (tweet.retweetCount ?? 0) + (tweet.replyCount ?? 0) + (tweet.quoteCount ?? 0);
 
   return (
     <Card
@@ -52,25 +52,25 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
         {/* Engagement Stats */}
         {totalEngagement > 0 && (
           <div className="flex items-center gap-4 text-sm">
-            {tweet.likeCount !== null && tweet.likeCount > 0 && (
+            {tweet.likeCount != null && tweet.likeCount > 0 && (
               <div className="flex items-center gap-1.5 text-muted-foreground hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
                 <Heart className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.likeCount.toLocaleString()}</span>
               </div>
             )}
-            {tweet.retweetCount !== null && tweet.retweetCount > 0 && (
+            {tweet.retweetCount != null && tweet.retweetCount > 0 && (
               <div className="flex items-center gap-1.5 text-muted-foreground hover:text-green-600 dark:hover:text-green-400 transition-colors">
                 <Repeat2 className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.retweetCount.toLocaleString()}</span>
               </div>
             )}
-            {tweet.replyCount !== null && tweet.replyCount > 0 && (
+            {tweet.replyCount != null && tweet.replyCount > 0 && (
               <div className="flex items-center gap-1.5 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 <MessageCircle className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.replyCount.toLocaleString()}</span>
               </div>
             )}
-            {tweet.quoteCount !== null && tweet.quoteCount > 0 && (
+            {tweet.quoteCount != null && tweet.quoteCount > 0 && (
               <div className="flex items-center gap-1.5 text-muted-foreground transition-colors">
                 <Quote className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.quoteCount.toLocaleString()}</span>

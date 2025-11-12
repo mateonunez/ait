@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Database, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/styles/utils";
 import { Badge } from "../ui/badge";
-import type { RAGContextMetadata, RetrievedDocument } from "../../types/streaming.types";
+import type { RAGContextMetadata, RetrievedDocument } from "@ait/core";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ContextPanelProps {

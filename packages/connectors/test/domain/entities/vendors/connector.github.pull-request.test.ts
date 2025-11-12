@@ -1,7 +1,7 @@
 import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm, githubPullRequests } from "@ait/postgres";
-import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/connector.github.pull-request.repository";
+import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";
 import type { GitHubPullRequestEntity } from "../../../../src/types/domain/entities/vendors/connector.github.pull-request.types";
 
 describe("ConnectorGitHubPullRequestRepository", () => {
@@ -113,8 +113,17 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             baseRef: "main",
             baseSha: "base1",
             repositoryId: "repo-1",
+            repositoryName: "ait",
+            repositoryFullName: "mateonunez/ait",
             mergeable: true,
+            rebaseable: true,
+            mergeableState: "clean",
             maintainerCanModify: false,
+            authorAssociation: "OWNER",
+            autoMerge: null,
+            activeLockReason: null,
+            prCreatedAt: new Date(),
+            prUpdatedAt: new Date(),
             userData: null,
             assigneeData: null,
             assigneesData: null,
@@ -122,6 +131,9 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             labels: null,
             milestoneData: null,
             requestedReviewersData: null,
+            requestedTeamsData: null,
+            headRepoData: null,
+            baseRepoData: null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             __type: "pull_request",
@@ -153,8 +165,17 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             baseRef: "main",
             baseSha: "base2",
             repositoryId: "repo-1",
+            repositoryName: "ait",
+            repositoryFullName: "mateonunez/ait",
             mergeable: null,
+            rebaseable: null,
+            mergeableState: null,
             maintainerCanModify: true,
+            authorAssociation: "CONTRIBUTOR",
+            autoMerge: null,
+            activeLockReason: null,
+            prCreatedAt: new Date(),
+            prUpdatedAt: new Date(),
             userData: null,
             assigneeData: null,
             assigneesData: null,
@@ -165,11 +186,14 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             ],
             milestoneData: { title: "v1.0" },
             requestedReviewersData: null,
+            requestedTeamsData: null,
+            headRepoData: null,
+            baseRepoData: null,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             __type: "pull_request",
           },
-        ] as GitHubPullRequestEntity[];
+        ];
 
         await prRepository.savePullRequests(prs);
 

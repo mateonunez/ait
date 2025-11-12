@@ -5,7 +5,7 @@ import type {
   SpotifyAlbumExternal,
   SpotifyRecentlyPlayedExternal,
   SpotifyCurrentlyPlayingExternal,
-} from "../domain/entities/vendors/connector.spotify.types";
+} from "@ait/core";
 
 export interface IConnectorSpotifyDataSource {
   fetchTracks(): Promise<SpotifyTrackExternal[]>;

@@ -6,7 +6,10 @@ import { LoadingGrid } from "@/components/loading-grid";
 import { RepositoryCard } from "@/components/connectors/repository-card";
 import { PullRequestCard } from "@/components/connectors/pull-request-card";
 import { githubService } from "@/services";
-import type { GitHubRepository, GitHubPullRequest } from "@/services/types";
+import type {
+  GitHubRepositoryEntity as GitHubRepository,
+  GitHubPullRequestEntity as GitHubPullRequest,
+} from "@ait/core";
 
 type TabId = "repositories" | "pull-requests";
 

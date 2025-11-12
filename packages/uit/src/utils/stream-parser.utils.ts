@@ -4,7 +4,7 @@ import {
   type StreamEvent,
   type MetadataPayload,
   type AggregatedMetadata,
-} from "../types/streaming.types";
+} from "@ait/core";
 
 export function parseStreamLine(line: string): StreamEvent | null {
   if (!line || !line.includes(":")) {

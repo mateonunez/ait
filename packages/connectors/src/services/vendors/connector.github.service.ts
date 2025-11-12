@@ -5,11 +5,9 @@ import { getConnectorConfig } from "../connector.service.config";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
-} from "../../types/domain/entities/vendors/connector.github.repository.types";
-import type {
   GitHubPullRequestEntity,
   GitHubPullRequestExternal,
-} from "../../types/domain/entities/vendors/connector.github.pull-request.types";
+} from "@ait/core";
 import {
   connectorEntityConfigs,
   GITHUB_ENTITY_TYPES_ENUM,

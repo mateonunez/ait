@@ -4,8 +4,8 @@ import type { IConnectorXRepository } from "../../../types/domain/entities/vendo
 import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorXAuthenticator } from "./connector.x.authenticator";
 import { ConnectorXDataSource } from "./connector.x.data-source";
-import { ConnectorXRepository } from "../../../domain/entities/vendors/connector.x.repository";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorXRepository } from "../../../domain/entities/vendors/x/connector.x.repository";
 
 export class ConnectorX extends BaseConnectorAbstract<
   ConnectorXAuthenticator,

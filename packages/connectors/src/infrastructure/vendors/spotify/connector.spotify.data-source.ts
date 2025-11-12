@@ -5,7 +5,7 @@ import type {
   SpotifyPlaylistExternal,
   SpotifyRecentlyPlayedExternal,
   SpotifyTrackExternal,
-} from "../../../types/domain/entities/vendors/connector.spotify.types";
+} from "@ait/core";
 import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
 import dotenv from "dotenv";
 import { requestJson } from "@ait/core";

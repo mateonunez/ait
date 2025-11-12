@@ -6,10 +6,7 @@ import {
   type LinearServiceEntityMap,
 } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type {
-  LinearIssueEntity,
-  LinearIssueExternal,
-} from "../../types/domain/entities/vendors/connector.linear.types";
+import type { LinearIssueEntity, LinearIssueExternal } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export class ConnectorLinearService extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap> {

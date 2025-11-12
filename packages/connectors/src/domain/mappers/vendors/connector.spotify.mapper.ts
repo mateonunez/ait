@@ -10,7 +10,7 @@ import type {
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
   SpotifyImage,
-} from "../../../types/domain/entities/vendors/connector.spotify.types";
+} from "@ait/core";
 import type {
   SpotifyArtistDataTarget,
   SpotifyTrackDataTarget,
@@ -295,31 +295,24 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
   },
   tracks: {
     external: (external: SpotifyPlaylistExternal) => {
+      // Spotify API returns tracks as a paginated object with an 'items' array
       const tracksData = external.tracks;
       if (!tracksData) return [];
 
-      const result: string[] = [];
-
-      if (tracksData.href) {
-        result.push(`href: ${tracksData.href}`);
-      }
-      if (typeof tracksData.total === "number") {
-        result.push(`total: ${tracksData.total}`);
-      }
-
+      // Handle paginated response with items
       if (tracksData.items && Array.isArray(tracksData.items)) {
-        const trackNames = tracksData.items
+        return tracksData.items
           .filter((item) => item?.track)
           .map((item) => {
             const track = item.track;
-            const name = track?.name || "Unknown";
-            const artist = track && "artists" in track && track.artists?.[0]?.name ? track.artists[0].name : "Unknown";
-            return `track: ${artist} - ${name}`;
-          });
-        result.push(...trackNames);
+            if (!track) return "";
+            // Store track ID or URI
+            return track.id || track.uri || "";
+          })
+          .filter((id) => id !== ""); // Remove empty strings
       }
 
-      return result;
+      return [];
     },
     domain: (domain: SpotifyPlaylistEntity) => domain.tracks,
     dataTarget: (dataTarget: SpotifyPlaylistDataTarget) => dataTarget.tracks ?? [],
@@ -427,22 +420,44 @@ const spotifyAlbumMapping: ConnectorMapperDefinition<SpotifyAlbumExternal, Spoti
     }),
 
     artists: {
-      external: (external: SpotifyAlbumExternal) =>
-        mapObjectToStringArray(external.artists, {
-          valueTransform: (value) => JSON.stringify(value),
-          maxDepth: 6,
-        }),
+      external: (external: SpotifyAlbumExternal) => {
+        if (!external.artists || !Array.isArray(external.artists)) return [];
+        return external.artists.map((artist) => {
+          if (typeof artist === "string") return artist;
+          // Extract artist name from artist object
+          return artist.name || String(artist);
+        });
+      },
       domain: (domain: SpotifyAlbumEntity) => domain.artists,
       dataTarget: (dataTarget: SpotifyAlbumDataTarget) => dataTarget.artists ?? [],
     },
 
     tracks: {
-      external: (external) =>
-        mapObjectToStringArray(external.tracks, {
-          valueTransform: (value) => JSON.stringify(value),
-          maxDepth: 6,
-          excludeKeys: ["available_markets"],
-        }),
+      external: (external) => {
+        // Spotify API returns tracks as a paginated object with an 'items' array
+        if (!external.tracks) return [];
+
+        // Handle paginated response: { items: [...], total: 26, ... }
+        if (typeof external.tracks === "object" && "items" in external.tracks) {
+          const items = external.tracks.items;
+          if (!Array.isArray(items)) return [];
+          return items.map((track: any) => {
+            if (typeof track === "string") return track;
+            // Store track ID or URI
+            return track.id || track.uri || String(track);
+          });
+        }
+
+        // Handle direct array (fallback)
+        if (Array.isArray(external.tracks)) {
+          return external.tracks.map((track) => {
+            if (typeof track === "string") return track;
+            return track.id || track.uri || String(track);
+          });
+        }
+
+        return [];
+      },
       domain: (domain) => domain.tracks,
       dataTarget: (dataTarget) => dataTarget.tracks ?? [],
     },

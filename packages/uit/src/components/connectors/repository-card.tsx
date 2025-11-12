@@ -3,7 +3,7 @@ import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { formatRelativeTime } from "@/utils/date.utils";
-import type { GitHubRepository } from "@/services/types";
+import type { GitHubRepositoryEntity as GitHubRepository } from "@ait/core";
 
 interface RepositoryCardProps {
   repository: GitHubRepository;
@@ -20,8 +20,8 @@ export function RepositoryCard({ repository, onClick, className }: RepositoryCar
     }
   };
 
-  const ownerAvatar = repository.ownerData?.avatar_url;
-  const ownerLogin = repository.ownerData?.login;
+  const ownerAvatar = repository.ownerData?.avatar_url as string | undefined;
+  const ownerLogin = repository.ownerData?.login as string | undefined;
 
   return (
     <Card

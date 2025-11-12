@@ -27,9 +27,3 @@ export type * from "./types/domain/entities/vendors/connector.github.pull-reques
 export type * from "./types/domain/entities/vendors/connector.linear.types";
 export type * from "./types/domain/entities/vendors/connector.spotify.types";
 export type * from "./types/domain/entities/vendors/connector.x.repository.types";
-
-// Spotify Types (additional exports)
-export type {
-  SpotifyRecentlyPlayedExternal,
-  SpotifyCurrentlyPlayingExternal,
-} from "./types/domain/entities/vendors/connector.spotify.types";

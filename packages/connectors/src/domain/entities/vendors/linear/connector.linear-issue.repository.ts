@@ -1,10 +1,7 @@
-import { AItError } from "@ait/core";
+import { AItError, type LinearIssueEntity } from "@ait/core";
 import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import type {
-  IConnectorLinearIssueRepository,
-  LinearIssueEntity,
-} from "../../../../types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
 import { getPostgresClient, linearIssues, type LinearIssueDataTarget } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 

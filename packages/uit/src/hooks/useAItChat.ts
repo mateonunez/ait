@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 import { sendMessage } from "@/utils/api";
-import type { ChatMessageWithMetadata, AggregatedMetadata } from "../types/streaming.types";
+import type { ChatMessageWithMetadata, AggregatedMetadata } from "@ait/core";
 import { createEmptyMetadata } from "@/utils/stream-parser.utils";
 import { calculateConversationTokens } from "@/utils/token-counter.utils";
 

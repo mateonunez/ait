@@ -1,4 +1,4 @@
-import type { SpotifyEntity } from "../../../types/domain/entities/vendors/connector.spotify.types";
+import type { SpotifyEntity } from "@ait/core";
 import { AItError } from "@ait/core";
 import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";

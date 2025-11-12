@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "../ui/dropdown-menu";
-import type { ModelMetadata } from "../../types/streaming.types";
+import type { ModelMetadata } from "@ait/core";
 import { listModels } from "@/utils/api";
 
 interface ModelSelectorProps {
