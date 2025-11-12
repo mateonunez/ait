@@ -35,12 +35,8 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
           popularity: itemDataTarget.popularity,
           playedAt: itemDataTarget.playedAt,
           context: itemDataTarget.context,
-          updatedAt: itemDataTarget.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (itemDataTarget.createdAt) {
-          updateValues.createdAt = itemDataTarget.createdAt;
-        }
 
         await tx
           .insert(spotifyRecentlyPlayed)

@@ -90,7 +90,7 @@ export function TrackCard({ track, onClick, className }: TrackCardProps) {
               <Music className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
             </div>
             {track.createdAt && (
-              <span className="text-xs text-muted-foreground">Added {formatRelativeTime(track.createdAt)}</span>
+              <span className="text-xs text-muted-foreground">Added {formatRelativeTime(track.addedAt)}</span>
             )}
           </div>
         </div>

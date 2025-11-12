@@ -39,12 +39,8 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
           externalIds: trackDataTarget.externalIds,
           externalUrls: trackDataTarget.externalUrls,
           addedAt: trackDataTarget.addedAt,
-          updatedAt: trackDataTarget.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (trackDataTarget.createdAt) {
-          updateValues.createdAt = trackDataTarget.createdAt;
-        }
 
         await tx
           .insert(spotifyTracks)

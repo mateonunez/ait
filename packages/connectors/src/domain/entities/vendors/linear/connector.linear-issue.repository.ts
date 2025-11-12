@@ -30,12 +30,8 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
           projectId: issueDataTarget.projectId,
           url: issueDataTarget.url,
           labels: issueDataTarget.labels,
-          updatedAt: issueDataTarget.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (issueDataTarget.createdAt) {
-          updateValues.createdAt = issueDataTarget.createdAt;
-        }
 
         await tx
           .insert(linearIssues)
