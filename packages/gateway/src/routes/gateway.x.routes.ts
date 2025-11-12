@@ -1,4 +1,5 @@
 import { connectorServiceFactory, type ConnectorXService } from "@ait/connectors";
+import { getPostgresClient, xTweets, drizzleOrm } from "@ait/postgres";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -9,6 +10,11 @@ declare module "fastify" {
 
 interface AuthCallbackQuery {
   code: string;
+}
+
+interface PaginationQuery {
+  page?: string;
+  limit?: string;
 }
 
 const connectorType = "x";
@@ -60,9 +66,58 @@ export default async function xRoutes(fastify: FastifyInstance) {
     try {
       const tweets = await xService.getTweets();
       reply.send(tweets);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/tweets" }, "Failed to fetch X tweets.");
       reply.status(500).send({ error: "Failed to fetch X tweets." });
+    }
+  });
+
+  // Paginated data route
+  fastify.get(
+    "/data/tweets",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+        const offset = (page - 1) * limit;
+
+        const { db } = getPostgresClient();
+
+        const [tweets, totalResult] = await Promise.all([
+          db.select().from(xTweets).orderBy(drizzleOrm.desc(xTweets.createdAt)).limit(limit).offset(offset),
+          db.select({ count: drizzleOrm.count() }).from(xTweets),
+        ]);
+
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        reply.send({
+          data: tweets,
+          pagination: { page, limit, total, totalPages },
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/tweets" }, "Failed to fetch tweets from DB.");
+        reply.status(500).send({ error: "Failed to fetch tweets from database." });
+      }
+    },
+  );
+
+  // Refresh endpoint
+  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const tweets = await xService.getTweets();
+      await store.save(tweets);
+
+      reply.send({
+        success: true,
+        message: "X data refreshed successfully",
+        counts: {
+          tweets: tweets.length,
+        },
+      });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh X data.");
+      reply.status(500).send({ error: "Failed to refresh X data." });
     }
   });
 }

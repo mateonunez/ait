@@ -94,6 +94,7 @@ export interface SpotifyArtistEntity extends BaseSpotifyEntity {
   name: string;
   popularity: number;
   genres: string[];
+  images: SpotifyImage[] | null;
   createdAt: Date;
   updatedAt: Date;
   __type: "artist";
@@ -112,6 +113,7 @@ export interface SpotifyPlaylistEntity extends BaseSpotifyEntity {
   externalUrls: string[];
   uri: string;
   href: string;
+  images: SpotifyImage[] | null;
   createdAt: Date;
   updatedAt: Date;
   __type: "playlist";
@@ -134,13 +136,14 @@ export interface SpotifyAlbumEntity extends BaseSpotifyEntity {
   copyrights: string[];
   externalIds: string[];
   genres: string[];
+  images: SpotifyImage[] | null;
   createdAt: Date;
   updatedAt: Date;
   __type: "album";
 }
 
 export interface SpotifyRecentlyPlayedEntity extends BaseSpotifyEntity {
-  id: string; // Composite: trackId-playedAt
+  id: string;
   trackId: string;
   trackName: string;
   artist: string;
@@ -153,6 +156,7 @@ export interface SpotifyRecentlyPlayedEntity extends BaseSpotifyEntity {
     type: string;
     uri: string;
   } | null;
+  albumData: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
   __type: "recently_played";

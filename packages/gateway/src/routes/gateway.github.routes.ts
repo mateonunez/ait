@@ -1,4 +1,5 @@
 import { type ConnectorGitHubService, connectorServiceFactory } from "@ait/connectors";
+import { getPostgresClient, githubRepositories, githubPullRequests, drizzleOrm } from "@ait/postgres";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -9,6 +10,11 @@ declare module "fastify" {
 
 interface AuthCallbackQuery {
   code: string;
+}
+
+interface PaginationQuery {
+  page?: string;
+  limit?: string;
 }
 
 const connectorType = "github";
@@ -73,6 +79,108 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     } catch (err: any) {
       fastify.log.error({ err, route: "/repositories" }, "Failed to fetch repositories.");
       reply.status(500).send({ error: "Failed to fetch repositories." });
+    }
+  });
+
+  // Paginated data routes
+  fastify.get(
+    "/data/repositories",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+        const offset = (page - 1) * limit;
+
+        const { db } = getPostgresClient();
+
+        const [repositories, totalResult] = await Promise.all([
+          db
+            .select()
+            .from(githubRepositories)
+            .orderBy(drizzleOrm.desc(githubRepositories.pushedAt))
+            .limit(limit)
+            .offset(offset),
+          db.select({ count: drizzleOrm.count() }).from(githubRepositories),
+        ]);
+
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        reply.send({
+          data: repositories,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+          },
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/repositories" }, "Failed to fetch repositories from DB.");
+        reply.status(500).send({ error: "Failed to fetch repositories from database." });
+      }
+    },
+  );
+
+  fastify.get(
+    "/data/pull-requests",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+        const offset = (page - 1) * limit;
+
+        const { db } = getPostgresClient();
+
+        const [pullRequests, totalResult] = await Promise.all([
+          db
+            .select()
+            .from(githubPullRequests)
+            .orderBy(drizzleOrm.desc(githubPullRequests.prUpdatedAt))
+            .limit(limit)
+            .offset(offset),
+          db.select({ count: drizzleOrm.count() }).from(githubPullRequests),
+        ]);
+
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        reply.send({
+          data: pullRequests,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+          },
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/pull-requests" }, "Failed to fetch pull requests from DB.");
+        reply.status(500).send({ error: "Failed to fetch pull requests from database." });
+      }
+    },
+  );
+
+  // Refresh endpoint
+  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const repositories = await githubService.getRepositories();
+      await githubService.connector.store.save(repositories);
+
+      const pullRequests = await githubService.getPullRequests();
+      await githubService.connector.store.save(pullRequests);
+
+      reply.send({
+        success: true,
+        message: "GitHub data refreshed successfully",
+        counts: {
+          repositories: repositories.length,
+          pullRequests: pullRequests.length,
+        },
+      });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh GitHub data.");
+      reply.status(500).send({ error: "Failed to refresh GitHub data." });
     }
   });
 }

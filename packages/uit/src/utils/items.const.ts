@@ -5,6 +5,7 @@ type Item = {
   color: string;
   size: "xs" | "sm" | "md" | "lg" | "full";
   disabled: boolean;
+  route?: string;
 };
 
 export const AIT_SERVICES: Item[] = [
@@ -15,6 +16,7 @@ export const AIT_SERVICES: Item[] = [
     color: "#1A1E22",
     size: "lg",
     disabled: false,
+    route: "/integrations/github",
   },
   {
     id: "spotify",
@@ -23,6 +25,7 @@ export const AIT_SERVICES: Item[] = [
     color: "#1DB954",
     size: "lg",
     disabled: false,
+    route: "/integrations/spotify",
   },
   {
     id: "x-twitter",
@@ -31,6 +34,7 @@ export const AIT_SERVICES: Item[] = [
     color: "#14171A",
     size: "md",
     disabled: false,
+    route: "/integrations/x",
   },
   {
     id: "linear",
@@ -39,6 +43,7 @@ export const AIT_SERVICES: Item[] = [
     color: "#5e6ad2",
     size: "md",
     disabled: false,
+    route: "/integrations/linear",
   },
   {
     id: "discord",

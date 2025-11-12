@@ -71,7 +71,16 @@ export const githubPullRequests = pgTable("github_pull_requests", {
   repositoryName: varchar("repository_name", { length: 255 }),
   repositoryFullName: varchar("repository_full_name", { length: 512 }),
   mergeable: boolean("mergeable"),
+  rebaseable: boolean("rebaseable"),
+  mergeableState: varchar("mergeable_state", { length: 50 }),
   maintainerCanModify: boolean("maintainer_can_modify").default(false),
+  authorAssociation: varchar("author_association", { length: 50 }),
+  autoMerge: boolean("auto_merge"),
+  activeLockReason: varchar("active_lock_reason", { length: 100 }),
+
+  // Timestamps from GitHub API
+  prCreatedAt: timestamp("pr_created_at"),
+  prUpdatedAt: timestamp("pr_updated_at"),
 
   // JSONB fields for complex objects
   userData: jsonb("user_data"),
@@ -81,6 +90,9 @@ export const githubPullRequests = pgTable("github_pull_requests", {
   labels: jsonb("labels"),
   milestoneData: jsonb("milestone_data"),
   requestedReviewersData: jsonb("requested_reviewers_data"),
+  requestedTeamsData: jsonb("requested_teams_data"),
+  headRepoData: jsonb("head_repo_data"),
+  baseRepoData: jsonb("base_repo_data"),
 
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

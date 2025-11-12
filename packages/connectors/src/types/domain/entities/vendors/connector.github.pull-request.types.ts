@@ -49,7 +49,16 @@ export interface GitHubPullRequestEntity {
   repositoryName: string | null;
   repositoryFullName: string | null;
   mergeable: boolean | null;
+  rebaseable: boolean | null;
+  mergeableState: string | null;
   maintainerCanModify: boolean;
+  authorAssociation: string | null;
+  autoMerge: boolean | null;
+  activeLockReason: string | null;
+
+  // Timestamps from GitHub API
+  prCreatedAt: Date | null;
+  prUpdatedAt: Date | null;
 
   // JSONB fields for complex objects
   userData: Record<string, unknown> | null;
@@ -59,6 +68,9 @@ export interface GitHubPullRequestEntity {
   labels: Record<string, unknown>[] | null;
   milestoneData: Record<string, unknown> | null;
   requestedReviewersData: Record<string, unknown> | null;
+  requestedTeamsData: Record<string, unknown> | null;
+  headRepoData: Record<string, unknown> | null;
+  baseRepoData: Record<string, unknown> | null;
 
   createdAt: string | null;
   updatedAt: string | null;
