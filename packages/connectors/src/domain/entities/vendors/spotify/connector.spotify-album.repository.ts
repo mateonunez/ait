@@ -36,12 +36,8 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
           copyrights: albumDataTarget.copyrights,
           externalIds: albumDataTarget.externalIds,
           genres: albumDataTarget.genres,
-          updatedAt: albumDataTarget.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (albumDataTarget.createdAt) {
-          updateValues.createdAt = albumDataTarget.createdAt;
-        }
 
         await tx
           .insert(spotifyAlbums)

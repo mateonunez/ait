@@ -43,8 +43,4 @@ export interface RetoveSpotifyTrackVectorPoint extends BaseVectorPoint {
     __type: "track";
   } & Partial<SpotifyArtistDataTarget>;
 }
-/**
- * Union type for Spotify vector points
- */
-
 export type RetoveSpotifyVectorPoint = RetoveSpotifyTrackVectorPoint;

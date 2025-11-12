@@ -64,9 +64,9 @@ export function ArtistCard({ artist, onClick, className }: ArtistCardProps) {
           {/* Genres */}
           {artist.genres && artist.genres.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
-              {artist.genres.slice(0, 2).map((genre) => (
-                <Badge key={genre} variant="secondary" className="text-xs font-normal">
-                  {genre}
+              {artist.genres.slice(0, 2).map((genre, index) => (
+                <Badge key={`${genre}-${index}=${genre}`} variant="secondary" className="text-xs font-normal">
+                  {genre.split(":")[1]}
                 </Badge>
               ))}
               {artist.genres.length > 2 && (

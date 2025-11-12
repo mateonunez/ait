@@ -24,12 +24,8 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
           name: artistDataTarget.name,
           popularity: artistDataTarget.popularity,
           genres: artistDataTarget.genres,
-          updatedAt: artistDataTarget.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (artistDataTarget.createdAt) {
-          updateValues.createdAt = artistDataTarget.createdAt;
-        }
 
         await tx
           .insert(spotifyArtists)

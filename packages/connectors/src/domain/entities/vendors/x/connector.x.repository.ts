@@ -29,12 +29,8 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
           retweetCount: tweetData.retweetCount,
           likeCount: tweetData.likeCount,
           jsonData: tweetData.jsonData,
-          updatedAt: tweetData.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (tweetData.createdAt) {
-          updateValues.createdAt = tweetData.createdAt;
-        }
 
         await tx
           .insert(xTweets)

@@ -32,12 +32,8 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
           uri: playlistDataTarget.uri,
           href: playlistDataTarget.href,
           externalUrls: playlistDataTarget.externalUrls,
-          updatedAt: playlistDataTarget.updatedAt ?? new Date(),
+          updatedAt: new Date(),
         };
-
-        if (playlistDataTarget.createdAt) {
-          updateValues.createdAt = playlistDataTarget.createdAt;
-        }
 
         await tx
           .insert(spotifyPlaylists)
