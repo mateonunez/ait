@@ -10,6 +10,7 @@
     "build:watch": "vite build --watch",
     "clean": "rm -rf dist node_modules/.vite",
     "preview": "vite preview",
+    "cert:generate": "./scripts/generate-cert.sh",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"
   },

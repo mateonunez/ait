@@ -12,6 +12,10 @@ import {
   GitHubETLs,
   LinearETLs,
   XETLs,
+  NotionETLs,
+  SlackETLs,
+  runNotionETL,
+  runSlackETL,
 } from "@ait/retove";
 import { getQdrantClient } from "@ait/qdrant";
 import { getPostgresClient } from "@ait/postgres";
@@ -21,6 +25,8 @@ import {
   ConnectorGitHubService,
   ConnectorLinearService,
   ConnectorXService,
+  ConnectorNotionService,
+  ConnectorSlackService,
 } from "@ait/connectors";
 
 export interface ISchedulerETLTaskManager {
@@ -32,12 +38,16 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
   private readonly _githubService: ConnectorGitHubService;
   private readonly _linearService: ConnectorLinearService;
   private readonly _xService: ConnectorXService;
+  private readonly _notionService: ConnectorNotionService;
+  private readonly _slackService: ConnectorSlackService;
 
   constructor() {
     this._spotifyService = new ConnectorSpotifyService();
     this._githubService = new ConnectorGitHubService();
     this._linearService = new ConnectorLinearService();
     this._xService = new ConnectorXService();
+    this._notionService = new ConnectorNotionService();
+    this._slackService = new ConnectorSlackService();
   }
 
   public registerTasks(): void {
@@ -215,6 +225,44 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         console.info(`[${XETLs.tweet}] Running ETL to Qdrant...`);
         await runXETL(qdrant, postgres);
         console.info(`[${XETLs.tweet}] Completed`);
+      });
+    });
+
+    // Register Notion Page ETL
+    schedulerRegistry.register(NotionETLs.page, async (data) => {
+      console.info(`[${NotionETLs.page}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        console.info(`[${NotionETLs.page}] Fetching pages from Notion API...`);
+        const pages = await this._notionService.getPages();
+        console.info(`[${NotionETLs.page}] Fetched ${pages.length} pages`);
+
+        console.info(`[${NotionETLs.page}] Saving pages to Postgres...`);
+        await this._notionService.connector.store.save(pages);
+        console.info(`[${NotionETLs.page}] Saved to Postgres`);
+
+        console.info(`[${NotionETLs.page}] Running ETL to Qdrant...`);
+        await runNotionETL(qdrant, postgres);
+        console.info(`[${NotionETLs.page}] Completed`);
+      });
+    });
+
+    // Register Slack Message ETL
+    schedulerRegistry.register(SlackETLs.message, async (data) => {
+      console.info(`[${SlackETLs.message}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        console.info(`[${SlackETLs.message}] Fetching messages from Slack API...`);
+        const messages = await this._slackService.getMessages();
+        console.info(`[${SlackETLs.message}] Fetched ${messages.length} messages`);
+
+        console.info(`[${SlackETLs.message}] Saving messages to Postgres...`);
+        await this._slackService.connector.store.save(messages);
+        console.info(`[${SlackETLs.message}] Saved to Postgres`);
+
+        console.info(`[${SlackETLs.message}] Running ETL to Qdrant...`);
+        await runSlackETL(qdrant, postgres);
+        console.info(`[${SlackETLs.message}] Completed`);
       });
     });
   }

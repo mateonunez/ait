@@ -1,7 +1,6 @@
-import type { CollectionVendor, EntityType } from "../config/collections.config";
+import type { EntityType } from "@ait/core";
+import type { CollectionVendor } from "../config/collections.config";
 import type { Document, BaseMetadata } from "./documents";
-
-export type { CollectionVendor, EntityType };
 
 export interface CollectionWeight {
   vendor: CollectionVendor;

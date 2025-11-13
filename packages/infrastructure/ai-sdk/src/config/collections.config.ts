@@ -1,29 +1,6 @@
-export type CollectionVendor = "spotify" | "github" | "linear" | "x" | "notion" | "general";
+import type { EntityType, IntegrationVendor } from "@ait/core";
 
-export type EntityType =
-  | "track"
-  | "artist"
-  | "playlist"
-  | "album"
-  | "recently_played"
-  | "repository"
-  | "pull_request"
-  | "issue"
-  | "tweet"
-  | "page";
-
-export const VALID_ENTITY_TYPES: readonly EntityType[] = [
-  "track",
-  "artist",
-  "playlist",
-  "album",
-  "recently_played",
-  "repository",
-  "pull_request",
-  "tweet",
-  "issue",
-  "page",
-] as const;
+export type CollectionVendor = IntegrationVendor | "general";
 
 export interface CollectionConfig {
   readonly vendor: CollectionVendor;
@@ -79,6 +56,15 @@ const NOTION_COLLECTION: CollectionConfig = {
   enabled: true,
 };
 
+const SLACK_COLLECTION: CollectionConfig = {
+  vendor: "slack",
+  name: "ait_slack_collection",
+  description: "Slack messages, channels, and team communication",
+  entityTypes: ["message"],
+  defaultWeight: 1.0,
+  enabled: true,
+};
+
 const GENERAL_COLLECTION: CollectionConfig = {
   vendor: "general",
   name: "ait_general_collection",
@@ -94,6 +80,7 @@ export const COLLECTIONS_REGISTRY: Record<CollectionVendor, CollectionConfig> = 
   linear: LINEAR_COLLECTION,
   x: X_COLLECTION,
   notion: NOTION_COLLECTION,
+  slack: SLACK_COLLECTION,
   general: GENERAL_COLLECTION,
 };
 

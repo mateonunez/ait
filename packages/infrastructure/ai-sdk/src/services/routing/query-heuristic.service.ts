@@ -20,6 +20,9 @@ const TAG_KEYWORDS: Record<string, string[]> = {
   notes: ["note", "notes", "meeting", "summary", "documentation"],
   playlist: ["playlist", "spotify", "mix", "queue"],
   tweets: ["tweet", "twitter", "x", "microblog", "posted"],
+  slack: ["slack", "channel", "message", "team", "team communication", "team updates"],
+  notion: ["notion", "page", "note", "document", "wiki", "knowledge", "docs"],
+  general: ["general", "information", "help", "support", "faq", "about", "contact", "feedback"],
 };
 
 export interface IQueryHeuristicService {

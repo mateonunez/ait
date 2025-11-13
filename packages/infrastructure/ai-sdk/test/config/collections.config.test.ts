@@ -10,10 +10,9 @@ import {
   getCollectionNameByVendor,
   getCollectionNameByEntityType,
   getCollectionVendorByName,
-  VALID_ENTITY_TYPES,
   type CollectionVendor,
-  type EntityType,
 } from "../../src/config/collections.config";
+import { type EntityType, VALID_ENTITY_TYPES } from "@ait/core";
 
 describe("Collections Configuration", () => {
   describe("getCollectionConfig", () => {

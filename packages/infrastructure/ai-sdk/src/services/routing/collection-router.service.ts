@@ -1,6 +1,8 @@
 import { z } from "zod";
-import type { CollectionVendor, EntityType } from "../../config/collections.config";
-import { getAllCollections, getCollectionsByEntityTypes, VALID_ENTITY_TYPES } from "../../config/collections.config";
+import type { CollectionVendor } from "../../config/collections.config";
+import { getAllCollections, getCollectionsByEntityTypes } from "../../config/collections.config";
+import type { EntityType } from "@ait/core";
+import { VALID_ENTITY_TYPES, getVendorKeywords } from "@ait/core";
 import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
 import type { QueryIntent } from "./query-intent.service";
 import { getAItClient } from "../../client/ai-sdk.client";
@@ -169,20 +171,37 @@ export class CollectionRouterService implements ICollectionRouterService {
   ): CollectionRouterResult {
     const lowerQuery = userQuery.toLowerCase();
 
-    const heuristics: Array<{ vendor: CollectionVendor; keywords: string[]; weight: number }> = [
+    const heuristics: Array<{ vendor: CollectionVendor; keywords: readonly string[]; weight: number }> = [
       {
         vendor: "spotify",
-        keywords: ["music", "song", "track", "artist", "album", "playlist", "listening", "played", "spotify"],
+        keywords: getVendorKeywords("spotify"),
         weight: 1.0,
       },
       {
         vendor: "github",
-        keywords: ["code", "repo", "repository", "pr", "pull request", "commit", "github", "git"],
+        keywords: getVendorKeywords("github"),
         weight: 1.0,
       },
-      { vendor: "linear", keywords: ["issue", "task", "ticket", "bug", "project", "linear", "kanban"], weight: 1.0 },
-      { vendor: "x", keywords: ["tweet", "twitter", "x.com", "posted", "social", "microblog"], weight: 1.0 },
-      { vendor: "notion", keywords: ["notion", "page", "note", "document", "wiki", "knowledge", "docs"], weight: 1.0 },
+      {
+        vendor: "linear",
+        keywords: getVendorKeywords("linear"),
+        weight: 1.0,
+      },
+      {
+        vendor: "x",
+        keywords: getVendorKeywords("x"),
+        weight: 1.0,
+      },
+      {
+        vendor: "notion",
+        keywords: getVendorKeywords("notion"),
+        weight: 1.0,
+      },
+      {
+        vendor: "slack",
+        keywords: getVendorKeywords("slack"),
+        weight: 1.0,
+      },
     ];
 
     const selectedCollections: CollectionWeight[] = [];

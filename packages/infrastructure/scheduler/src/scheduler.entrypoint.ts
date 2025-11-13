@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { Scheduler } from "./scheduler.service";
 import type { IRedisConfig } from "@ait/redis";
-import { GitHubETLs, SpotifyETLs, LinearETLs, XETLs } from "@ait/retove";
+import { GitHubETLs, SpotifyETLs, LinearETLs, XETLs, NotionETLs, SlackETLs } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
 import { closePostgresConnection } from "@ait/postgres";
 
@@ -29,15 +29,21 @@ const getScheduleConfig = () => {
 const scheduleConfig = getScheduleConfig();
 
 const SCHEDULED_JOBS: JobConfig[] = [
-  // Critical priority: Real-time listening data
   {
     name: SpotifyETLs.recentlyPlayed,
     options: {},
-    cronExpression: "*/5 * * * *", // Every 5 minutes
-    priority: 0, // Highest priority for fresh context
+    cronExpression: scheduleConfig.highPriorityCron,
+    priority: 0,
     enabled: true,
   },
-  // High priority: Most frequently accessed data
+  {
+    name: SlackETLs.message,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.highPriorityCron,
+    priority: 0,
+    enabled: true,
+  },
+
   {
     name: SpotifyETLs.track,
     options: { limit: scheduleConfig.batchSize },
@@ -84,12 +90,19 @@ const SCHEDULED_JOBS: JobConfig[] = [
     name: SpotifyETLs.playlist,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 2,
+    priority: 3,
     enabled: true,
   },
-  // Low priority: Less frequently updated
+
   {
     name: SpotifyETLs.album,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.lowPriorityCron,
+    priority: 3,
+    enabled: true,
+  },
+  {
+    name: NotionETLs.page,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.lowPriorityCron,
     priority: 3,

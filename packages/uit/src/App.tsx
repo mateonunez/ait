@@ -6,6 +6,7 @@ import SpotifyPage from "./pages/integrations/spotify-page";
 import XPage from "./pages/integrations/x-page";
 import LinearPage from "./pages/integrations/linear-page";
 import NotionPage from "./pages/integrations/notion-page";
+import SlackPage from "./pages/integrations/slack-page";
 import { AIChatDialog } from "./components/ai-chat-dialog";
 import { useChatDialog } from "./contexts/chat.context";
 
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/integrations/x" component={XPage} />
         <Route path="/integrations/linear" component={LinearPage} />
         <Route path="/integrations/notion" component={NotionPage} />
+        <Route path="/integrations/slack" component={SlackPage} />
         <Route>
           <div className="min-h-dvh flex items-center justify-center">
             <h1 className="text-4xl font-bold">404 - Page Not Found</h1>

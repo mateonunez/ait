@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { EntityType } from "@ait/core";
+import { VALID_ENTITY_TYPES, getEntityDescriptions } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 
 const QueryIntentSchema = z.object({
@@ -31,23 +33,10 @@ export class QueryIntentService implements IQueryIntentService {
         prompt: this._buildIntentPrompt(query),
       });
 
-      // Validate and normalize entity types
-      const validEntityTypes = [
-        "tweet",
-        "recently_played",
-        "track",
-        "artist",
-        "playlist",
-        "album",
-        "pull_request",
-        "repository",
-        "issue",
-        "page",
-      ];
-
+      // Validate and normalize entity types using centralized config
       const normalizedEntityTypes = intent.entityTypes
         .map((type) => type.toLowerCase().replace(/[_\s-]/g, "_"))
-        .filter((type) => validEntityTypes.includes(type));
+        .filter((type): type is EntityType => VALID_ENTITY_TYPES.includes(type as EntityType));
 
       const result = {
         entityTypes: normalizedEntityTypes,
@@ -85,16 +74,7 @@ export class QueryIntentService implements IQueryIntentService {
       "Analyze this user query and extract structured intent.",
       "",
       "Entity types available:",
-      "- tweet: Twitter/X posts (timestamps: createdAt)",
-      "- recently_played: Spotify tracks that were actually played (timestamps: playedAt - THE ACTUAL PLAY TIME)",
-      "- track: Spotify tracks in library (timestamps: createdAt)",
-      "- artist: Spotify artists followed (timestamps: createdAt)",
-      "- playlist: Spotify playlists (timestamps: createdAt)",
-      "- album: Spotify albums (timestamps: createdAt)",
-      "- pull_request: GitHub pull requests (timestamps: mergedAt, closedAt)",
-      "- repository: GitHub repositories (timestamps: pushedAt)",
-      "- issue: Linear issues (timestamps: createdAt, updatedAt)",
-      "- page: Notion pages and notes (timestamps: createdAt, updatedAt)",
+      getEntityDescriptions(),
       "",
       "IMPORTANT DISTINCTION:",
       "- Use 'recently_played' when the user asks about what they WERE LISTENING TO, PLAYED, or music DURING an activity",
