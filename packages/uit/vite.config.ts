@@ -5,26 +5,18 @@ import path from "node:path";
 import { readFileSync } from "node:fs";
 
 function getHttpsOptions(): { key: Buffer; cert: Buffer } | null {
-  // Try to use certificates from gateway package first
+  // Use shared certificates from gateway package
   const gatewayCertDir = path.resolve(__dirname, "../gateway/certs");
-  const localCertDir = path.resolve(__dirname, "./certs");
+  const keyPath = path.join(gatewayCertDir, "server.key");
+  const certPath = path.join(gatewayCertDir, "server.crt");
 
-  const certPaths = [
-    { key: path.join(gatewayCertDir, "server.key"), cert: path.join(gatewayCertDir, "server.crt") },
-    { key: path.join(localCertDir, "server.key"), cert: path.join(localCertDir, "server.crt") },
-  ];
-
-  for (const { key: keyPath, cert: certPath } of certPaths) {
-    try {
-      const key = readFileSync(keyPath);
-      const cert = readFileSync(certPath);
-      return { key, cert };
-    } catch {
-      // Try next path
-    }
+  try {
+    const key = readFileSync(keyPath);
+    const cert = readFileSync(certPath);
+    return { key, cert };
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 // https://vite.dev/config/
