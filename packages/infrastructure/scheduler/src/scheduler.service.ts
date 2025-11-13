@@ -48,6 +48,8 @@ export class Scheduler implements IScheduler {
       );
     }
 
+    await this.removeRepeatableJob(jobName, cronExpression);
+
     await this._queue.add(jobName, data, {
       repeat: { pattern: cronExpression },
       priority: priority || 0,
@@ -58,6 +60,37 @@ export class Scheduler implements IScheduler {
       `[Scheduler] Job "${jobName}" scheduled with cron: ${cronExpression}`,
       priority ? `(priority: ${priority})` : "",
     );
+  }
+
+  public async removeRepeatableJob(jobName: string, cronExpression: string): Promise<void> {
+    try {
+      const jobSchedulers = await this._queue.getJobSchedulers();
+      const jobToRemove = jobSchedulers.find(
+        (scheduler) => scheduler.name === jobName && scheduler.pattern === cronExpression,
+      );
+
+      if (jobToRemove?.id) {
+        await this._queue.removeJobScheduler(jobToRemove.id);
+        console.info(`[Scheduler] Removed repeatable job: ${jobName} (${cronExpression})`);
+      }
+    } catch (error) {
+      console.warn(`[Scheduler] Failed to remove repeatable job ${jobName}:`, error);
+    }
+  }
+
+  public async removeAllRepeatableJobs(): Promise<void> {
+    try {
+      const jobSchedulers = await this._queue.getJobSchedulers();
+      for (const scheduler of jobSchedulers) {
+        if (scheduler.id) {
+          await this._queue.removeJobScheduler(scheduler.id);
+          console.info(`[Scheduler] Removed repeatable job: ${scheduler.name} (${scheduler.pattern})`);
+        }
+      }
+      console.info(`[Scheduler] Removed ${jobSchedulers.length} repeatable jobs`);
+    } catch (error) {
+      console.warn("[Scheduler] Failed to remove repeatable jobs:", error);
+    }
   }
 
   public async addJob(jobName: string, data: Record<string, unknown>, options?: JobsOptions): Promise<void> {

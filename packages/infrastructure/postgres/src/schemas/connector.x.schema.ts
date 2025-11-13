@@ -1,4 +1,5 @@
 import { integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import type { XMediaEntity, XPollEntity, XPlaceEntity } from "@ait/core";
 
 export const xTweets = pgTable("x_tweets", {
   id: varchar("id", { length: 255 }).primaryKey(),
@@ -11,7 +12,12 @@ export const xTweets = pgTable("x_tweets", {
   likeCount: integer("like_count"),
   replyCount: integer("reply_count"),
   quoteCount: integer("quote_count"),
-  jsonData: jsonb("json_data").$type<Record<string, unknown>>(), // For raw API response storage
+  conversationId: varchar("conversation_id", { length: 255 }),
+  inReplyToUserId: varchar("in_reply_to_user_id", { length: 255 }),
+  mediaAttachments: jsonb("media_attachments").$type<XMediaEntity[]>(),
+  pollData: jsonb("poll_data").$type<XPollEntity>(),
+  placeData: jsonb("place_data").$type<XPlaceEntity>(),
+  jsonData: jsonb("json_data").$type<Record<string, unknown>>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

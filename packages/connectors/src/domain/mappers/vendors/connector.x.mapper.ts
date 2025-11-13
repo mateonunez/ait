@@ -68,6 +68,36 @@ const xTweetMapping: ConnectorMapperDefinition<XTweetExternal, XTweetEntity, XTw
     dataTarget: (dataTarget) => dataTarget.quoteCount ?? 0,
   },
 
+  conversationId: {
+    external: (external) => external.conversation_id ?? null,
+    domain: (domain) => domain.conversationId ?? null,
+    dataTarget: (dataTarget) => dataTarget.conversationId ?? null,
+  },
+
+  inReplyToUserId: {
+    external: (external) => external.in_reply_to_user_id ?? null,
+    domain: (domain) => domain.inReplyToUserId ?? null,
+    dataTarget: (dataTarget) => dataTarget.inReplyToUserId ?? null,
+  },
+
+  mediaAttachments: {
+    external: (external) => external.media ?? null,
+    domain: (domain) => domain.mediaAttachments ?? null,
+    dataTarget: (dataTarget) => dataTarget.mediaAttachments ?? null,
+  },
+
+  pollData: {
+    external: (external) => external.poll ?? null,
+    domain: (domain) => domain.pollData ?? null,
+    dataTarget: (dataTarget) => dataTarget.pollData ?? null,
+  },
+
+  placeData: {
+    external: (external) => external.place ?? null,
+    domain: (domain) => domain.placeData ?? null,
+    dataTarget: (dataTarget) => dataTarget.placeData ?? null,
+  },
+
   createdAt: {
     external: (external) => new Date(external.created_at ?? ""),
     domain: (domain) => domain.createdAt,

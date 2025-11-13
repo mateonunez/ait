@@ -78,6 +78,13 @@
       "when": 1762943609063,
       "tag": "0010_hot_toad_men",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1763031081054,
+      "tag": "0011_zippy_wrecker",
+      "breakpoints": true
     }
   ]
 }
