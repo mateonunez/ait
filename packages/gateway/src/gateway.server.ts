@@ -1,3 +1,4 @@
+import "dotenv/config";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
 
@@ -8,6 +9,7 @@ import linearRoutes from "./routes/gateway.linear.routes";
 import spotifyRoutes from "./routes/gateway.spotify.routes";
 import xRoutes from "./routes/gateway.x.routes";
 import notionRoutes from "./routes/gateway.notion.routes";
+import slackRoutes from "./routes/gateway.slack.routes";
 import observabilityRoutes from "./routes/gateway.observability.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
 
@@ -21,12 +23,14 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(spotifyRoutes, { prefix: "/api/spotify" });
   server.register(xRoutes, { prefix: "/api/x" });
   server.register(notionRoutes, { prefix: "/api/notion" });
+  server.register(slackRoutes, { prefix: "/api/slack" });
   server.register(observabilityRoutes, { prefix: "/api/observability" });
   server.register(feedbackRoutes, { prefix: "/api/feedback" });
 
   try {
-    await server.listen({ port });
-    server.log.info(`Gateway running on port ${port}`);
+    await server.listen({ port, host: "0.0.0.0" });
+    const protocol = (server.server as { key?: Buffer })?.key ? "https" : "http";
+    server.log.info(`Gateway running on ${protocol}://localhost:${port}`);
   } catch (err) {
     server.log.error(err);
     process.exit(1);

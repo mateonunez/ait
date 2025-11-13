@@ -10,16 +10,24 @@ export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider
   const randomId = randomUUID();
   const now = new Date();
 
+  // For Slack user tokens, prefer authed_user token data
+  const userTokenData = data.authed_user;
+  const accessToken = userTokenData?.access_token || data.access_token;
+  const refreshToken = userTokenData?.refresh_token || data.refresh_token;
+  const tokenType = userTokenData?.token_type || data.token_type;
+  const scope = userTokenData?.scope || data.scope;
+  const expiresIn = userTokenData?.expires_in || data.expires_in;
+
   await _pgClient.db.transaction(async (tx) => {
     if (ouathData) {
       await tx
         .update(oauthTokens)
         .set({
-          accessToken: data.access_token || ouathData.accessToken,
-          refreshToken: data.refresh_token || ouathData.refreshToken,
-          tokenType: data.token_type || ouathData.tokenType,
-          scope: data.scope || ouathData.scope,
-          expiresIn: data.expires_in ? data.expires_in.toString() : ouathData.expiresIn,
+          accessToken: accessToken || ouathData.accessToken,
+          refreshToken: refreshToken || ouathData.refreshToken,
+          tokenType: tokenType || ouathData.tokenType,
+          scope: scope || ouathData.scope,
+          expiresIn: expiresIn ? expiresIn.toString() : ouathData.expiresIn,
           updatedAt: now,
         })
         .where(drizzleOrm.eq(oauthTokens.provider, provider))
@@ -27,11 +35,11 @@ export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider
     } else {
       const tokenData = {
         id: randomId,
-        accessToken: data.access_token,
-        refreshToken: data.refresh_token,
-        tokenType: data.token_type,
-        scope: data.scope,
-        expiresIn: data.expires_in?.toString(),
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        tokenType: tokenType,
+        scope: scope,
+        expiresIn: expiresIn?.toString(),
         provider: provider,
         createdAt: now,
         updatedAt: now,

@@ -1,0 +1,6 @@
+# SSL Certificates (self-signed for local development)
+certs/
+*.key
+*.crt
+*.pem
+

@@ -9,11 +9,13 @@ import {
 } from "../../domain/mappers/vendors/connector.spotify.mapper";
 import { connectorXTweetMapper } from "../../domain/mappers/vendors/connector.x.mapper";
 import { connectorNotionPageMapper } from "../../domain/mappers/vendors/connector.notion.mapper";
+import { connectorSlackMessageMapper } from "../../domain/mappers/vendors/connector.slack.mapper";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
 import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import type { ConnectorNotion } from "../../infrastructure/vendors/notion/connector.notion";
+import type { ConnectorSlack } from "../../infrastructure/vendors/slack/connector.slack";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
@@ -35,6 +37,8 @@ import type {
   XTweetExternal,
   NotionPageEntity,
   NotionPageExternal,
+  SlackMessageEntity,
+  SlackMessageExternal,
 } from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
@@ -91,6 +95,14 @@ export enum NOTION_ENTITY_TYPES_ENUM {
 
 export interface NotionServiceEntityMap {
   [NOTION_ENTITY_TYPES_ENUM.PAGE]: NotionPageEntity;
+}
+
+export enum SLACK_ENTITY_TYPES_ENUM {
+  MESSAGE = "message",
+}
+
+export interface SlackServiceEntityMap {
+  [SLACK_ENTITY_TYPES_ENUM.MESSAGE]: SlackMessageEntity;
 }
 
 const githubEntityConfigs = {
@@ -153,12 +165,20 @@ const notionEntityConfigs = {
   } satisfies EntityConfig<ConnectorNotion, NotionPageExternal, NotionPageEntity>,
 } as const;
 
+const slackEntityConfigs = {
+  [SLACK_ENTITY_TYPES_ENUM.MESSAGE]: {
+    fetcher: (connector: ConnectorSlack) => connector.dataSource.fetchMessages(),
+    mapper: (message: SlackMessageExternal) => connectorSlackMessageMapper.externalToDomain(message),
+  } satisfies EntityConfig<ConnectorSlack, SlackMessageExternal, SlackMessageEntity>,
+} as const;
+
 export const connectorEntityConfigs = {
   github: githubEntityConfigs,
   linear: linearEntityConfigs,
   spotify: spotifyEntityConfigs,
   x: xEntityConfigs,
   notion: notionEntityConfigs,
+  slack: slackEntityConfigs,
 } as const;
 
 export type ConnectorType = keyof typeof connectorEntityConfigs;

@@ -5,6 +5,7 @@ export * from "./services/vendors/connector.linear.service";
 export * from "./services/vendors/connector.spotify.service";
 export * from "./services/vendors/connector.x.service";
 export * from "./services/vendors/connector.notion.service";
+export * from "./services/vendors/connector.slack.service";
 
 // Types
 export type * from "./types/infrastructure/connector.interface";
@@ -28,3 +29,4 @@ export type * from "./types/domain/entities/vendors/connector.github.pull-reques
 export type * from "./types/domain/entities/vendors/connector.linear.types";
 export type * from "./types/domain/entities/vendors/connector.spotify.types";
 export type * from "./types/domain/entities/vendors/connector.x.repository.types";
+export type * from "./types/domain/entities/vendors/connector.slack.types";

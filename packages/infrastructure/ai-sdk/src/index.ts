@@ -49,7 +49,6 @@ export {
   getCollectionNameByEntityType,
   getCollectionVendorByName,
   type CollectionVendor,
-  type EntityType,
   type CollectionConfig,
 } from "./config/collections.config";
 

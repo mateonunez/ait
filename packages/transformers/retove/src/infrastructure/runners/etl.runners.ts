@@ -10,6 +10,7 @@ import { RetoveSpotifyArtistETL } from "../../etl/vendors/retove.spotify.artist.
 import { RetoveSpotifyPlaylistETL } from "../../etl/vendors/retove.spotify.playlist.etl";
 import { RetoveSpotifyAlbumETL } from "../../etl/vendors/retove.spotify.album.etl";
 import { RetoveNotionPageETL } from "../../etl/vendors/retove.notion.page.etl";
+import { RetoveSlackMessageETL } from "../../etl/vendors/retove.slack.message.etl";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export const SpotifyETLs = {
@@ -35,6 +36,10 @@ export const LinearETLs = {
 
 export const NotionETLs = {
   page: "RetoveNotionPageETL",
+};
+
+export const SlackETLs = {
+  message: "RetoveSlackMessageETL",
 };
 
 const LIMIT = 10_000;
@@ -137,4 +142,13 @@ export async function runNotionETL(qdrantClient: qdrant.QdrantClient, pgClient: 
   console.log(`🔍 Running RetoveNotionPageETL → ${collection} with limit of ${LIMIT}...`);
   await notionETL.run(LIMIT);
   console.log(`✅ RetoveNotionPageETL → ${collection} completed successfully!`);
+}
+
+export async function runSlackETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
+  const collection = getCollectionNameByVendor("slack");
+  const slackETL = new RetoveSlackMessageETL(pgClient, qdrantClient);
+
+  console.log(`🔍 Running RetoveSlackMessageETL → ${collection} with limit of ${LIMIT}...`);
+  await slackETL.run(LIMIT);
+  console.log(`✅ RetoveSlackMessageETL → ${collection} completed successfully!`);
 }

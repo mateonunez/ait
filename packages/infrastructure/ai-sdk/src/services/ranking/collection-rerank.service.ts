@@ -167,6 +167,7 @@ export class CollectionRerankService implements ICollectionRerankService {
       linear: "project tasks and issues",
       x: "social media posts and tweets",
       notion: "notes, pages, and knowledge base content",
+      slack: "team communication and channel updates",
       general: "general information",
     };
 

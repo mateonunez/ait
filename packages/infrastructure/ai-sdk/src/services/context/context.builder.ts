@@ -11,19 +11,12 @@ import type {
   LinearIssueEntity,
   SpotifyRecentlyPlayedEntity,
   GitHubPullRequestEntity,
+  NotionPageEntity,
+  SlackMessageEntity,
+  EntityType,
 } from "@ait/core";
+import { getEntityLabel } from "@ait/core";
 import type { TemporalCluster } from "../filtering/temporal-correlation.service";
-
-type EntityType =
-  | "track"
-  | "artist"
-  | "playlist"
-  | "album"
-  | "recently_played"
-  | "repository"
-  | "pull_request"
-  | "tweet"
-  | "issue";
 
 type EntityContentBuilder<T = BaseMetadata> = (meta: T, pageContent: string) => string;
 
@@ -284,6 +277,48 @@ const buildLinearIssue: EntityContentBuilder<LinearIssueEntity> = (meta) => {
   return parts.join("");
 };
 
+const buildNotionPage: EntityContentBuilder<NotionPageEntity> = (meta, pageContent) => {
+  const title = safeString(meta.title, "Untitled Page");
+  const content = safeString(meta.content || pageContent);
+  const parentType = safeString(meta.parentType);
+  const archived = meta.archived ? " [Archived]" : "";
+
+  const parts: string[] = [`Notion page: "${title}"${archived}`];
+  if (parentType && parentType !== "workspace") {
+    parts.push(` in ${parentType}`);
+  }
+  if (content) {
+    parts.push(`\n${truncate(content, 300)}`);
+  }
+
+  return parts.join("");
+};
+
+const buildSlackMessage: EntityContentBuilder<SlackMessageEntity> = (meta) => {
+  const text = safeString(meta.text, "");
+  const channelName = safeString(meta.channelName);
+  const userName = safeString(meta.userName);
+  const threadTs = safeString(meta.threadTs);
+
+  const parts: string[] = [];
+  if (channelName) {
+    parts.push(`Slack message in #${channelName}`);
+  } else {
+    parts.push("Slack message");
+  }
+  if (userName) {
+    parts.push(` from ${userName}`);
+  }
+  if (threadTs) {
+    parts.push(" [thread reply]");
+  }
+  if (text) {
+    parts.push(`: ${truncate(text, 200)}`);
+  }
+
+  return parts.join("");
+};
+
 const entityBuilders: Record<EntityType, EntityContentBuilder<any>> = {
   track: buildSpotifyTrack,
   artist: buildSpotifyArtist,
@@ -294,6 +329,8 @@ const entityBuilders: Record<EntityType, EntityContentBuilder<any>> = {
   pull_request: buildGitHubPullRequest,
   tweet: buildXTweet,
   issue: buildLinearIssue,
+  page: buildNotionPage,
+  message: buildSlackMessage,
 };
 
 const cleanPageContent = (content: string): string => {
@@ -431,19 +468,11 @@ export class ContextBuilder {
   }
 
   private _getEntityTypeLabel(entityType: string): string {
-    const labels: Record<string, string> = {
-      tweet: "Tweets",
-      track: "Songs",
-      recently_played: "Recently Played",
-      repository: "Repositories",
-      pull_request: "Pull Requests",
-      issue: "Issues",
-      playlist: "Playlists",
-      album: "Albums",
-      artist: "Artists",
-    };
-
-    return labels[entityType] || entityType;
+    try {
+      return getEntityLabel(entityType as EntityType, true);
+    } catch {
+      return entityType;
+    }
   }
 
   public buildContextFromDocuments(documents: Document<BaseMetadata>[]): string {

@@ -3,3 +3,4 @@ export * from "./spotify.service";
 export * from "./x.service";
 export * from "./linear.service";
 export * from "./notion.service";
+export * from "./slack.service";
