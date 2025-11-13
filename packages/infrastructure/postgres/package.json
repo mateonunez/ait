@@ -23,6 +23,7 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/core": "workspace:*",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.44.7",
     "postgres": "^3.4.7"

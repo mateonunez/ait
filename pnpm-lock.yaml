@@ -44,6 +44,9 @@ importers:
       '@fastify/secure-session':
         specifier: ^8.2.0
         version: 8.2.0
+      '@octokit/plugin-paginate-rest':
+        specifier: ^13.2.0
+        version: 13.2.0(@octokit/core@7.0.4)
       '@octokit/rest':
         specifier: ^22.0.0
         version: 22.0.0
@@ -66,9 +69,6 @@ importers:
         specifier: ^7.16.0
         version: 7.16.0
     devDependencies:
-      '@octokit/plugin-paginate-rest':
-        specifier: ^13.2.0
-        version: 13.2.0(@octokit/core@7.0.4)
       '@octokit/plugin-rest-endpoint-methods':
         specifier: ^16.1.0
         version: 16.1.0(@octokit/core@7.0.4)
@@ -197,6 +197,9 @@ importers:
 
   packages/infrastructure/postgres:
     dependencies:
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../../core
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3

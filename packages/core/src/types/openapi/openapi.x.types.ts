@@ -176,6 +176,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/2/ai_trends/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get AI Trends by ID
+         * @description Retrieves an AI trend by its ID.
+         */
+        get: operations["getAiTrends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/2/communities/search": {
         parameters: {
             query?: never;
@@ -2547,6 +2567,29 @@ export interface components {
          * @description The sum of results returned in this response.
          */
         Aggregate: number;
+        /** @description An AI generated trend. */
+        AiTrend: {
+            contexts?: {
+                topics?: string[];
+            };
+            core?: {
+                /** @description The ai determined category. */
+                category?: string;
+                /** @description The ai generated hook. */
+                hook?: string;
+                keywords?: string[];
+                /** @description The headline. */
+                name?: string;
+                /** @description The ai trend summary. */
+                summary?: string;
+            };
+            rest_id: components["schemas"]["AiTrendId"];
+        };
+        /**
+         * @description Unique identifier of ai trend.
+         * @example 2244994945
+         */
+        AiTrendId: string;
         /** @description Client App Rule Counts for all applications in the project */
         AllProjectClientApps: components["schemas"]["AppRulesCount"][];
         AllowDownloadStatus: {
@@ -3115,6 +3158,10 @@ export interface components {
             blacklisted_country_codes: string[];
             /** @description List of whitelisted country codes */
             whitelisted_country_codes: string[];
+        };
+        Get2AiTrendsIdResponse: {
+            data?: components["schemas"]["AiTrend"];
+            errors?: components["schemas"]["Problem"][];
         };
         Get2CommunitiesIdResponse: {
             data?: components["schemas"]["Community"];
@@ -6008,6 +6055,8 @@ export interface components {
     };
     responses: never;
     parameters: {
+        /** @description A comma separated list of AiTrend fields to display. */
+        AiTrendFieldsParameter: ("contexts" | "core" | "id")[];
         /** @description A comma separated list of Analytics fields to display. */
         AnalyticsFieldsParameter: ("app_install_attempts" | "app_opens" | "bookmarks" | "detail_expands" | "email_tweet" | "engagements" | "follows" | "hashtag_clicks" | "id" | "impressions" | "likes" | "media_views" | "permalink_clicks" | "quote_tweets" | "replies" | "retweets" | "shares" | "timestamp" | "unfollows" | "url_clicks" | "user_profile_clicks")[];
         /** @description A comma separated list of Community fields to display. */
@@ -6456,6 +6505,45 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ActivitySubscriptionDeleteResponse"];
+                };
+            };
+            /** @description The request has failed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
+    getAiTrends: {
+        parameters: {
+            query?: {
+                /** @description A comma separated list of AiTrend fields to display. */
+                "ai_trend.fields"?: components["parameters"]["AiTrendFieldsParameter"];
+            };
+            header?: never;
+            path: {
+                /**
+                 * @description The ID of the ai trend.
+                 * @example 119929381293
+                 */
+                id: components["schemas"]["AiTrendId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Get2AiTrendsIdResponse"];
                 };
             };
             /** @description The request has failed. */

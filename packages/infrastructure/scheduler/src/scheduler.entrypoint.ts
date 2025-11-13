@@ -42,35 +42,42 @@ const SCHEDULED_JOBS: JobConfig[] = [
     name: SpotifyETLs.track,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.highPriorityCron,
-    priority: 2,
+    priority: 3,
     enabled: true,
   },
   {
     name: XETLs.tweet,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.highPriorityCron,
-    priority: 2,
+    priority: 3,
     enabled: true,
   },
   {
     name: GitHubETLs.repository,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 2,
+    priority: 3,
+    enabled: true,
+  },
+  {
+    name: GitHubETLs.pullRequest,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.mediumPriorityCron,
+    priority: 3,
     enabled: true,
   },
   {
     name: LinearETLs.issue,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 2,
+    priority: 3,
     enabled: true,
   },
   {
     name: SpotifyETLs.artist,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 2,
+    priority: 3,
     enabled: true,
   },
   {
@@ -103,6 +110,9 @@ class SchedulerEntrypoint {
 
   async scheduleJobs(): Promise<void> {
     const defaultCronExpression = "0 0 * * *"; // Daily at midnight
+
+    console.info("🧹 Cleaning up old scheduled jobs...");
+    await this.scheduler.removeAllRepeatableJobs();
 
     for (const job of SCHEDULED_JOBS) {
       await this.scheduler.scheduleJob(

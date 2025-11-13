@@ -28,6 +28,13 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
           lang: tweetData.lang,
           retweetCount: tweetData.retweetCount,
           likeCount: tweetData.likeCount,
+          replyCount: tweetData.replyCount,
+          quoteCount: tweetData.quoteCount,
+          conversationId: tweetData.conversationId,
+          inReplyToUserId: tweetData.inReplyToUserId,
+          mediaAttachments: tweetData.mediaAttachments,
+          pollData: tweetData.pollData,
+          placeData: tweetData.placeData,
           jsonData: tweetData.jsonData,
           updatedAt: new Date(),
         };
