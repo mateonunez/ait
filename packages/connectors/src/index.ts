@@ -4,6 +4,7 @@ export * from "./services/vendors/connector.github.service";
 export * from "./services/vendors/connector.linear.service";
 export * from "./services/vendors/connector.spotify.service";
 export * from "./services/vendors/connector.x.service";
+export * from "./services/vendors/connector.notion.service";
 
 // Types
 export type * from "./types/infrastructure/connector.interface";

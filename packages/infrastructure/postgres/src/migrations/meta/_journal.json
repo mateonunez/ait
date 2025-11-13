@@ -85,6 +85,20 @@
       "when": 1763031081054,
       "tag": "0011_zippy_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1763043666494,
+      "tag": "0012_past_scrambler",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1763045671726,
+      "tag": "0013_bent_diamondback",
+      "breakpoints": true
     }
   ]
 }

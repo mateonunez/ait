@@ -182,6 +182,7 @@ export class CollectionRouterService implements ICollectionRouterService {
       },
       { vendor: "linear", keywords: ["issue", "task", "ticket", "bug", "project", "linear", "kanban"], weight: 1.0 },
       { vendor: "x", keywords: ["tweet", "twitter", "x.com", "posted", "social", "microblog"], weight: 1.0 },
+      { vendor: "notion", keywords: ["notion", "page", "note", "document", "wiki", "knowledge", "docs"], weight: 1.0 },
     ];
 
     const selectedCollections: CollectionWeight[] = [];

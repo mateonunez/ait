@@ -1,0 +1,86 @@
+import { useState, useEffect, useCallback } from "react";
+import { IntegrationLayout } from "@/components/integration-layout";
+import { Pagination } from "@/components/pagination";
+import { LoadingGrid } from "@/components/loading-grid";
+import { PageCard } from "@/components/connectors/page-card";
+import { notionService } from "@/services";
+import type { NotionPageEntity } from "@ait/core";
+
+export default function NotionPage() {
+  const [pages, setPages] = useState<NotionPageEntity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const pageSize = 50;
+
+  const fetchData = useCallback(async (page: number) => {
+    setIsLoading(true);
+    try {
+      const response = await notionService.getPages({ page, limit: pageSize });
+      setPages(response.data);
+      setTotalPages(response.pagination.totalPages);
+    } catch (error) {
+      console.error("Failed to fetch Notion data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await notionService.refresh();
+      await fetchData(currentPage);
+    } catch (error) {
+      console.error("Failed to refresh Notion data:", error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    fetchData(currentPage);
+  }, [fetchData, currentPage]);
+
+  return (
+    <IntegrationLayout
+      title="Notion"
+      description="Recent documents and updates"
+      color="#000000"
+      onRefresh={handleRefresh}
+      isRefreshing={isRefreshing}
+    >
+      <div className="space-y-6">
+        {isLoading ? (
+          <LoadingGrid count={12} />
+        ) : (
+          <>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {pages.map((page) => (
+                <PageCard key={page.id} page={page} />
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center py-8">
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+              </div>
+            )}
+
+            {pages.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <p className="text-lg text-muted-foreground">No pages found</p>
+                <p className="text-sm text-muted-foreground mt-2">Try refreshing or connecting your Notion account</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </IntegrationLayout>
+  );
+}

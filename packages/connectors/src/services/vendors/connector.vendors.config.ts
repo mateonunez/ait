@@ -8,10 +8,12 @@ import {
   connectorSpotifyTrackMapper,
 } from "../../domain/mappers/vendors/connector.spotify.mapper";
 import { connectorXTweetMapper } from "../../domain/mappers/vendors/connector.x.mapper";
+import { connectorNotionPageMapper } from "../../domain/mappers/vendors/connector.notion.mapper";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
 import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
+import type { ConnectorNotion } from "../../infrastructure/vendors/notion/connector.notion";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
@@ -31,6 +33,8 @@ import type {
   SpotifyRecentlyPlayedExternal,
   XTweetEntity,
   XTweetExternal,
+  NotionPageEntity,
+  NotionPageExternal,
 } from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
@@ -79,6 +83,14 @@ export enum LINEAR_ENTITY_TYPES_ENUM {
 
 export interface LinearServiceEntityMap {
   [LINEAR_ENTITY_TYPES_ENUM.ISSUE]: LinearIssueEntity;
+}
+
+export enum NOTION_ENTITY_TYPES_ENUM {
+  PAGE = "page",
+}
+
+export interface NotionServiceEntityMap {
+  [NOTION_ENTITY_TYPES_ENUM.PAGE]: NotionPageEntity;
 }
 
 const githubEntityConfigs = {
@@ -134,11 +146,19 @@ const linearEntityConfigs = {
   } satisfies EntityConfig<ConnectorLinear, LinearIssueExternal, LinearIssueEntity>,
 } as const;
 
+const notionEntityConfigs = {
+  [NOTION_ENTITY_TYPES_ENUM.PAGE]: {
+    fetcher: (connector: ConnectorNotion) => connector.dataSource.fetchPages(),
+    mapper: (page: NotionPageExternal) => connectorNotionPageMapper.externalToDomain(page),
+  } satisfies EntityConfig<ConnectorNotion, NotionPageExternal, NotionPageEntity>,
+} as const;
+
 export const connectorEntityConfigs = {
   github: githubEntityConfigs,
   linear: linearEntityConfigs,
   spotify: spotifyEntityConfigs,
   x: xEntityConfigs,
+  notion: notionEntityConfigs,
 } as const;
 
 export type ConnectorType = keyof typeof connectorEntityConfigs;
