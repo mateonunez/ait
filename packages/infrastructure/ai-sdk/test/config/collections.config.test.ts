@@ -33,7 +33,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should return collections for all vendors", () => {
-      const vendors: CollectionVendor[] = ["spotify", "github", "linear", "x", "general"];
+      const vendors: CollectionVendor[] = ["spotify", "github", "linear", "x", "notion", "general"];
 
       for (const vendor of vendors) {
         const config = getCollectionConfig(vendor);
@@ -187,7 +187,7 @@ describe("Collections Configuration", () => {
 
   describe("isValidCollectionVendor", () => {
     it("should return true for valid vendors", () => {
-      const validVendors = ["spotify", "github", "linear", "x", "general"];
+      const validVendors = ["spotify", "github", "linear", "x", "notion", "general"];
 
       for (const vendor of validVendors) {
         assert.ok(isValidCollectionVendor(vendor));
@@ -211,7 +211,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should work for all vendors", () => {
-      const vendors: CollectionVendor[] = ["spotify", "github", "linear", "x", "general"];
+      const vendors: CollectionVendor[] = ["spotify", "github", "linear", "x", "notion", "general"];
 
       for (const vendor of vendors) {
         const name = getCollectionNameByVendor(vendor);
@@ -294,6 +294,7 @@ describe("Collections Configuration", () => {
         "pull_request",
         "tweet",
         "issue",
+        "page",
       ];
 
       for (const type of expectedTypes) {
@@ -349,6 +350,16 @@ describe("Collections Configuration", () => {
         const collection = getCollectionByEntityType(type);
         assert.ok(collection);
         assert.equal(collection.vendor, "x");
+      }
+    });
+
+    it("should map Notion entity types correctly", () => {
+      const notionTypes: EntityType[] = ["page"];
+
+      for (const type of notionTypes) {
+        const collection = getCollectionByEntityType(type);
+        assert.ok(collection);
+        assert.equal(collection.vendor, "notion");
       }
     });
 

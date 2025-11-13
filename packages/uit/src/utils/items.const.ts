@@ -67,7 +67,8 @@ export const AIT_SERVICES: Item[] = [
     description: "Recent documents and updates",
     color: "#000000",
     size: "full",
-    disabled: true,
+    disabled: false,
+    route: "/integrations/notion",
   },
   {
     id: "slack",

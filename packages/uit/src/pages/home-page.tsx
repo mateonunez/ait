@@ -50,7 +50,7 @@ export default function HomePage() {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar px-6 pb-6">
           <FlexGrid gap={12}>
-            {AIT_SERVICES.map((item) => (
+            {AIT_SERVICES.sort((a, b) => (a.disabled ? 1 : b.disabled ? -1 : 0)).map((item) => (
               <FlexItem
                 key={item.id}
                 color={item.color}

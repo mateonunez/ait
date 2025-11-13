@@ -5,3 +5,4 @@ export * from "./schemas/connector.linear.schema";
 export * from "./schemas/connector.oauth.schema";
 export * from "./schemas/connector.spotify.schema";
 export * from "./schemas/connector.x.schema";
+export * from "./schemas/connector.notion.schema";

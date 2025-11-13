@@ -5,12 +5,14 @@ import { ConnectorGitHubService } from "./vendors/connector.github.service";
 import { ConnectorLinearService } from "./vendors/connector.linear.service";
 import { ConnectorSpotifyService } from "./vendors/connector.spotify.service";
 import { ConnectorXService } from "./vendors/connector.x.service";
+import { ConnectorNotionService } from "./vendors/connector.notion.service";
 
 export const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<ConnectorServiceBase<any, any>>> = {
   github: ConnectorGitHubService,
   linear: ConnectorLinearService,
   spotify: ConnectorSpotifyService,
   x: ConnectorXService,
+  notion: ConnectorNotionService,
 };
 
 export class ConnectorServiceFactory {

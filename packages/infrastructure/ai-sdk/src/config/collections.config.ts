@@ -1,4 +1,4 @@
-export type CollectionVendor = "spotify" | "github" | "linear" | "x" | "general";
+export type CollectionVendor = "spotify" | "github" | "linear" | "x" | "notion" | "general";
 
 export type EntityType =
   | "track"
@@ -9,7 +9,8 @@ export type EntityType =
   | "repository"
   | "pull_request"
   | "issue"
-  | "tweet";
+  | "tweet"
+  | "page";
 
 export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "track",
@@ -21,6 +22,7 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "pull_request",
   "tweet",
   "issue",
+  "page",
 ] as const;
 
 export interface CollectionConfig {
@@ -68,6 +70,15 @@ const X_COLLECTION: CollectionConfig = {
   enabled: true,
 };
 
+const NOTION_COLLECTION: CollectionConfig = {
+  vendor: "notion",
+  name: "ait_notion_collection",
+  description: "Notion pages, notes, and knowledge base content",
+  entityTypes: ["page"],
+  defaultWeight: 1.0,
+  enabled: true,
+};
+
 const GENERAL_COLLECTION: CollectionConfig = {
   vendor: "general",
   name: "ait_general_collection",
@@ -82,6 +93,7 @@ export const COLLECTIONS_REGISTRY: Record<CollectionVendor, CollectionConfig> = 
   github: GITHUB_COLLECTION,
   linear: LINEAR_COLLECTION,
   x: X_COLLECTION,
+  notion: NOTION_COLLECTION,
   general: GENERAL_COLLECTION,
 };
 

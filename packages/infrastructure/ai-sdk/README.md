@@ -298,7 +298,7 @@ const docs = await retrieval.retrieveWithMultiQueries(
 );
 ```
 
-The system will generate 12-16 diverse queries covering all connectors (Spotify, GitHub, X, Linear) to retrieve comprehensive context.
+The system will generate 12-16 diverse queries covering all connectors (Spotify, GitHub, X, Linear, Notion) to retrieve comprehensive context.
 
 ### Custom Tools
 

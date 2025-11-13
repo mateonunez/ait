@@ -42,6 +42,7 @@ export class QueryIntentService implements IQueryIntentService {
         "pull_request",
         "repository",
         "issue",
+        "page",
       ];
 
       const normalizedEntityTypes = intent.entityTypes
@@ -93,6 +94,7 @@ export class QueryIntentService implements IQueryIntentService {
       "- pull_request: GitHub pull requests (timestamps: mergedAt, closedAt)",
       "- repository: GitHub repositories (timestamps: pushedAt)",
       "- issue: Linear issues (timestamps: createdAt, updatedAt)",
+      "- page: Notion pages and notes (timestamps: createdAt, updatedAt)",
       "",
       "IMPORTANT DISTINCTION:",
       "- Use 'recently_played' when the user asks about what they WERE LISTENING TO, PLAYED, or music DURING an activity",

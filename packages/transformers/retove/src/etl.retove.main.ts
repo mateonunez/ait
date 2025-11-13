@@ -10,6 +10,7 @@ import {
   runLinearETL,
   runXETL,
   runGitHubPullRequestETL,
+  runNotionETL,
 } from "./infrastructure/runners/etl.runners";
 
 async function main() {
@@ -30,6 +31,7 @@ async function main() {
     await runGitHubPullRequestETL(qdrantClient, pgClient);
     await runXETL(qdrantClient, pgClient);
     await runLinearETL(qdrantClient, pgClient);
+    await runNotionETL(qdrantClient, pgClient);
 
     console.log("✅ ETL process completed successfully!");
   } catch (error) {
