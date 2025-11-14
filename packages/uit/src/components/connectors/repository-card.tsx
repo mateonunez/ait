@@ -20,6 +20,13 @@ export function RepositoryCard({ repository, onClick, className }: RepositoryCar
     }
   };
 
+  const handleExternalLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (repository.url) {
+      window.open(repository.url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const ownerAvatar = repository.ownerData?.avatar_url as string | undefined;
   const ownerLogin = repository.ownerData?.login as string | undefined;
 
@@ -44,7 +51,14 @@ export function RepositoryCard({ repository, onClick, className }: RepositoryCar
               <h3 className="font-semibold text-base leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {repository.name}
               </h3>
-              <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <button
+                type="button"
+                onClick={handleExternalLinkClick}
+                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
+                aria-label="Open repository in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
             </div>
             {repository.fullName && (
               <p className="text-xs text-muted-foreground mt-1 truncate">{repository.fullName}</p>

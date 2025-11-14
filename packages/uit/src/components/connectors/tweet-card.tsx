@@ -37,6 +37,13 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
     }
   };
 
+  const handleExternalLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (tweetUrl) {
+      window.open(tweetUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const totalEngagement =
     (tweet.likeCount ?? 0) + (tweet.retweetCount ?? 0) + (tweet.replyCount ?? 0) + (tweet.quoteCount ?? 0);
 
@@ -102,7 +109,14 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
                   )}
                 </div>
               </div>
-              <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <button
+                type="button"
+                onClick={handleExternalLinkClick}
+                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
+                aria-label="Open tweet in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </div>

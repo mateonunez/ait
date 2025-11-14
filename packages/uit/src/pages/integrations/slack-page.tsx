@@ -3,10 +3,11 @@ import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { MessageCard } from "@/components/connectors/message-card";
-import { slackService } from "@/services";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { SlackMessageEntity } from "@ait/core";
 
 export default function SlackPage() {
+  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
   const [messages, setMessages] = useState<SlackMessageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -14,23 +15,34 @@ export default function SlackPage() {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 50;
 
-  const fetchData = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const response = await slackService.fetchMessages({ page, limit: pageSize });
-      setMessages(response.data);
-      setTotalPages(response.pagination.totalPages);
-    } catch (error) {
-      console.error("Failed to fetch Slack data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchData = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      try {
+        const cached = getCachedData("slack", "message");
+        if (cached && page === 1) {
+          setMessages(cached.data as SlackMessageEntity[]);
+          setTotalPages(cached.pagination.totalPages);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetchEntityData("slack", "message", { page, limit: pageSize });
+        setMessages(response.data as SlackMessageEntity[]);
+        setTotalPages(response.pagination.totalPages);
+      } catch (error) {
+        console.error("Failed to fetch Slack data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchEntityData, getCachedData],
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await slackService.refresh();
+      await refreshVendor("slack");
       await fetchData(currentPage);
     } catch (error) {
       console.error("Failed to refresh Slack data:", error);

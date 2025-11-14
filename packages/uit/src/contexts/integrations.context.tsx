@@ -1,0 +1,230 @@
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import type { EntityType, IntegrationVendor, PaginationParams, PaginatedResponse } from "@ait/core";
+import type { CachedEntityData, CachedIntegrationData, IntegrationEntity } from "@/types/integrations.types";
+import { spotifyService, githubService, xService, linearService, notionService, slackService } from "@/services";
+
+interface IntegrationsContextValue {
+  cache: CachedIntegrationData;
+  fetchEntityData: (
+    vendor: IntegrationVendor,
+    entityType: EntityType,
+    params?: PaginationParams,
+  ) => Promise<PaginatedResponse<IntegrationEntity>>;
+  getCachedData: (vendor: IntegrationVendor, entityType: EntityType) => CachedEntityData | null;
+  refreshVendor: (vendor: IntegrationVendor) => Promise<void>;
+  clearCache: (vendor?: IntegrationVendor, entityType?: EntityType) => void;
+  isLoading: boolean;
+}
+
+const IntegrationsContext = createContext<IntegrationsContextValue | undefined>(undefined);
+
+export function IntegrationsProvider({ children }: { children: ReactNode }) {
+  const [cache, setCache] = useState<CachedIntegrationData>({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const fetchEntityData = useCallback(
+    async (
+      vendor: IntegrationVendor,
+      entityType: EntityType,
+      params?: PaginationParams,
+    ): Promise<PaginatedResponse<IntegrationEntity>> => {
+      const vendorCache = cache[vendor];
+      const entityCache = vendorCache?.[entityType];
+
+      if (entityCache && (!params?.page || params.page === 1)) {
+        return {
+          data: entityCache.data,
+          pagination: entityCache.pagination,
+        };
+      }
+
+      setIsLoading(true);
+      try {
+        let response: PaginatedResponse<IntegrationEntity>;
+
+        switch (vendor) {
+          case "spotify": {
+            switch (entityType) {
+              case "track":
+                response = await spotifyService.fetchTracks(params);
+                break;
+              case "artist":
+                response = await spotifyService.fetchArtists(params);
+                break;
+              case "playlist":
+                response = await spotifyService.fetchPlaylists(params);
+                break;
+              case "album":
+                response = await spotifyService.fetchAlbums(params);
+                break;
+              case "recently_played":
+                response = await spotifyService.fetchRecentlyPlayed(params);
+                break;
+              default:
+                throw new Error(`Unknown Spotify entity type: ${entityType}`);
+            }
+            break;
+          }
+          case "github": {
+            switch (entityType) {
+              case "repository":
+                response = await githubService.fetchRepositories(params);
+                break;
+              case "pull_request":
+                response = await githubService.fetchPullRequests(params);
+                break;
+              default:
+                throw new Error(`Unknown GitHub entity type: ${entityType}`);
+            }
+            break;
+          }
+          case "x": {
+            if (entityType === "tweet") {
+              response = await xService.fetchTweets(params);
+            } else {
+              throw new Error(`Unknown X entity type: ${entityType}`);
+            }
+            break;
+          }
+          case "linear": {
+            if (entityType === "issue") {
+              response = await linearService.fetchIssues(params);
+            } else {
+              throw new Error(`Unknown Linear entity type: ${entityType}`);
+            }
+            break;
+          }
+          case "notion": {
+            if (entityType === "page") {
+              response = await notionService.fetchPages(params);
+            } else {
+              throw new Error(`Unknown Notion entity type: ${entityType}`);
+            }
+            break;
+          }
+          case "slack": {
+            if (entityType === "message") {
+              response = await slackService.fetchMessages(params);
+            } else {
+              throw new Error(`Unknown Slack entity type: ${entityType}`);
+            }
+            break;
+          }
+          default:
+            throw new Error(`Unknown vendor: ${vendor}`);
+        }
+
+        if (!params?.page || params.page === 1) {
+          setCache((prev) => ({
+            ...prev,
+            [vendor]: {
+              ...prev[vendor],
+              [entityType]: {
+                data: response.data,
+                pagination: response.pagination,
+                lastFetched: new Date(),
+              },
+            },
+          }));
+        }
+
+        return response;
+      } catch (error) {
+        console.error(`Failed to fetch ${vendor} ${entityType}:`, error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [cache],
+  );
+
+  const getCachedData = useCallback(
+    (vendor: IntegrationVendor, entityType: EntityType): CachedEntityData | null => {
+      return cache[vendor]?.[entityType] || null;
+    },
+    [cache],
+  );
+
+  const refreshVendor = useCallback(async (vendor: IntegrationVendor) => {
+    setIsLoading(true);
+    try {
+      switch (vendor) {
+        case "spotify":
+          await spotifyService.refresh();
+          break;
+        case "github":
+          await githubService.refresh();
+          break;
+        case "x":
+          await xService.refresh();
+          break;
+        case "linear":
+          await linearService.refresh();
+          break;
+        case "notion":
+          await notionService.refresh();
+          break;
+        case "slack":
+          await slackService.refresh();
+          break;
+      }
+
+      setCache((prev) => {
+        const newCache = { ...prev };
+        delete newCache[vendor];
+        return newCache;
+      });
+    } catch (error) {
+      console.error(`Failed to refresh ${vendor}:`, error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const clearCache = useCallback((vendor?: IntegrationVendor, entityType?: EntityType) => {
+    if (vendor && entityType) {
+      setCache((prev) => {
+        const newCache = { ...prev };
+        if (newCache[vendor]) {
+          const vendorCache = { ...newCache[vendor] };
+          delete vendorCache[entityType];
+          newCache[vendor] = vendorCache;
+        }
+        return newCache;
+      });
+    } else if (vendor) {
+      setCache((prev) => {
+        const newCache = { ...prev };
+        delete newCache[vendor];
+        return newCache;
+      });
+    } else {
+      setCache({});
+    }
+  }, []);
+
+  return (
+    <IntegrationsContext.Provider
+      value={{
+        cache,
+        fetchEntityData,
+        getCachedData,
+        refreshVendor,
+        clearCache,
+        isLoading,
+      }}
+    >
+      {children}
+    </IntegrationsContext.Provider>
+  );
+}
+
+export function useIntegrationsContext() {
+  const context = useContext(IntegrationsContext);
+  if (context === undefined) {
+    throw new Error("useIntegrationsContext must be used within IntegrationsProvider");
+  }
+  return context;
+}

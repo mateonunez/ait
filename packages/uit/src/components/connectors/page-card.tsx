@@ -20,6 +20,13 @@ export function PageCard({ page, onClick, className }: PageCardProps) {
     }
   };
 
+  const handleExternalLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (page.url) {
+      window.open(page.url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const isEmoji = (icon: string | null): boolean => {
     if (!icon) return false;
     // Simple check: emojis are typically single characters or short strings
@@ -62,7 +69,14 @@ export function PageCard({ page, onClick, className }: PageCardProps) {
               <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                 {page.title}
               </h3>
-              <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <button
+                type="button"
+                onClick={handleExternalLinkClick}
+                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
+                aria-label="Open page in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
             </div>
             {page.parentType && page.parentType !== "workspace" && (
               <p className="text-xs text-muted-foreground mt-1">

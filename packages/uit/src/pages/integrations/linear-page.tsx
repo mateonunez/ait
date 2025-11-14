@@ -3,10 +3,11 @@ import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { IssueCard } from "@/components/connectors/issue-card";
-import { linearService } from "@/services";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { LinearIssueEntity as LinearIssue } from "@ait/core";
 
 export default function LinearPage() {
+  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
   const [issues, setIssues] = useState<LinearIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -14,23 +15,34 @@ export default function LinearPage() {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 50;
 
-  const fetchData = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const response = await linearService.fetchIssues({ page, limit: pageSize });
-      setIssues(response.data);
-      setTotalPages(response.pagination.totalPages);
-    } catch (error) {
-      console.error("Failed to fetch Linear data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchData = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      try {
+        const cached = getCachedData("linear", "issue");
+        if (cached && page === 1) {
+          setIssues(cached.data as LinearIssue[]);
+          setTotalPages(cached.pagination.totalPages);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetchEntityData("linear", "issue", { page, limit: pageSize });
+        setIssues(response.data as LinearIssue[]);
+        setTotalPages(response.pagination.totalPages);
+      } catch (error) {
+        console.error("Failed to fetch Linear data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchEntityData, getCachedData],
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await linearService.refresh();
+      await refreshVendor("linear");
       await fetchData(currentPage);
     } catch (error) {
       console.error("Failed to refresh Linear data:", error);

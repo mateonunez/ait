@@ -8,7 +8,7 @@ import { ArtistCard } from "@/components/connectors/artist-card";
 import { PlaylistCard } from "@/components/connectors/playlist-card";
 import { AlbumCard } from "@/components/connectors/album-card";
 import { RecentlyPlayedCard } from "@/components/connectors/recently-played-card";
-import { spotifyService } from "@/services";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type {
   SpotifyTrackEntity as SpotifyTrack,
   SpotifyArtistEntity as SpotifyArtist,
@@ -20,6 +20,7 @@ import type {
 type TabId = "tracks" | "artists" | "playlists" | "albums" | "recently-played";
 
 export default function SpotifyPage() {
+  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
   const [activeTab, setActiveTab] = useState<TabId>("tracks");
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const [artists, setArtists] = useState<SpotifyArtist[]>([]);
@@ -43,36 +44,76 @@ export default function SpotifyPage() {
       try {
         switch (activeTab) {
           case "tracks": {
-            const response = await spotifyService.fetchTracks({ page, limit: pageSize });
-            setTracks(response.data);
+            const cached = getCachedData("spotify", "track");
+            if (cached && page === 1) {
+              setTracks(cached.data as SpotifyTrack[]);
+              setTotalPages(cached.pagination.totalPages);
+              setTotalTracks(cached.pagination.total);
+              setIsLoading(false);
+              return;
+            }
+            const response = await fetchEntityData("spotify", "track", { page, limit: pageSize });
+            setTracks(response.data as SpotifyTrack[]);
             setTotalPages(response.pagination.totalPages);
             setTotalTracks(response.pagination.total);
             break;
           }
           case "artists": {
-            const response = await spotifyService.fetchArtists({ page, limit: pageSize });
-            setArtists(response.data);
+            const cached = getCachedData("spotify", "artist");
+            if (cached && page === 1) {
+              setArtists(cached.data as SpotifyArtist[]);
+              setTotalPages(cached.pagination.totalPages);
+              setTotalArtists(cached.pagination.total);
+              setIsLoading(false);
+              return;
+            }
+            const response = await fetchEntityData("spotify", "artist", { page, limit: pageSize });
+            setArtists(response.data as SpotifyArtist[]);
             setTotalPages(response.pagination.totalPages);
             setTotalArtists(response.pagination.total);
             break;
           }
           case "playlists": {
-            const response = await spotifyService.fetchPlaylists({ page, limit: pageSize });
-            setPlaylists(response.data);
+            const cached = getCachedData("spotify", "playlist");
+            if (cached && page === 1) {
+              setPlaylists(cached.data as SpotifyPlaylist[]);
+              setTotalPages(cached.pagination.totalPages);
+              setTotalPlaylists(cached.pagination.total);
+              setIsLoading(false);
+              return;
+            }
+            const response = await fetchEntityData("spotify", "playlist", { page, limit: pageSize });
+            setPlaylists(response.data as SpotifyPlaylist[]);
             setTotalPages(response.pagination.totalPages);
             setTotalPlaylists(response.pagination.total);
             break;
           }
           case "albums": {
-            const response = await spotifyService.fetchAlbums({ page, limit: pageSize });
-            setAlbums(response.data);
+            const cached = getCachedData("spotify", "album");
+            if (cached && page === 1) {
+              setAlbums(cached.data as SpotifyAlbum[]);
+              setTotalPages(cached.pagination.totalPages);
+              setTotalAlbums(cached.pagination.total);
+              setIsLoading(false);
+              return;
+            }
+            const response = await fetchEntityData("spotify", "album", { page, limit: pageSize });
+            setAlbums(response.data as SpotifyAlbum[]);
             setTotalPages(response.pagination.totalPages);
             setTotalAlbums(response.pagination.total);
             break;
           }
           case "recently-played": {
-            const response = await spotifyService.fetchRecentlyPlayed({ page, limit: pageSize });
-            setRecentlyPlayed(response.data);
+            const cached = getCachedData("spotify", "recently_played");
+            if (cached && page === 1) {
+              setRecentlyPlayed(cached.data as SpotifyRecentlyPlayed[]);
+              setTotalPages(cached.pagination.totalPages);
+              setTotalRecentlyPlayed(cached.pagination.total);
+              setIsLoading(false);
+              return;
+            }
+            const response = await fetchEntityData("spotify", "recently_played", { page, limit: pageSize });
+            setRecentlyPlayed(response.data as SpotifyRecentlyPlayed[]);
             setTotalPages(response.pagination.totalPages);
             setTotalRecentlyPlayed(response.pagination.total);
             break;
@@ -84,13 +125,13 @@ export default function SpotifyPage() {
         setIsLoading(false);
       }
     },
-    [activeTab],
+    [activeTab, fetchEntityData, getCachedData],
   );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await spotifyService.refresh();
+      await refreshVendor("spotify");
       await fetchData(currentPage);
     } catch (error) {
       console.error("Failed to refresh Spotify data:", error);

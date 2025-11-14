@@ -5,7 +5,7 @@ import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { RepositoryCard } from "@/components/connectors/repository-card";
 import { PullRequestCard } from "@/components/connectors/pull-request-card";
-import { githubService } from "@/services";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type {
   GitHubRepositoryEntity as GitHubRepository,
   GitHubPullRequestEntity as GitHubPullRequest,
@@ -14,6 +14,7 @@ import type {
 type TabId = "repositories" | "pull-requests";
 
 export default function GitHubPage() {
+  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
   const [activeTab, setActiveTab] = useState<TabId>("repositories");
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [pullRequests, setPullRequests] = useState<GitHubPullRequest[]>([]);
@@ -30,13 +31,31 @@ export default function GitHubPage() {
       setIsLoading(true);
       try {
         if (activeTab === "repositories") {
-          const response = await githubService.fetchRepositories({ page, limit: pageSize });
-          setRepositories(response.data);
+          const cached = getCachedData("github", "repository");
+          if (cached && page === 1) {
+            setRepositories(cached.data as GitHubRepository[]);
+            setTotalPages(cached.pagination.totalPages);
+            setTotalRepositories(cached.pagination.total);
+            setIsLoading(false);
+            return;
+          }
+
+          const response = await fetchEntityData("github", "repository", { page, limit: pageSize });
+          setRepositories(response.data as GitHubRepository[]);
           setTotalPages(response.pagination.totalPages);
           setTotalRepositories(response.pagination.total);
         } else {
-          const response = await githubService.fetchPullRequests({ page, limit: pageSize });
-          setPullRequests(response.data);
+          const cached = getCachedData("github", "pull_request");
+          if (cached && page === 1) {
+            setPullRequests(cached.data as GitHubPullRequest[]);
+            setTotalPages(cached.pagination.totalPages);
+            setTotalPullRequests(cached.pagination.total);
+            setIsLoading(false);
+            return;
+          }
+
+          const response = await fetchEntityData("github", "pull_request", { page, limit: pageSize });
+          setPullRequests(response.data as GitHubPullRequest[]);
           setTotalPages(response.pagination.totalPages);
           setTotalPullRequests(response.pagination.total);
         }
@@ -46,13 +65,13 @@ export default function GitHubPage() {
         setIsLoading(false);
       }
     },
-    [activeTab],
+    [activeTab, fetchEntityData, getCachedData],
   );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await githubService.refresh();
+      await refreshVendor("github");
       await fetchData(currentPage);
     } catch (error) {
       console.error("Failed to refresh GitHub data:", error);

@@ -1,0 +1,50 @@
+import type {
+  EntityType,
+  PaginationMeta,
+  SpotifyTrackEntity,
+  SpotifyArtistEntity,
+  SpotifyPlaylistEntity,
+  SpotifyAlbumEntity,
+  SpotifyRecentlyPlayedEntity,
+  GitHubRepositoryEntity,
+  GitHubPullRequestEntity,
+  LinearIssueEntity,
+  XTweetEntity,
+  NotionPageEntity,
+  SlackMessageEntity,
+} from "@ait/core";
+
+export type IntegrationEntity =
+  | SpotifyTrackEntity
+  | SpotifyArtistEntity
+  | SpotifyPlaylistEntity
+  | SpotifyAlbumEntity
+  | SpotifyRecentlyPlayedEntity
+  | GitHubRepositoryEntity
+  | GitHubPullRequestEntity
+  | LinearIssueEntity
+  | XTweetEntity
+  | NotionPageEntity
+  | SlackMessageEntity;
+
+export interface CachedEntityData {
+  data: IntegrationEntity[];
+  pagination: PaginationMeta;
+  lastFetched: Date;
+}
+
+export type CachedIntegrationData = Record<string, Record<string, CachedEntityData>>;
+
+export interface HomeSection {
+  id: string;
+  title: string;
+  entityTypes: EntityType[];
+}
+
+export interface ContentAlgorithmResult {
+  items: IntegrationEntity[];
+  sections: Array<{
+    sectionId: string;
+    items: IntegrationEntity[];
+  }>;
+}

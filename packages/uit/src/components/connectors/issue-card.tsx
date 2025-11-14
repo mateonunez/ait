@@ -20,6 +20,13 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
     }
   };
 
+  const handleExternalLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (issue.url) {
+      window.open(issue.url, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const getStateIcon = () => {
     const state = issue.state.toLowerCase();
     if (state.includes("done") || state.includes("completed")) {
@@ -76,7 +83,14 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
               <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                 {issue.title}
               </h3>
-              <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <button
+                type="button"
+                onClick={handleExternalLinkClick}
+                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
+                aria-label="Open issue in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
             </div>
             {issue.teamName && <p className="text-xs text-muted-foreground mt-1">{issue.teamName}</p>}
           </div>

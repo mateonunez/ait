@@ -3,10 +3,11 @@ import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { TweetCard } from "@/components/connectors/tweet-card";
-import { xService } from "@/services";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { XTweetEntity as XTweet } from "@ait/core";
 
 export default function XPage() {
+  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
   const [tweets, setTweets] = useState<XTweet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -14,23 +15,34 @@ export default function XPage() {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 50;
 
-  const fetchData = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const response = await xService.fetchTweets({ page, limit: pageSize });
-      setTweets(response.data);
-      setTotalPages(response.pagination.totalPages);
-    } catch (error) {
-      console.error("Failed to fetch X data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchData = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      try {
+        const cached = getCachedData("x", "tweet");
+        if (cached && page === 1) {
+          setTweets(cached.data as XTweet[]);
+          setTotalPages(cached.pagination.totalPages);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetchEntityData("x", "tweet", { page, limit: pageSize });
+        setTweets(response.data as XTweet[]);
+        setTotalPages(response.pagination.totalPages);
+      } catch (error) {
+        console.error("Failed to fetch X data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchEntityData, getCachedData],
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await xService.refresh();
+      await refreshVendor("x");
       await fetchData(currentPage);
     } catch (error) {
       console.error("Failed to refresh X data:", error);
