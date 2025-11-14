@@ -21,6 +21,13 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
     }
   };
 
+  const handleExternalLinkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (pullRequest.htmlUrl) {
+      window.open(pullRequest.htmlUrl, "_blank", "noopener,noreferrer");
+    }
+  };
+
   const getStateIcon = () => {
     if (pullRequest.merged) {
       return <GitMerge className="h-5 w-5" />;
@@ -65,7 +72,14 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
               <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {pullRequest.title}
               </h3>
-              <ExternalLink className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              <button
+                type="button"
+                onClick={handleExternalLinkClick}
+                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
+                aria-label="Open pull request in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </button>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">#{pullRequest.number}</span>

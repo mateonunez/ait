@@ -9,12 +9,13 @@ import NotionPage from "./pages/integrations/notion-page";
 import SlackPage from "./pages/integrations/slack-page";
 import { AIChatDialog } from "./components/ai-chat-dialog";
 import { useChatDialog } from "./contexts/chat.context";
+import { IntegrationsProvider } from "./contexts/integrations.context";
 
 export default function App() {
   const { isOpen, closeChat } = useChatDialog();
 
   return (
-    <>
+    <IntegrationsProvider>
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/integrations/github" component={GitHubPage} />
@@ -32,6 +33,6 @@ export default function App() {
 
       {/* Global AI Chat Dialog */}
       <AIChatDialog open={isOpen} onOpenChange={(open) => !open && closeChat()} />
-    </>
+    </IntegrationsProvider>
   );
 }

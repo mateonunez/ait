@@ -3,10 +3,11 @@ import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { PageCard } from "@/components/connectors/page-card";
-import { notionService } from "@/services";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { NotionPageEntity } from "@ait/core";
 
 export default function NotionPage() {
+  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
   const [pages, setPages] = useState<NotionPageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -14,23 +15,34 @@ export default function NotionPage() {
   const [totalPages, setTotalPages] = useState(1);
   const pageSize = 50;
 
-  const fetchData = useCallback(async (page: number) => {
-    setIsLoading(true);
-    try {
-      const response = await notionService.fetchPages({ page, limit: pageSize });
-      setPages(response.data);
-      setTotalPages(response.pagination.totalPages);
-    } catch (error) {
-      console.error("Failed to fetch Notion data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const fetchData = useCallback(
+    async (page: number) => {
+      setIsLoading(true);
+      try {
+        const cached = getCachedData("notion", "page");
+        if (cached && page === 1) {
+          setPages(cached.data as NotionPageEntity[]);
+          setTotalPages(cached.pagination.totalPages);
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetchEntityData("notion", "page", { page, limit: pageSize });
+        setPages(response.data as NotionPageEntity[]);
+        setTotalPages(response.pagination.totalPages);
+      } catch (error) {
+        console.error("Failed to fetch Notion data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchEntityData, getCachedData],
+  );
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await notionService.refresh();
+      await refreshVendor("notion");
       await fetchData(currentPage);
     } catch (error) {
       console.error("Failed to refresh Notion data:", error);
