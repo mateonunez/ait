@@ -1,8 +1,8 @@
-import { AItError, type SpotifyTrackEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyTrackEntity } from "@ait/core";
 import { connectorSpotifyTrackMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyTrackRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyTracks, type SpotifyTrackDataTarget } from "@ait/postgres";
+import { getPostgresClient, spotifyTracks, type SpotifyTrackDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRepository {
@@ -84,8 +84,37 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     return null;
   }
 
-  async getTracks(): Promise<SpotifyTrackEntity[]> {
+  async fetchTracks(): Promise<SpotifyTrackEntity[]> {
     console.log("Getting tracks from Spotify repository");
     return [];
+  }
+
+  async getTracksPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyTrackEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [tracks, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(spotifyTracks)
+        .orderBy(drizzleOrm.desc(spotifyTracks.addedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyTracks),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: tracks.map((track) => connectorSpotifyTrackMapper.dataTargetToDomain(track)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

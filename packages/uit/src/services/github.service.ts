@@ -16,7 +16,7 @@ export class GitHubService {
     this.baseUrl = `${baseUrl}/api/github`;
   }
 
-  async getRepositories(params?: PaginationParams) {
+  async fetchRepositories(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
@@ -31,7 +31,7 @@ export class GitHubService {
     return result.value.data;
   }
 
-  async getPullRequests(params?: PaginationParams) {
+  async fetchPullRequests(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());

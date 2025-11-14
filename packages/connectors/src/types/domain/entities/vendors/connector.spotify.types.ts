@@ -4,6 +4,8 @@ import type {
   SpotifyPlaylistEntity,
   SpotifyAlbumEntity,
   SpotifyRecentlyPlayedEntity,
+  PaginationParams,
+  PaginatedResponse,
 } from "@ait/core";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
@@ -12,7 +14,8 @@ export interface IConnectorSpotifyTrackRepository {
   saveTracks(tracks: SpotifyTrackEntity[]): Promise<void>;
 
   getTrack(id: string): Promise<SpotifyTrackEntity | null>;
-  getTracks(): Promise<SpotifyTrackEntity[]>;
+  fetchTracks(): Promise<SpotifyTrackEntity[]>;
+  getTracksPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyTrackEntity>>;
 }
 
 export interface IConnectorSpotifyArtistRepository {
@@ -20,7 +23,8 @@ export interface IConnectorSpotifyArtistRepository {
   saveArtists(artists: SpotifyArtistEntity[]): Promise<void>;
 
   getArtist(id: string): Promise<SpotifyArtistEntity | null>;
-  getArtists(): Promise<SpotifyArtistEntity[]>;
+  fetchArtists(): Promise<SpotifyArtistEntity[]>;
+  getArtistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyArtistEntity>>;
 }
 
 export interface IConnectorSpotifyPlaylistRepository {
@@ -28,7 +32,8 @@ export interface IConnectorSpotifyPlaylistRepository {
   savePlaylists(playlists: SpotifyPlaylistEntity[]): Promise<void>;
 
   getPlaylist(id: string): Promise<SpotifyPlaylistEntity | null>;
-  getPlaylists(): Promise<SpotifyPlaylistEntity[]>;
+  fetchPlaylists(): Promise<SpotifyPlaylistEntity[]>;
+  getPlaylistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyPlaylistEntity>>;
 }
 
 export interface IConnectorSpotifyAlbumRepository {
@@ -36,15 +41,17 @@ export interface IConnectorSpotifyAlbumRepository {
   saveAlbums(albums: SpotifyAlbumEntity[]): Promise<void>;
 
   getAlbum(id: string): Promise<SpotifyAlbumEntity | null>;
-  getAlbums(): Promise<SpotifyAlbumEntity[]>;
+  fetchAlbums(): Promise<SpotifyAlbumEntity[]>;
+  getAlbumsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyAlbumEntity>>;
 }
 
 export interface IConnectorSpotifyRecentlyPlayedRepository {
   saveRecentlyPlayed(item: SpotifyRecentlyPlayedEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
   saveRecentlyPlayedBatch(items: SpotifyRecentlyPlayedEntity[]): Promise<void>;
 
-  getRecentlyPlayed(limit?: number): Promise<SpotifyRecentlyPlayedEntity[]>;
+  fetchRecentlyPlayed(limit?: number): Promise<SpotifyRecentlyPlayedEntity[]>;
   getRecentlyPlayedById(id: string): Promise<SpotifyRecentlyPlayedEntity | null>;
+  getRecentlyPlayedPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyRecentlyPlayedEntity>>;
 }
 
 export interface IConnectorSpotifyRepository extends IConnectorRepository {

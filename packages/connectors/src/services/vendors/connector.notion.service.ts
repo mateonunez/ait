@@ -6,10 +6,18 @@ import {
   type NotionServiceEntityMap,
 } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type { NotionPageEntity, NotionPageExternal } from "@ait/core";
+import type { NotionPageEntity, NotionPageExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
-export class ConnectorNotionService extends ConnectorServiceBase<ConnectorNotion, NotionServiceEntityMap> {
+export interface IConnectorNotionService extends ConnectorServiceBase<ConnectorNotion, NotionServiceEntityMap> {
+  fetchPages(): Promise<NotionPageEntity[]>;
+  getPagesPaginated(params: PaginationParams): Promise<PaginatedResponse<NotionPageEntity>>;
+}
+
+export class ConnectorNotionService
+  extends ConnectorServiceBase<ConnectorNotion, NotionServiceEntityMap>
+  implements IConnectorNotionService
+{
   constructor() {
     super(getConnectorConfig("notion"));
 
@@ -23,7 +31,11 @@ export class ConnectorNotionService extends ConnectorServiceBase<ConnectorNotion
     return new ConnectorNotion(oauth);
   }
 
-  async getPages(): Promise<NotionPageEntity[]> {
+  async fetchPages(): Promise<NotionPageEntity[]> {
     return this.fetchEntities(NOTION_ENTITY_TYPES_ENUM.PAGE, true);
+  }
+
+  async getPagesPaginated(params: PaginationParams): Promise<PaginatedResponse<NotionPageEntity>> {
+    return this.connector.repository.page.getPagesPaginated(params);
   }
 }

@@ -17,7 +17,7 @@ export default function SlackPage() {
   const fetchData = useCallback(async (page: number) => {
     setIsLoading(true);
     try {
-      const response = await slackService.getMessages({ page, limit: pageSize });
+      const response = await slackService.fetchMessages({ page, limit: pageSize });
       setMessages(response.data);
       setTotalPages(response.pagination.totalPages);
     } catch (error) {

@@ -10,7 +10,7 @@ export class XService {
     this.baseUrl = `${baseUrl}/api/x`;
   }
 
-  async getTweets(params?: PaginationParams) {
+  async fetchTweets(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());

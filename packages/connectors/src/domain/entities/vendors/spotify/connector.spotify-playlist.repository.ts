@@ -1,8 +1,8 @@
-import { AItError, type SpotifyPlaylistEntity } from "@ait/core";
+import { AItError, type SpotifyPlaylistEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyPlaylistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyPlaylists, type SpotifyPlaylistDataTarget } from "@ait/postgres";
+import { getPostgresClient, spotifyPlaylists, type SpotifyPlaylistDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlaylistRepository {
@@ -77,8 +77,37 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     return null;
   }
 
-  async getPlaylists(): Promise<SpotifyPlaylistEntity[]> {
+  async fetchPlaylists(): Promise<SpotifyPlaylistEntity[]> {
     console.log("Getting playlists from Spotify repository");
     return [];
+  }
+
+  async getPlaylistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyPlaylistEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [playlists, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(spotifyPlaylists)
+        .orderBy(drizzleOrm.desc(spotifyPlaylists.updatedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyPlaylists),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: playlists.map((playlist) => connectorSpotifyPlaylistMapper.dataTargetToDomain(playlist)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

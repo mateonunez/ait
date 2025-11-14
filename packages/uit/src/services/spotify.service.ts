@@ -19,7 +19,7 @@ export class SpotifyService {
     this.baseUrl = `${baseUrl}/api/spotify`;
   }
 
-  async getTracks(params?: PaginationParams) {
+  async fetchTracks(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
@@ -34,7 +34,7 @@ export class SpotifyService {
     return result.value.data;
   }
 
-  async getArtists(params?: PaginationParams) {
+  async fetchArtists(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
@@ -49,7 +49,7 @@ export class SpotifyService {
     return result.value.data;
   }
 
-  async getPlaylists(params?: PaginationParams) {
+  async fetchPlaylists(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
@@ -64,7 +64,7 @@ export class SpotifyService {
     return result.value.data;
   }
 
-  async getAlbums(params?: PaginationParams) {
+  async fetchAlbums(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());
@@ -79,7 +79,7 @@ export class SpotifyService {
     return result.value.data;
   }
 
-  async getRecentlyPlayed(params?: PaginationParams) {
+  async fetchRecentlyPlayed(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());

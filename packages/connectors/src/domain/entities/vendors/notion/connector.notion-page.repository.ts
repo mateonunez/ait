@@ -1,8 +1,8 @@
-import { AItError, type NotionPageEntity } from "@ait/core";
+import { AItError, type NotionPageEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { connectorNotionPageMapper } from "../../../../domain/mappers/vendors/connector.notion.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorNotionPageRepository } from "../../../../types/domain/entities/vendors/connector.notion.types";
-import { getPostgresClient, notionPages, type NotionPageDataTarget } from "@ait/postgres";
+import { getPostgresClient, notionPages, type NotionPageDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorNotionPageRepository implements IConnectorNotionPageRepository {
@@ -71,8 +71,37 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
     return null;
   }
 
-  async getPages(): Promise<NotionPageEntity[]> {
+  async fetchPages(): Promise<NotionPageEntity[]> {
     console.log("Getting pages from Notion repository");
     return [];
+  }
+
+  async getPagesPaginated(params: PaginationParams): Promise<PaginatedResponse<NotionPageEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [pages, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(notionPages)
+        .orderBy(drizzleOrm.desc(notionPages.updatedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(notionPages),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: pages.map((page) => connectorNotionPageMapper.dataTargetToDomain(page)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

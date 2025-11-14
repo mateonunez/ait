@@ -1,5 +1,4 @@
 import { type ConnectorSlackService, connectorServiceFactory } from "@ait/connectors";
-import { getPostgresClient, slackMessages, drizzleOrm } from "@ait/postgres";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -68,7 +67,7 @@ export default async function slackRoutes(fastify: FastifyInstance) {
       try {
         await slackService.connector.connect(code);
 
-        const messages = await slackService.getMessages();
+        const messages = await slackService.fetchMessages();
         await slackService.connector.store.save(messages);
 
         reply.send({
@@ -83,7 +82,7 @@ export default async function slackRoutes(fastify: FastifyInstance) {
 
   fastify.get("/messages", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const messages = await slackService.getMessages();
+      const messages = await slackService.fetchMessages();
       reply.send(messages);
     } catch (err: unknown) {
       fastify.log.error({ err, route: "/messages" }, "Failed to fetch messages.");
@@ -98,22 +97,9 @@ export default async function slackRoutes(fastify: FastifyInstance) {
       try {
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
-        const offset = (page - 1) * limit;
 
-        const { db } = getPostgresClient();
-
-        const [messages, totalResult] = await Promise.all([
-          db.select().from(slackMessages).orderBy(drizzleOrm.desc(slackMessages.updatedAt)).limit(limit).offset(offset),
-          db.select({ count: drizzleOrm.count() }).from(slackMessages),
-        ]);
-
-        const total = totalResult[0]?.count || 0;
-        const totalPages = Math.ceil(total / limit);
-
-        reply.send({
-          data: messages,
-          pagination: { page, limit, total, totalPages },
-        });
+        const result = await slackService.getMessagesPaginated({ page, limit });
+        reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/messages" }, "Failed to fetch messages from DB.");
         reply.status(500).send({ error: "Failed to fetch messages from database." });
@@ -124,7 +110,7 @@ export default async function slackRoutes(fastify: FastifyInstance) {
   // Refresh endpoint
   fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const messages = await slackService.getMessages();
+      const messages = await slackService.fetchMessages();
       await slackService.connector.store.save(messages);
 
       reply.send({

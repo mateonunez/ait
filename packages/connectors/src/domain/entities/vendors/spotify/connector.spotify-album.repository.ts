@@ -1,8 +1,8 @@
-import { AItError, type SpotifyAlbumEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyAlbumEntity } from "@ait/core";
 import { connectorSpotifyAlbumMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyAlbumRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyAlbums, type SpotifyAlbumDataTarget } from "@ait/postgres";
+import { getPostgresClient, spotifyAlbums, type SpotifyAlbumDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRepository {
@@ -79,8 +79,37 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
     return null;
   }
 
-  async getAlbums(): Promise<SpotifyAlbumEntity[]> {
+  async fetchAlbums(): Promise<SpotifyAlbumEntity[]> {
     console.log("Getting albums from Spotify repository");
     return [];
+  }
+
+  async getAlbumsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyAlbumEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [albums, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(spotifyAlbums)
+        .orderBy(drizzleOrm.desc(spotifyAlbums.createdAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyAlbums),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: albums.map((album) => connectorSpotifyAlbumMapper.dataTargetToDomain(album)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

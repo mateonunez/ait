@@ -1,5 +1,4 @@
 import { type ConnectorLinearService, connectorServiceFactory } from "@ait/connectors";
-import { getPostgresClient, linearIssues, drizzleOrm } from "@ait/postgres";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -56,7 +55,7 @@ export default async function linearRoutes(fastify: FastifyInstance) {
       try {
         await linearService.connector.connect(code);
 
-        const issues = await linearService.getIssues();
+        const issues = await linearService.fetchIssues();
         await linearService.connector.store.save(issues);
 
         reply.send({
@@ -71,7 +70,7 @@ export default async function linearRoutes(fastify: FastifyInstance) {
 
   fastify.get("/issues", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const issues = await linearService.getIssues();
+      const issues = await linearService.fetchIssues();
       reply.send(issues);
     } catch (err: unknown) {
       fastify.log.error({ err, route: "/issues" }, "Failed to fetch issues.");
@@ -86,22 +85,9 @@ export default async function linearRoutes(fastify: FastifyInstance) {
       try {
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
-        const offset = (page - 1) * limit;
 
-        const { db } = getPostgresClient();
-
-        const [issues, totalResult] = await Promise.all([
-          db.select().from(linearIssues).orderBy(drizzleOrm.desc(linearIssues.updatedAt)).limit(limit).offset(offset),
-          db.select({ count: drizzleOrm.count() }).from(linearIssues),
-        ]);
-
-        const total = totalResult[0]?.count || 0;
-        const totalPages = Math.ceil(total / limit);
-
-        reply.send({
-          data: issues,
-          pagination: { page, limit, total, totalPages },
-        });
+        const result = await linearService.getIssuesPaginated({ page, limit });
+        reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/issues" }, "Failed to fetch issues from DB.");
         reply.status(500).send({ error: "Failed to fetch issues from database." });
@@ -112,7 +98,7 @@ export default async function linearRoutes(fastify: FastifyInstance) {
   // Refresh endpoint
   fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const issues = await linearService.getIssues();
+      const issues = await linearService.fetchIssues();
       await linearService.connector.store.save(issues);
 
       reply.send({

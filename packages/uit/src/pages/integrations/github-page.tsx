@@ -30,12 +30,12 @@ export default function GitHubPage() {
       setIsLoading(true);
       try {
         if (activeTab === "repositories") {
-          const response = await githubService.getRepositories({ page, limit: pageSize });
+          const response = await githubService.fetchRepositories({ page, limit: pageSize });
           setRepositories(response.data);
           setTotalPages(response.pagination.totalPages);
           setTotalRepositories(response.pagination.total);
         } else {
-          const response = await githubService.getPullRequests({ page, limit: pageSize });
+          const response = await githubService.fetchPullRequests({ page, limit: pageSize });
           setPullRequests(response.data);
           setTotalPages(response.pagination.totalPages);
           setTotalPullRequests(response.pagination.total);

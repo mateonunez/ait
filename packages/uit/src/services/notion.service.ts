@@ -10,7 +10,7 @@ export class NotionService {
     this.baseUrl = `${baseUrl}/api/notion`;
   }
 
-  async getPages(params?: PaginationParams) {
+  async fetchPages(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());

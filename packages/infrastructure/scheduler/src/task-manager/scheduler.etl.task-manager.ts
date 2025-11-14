@@ -57,7 +57,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${SpotifyETLs.track}] Fetching tracks from Spotify API...`);
-        const tracks = await this._spotifyService.getTracks();
+        const tracks = await this._spotifyService.fetchTracks();
         console.info(`[${SpotifyETLs.track}] Fetched ${tracks.length} tracks`);
 
         console.info(`[${SpotifyETLs.track}] Saving tracks to Postgres...`);
@@ -76,7 +76,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${SpotifyETLs.artist}] Fetching artists from Spotify API...`);
-        const artists = await this._spotifyService.getArtists();
+        const artists = await this._spotifyService.fetchArtists();
         console.info(`[${SpotifyETLs.artist}] Fetched ${artists.length} artists`);
 
         console.info(`[${SpotifyETLs.artist}] Saving artists to Postgres...`);
@@ -95,7 +95,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${SpotifyETLs.playlist}] Fetching playlists from Spotify API...`);
-        const playlists = await this._spotifyService.getPlaylists();
+        const playlists = await this._spotifyService.fetchPlaylists();
         console.info(`[${SpotifyETLs.playlist}] Fetched ${playlists.length} playlists`);
 
         console.info(`[${SpotifyETLs.playlist}] Saving playlists to Postgres...`);
@@ -114,7 +114,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${SpotifyETLs.album}] Fetching albums from Spotify API...`);
-        const albums = await this._spotifyService.getAlbums();
+        const albums = await this._spotifyService.fetchAlbums();
         console.info(`[${SpotifyETLs.album}] Fetched ${albums.length} albums`);
 
         console.info(`[${SpotifyETLs.album}] Saving albums to Postgres...`);
@@ -133,7 +133,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${SpotifyETLs.recentlyPlayed}] Fetching recently played from Spotify API...`);
-        const recentlyPlayed = await this._spotifyService.getRecentlyPlayed();
+        const recentlyPlayed = await this._spotifyService.fetchRecentlyPlayed();
         console.info(`[${SpotifyETLs.recentlyPlayed}] Fetched ${recentlyPlayed.length} recently played items`);
 
         console.info(`[${SpotifyETLs.recentlyPlayed}] Saving recently played to Postgres...`);
@@ -153,7 +153,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       await this._withConnections(async ({ qdrant, postgres }) => {
         // 1. Fetch fresh data from GitHub API
         console.info(`[${GitHubETLs.repository}] Fetching repositories from GitHub API...`);
-        const repositories = await this._githubService.getRepositories();
+        const repositories = await this._githubService.fetchRepositories();
         console.info(`[${GitHubETLs.repository}] Fetched ${repositories.length} repositories`);
 
         // 2. Save to Postgres
@@ -175,7 +175,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       await this._withConnections(async ({ qdrant, postgres }) => {
         // 1. Fetch fresh data from GitHub API
         console.info(`[${GitHubETLs.pullRequest}] Fetching pull requests from GitHub API...`);
-        const pullRequests = await this._githubService.getPullRequests();
+        const pullRequests = await this._githubService.fetchPullRequests();
         console.info(`[${GitHubETLs.pullRequest}] Fetched ${pullRequests.length} pull requests`);
 
         // 2. Save to Postgres
@@ -196,7 +196,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${LinearETLs.issue}] Fetching issues from Linear API...`);
-        const issues = await this._linearService.getIssues();
+        const issues = await this._linearService.fetchIssues();
         console.info(`[${LinearETLs.issue}] Fetched ${issues.length} issues`);
 
         console.info(`[${LinearETLs.issue}] Saving issues to Postgres...`);
@@ -215,7 +215,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         // console.info(`[${XETLs.tweet}] Fetching tweets from X API...`);
-        // const tweets = await this._xService.getTweets();
+        // const tweets = await this._xService.fetchTweets();
         // console.info(`[${XETLs.tweet}] Fetched ${tweets.length} tweets`);
 
         // console.info(`[${XETLs.tweet}] Saving tweets to Postgres...`);
@@ -234,7 +234,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${NotionETLs.page}] Fetching pages from Notion API...`);
-        const pages = await this._notionService.getPages();
+        const pages = await this._notionService.fetchPages();
         console.info(`[${NotionETLs.page}] Fetched ${pages.length} pages`);
 
         console.info(`[${NotionETLs.page}] Saving pages to Postgres...`);
@@ -253,7 +253,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         console.info(`[${SlackETLs.message}] Fetching messages from Slack API...`);
-        const messages = await this._slackService.getMessages();
+        const messages = await this._slackService.fetchMessages();
         console.info(`[${SlackETLs.message}] Fetched ${messages.length} messages`);
 
         console.info(`[${SlackETLs.message}] Saving messages to Postgres...`);

@@ -1,8 +1,8 @@
-import { AItError, type LinearIssueEntity } from "@ait/core";
+import { AItError, type LinearIssueEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
-import { getPostgresClient, linearIssues, type LinearIssueDataTarget } from "@ait/postgres";
+import { getPostgresClient, linearIssues, type LinearIssueDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepository {
@@ -75,8 +75,37 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     return null;
   }
 
-  async getIssues(): Promise<LinearIssueEntity[]> {
+  async fetchIssues(): Promise<LinearIssueEntity[]> {
     console.log("Getting issues from Linear repository");
     return [];
+  }
+
+  async getIssuesPaginated(params: PaginationParams): Promise<PaginatedResponse<LinearIssueEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [issues, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(linearIssues)
+        .orderBy(drizzleOrm.desc(linearIssues.updatedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(linearIssues),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: issues.map((issue) => connectorLinearIssueMapper.dataTargetToDomain(issue)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

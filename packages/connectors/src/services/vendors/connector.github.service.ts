@@ -7,6 +7,8 @@ import type {
   GitHubRepositoryExternal,
   GitHubPullRequestEntity,
   GitHubPullRequestExternal,
+  PaginatedResponse,
+  PaginationParams,
 } from "@ait/core";
 import {
   connectorEntityConfigs,
@@ -14,7 +16,17 @@ import {
   type GitHubServiceEntityMap,
 } from "./connector.vendors.config";
 
-export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap> {
+export interface IConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap> {
+  fetchRepositories(): Promise<GitHubRepositoryEntity[]>;
+  fetchPullRequests(): Promise<GitHubPullRequestEntity[]>;
+  getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>>;
+  getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>>;
+}
+
+export class ConnectorGitHubService
+  extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap>
+  implements IConnectorGitHubService
+{
   constructor() {
     super(getConnectorConfig("github"));
 
@@ -33,11 +45,19 @@ export class ConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub
     return new ConnectorGitHub(oauth);
   }
 
-  async getRepositories(): Promise<GitHubRepositoryEntity[]> {
+  async fetchRepositories(): Promise<GitHubRepositoryEntity[]> {
     return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.REPOSITORY, true);
   }
 
-  async getPullRequests(): Promise<GitHubPullRequestEntity[]> {
+  async fetchPullRequests(): Promise<GitHubPullRequestEntity[]> {
     return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, true);
+  }
+
+  async getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>> {
+    return this.connector.repository.repo.getRepositoriesPaginated(params);
+  }
+
+  async getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>> {
+    return this.connector.repository.pullRequest.getPullRequestsPaginated(params);
   }
 }
