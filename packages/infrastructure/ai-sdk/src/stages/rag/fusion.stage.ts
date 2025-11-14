@@ -15,6 +15,10 @@ export class FusionStage implements IPipelineStage<FusionInput, FusionOutput> {
     this.diversityService = new DiversityService();
   }
 
+  async canExecute(input: FusionInput): Promise<boolean> {
+    return input.shouldUseFastPath !== true;
+  }
+
   async execute(input: FusionInput, context: PipelineContext): Promise<FusionOutput> {
     const startTime = Date.now();
 

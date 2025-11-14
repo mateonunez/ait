@@ -17,6 +17,7 @@ export interface QueryAnalysisOutput {
     entityTypes: string[];
     complexity: "simple" | "moderate" | "complex";
   };
+  shouldUseFastPath: boolean;
   traceContext?: TraceContext;
 }
 

@@ -1,6 +1,7 @@
 import { PipelineBuilder } from "../services/rag/pipeline/pipeline.builder";
 import type { PipelineOrchestrator } from "../services/rag/pipeline/pipeline.orchestrator";
 import { QueryAnalysisStage } from "../stages/rag/query-analysis.stage";
+import { SimpleRetrievalStage } from "../stages/rag/simple-retrieval.stage";
 import { CollectionRoutingStage } from "../stages/rag/collection-routing.stage";
 import { RetrievalStage } from "../stages/rag/retrieval.stage";
 import { FusionStage } from "../stages/rag/fusion.stage";
@@ -46,6 +47,7 @@ export function createRAGPipeline(
 
   return PipelineBuilder.create<QueryAnalysisInput, ContextBuildingOutput>()
     .addStage(new QueryAnalysisStage())
+    .addStage(new SimpleRetrievalStage(multiCollectionProvider, config.maxDocs))
     .addStage(new CollectionRoutingStage(config.collectionRouting))
     .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
     .addStage(new FusionStage())

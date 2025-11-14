@@ -15,6 +15,10 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     this.multiCollectionProvider = multiCollectionProvider;
   }
 
+  async canExecute(input: RetrievalInput): Promise<boolean> {
+    return input.shouldUseFastPath !== true;
+  }
+
   async execute(input: RetrievalInput, context: PipelineContext): Promise<RetrievalOutput> {
     const startTime = Date.now();
 
