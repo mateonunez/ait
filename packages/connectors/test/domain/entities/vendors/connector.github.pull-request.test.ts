@@ -2,7 +2,7 @@ import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm, githubPullRequests } from "@ait/postgres";
 import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";
-import type { GitHubPullRequestEntity } from "../../../../src/types/domain/entities/vendors/connector.github.pull-request.types";
+import type { GitHubPullRequestEntity } from "@ait/core";
 
 describe("ConnectorGitHubPullRequestRepository", () => {
   const prRepository: ConnectorGitHubPullRequestRepository = new ConnectorGitHubPullRequestRepository();
@@ -205,6 +205,143 @@ describe("ConnectorGitHubPullRequestRepository", () => {
         await prRepository.savePullRequests([]);
         const saved = await db.select().from(githubPullRequests).execute();
         assert.equal(saved.length, 0);
+      });
+    });
+
+    describe("getPullRequestsPaginated", () => {
+      it("should return paginated pull requests", async () => {
+        const prs: GitHubPullRequestEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `pr-${i + 1}`,
+          number: i + 1,
+          title: `PR ${i + 1}`,
+          body: `Body ${i + 1}`,
+          state: i % 2 === 0 ? "open" : "closed",
+          draft: false,
+          locked: false,
+          htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
+          diffUrl: null,
+          patchUrl: null,
+          issueUrl: null,
+          merged: i % 3 === 0,
+          mergedAt: i % 3 === 0 ? new Date() : null,
+          closedAt: i % 2 === 1 ? new Date() : null,
+          mergeCommitSha: null,
+          commits: i + 1,
+          additions: (i + 1) * 10,
+          deletions: (i + 1) * 2,
+          changedFiles: i + 1,
+          comments: i,
+          reviewComments: i,
+          headRef: `feature-${i + 1}`,
+          headSha: `sha-${i + 1}`,
+          baseRef: "main",
+          baseSha: "base-sha",
+          repositoryId: "repo-1",
+          repositoryName: "ait",
+          repositoryFullName: "mateonunez/ait",
+          mergeable: true,
+          rebaseable: true,
+          mergeableState: "clean",
+          maintainerCanModify: false,
+          authorAssociation: "OWNER",
+          autoMerge: null,
+          activeLockReason: null,
+          prCreatedAt: new Date(Date.now() + i * 1000),
+          prUpdatedAt: new Date(Date.now() + i * 1000),
+          userData: null,
+          assigneeData: null,
+          assigneesData: null,
+          mergedByData: null,
+          labels: null,
+          milestoneData: null,
+          requestedReviewersData: null,
+          requestedTeamsData: null,
+          headRepoData: null,
+          baseRepoData: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          __type: "pull_request",
+        })) as unknown as GitHubPullRequestEntity[];
+
+        await prRepository.savePullRequests(prs);
+
+        const result = await prRepository.getPullRequestsPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const prs: GitHubPullRequestEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `pr-${i + 1}`,
+          number: i + 1,
+          title: `PR ${i + 1}`,
+          body: `Body ${i + 1}`,
+          state: "open",
+          draft: false,
+          locked: false,
+          htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
+          diffUrl: null,
+          patchUrl: null,
+          issueUrl: null,
+          merged: false,
+          mergedAt: null,
+          closedAt: null,
+          mergeCommitSha: null,
+          commits: 5,
+          additions: 150,
+          deletions: 20,
+          changedFiles: 8,
+          comments: 3,
+          reviewComments: 2,
+          headRef: "feature-branch",
+          headSha: "abc123",
+          baseRef: "main",
+          baseSha: "def456",
+          repositoryId: "repo-123",
+          repositoryName: "ait",
+          repositoryFullName: "mateonunez/ait",
+          mergeable: true,
+          rebaseable: true,
+          mergeableState: "clean",
+          maintainerCanModify: true,
+          authorAssociation: "OWNER",
+          autoMerge: null,
+          activeLockReason: null,
+          prCreatedAt: new Date(Date.now() + i * 1000),
+          prUpdatedAt: new Date(Date.now() + i * 1000),
+          userData: null,
+          assigneeData: null,
+          assigneesData: null,
+          mergedByData: null,
+          labels: null,
+          milestoneData: null,
+          requestedReviewersData: null,
+          requestedTeamsData: null,
+          headRepoData: null,
+          baseRepoData: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          __type: "pull_request",
+        })) as unknown as GitHubPullRequestEntity[];
+
+        await prRepository.savePullRequests(prs);
+
+        const result = await prRepository.getPullRequestsPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no pull requests exist", async () => {
+        const result = await prRepository.getPullRequestsPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
       });
     });
   });

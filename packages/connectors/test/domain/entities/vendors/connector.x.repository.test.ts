@@ -94,5 +94,66 @@ describe("ConnectorXRepository", () => {
         assert.equal(saved.length, 0, "No tweets should be saved for empty input");
       });
     });
+
+    describe("getTweetsPaginated", () => {
+      it("should return paginated tweets", async () => {
+        const now = new Date();
+        const tweets: XTweetEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `tweet-${i + 1}`,
+          text: `Tweet ${i + 1}`,
+          authorId: `author-${(i % 2) + 1}`,
+          authorUsername: `user${(i % 2) + 1}`,
+          authorName: `User ${(i % 2) + 1}`,
+          likeCount: i * 10,
+          retweetCount: i * 2,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          jsonData: {},
+          __type: "tweet",
+        }));
+
+        await repository.saveTweets(tweets);
+
+        const result = await repository.getTweetsPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const tweets: XTweetEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `tweet-${i + 1}`,
+          text: `Tweet ${i + 1}`,
+          authorId: "author-1",
+          authorUsername: "user1",
+          authorName: "User One",
+          likeCount: 50,
+          retweetCount: 10,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          jsonData: {},
+          __type: "tweet",
+        }));
+
+        await repository.saveTweets(tweets);
+
+        const result = await repository.getTweetsPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no tweets exist", async () => {
+        const result = await repository.getTweetsPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
+      });
+    });
   });
 });

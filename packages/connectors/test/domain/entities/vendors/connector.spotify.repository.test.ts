@@ -16,7 +16,7 @@ import type {
   SpotifyPlaylistEntity,
   SpotifyAlbumEntity,
   SpotifyRecentlyPlayedEntity,
-} from "../../../../src/types/domain/entities/vendors/connector.spotify.types";
+} from "@ait/core";
 import { ConnectorSpotifyTrackRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-track.repository";
 import { ConnectorSpotifyArtistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-artist.repository";
 import { ConnectorSpotifyPlaylistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
@@ -156,6 +156,89 @@ describe("ConnectorSpotifyRepository", () => {
         assert.equal(saved.length, 0, "No track should be saved for empty input");
       });
     });
+
+    describe("getTracksPaginated", () => {
+      it("should return paginated tracks", async () => {
+        const now = new Date();
+        const tracks: SpotifyTrackEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `track-${i + 1}`,
+          name: `Track ${i + 1}`,
+          artist: `Artist ${(i % 3) + 1}`,
+          album: `Album ${(i % 2) + 1}`,
+          durationMs: (i + 1) * 60000,
+          popularity: (i + 1) * 5,
+          explicit: i % 2 === 0,
+          isPlayable: true,
+          previewUrl: `https://example.com/preview-${i + 1}`,
+          trackNumber: (i % 10) + 1,
+          discNumber: 1,
+          uri: `spotify:track:track-${i + 1}`,
+          href: `https://api.spotify.com/v1/tracks/track-${i + 1}`,
+          isLocal: false,
+          albumData: { name: `Album ${(i % 2) + 1}`, id: `album-${(i % 2) + 1}` },
+          artistsData: [{ name: `Artist ${(i % 3) + 1}`, id: `artist-${(i % 3) + 1}` }],
+          externalIds: { isrc: `TEST${i + 1}` },
+          externalUrls: { spotify: `https://open.spotify.com/track/track-${i + 1}` },
+          addedAt: new Date(now.getTime() + i * 1000),
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "track",
+        }));
+
+        await trackRepository.saveTracks(tracks);
+
+        const result = await trackRepository.getTracksPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const tracks: SpotifyTrackEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `track-${i + 1}`,
+          name: `Track ${i + 1}`,
+          artist: "Test Artist",
+          album: "Test Album",
+          durationMs: 60000,
+          popularity: 50,
+          explicit: false,
+          isPlayable: true,
+          previewUrl: null,
+          trackNumber: i + 1,
+          discNumber: 1,
+          uri: `spotify:track:track-${i + 1}`,
+          href: `https://api.spotify.com/v1/tracks/track-${i + 1}`,
+          isLocal: false,
+          albumData: null,
+          artistsData: [],
+          externalIds: {},
+          externalUrls: {},
+          addedAt: new Date(now.getTime() + i * 1000),
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "track",
+        }));
+
+        await trackRepository.saveTracks(tracks);
+
+        const result = await trackRepository.getTracksPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no tracks exist", async () => {
+        const result = await trackRepository.getTracksPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
+      });
+    });
   });
 
   describe("ConnectorSpotifyArtistRepository", () => {
@@ -230,6 +313,59 @@ describe("ConnectorSpotifyRepository", () => {
         await artistRepository.saveArtists([]);
         const saved = await db.select().from(spotifyArtists).execute();
         assert.equal(saved.length, 0, "No artist should be saved for empty input");
+      });
+    });
+
+    describe("getArtistsPaginated", () => {
+      it("should return paginated artists", async () => {
+        const now = new Date();
+        const artists: SpotifyArtistEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `artist-${i + 1}`,
+          name: `Artist ${i + 1}`,
+          popularity: (i + 1) * 5,
+          genres: [`genre-${(i % 3) + 1}`],
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "artist",
+        })) as SpotifyArtistEntity[];
+
+        await artistRepository.saveArtists(artists);
+
+        const result = await artistRepository.getArtistsPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const artists: SpotifyArtistEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `artist-${i + 1}`,
+          name: `Artist ${i + 1}`,
+          popularity: 70,
+          genres: ["Pop"],
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "artist",
+        })) as SpotifyArtistEntity[];
+
+        await artistRepository.saveArtists(artists);
+
+        const result = await artistRepository.getArtistsPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no artists exist", async () => {
+        const result = await artistRepository.getArtistsPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
       });
     });
   });
@@ -344,6 +480,77 @@ describe("ConnectorSpotifyRepository", () => {
         assert.equal(saved.length, 0, "No playlist should be saved for empty input");
       });
     });
+
+    describe("getPlaylistsPaginated", () => {
+      it("should return paginated playlists", async () => {
+        const now = new Date();
+        const playlists: SpotifyPlaylistEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `playlist-${i + 1}`,
+          name: `Playlist ${i + 1}`,
+          description: `Description ${i + 1}`,
+          public: i % 2 === 0,
+          collaborative: i % 3 === 0,
+          owner: `owner-${(i % 2) + 1}`,
+          snapshotId: `snapshot-${i + 1}`,
+          uri: `spotify:playlist:playlist-${i + 1}`,
+          href: `https://api.spotify.com/v1/playlists/playlist-${i + 1}`,
+          images: null,
+          tracks: [],
+          followers: i * 10,
+          externalUrls: [],
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "playlist",
+        }));
+
+        await playlistRepository.savePlaylists(playlists);
+
+        const result = await playlistRepository.getPlaylistsPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const playlists: SpotifyPlaylistEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `playlist-${i + 1}`,
+          name: `Playlist ${i + 1}`,
+          description: `Description ${i + 1}`,
+          public: true,
+          collaborative: false,
+          owner: "test-user",
+          snapshotId: `snapshot-${i + 1}`,
+          uri: `spotify:playlist:playlist-${i + 1}`,
+          href: `https://api.spotify.com/v1/playlists/playlist-${i + 1}`,
+          images: null,
+          tracks: [],
+          followers: 0,
+          externalUrls: [],
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "playlist",
+        }));
+
+        await playlistRepository.savePlaylists(playlists);
+
+        const result = await playlistRepository.getPlaylistsPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no playlists exist", async () => {
+        const result = await playlistRepository.getPlaylistsPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
+      });
+    });
   });
 
   describe("ConnectorSpotifyAlbumRepository", () => {
@@ -454,6 +661,85 @@ describe("ConnectorSpotifyRepository", () => {
         await albumRepository.saveAlbums([]);
         const saved = await db.select().from(spotifyAlbums).execute();
         assert.equal(saved.length, 0, "No album should be saved for empty input");
+      });
+    });
+
+    describe("getAlbumsPaginated", () => {
+      it("should return paginated albums", async () => {
+        const now = new Date();
+        const albums: SpotifyAlbumEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `album-${i + 1}`,
+          name: `Album ${i + 1}`,
+          albumType: i % 2 === 0 ? "album" : "single",
+          artists: [],
+          tracks: [],
+          totalTracks: (i + 1) * 5,
+          releaseDate: `2024-${String((i % 12) + 1).padStart(2, "0")}-15`,
+          releaseDatePrecision: "day",
+          isPlayable: true,
+          uri: `spotify:album:album-${i + 1}`,
+          href: `https://api.spotify.com/v1/albums/album-${i + 1}`,
+          popularity: (i + 1) * 5,
+          label: `Label ${(i % 3) + 1}`,
+          copyrights: [],
+          externalIds: [],
+          genres: [`genre-${(i % 3) + 1}`],
+          images: null,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "album",
+        }));
+
+        await albumRepository.saveAlbums(albums);
+
+        const result = await albumRepository.getAlbumsPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const albums: SpotifyAlbumEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `album-${i + 1}`,
+          name: `Album ${i + 1}`,
+          albumType: "album",
+          artists: [],
+          tracks: [],
+          totalTracks: 10,
+          releaseDate: "2024-03-15",
+          releaseDatePrecision: "day",
+          isPlayable: true,
+          uri: `spotify:album:album-${i + 1}`,
+          href: `https://api.spotify.com/v1/albums/album-${i + 1}`,
+          popularity: 65,
+          label: "Test Label",
+          copyrights: [],
+          externalIds: [],
+          genres: ["Pop"],
+          images: null,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "album",
+        }));
+
+        await albumRepository.saveAlbums(albums);
+
+        const result = await albumRepository.getAlbumsPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no albums exist", async () => {
+        const result = await albumRepository.getAlbumsPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
       });
     });
   });
@@ -726,6 +1012,76 @@ describe("ConnectorSpotifyRepository", () => {
       it("should return null for non-existent ID", async () => {
         const retrieved = await recentlyPlayedRepository.getRecentlyPlayedById("non-existent-id");
         assert.equal(retrieved, null, "Should return null for non-existent ID");
+      });
+    });
+
+    describe("getRecentlyPlayedPaginated", () => {
+      it("should return paginated recently played items", async () => {
+        const now = new Date();
+        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `track-${i + 1}-${now.toISOString()}`,
+          trackId: `track-${i + 1}`,
+          trackName: `Track ${i + 1}`,
+          artist: `Artist ${(i % 3) + 1}`,
+          album: `Album ${(i % 2) + 1}`,
+          durationMs: 180000,
+          explicit: i % 2 === 0,
+          popularity: (i + 1) * 5,
+          playedAt: new Date(now.getTime() - i * 60000),
+          context: {
+            type: "playlist",
+            uri: `spotify:playlist:playlist-${(i % 3) + 1}`,
+          },
+          albumData: null,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "recently_played",
+        }));
+
+        await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
+
+        const result = await recentlyPlayedRepository.getRecentlyPlayedPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `track-${i + 1}-${now.toISOString()}`,
+          trackId: `track-${i + 1}`,
+          trackName: `Track ${i + 1}`,
+          artist: "Test Artist",
+          album: "Test Album",
+          durationMs: 180000,
+          explicit: false,
+          popularity: 70,
+          playedAt: new Date(now.getTime() - i * 60000),
+          context: null,
+          albumData: null,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "recently_played",
+        }));
+
+        await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
+
+        const result = await recentlyPlayedRepository.getRecentlyPlayedPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no recently played items exist", async () => {
+        const result = await recentlyPlayedRepository.getRecentlyPlayedPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
       });
     });
   });
