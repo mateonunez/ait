@@ -38,8 +38,6 @@ export class QueryPlannerService implements IQueryPlannerService {
 
   async planQueries(userQuery: string, traceContext?: TraceContext | null): Promise<QueryPlanResult> {
     const startTime = Date.now();
-    console.info("Query planning started", { userQuery: userQuery.slice(0, 100) });
-
     const client = getAItClient();
 
     // Step 1: Use LLM to understand intent
@@ -153,15 +151,6 @@ export class QueryPlannerService implements IQueryPlannerService {
 
       const isDiverse = cleaned.length >= this._minQueryCount;
 
-      console.info("Query plan generated", {
-        queryCount: cleaned.length,
-        tags,
-        queries: cleaned.slice(0, 5),
-        source: planSource,
-        isDiverse,
-        usedFallback: fallbackApplied,
-      });
-
       // Record query planning span
       if (traceContext) {
         recordGeneration(
@@ -222,12 +211,6 @@ export class QueryPlannerService implements IQueryPlannerService {
     const deduped = this._deduplicateQueries(ensuredQueries, this._queriesCount);
     const heuristicTags = this._heuristics.inferTags(userQuery);
     const tags = this._mergeTags(fallback.tags, heuristicTags);
-
-    console.info("Heuristic query plan generated", {
-      queryCount: deduped.length,
-      tags,
-    });
-
     return {
       queries: deduped,
       tags,

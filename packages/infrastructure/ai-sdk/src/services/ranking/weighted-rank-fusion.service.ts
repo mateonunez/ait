@@ -46,12 +46,6 @@ export class WeightedRankFusionService implements IWeightedRankFusionService {
       return [];
     }
 
-    console.info("Starting weighted rank fusion", {
-      collectionsCount: collectionResults.length,
-      totalDocuments: collectionResults.reduce((sum, r) => sum + r.documents.length, 0),
-      collections: collectionResults.map((r) => `${r.vendor}:${r.collectionWeight}`).join(", "),
-    });
-
     const documentScores = new Map<
       string,
       {
@@ -132,14 +126,6 @@ export class WeightedRankFusionService implements IWeightedRankFusionService {
     weightedDocuments.sort((a, b) => b.finalScore - a.finalScore);
 
     const topResults = weightedDocuments.slice(0, maxResults);
-
-    console.info("Weighted rank fusion completed", {
-      totalUniqueDocuments: weightedDocuments.length,
-      returnedDocuments: topResults.length,
-      topScores: topResults.slice(0, 5).map((d) => d.finalScore.toFixed(4)),
-      collectionDistribution: this.getCollectionDistribution(topResults),
-    });
-
     return topResults;
   }
 

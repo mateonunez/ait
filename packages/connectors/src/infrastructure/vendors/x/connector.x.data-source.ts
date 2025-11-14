@@ -61,12 +61,8 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
       allTweets.push(...enrichedTweets);
 
       paginationToken = response.meta.next_token;
-
-      // Log progress
-      console.info(`[X API] Fetched ${allTweets.length} tweets so far...`);
     } while (paginationToken);
 
-    console.info(`[X API] Successfully fetched ${allTweets.length} total tweets`);
     return allTweets;
   }
 

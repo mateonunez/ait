@@ -50,11 +50,6 @@ export class LangfuseProvider {
           flushAt: this.config.flushAt,
           flushInterval: this.config.flushInterval,
         });
-        console.log("[Langfuse] Client initialized successfully", {
-          baseUrl: this.config.baseURL,
-          flushAt: this.config.flushAt,
-          flushInterval: this.config.flushInterval,
-        });
       } catch (error) {
         console.warn("[Langfuse] Failed to initialize client:", error);
         this.config.enabled = false;
@@ -95,14 +90,6 @@ export class LangfuseProvider {
         isComplete: false,
         createdAt: Date.now(),
         spanCount: 0,
-      });
-
-      console.log("[Langfuse] Trace created", {
-        traceId,
-        name,
-        userId: metadata?.userId,
-        sessionId: metadata?.sessionId,
-        tags: metadata?.tags,
       });
 
       return {
@@ -243,8 +230,6 @@ export class LangfuseProvider {
         input: input as Record<string, unknown>,
       });
       traceState.hasInput = true;
-
-      console.log("[Langfuse] Trace input updated", { traceId });
     } catch (error) {
       console.warn("[Langfuse] Failed to update trace input:", error);
     }
@@ -266,8 +251,6 @@ export class LangfuseProvider {
         output: output as Record<string, unknown>,
       });
       traceState.hasOutput = true;
-
-      console.log("[Langfuse] Trace output updated", { traceId });
     } catch (error) {
       console.warn("[Langfuse] Failed to update trace output:", error);
     }
@@ -308,16 +291,6 @@ export class LangfuseProvider {
       }
 
       traceState.isComplete = true;
-
-      // Keep trace in map until flush for state validation
-      console.log("[Langfuse] Trace marked complete", {
-        traceId,
-        hasError: !!error,
-        hasInput: traceState.hasInput,
-        hasOutput: traceState.hasOutput,
-        spanCount: traceState.spanCount,
-        errorFingerprint: errorMetadata?.errorFingerprint,
-      });
     } catch (err) {
       console.warn("[Langfuse] Failed to end trace:", err);
     }
@@ -421,13 +394,6 @@ export class LangfuseProvider {
     // Validate traces before flush
     const validation = this.validateTraces();
 
-    console.log("[Langfuse] Pre-flush validation", {
-      activeTraces: this.activeTraces.size,
-      activeSpans: this.activeSpans.size,
-      validTraces: validation.valid,
-      invalidTraces: validation.invalid,
-    });
-
     if (validation.warnings.length > 0) {
       console.warn("[Langfuse] Trace validation warnings:", validation.warnings);
     }
@@ -436,15 +402,11 @@ export class LangfuseProvider {
 
     for (let attempt = 1; attempt <= this.flushRetries; attempt++) {
       try {
-        console.log(`[Langfuse] Flush attempt ${attempt}/${this.flushRetries}...`);
-
         // Use Promise.race to enforce timeout
         await Promise.race([
           this.client.flushAsync(),
           new Promise((_, reject) => setTimeout(() => reject(new Error("Flush timeout")), this.flushTimeout)),
         ]);
-
-        console.log("[Langfuse] Flush completed successfully");
 
         // Clear completed traces after successful flush
         for (const [traceId, state] of this.activeTraces.entries()) {
@@ -461,13 +423,12 @@ export class LangfuseProvider {
         if (attempt < this.flushRetries) {
           // Exponential backoff: 100ms, 200ms, 400ms
           const backoffMs = 100 * 2 ** (attempt - 1);
-          console.log(`[Langfuse] Retrying in ${backoffMs}ms...`);
           await new Promise((resolve) => setTimeout(resolve, backoffMs));
         }
       }
     }
 
-    console.error("[Langfuse] Failed to flush after all retries:", lastError);
+    console.error("[Langfuse] Failed to flush after all retries:", lastError?.message);
   }
 
   async shutdown(): Promise<void> {

@@ -55,11 +55,6 @@ export class Scheduler implements IScheduler {
       priority: priority || 0,
       jobId: `${jobName}-repeatable`,
     });
-
-    console.info(
-      `[Scheduler] Job "${jobName}" scheduled with cron: ${cronExpression}`,
-      priority ? `(priority: ${priority})` : "",
-    );
   }
 
   public async removeRepeatableJob(jobName: string, cronExpression: string): Promise<void> {

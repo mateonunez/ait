@@ -53,15 +53,6 @@ initAItClient({
   telemetry: telemetryConfig,
 });
 
-// Log telemetry status on startup
-console.log("[Gateway] Telemetry configuration:", {
-  enabled: telemetryEnabled,
-  hasPublicKey: !!telemetryConfig.publicKey,
-  hasSecretKey: !!telemetryConfig.secretKey,
-  baseURL: telemetryConfig.baseURL,
-});
-
-// Type guard functions for StreamEvent
 function isTextChunk(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.TEXT } {
   return event.type === STREAM_EVENT.TEXT;
 }
@@ -189,11 +180,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
         reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify({ finishReason: "stop", traceId })}\n`);
 
-        // Flush telemetry data to Langfuse with proper timing
         const langfuseProvider = getLangfuseProvider();
         if (langfuseProvider?.isEnabled()) {
-          console.log("[Gateway] Flushing telemetry data to Langfuse...");
-
           try {
             // Give a small delay to ensure all trace updates are processed
             await new Promise((resolve) => setTimeout(resolve, 100));
@@ -204,16 +192,19 @@ export default async function chatRoutes(fastify: FastifyInstance) {
               langfuseProvider.flush(),
               new Promise((_, reject) => setTimeout(() => reject(new Error("Flush timeout in gateway")), flushTimeout)),
             ]);
-
-            console.log("[Gateway] Telemetry flushed successfully");
-          } catch (flushError: any) {
-            console.error("[Gateway] Telemetry flush failed:", flushError.message);
+          } catch (flushError: unknown) {
+            console.error(
+              "[Gateway] Telemetry flush failed:",
+              flushError instanceof Error ? flushError.message : String(flushError),
+            );
             // Don't fail the request if telemetry flush fails
           }
         }
-      } catch (streamError: any) {
+      } catch (streamError: unknown) {
         fastify.log.error({ err: streamError, route: "/chat" }, "Stream error occurred.");
-        reply.raw.write(`${STREAM_EVENT.ERROR}:${JSON.stringify(streamError.message || "Stream generation failed")}\n`);
+        reply.raw.write(
+          `${STREAM_EVENT.ERROR}:${JSON.stringify(streamError instanceof Error ? streamError.message : String(streamError) || "Stream generation failed")}\n`,
+        );
 
         // Attempt to flush telemetry even on error
         const langfuseProvider = getLangfuseProvider();
@@ -227,9 +218,11 @@ export default async function chatRoutes(fastify: FastifyInstance) {
       } finally {
         reply.raw.end();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/chat" }, "Failed to generate chat response.");
-      return reply.status(500).send({ error: err.message || "Failed to generate chat response." });
+      return reply
+        .status(500)
+        .send({ error: err instanceof Error ? err.message : String(err) || "Failed to generate chat response." });
     }
   });
 }

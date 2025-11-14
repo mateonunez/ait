@@ -46,7 +46,6 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
           const repoName = repo.name;
 
           if (!owner || !repoName) {
-            console.warn(`Skipping repository without owner or name: ${repo.id}`);
             continue;
           }
 
@@ -54,12 +53,10 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             owner,
             repo: repoName,
             state: "all",
-            per_page: 15, // Reduced to avoid rate limits when fetching details
+            per_page: 15,
             sort: "updated",
             direction: "desc",
           });
-
-          console.log(`Fetched ${listResponse.data.length} PRs for ${repo.full_name}`);
 
           for (const pr of listResponse.data) {
             try {
@@ -73,8 +70,6 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
                 ...detailedResponse.data,
                 __type: "pull_request" as const,
               } as GitHubPullRequestExternal);
-
-              console.log(`Fetched PR #${pr.number} details for ${repo.full_name}`);
             } catch (prError: unknown) {
               console.error(
                 `Failed to fetch PR #${pr.number} details for ${repo.full_name}:`,
@@ -86,8 +81,11 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
               } as GitHubPullRequestExternal);
             }
           }
-        } catch (error: any) {
-          console.error(`Failed to fetch PRs for ${repo.full_name}:`, error.message);
+        } catch (error: unknown) {
+          console.error(
+            `Failed to fetch PRs for ${repo.full_name}:`,
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
 

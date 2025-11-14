@@ -61,7 +61,7 @@ export abstract class RetoveBaseETLAbstract {
       const data = await this.extract(limit);
       const transformedData = await this.transform(data);
       await this.load(transformedData);
-      console.info(`ETL process completed successfully for collection: ${this._collectionName}`);
+      console.info(`✅ ETL process completed successfully for collection: ${this._collectionName}`);
     } catch (error) {
       console.error(`ETL process failed for collection: ${this._collectionName}`, error);
       throw error;

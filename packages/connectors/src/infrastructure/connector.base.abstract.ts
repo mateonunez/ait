@@ -28,11 +28,9 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   }
 
   public async connect(code = AIT): Promise<void> {
-    console.info("[Connector] Connecting...");
     const authenticatedData = await this.getAuthenticatedData();
 
     if (!authenticatedData) {
-      console.info("[Connector] No authenticated data found. Starting authentication...");
       await this._handleAuthentication(code);
       return;
     }
@@ -41,23 +39,15 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   }
 
   private async _handleAuthentication(code: string): Promise<void> {
-    console.info("[Connector] Handling authentication...");
     const response = await this.authenticate(code);
-    console.debug("response", response);
     await this._updateDataSourceAndSaveAuth(response);
-    console.info("[Connector] Authentication completed");
   }
 
   private async _handleExistingAuthentication(authenticatedData: any): Promise<void> {
     if (this._isTokenExpired(authenticatedData)) {
-      console.info("[Connector] Token expired. Refreshing...");
-
-      // Check if a refresh is already in progress
       if (this._refreshInProgress) {
-        console.info("[Connector] Token refresh already in progress. Waiting for it to complete...");
         await this._refreshInProgress;
 
-        // After waiting, fetch fresh auth data and update data source
         const freshAuthData = await this.getAuthenticatedData();
         if (freshAuthData?.accessToken) {
           this._dataSource = this.createDataSource(freshAuthData.accessToken);
@@ -65,9 +55,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
         return;
       }
 
-      // Start a new refresh and store the promise
       this._refreshInProgress = this._handleTokenRefresh(authenticatedData).finally(() => {
-        // Clear the lock when done
         this._refreshInProgress = null;
       });
 
@@ -75,7 +63,6 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
       return;
     }
 
-    console.info("[Connector] Using existing authentication");
     this._dataSource = this.createDataSource(authenticatedData.accessToken);
   }
 
@@ -84,18 +71,11 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
     const provider = authenticatedData.provider || "unknown";
 
     if (!authenticatedData.refreshToken) {
-      console.warn(`[Connector:${provider}] No refresh token found. Starting new authentication...`);
       await this._handleAuthentication(AIT);
       return;
     }
 
     try {
-      console.info(`[Connector:${provider}] Token refresh started`, {
-        provider,
-        tokenExpiredAt: authenticatedData.updatedAt,
-        expiresIn: authenticatedData.expiresIn,
-      });
-
       const response = await retryWithBackoff(() => this.refreshToken(authenticatedData.refreshToken!), {
         maxAttempts: 3,
         initialDelayMs: 1000,
@@ -115,18 +95,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
       });
 
       const duration = Date.now() - startTime;
-      console.info(`[Connector:${provider}] Token refresh successful`, {
-        provider,
-        durationMs: duration,
-        hasNewRefreshToken: !!(response as any).refresh_token,
-      });
-
       await this._updateDataSourceAndSaveAuth(response);
-
-      console.info(`[Connector:${provider}] Token refresh completed and saved`, {
-        provider,
-        totalDurationMs: Date.now() - startTime,
-      });
     } catch (error: any) {
       const duration = Date.now() - startTime;
 
@@ -169,7 +138,6 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   }
 
   private async _updateDataSourceAndSaveAuth(response: any): Promise<void> {
-    console.info("[Connector] Updating data source and saving auth data...");
     this._dataSource = this.createDataSource(response.access_token);
     await this.saveAuthenticatedData(response);
   }
@@ -190,9 +158,11 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   private async _clearAuthenticationData(): Promise<void> {
     try {
       await this.clearAuthenticatedData();
-      console.info("[Connector] Authentication data cleared successfully");
-    } catch (error: any) {
-      console.error("[Connector] Failed to clear authentication data:", error.message);
+    } catch (error: unknown) {
+      console.error(
+        "[Connector] Failed to clear authentication data:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 

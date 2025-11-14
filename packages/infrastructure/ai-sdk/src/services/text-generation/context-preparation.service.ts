@@ -57,14 +57,10 @@ export class ContextPreparationService implements IContextPreparationService {
 
   async prepareContext(query: string, traceContext?: TraceContext | null): Promise<RAGContext> {
     const startTime = Date.now();
-    console.info("Preparing context for RAG", { query: query.slice(0, 50) });
-
     // Check LRU cache first
     const cached = this._getFromCache(query);
     if (cached) {
       const cacheLatency = Date.now() - startTime;
-      console.info("Reusing cached RAG context", { age: Date.now() - cached.timestamp });
-
       // Track cache hit for analytics
       const cacheAnalytics = getCacheAnalyticsService();
       cacheAnalytics.recordCacheHit(query, cacheLatency, cached.documents.length);
@@ -95,14 +91,6 @@ export class ContextPreparationService implements IContextPreparationService {
     try {
       // Step 1: Route to appropriate collections based on query
       const routingResult = await this._collectionRouter.routeCollections(query, undefined, traceContext || undefined);
-
-      console.info("Collection routing completed", {
-        strategy: routingResult.strategy,
-        selectedCollections: routingResult.selectedCollections
-          .map((c: { vendor: string; weight: number }) => `${c.vendor}:${c.weight}`)
-          .join(", "),
-        confidence: routingResult.confidence,
-      });
 
       // Step 2: Execute multi-collection search
       const multiCollectionResults = await this._multiQueryRetrieval.retrieveAcrossCollections<BaseMetadata>(
@@ -147,23 +135,12 @@ export class ContextPreparationService implements IContextPreparationService {
       const shouldApplyTemporal = hasTemporalIntent && entityTypes.size > 1;
 
       if (shouldApplyTemporal) {
-        console.info("Temporal correlation applicable, grouping by time windows", {
-          documentCount: documents.length,
-          entityTypes: Array.from(entityTypes),
-          windowHours: this._inferWindowHours(query) ?? this._temporalWindowHours,
-        });
-
         const effectiveWindow = this._inferWindowHours(query) ?? this._temporalWindowHours;
         const clusters = this._temporalCorrelation.correlateByTimeWindow(documents, effectiveWindow);
 
         if (clusters.length > 0) {
           context = this._contextBuilder.buildTemporalContext(clusters);
           usedTemporalCorrelation = true;
-          console.info("Temporal context built", {
-            clusterCount: clusters.length,
-            contextLength: context.length,
-          });
-
           if (traceContext) {
             recordSpan(
               "temporal-correlation",
@@ -208,15 +185,6 @@ export class ContextPreparationService implements IContextPreparationService {
     if (!fallbackUsed) {
       this._putInCache(query, ragContext);
     }
-
-    console.info(fallbackUsed ? "RAG fallback context prepared" : "RAG context prepared", {
-      documentCount: documents.length,
-      contextLength: context.length,
-      retrievalTimeMs: Date.now() - startTime,
-      fallbackUsed,
-      fallbackReason,
-      usedTemporalCorrelation,
-    });
 
     // Record final context preparation span
     if (traceContext) {

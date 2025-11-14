@@ -48,8 +48,6 @@ export class CollectionRouterService implements ICollectionRouterService {
     traceContext?: TraceContext,
   ): Promise<CollectionRouterResult> {
     const startTime = Date.now();
-    console.info("Collection routing started", { query: userQuery.slice(0, 100) });
-
     try {
       const intentHints = this.extractIntentHints(queryIntent);
       const prompt = buildCollectionRouterPrompt(userQuery, intentHints);

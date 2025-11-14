@@ -39,29 +39,10 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
       return [];
     }
 
-    // Sort by timestamp (most recent first)
     entitiesWithTimestamps.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-    console.info("Temporal correlation started", {
-      totalDocuments: documents.length,
-      documentsWithTimestamps: entitiesWithTimestamps.length,
-      windowHours,
-      dateRange: {
-        newest: entitiesWithTimestamps[0]?.timestamp.toISOString(),
-        oldest: entitiesWithTimestamps[entitiesWithTimestamps.length - 1]?.timestamp.toISOString(),
-      },
-    });
-
-    // Group entities into time windows
     let clusters = this._clusterByTimeWindow(entitiesWithTimestamps, windowHours);
-
-    // Merge adjacent/overlapping clusters with small gaps
     clusters = this._mergeAdjacentClusters(clusters, this._mergeGapMinutes);
-
-    console.info("Temporal clustering completed", {
-      clusterCount: clusters.length,
-      averageEntitiesPerCluster: (clusters.reduce((sum, c) => sum + c.entities.length, 0) / clusters.length).toFixed(1),
-    });
 
     return clusters;
   }

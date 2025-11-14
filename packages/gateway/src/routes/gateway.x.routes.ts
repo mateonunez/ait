@@ -31,7 +31,6 @@ export default async function xRoutes(fastify: FastifyInstance) {
   fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const authUrl = authenticator.getAuthorizationUrl();
-      console.log("authUrl", authUrl);
       reply.redirect(authUrl);
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate X authentication.");

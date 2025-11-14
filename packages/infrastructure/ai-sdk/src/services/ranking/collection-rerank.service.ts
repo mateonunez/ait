@@ -36,20 +36,7 @@ export class CollectionRerankService implements ICollectionRerankService {
       return [];
     }
 
-    console.info("Starting collection-specific reranking", {
-      totalDocuments: documents.length,
-      query: userQuery.slice(0, 100),
-      maxResults,
-    });
-
     const documentsByCollection = this.groupByCollection(documents);
-
-    console.debug("Documents grouped by collection", {
-      collections: Object.entries(documentsByCollection)
-        .map(([vendor, docs]) => `${vendor}:${docs.length}`)
-        .join(", "),
-    });
-
     const rerankedGroups: Array<WeightedDocument<TMetadata>[]> = [];
 
     for (const [vendor, collectionDocs] of Object.entries(documentsByCollection)) {
@@ -73,14 +60,6 @@ export class CollectionRerankService implements ICollectionRerankService {
     const finalResults = mergedResults.slice(0, maxResults);
 
     const duration = Date.now() - startTime;
-
-    console.info("Collection-specific reranking completed", {
-      inputDocuments: documents.length,
-      outputDocuments: finalResults.length,
-      duration,
-      collectionDistribution: this.getCollectionDistribution(finalResults),
-    });
-
     if (traceContext) {
       recordSpan(
         "collection-rerank",

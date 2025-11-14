@@ -44,10 +44,6 @@ export class ToolExecutionService implements IToolExecutionService {
     tools: Record<string, Tool>,
     traceContext?: TraceContext | null,
   ): Promise<ToolExecutionResult[]> {
-    console.info("Executing tools...", {
-      toolNames: toolCalls.map((tc) => tc.function.name),
-    });
-
     const results = await Promise.all(
       toolCalls.map(async (toolCall) => {
         const toolName = toolCall.function.name;
