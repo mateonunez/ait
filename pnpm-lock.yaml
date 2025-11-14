@@ -117,9 +117,6 @@ importers:
       '@ait/connectors':
         specifier: workspace:*
         version: link:../connectors
-      '@ait/postgres':
-        specifier: workspace:*
-        version: link:../infrastructure/postgres
       '@fastify/cors':
         specifier: ^10.0.1
         version: 10.1.0

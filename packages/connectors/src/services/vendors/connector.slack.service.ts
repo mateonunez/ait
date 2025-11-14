@@ -6,10 +6,18 @@ import {
   type SlackServiceEntityMap,
 } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type { SlackMessageEntity, SlackMessageExternal } from "@ait/core";
+import type { SlackMessageEntity, SlackMessageExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
-export class ConnectorSlackService extends ConnectorServiceBase<ConnectorSlack, SlackServiceEntityMap> {
+export interface IConnectorSlackService extends ConnectorServiceBase<ConnectorSlack, SlackServiceEntityMap> {
+  fetchMessages(): Promise<SlackMessageEntity[]>;
+  getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<SlackMessageEntity>>;
+}
+
+export class ConnectorSlackService
+  extends ConnectorServiceBase<ConnectorSlack, SlackServiceEntityMap>
+  implements IConnectorSlackService
+{
   constructor() {
     super(getConnectorConfig("slack"));
 
@@ -23,7 +31,11 @@ export class ConnectorSlackService extends ConnectorServiceBase<ConnectorSlack, 
     return new ConnectorSlack(oauth);
   }
 
-  async getMessages(): Promise<SlackMessageEntity[]> {
+  async fetchMessages(): Promise<SlackMessageEntity[]> {
     return this.fetchEntities(SLACK_ENTITY_TYPES_ENUM.MESSAGE, true);
+  }
+
+  async getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<SlackMessageEntity>> {
+    return this.connector.repository.message.getMessagesPaginated(params);
   }
 }

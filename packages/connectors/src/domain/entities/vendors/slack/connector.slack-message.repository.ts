@@ -1,8 +1,8 @@
-import { AItError, type SlackMessageEntity } from "@ait/core";
+import { AItError, type SlackMessageEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { connectorSlackMessageMapper } from "../../../../domain/mappers/vendors/connector.slack.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSlackMessageRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
-import { getPostgresClient, slackMessages, type SlackMessageDataTarget } from "@ait/postgres";
+import { getPostgresClient, slackMessages, type SlackMessageDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRepository {
@@ -74,8 +74,37 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     return null;
   }
 
-  async getMessages(): Promise<SlackMessageEntity[]> {
+  async fetchMessages(): Promise<SlackMessageEntity[]> {
     console.log("Getting messages from Slack repository");
     return [];
+  }
+
+  async getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<SlackMessageEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [messages, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(slackMessages)
+        .orderBy(drizzleOrm.desc(slackMessages.updatedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(slackMessages),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: messages.map((message) => connectorSlackMessageMapper.dataTargetToDomain(message)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

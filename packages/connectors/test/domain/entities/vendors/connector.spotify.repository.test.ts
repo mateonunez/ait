@@ -658,7 +658,7 @@ describe("ConnectorSpotifyRepository", () => {
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
 
-        const retrieved = await recentlyPlayedRepository.getRecentlyPlayed(10);
+        const retrieved = await recentlyPlayedRepository.fetchRecentlyPlayed(10);
         assert.equal(retrieved.length, 2);
         // Most recent should be first
         assert.equal(retrieved[0]?.trackName, "Recent Track");
@@ -686,7 +686,7 @@ describe("ConnectorSpotifyRepository", () => {
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
 
-        const retrieved = await recentlyPlayedRepository.getRecentlyPlayed(3);
+        const retrieved = await recentlyPlayedRepository.fetchRecentlyPlayed(3);
         assert.equal(retrieved.length, 3, "Should return only 3 items");
       });
     });

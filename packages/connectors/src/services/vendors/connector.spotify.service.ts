@@ -10,6 +10,8 @@ import type {
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
   SpotifyCurrentlyPlayingExternal,
+  PaginatedResponse,
+  PaginationParams,
 } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
@@ -22,7 +24,26 @@ import {
 } from "./connector.vendors.config";
 import { connectorSpotifyTrackMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
-export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
+export interface IConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
+  fetchTracks(): Promise<SpotifyTrackEntity[]>;
+  fetchArtists(): Promise<SpotifyArtistEntity[]>;
+  fetchPlaylists(): Promise<SpotifyPlaylistEntity[]>;
+  fetchPlaylistById(playlistId: string): Promise<SpotifyPlaylistEntity>;
+  fetchAlbums(): Promise<SpotifyAlbumEntity[]>;
+  fetchRecentlyPlayed(): Promise<SpotifyRecentlyPlayedEntity[]>;
+  fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null>;
+
+  getTracksPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyTrackEntity>>;
+  getArtistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyArtistEntity>>;
+  getPlaylistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyPlaylistEntity>>;
+  getAlbumsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyAlbumEntity>>;
+  getRecentlyPlayedPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyRecentlyPlayedEntity>>;
+}
+
+export class ConnectorSpotifyService
+  extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap>
+  implements IConnectorSpotifyService
+{
   constructor() {
     super(getConnectorConfig("spotify"));
 
@@ -52,32 +73,32 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
     return new ConnectorSpotify(oauth);
   }
 
-  async getTracks(): Promise<SpotifyTrackEntity[]> {
+  async fetchTracks(): Promise<SpotifyTrackEntity[]> {
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.TRACK, true);
   }
 
-  async getArtists(): Promise<SpotifyArtistEntity[]> {
+  async fetchArtists(): Promise<SpotifyArtistEntity[]> {
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ARTIST, true);
   }
 
-  async getPlaylists(): Promise<SpotifyPlaylistEntity[]> {
+  async fetchPlaylists(): Promise<SpotifyPlaylistEntity[]> {
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST, true);
   }
 
-  async getPlaylistById(playlistId: string): Promise<SpotifyPlaylistEntity> {
+  async fetchPlaylistById(playlistId: string): Promise<SpotifyPlaylistEntity> {
     const playlist = await this.connector.dataSource.fetchPlaylistById(playlistId);
     return connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST].mapper(playlist);
   }
 
-  async getAlbums(): Promise<SpotifyAlbumEntity[]> {
+  async fetchAlbums(): Promise<SpotifyAlbumEntity[]> {
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.ALBUM, true);
   }
 
-  async getRecentlyPlayed(): Promise<SpotifyRecentlyPlayedEntity[]> {
+  async fetchRecentlyPlayed(): Promise<SpotifyRecentlyPlayedEntity[]> {
     return this.fetchEntities(SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED, true);
   }
 
-  async getCurrentlyPlaying(): Promise<
+  async fetchCurrentlyPlaying(): Promise<
     | (SpotifyCurrentlyPlayingExternal & {
         item: SpotifyTrackExternal & { trackEntity: SpotifyTrackEntity };
       })
@@ -98,5 +119,25 @@ export class ConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpoti
         trackEntity: connectorSpotifyTrackMapper.externalToDomain(response.item),
       },
     };
+  }
+
+  async getTracksPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyTrackEntity>> {
+    return this.connector.repository.track.getTracksPaginated(params);
+  }
+
+  async getArtistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyArtistEntity>> {
+    return this.connector.repository.artist.getArtistsPaginated(params);
+  }
+
+  async getPlaylistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyPlaylistEntity>> {
+    return this.connector.repository.playlist.getPlaylistsPaginated(params);
+  }
+
+  async getAlbumsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyAlbumEntity>> {
+    return this.connector.repository.album.getAlbumsPaginated(params);
+  }
+
+  async getRecentlyPlayedPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyRecentlyPlayedEntity>> {
+    return this.connector.repository.recentlyPlayed.getRecentlyPlayedPaginated(params);
   }
 }

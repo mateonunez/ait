@@ -1,4 +1,4 @@
-import type { GitHubPullRequestEntity } from "@ait/core";
+import type { GitHubPullRequestEntity, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorGitHubPullRequestRepository {
@@ -8,5 +8,6 @@ export interface IConnectorGitHubPullRequestRepository {
   ): Promise<void>;
   savePullRequests(pullRequests: Partial<GitHubPullRequestEntity>[]): Promise<void>;
   getPullRequest(id: string): Promise<GitHubPullRequestEntity | null>;
-  getPullRequests(): Promise<GitHubPullRequestEntity[]>;
+  fetchPullRequests(): Promise<GitHubPullRequestEntity[]>;
+  getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>>;
 }

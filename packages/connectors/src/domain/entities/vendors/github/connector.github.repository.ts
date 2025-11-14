@@ -1,5 +1,5 @@
-import { AItError, type GitHubRepositoryEntity } from "@ait/core";
-import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget } from "@ait/postgres";
+import { AItError, type GitHubRepositoryEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { getPostgresClient, githubRepositories, type OAuthTokenDataTarget, drizzleOrm } from "@ait/postgres";
 import { connectorGithubRepositoryMapper } from "../../../mappers/vendors/connector.github.mapper";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
 import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
@@ -92,9 +92,38 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
     return null;
   }
 
-  async getRepositories(): Promise<GitHubRepositoryEntity[]> {
+  async fetchRepositories(): Promise<GitHubRepositoryEntity[]> {
     console.log("Getting repositories from GitHub repository");
     return [];
+  }
+
+  async getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [repositories, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(githubRepositories)
+        .orderBy(drizzleOrm.desc(githubRepositories.pushedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(githubRepositories),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: repositories.map((repo) => connectorGithubRepositoryMapper.dataTargetToDomain(repo)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }
 

@@ -1,5 +1,5 @@
-import { AItError, type GitHubPullRequestEntity } from "@ait/core";
-import { getPostgresClient, githubPullRequests } from "@ait/postgres";
+import { AItError, type GitHubPullRequestEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { getPostgresClient, githubPullRequests, drizzleOrm } from "@ait/postgres";
 import { connectorGithubPullRequestMapper } from "../../../mappers/vendors/connector.github.pull-request.mapper";
 import { randomUUID } from "node:crypto";
 import type { IConnectorGitHubPullRequestRepository } from "../../../../types/domain/entities/vendors/connector.github.pull-request.types";
@@ -89,8 +89,37 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
     return null;
   }
 
-  async getPullRequests(): Promise<GitHubPullRequestEntity[]> {
+  async fetchPullRequests(): Promise<GitHubPullRequestEntity[]> {
     console.log("Getting pull requests from GitHub repository");
     return [];
+  }
+
+  async getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [pullRequests, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(githubPullRequests)
+        .orderBy(drizzleOrm.desc(githubPullRequests.prUpdatedAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(githubPullRequests),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: pullRequests.map((pr) => connectorGithubPullRequestMapper.dataTargetToDomain(pr)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

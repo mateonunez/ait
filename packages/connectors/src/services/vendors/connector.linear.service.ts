@@ -6,10 +6,18 @@ import {
   type LinearServiceEntityMap,
 } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type { LinearIssueEntity, LinearIssueExternal } from "@ait/core";
+import type { LinearIssueEntity, LinearIssueExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
-export class ConnectorLinearService extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap> {
+export interface IConnectorLinearService extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap> {
+  fetchIssues(): Promise<LinearIssueEntity[]>;
+  getIssuesPaginated(params: PaginationParams): Promise<PaginatedResponse<LinearIssueEntity>>;
+}
+
+export class ConnectorLinearService
+  extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap>
+  implements IConnectorLinearService
+{
   constructor() {
     super(getConnectorConfig("linear"));
 
@@ -23,7 +31,11 @@ export class ConnectorLinearService extends ConnectorServiceBase<ConnectorLinear
     return new ConnectorLinear(oauth);
   }
 
-  async getIssues(): Promise<LinearIssueEntity[]> {
+  async fetchIssues(): Promise<LinearIssueEntity[]> {
     return this.fetchEntities(LINEAR_ENTITY_TYPES_ENUM.ISSUE, true);
+  }
+
+  async getIssuesPaginated(params: PaginationParams): Promise<PaginatedResponse<LinearIssueEntity>> {
+    return this.connector.repository.issue.getIssuesPaginated(params);
   }
 }

@@ -43,35 +43,35 @@ export default function SpotifyPage() {
       try {
         switch (activeTab) {
           case "tracks": {
-            const response = await spotifyService.getTracks({ page, limit: pageSize });
+            const response = await spotifyService.fetchTracks({ page, limit: pageSize });
             setTracks(response.data);
             setTotalPages(response.pagination.totalPages);
             setTotalTracks(response.pagination.total);
             break;
           }
           case "artists": {
-            const response = await spotifyService.getArtists({ page, limit: pageSize });
+            const response = await spotifyService.fetchArtists({ page, limit: pageSize });
             setArtists(response.data);
             setTotalPages(response.pagination.totalPages);
             setTotalArtists(response.pagination.total);
             break;
           }
           case "playlists": {
-            const response = await spotifyService.getPlaylists({ page, limit: pageSize });
+            const response = await spotifyService.fetchPlaylists({ page, limit: pageSize });
             setPlaylists(response.data);
             setTotalPages(response.pagination.totalPages);
             setTotalPlaylists(response.pagination.total);
             break;
           }
           case "albums": {
-            const response = await spotifyService.getAlbums({ page, limit: pageSize });
+            const response = await spotifyService.fetchAlbums({ page, limit: pageSize });
             setAlbums(response.data);
             setTotalPages(response.pagination.totalPages);
             setTotalAlbums(response.pagination.total);
             break;
           }
           case "recently-played": {
-            const response = await spotifyService.getRecentlyPlayed({ page, limit: pageSize });
+            const response = await spotifyService.fetchRecentlyPlayed({ page, limit: pageSize });
             setRecentlyPlayed(response.data);
             setTotalPages(response.pagination.totalPages);
             setTotalRecentlyPlayed(response.pagination.total);

@@ -77,7 +77,7 @@ export interface SearchResponse<T> {
 }
 
 interface ExtendedSpotifyService extends ConnectorSpotifyService {
-  getCurrentlyPlaying(): Promise<
+  fetchCurrentlyPlaying(): Promise<
     | (SpotifyCurrentlyPlayingExternal & {
         item: SpotifyTrackExternal & { trackEntity: SpotifyTrackEntity };
       })
@@ -101,7 +101,7 @@ export function createSpotifyTools(spotifyService?: ExtendedSpotifyService) {
             };
           }
 
-          const currentlyPlaying = await spotifyService.getCurrentlyPlaying();
+          const currentlyPlaying = await spotifyService.fetchCurrentlyPlaying();
 
           if (!currentlyPlaying) {
             return {

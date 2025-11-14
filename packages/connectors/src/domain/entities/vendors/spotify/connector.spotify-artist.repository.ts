@@ -1,8 +1,8 @@
-import { AItError, type SpotifyArtistEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyArtistEntity } from "@ait/core";
 import { connectorSpotifyArtistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyArtistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyArtists, type SpotifyArtistDataTarget } from "@ait/postgres";
+import { getPostgresClient, spotifyArtists, type SpotifyArtistDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
 
 export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtistRepository {
@@ -69,8 +69,37 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     return null;
   }
 
-  async getArtists(): Promise<SpotifyArtistEntity[]> {
+  async fetchArtists(): Promise<SpotifyArtistEntity[]> {
     console.log("Getting artists from Spotify repository");
     return [];
+  }
+
+  async getArtistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyArtistEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [artists, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(spotifyArtists)
+        .orderBy(drizzleOrm.desc(spotifyArtists.createdAt))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyArtists),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: artists.map((artist) => connectorSpotifyArtistMapper.dataTargetToDomain(artist)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
   }
 }

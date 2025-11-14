@@ -15,7 +15,7 @@ export class SlackService {
     this.baseUrl = `${baseUrl}/api/slack`;
   }
 
-  async getMessages(params?: PaginationParams) {
+  async fetchMessages(params?: PaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append("page", params.page.toString());
     if (params?.limit) queryParams.append("limit", params.limit.toString());

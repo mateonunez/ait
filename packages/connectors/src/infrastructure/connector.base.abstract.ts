@@ -193,4 +193,11 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   set store(store: StoreType) {
     this._store = store;
   }
+
+  get repository(): RepositoryType {
+    return this._repository;
+  }
+  set repository(repository: RepositoryType) {
+    this._repository = repository;
+  }
 }

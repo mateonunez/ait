@@ -17,7 +17,7 @@ export default function XPage() {
   const fetchData = useCallback(async (page: number) => {
     setIsLoading(true);
     try {
-      const response = await xService.getTweets({ page, limit: pageSize });
+      const response = await xService.fetchTweets({ page, limit: pageSize });
       setTweets(response.data);
       setTotalPages(response.pagination.totalPages);
     } catch (error) {

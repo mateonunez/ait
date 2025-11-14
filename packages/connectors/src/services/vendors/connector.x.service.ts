@@ -2,10 +2,18 @@ import { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { connectorEntityConfigs, X_ENTITY_TYPES_ENUM, type XServiceEntityMap } from "./connector.vendors.config";
 import { getConnectorConfig } from "../connector.service.config";
-import type { XTweetEntity, XTweetExternal } from "@ait/core";
+import type { XTweetEntity, XTweetExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
-export class ConnectorXService extends ConnectorServiceBase<ConnectorX, XServiceEntityMap> {
+export interface IConnectorXService extends ConnectorServiceBase<ConnectorX, XServiceEntityMap> {
+  fetchTweets(): Promise<XTweetEntity[]>;
+  getTweetsPaginated(params: PaginationParams): Promise<PaginatedResponse<XTweetEntity>>;
+}
+
+export class ConnectorXService
+  extends ConnectorServiceBase<ConnectorX, XServiceEntityMap>
+  implements IConnectorXService
+{
   constructor() {
     super(getConnectorConfig("x"));
 
@@ -19,8 +27,12 @@ export class ConnectorXService extends ConnectorServiceBase<ConnectorX, XService
     return new ConnectorX(oauth);
   }
 
-  async getTweets(): Promise<XTweetEntity[]> {
+  async fetchTweets(): Promise<XTweetEntity[]> {
     await this.connector.connect();
     return this.fetchEntities(X_ENTITY_TYPES_ENUM.TWEET);
+  }
+
+  async getTweetsPaginated(params: PaginationParams): Promise<PaginatedResponse<XTweetEntity>> {
+    return this.connector.repository.tweet.getTweetsPaginated(params);
   }
 }
