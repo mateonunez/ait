@@ -9,9 +9,9 @@
     "build:watch": "tsc --watch",
     "clean": "rm -rf dist",
     "start": "node dist/src/gateway.server.js",
-    "prepare": "pnpm cert:generate && pnpm cert:trust",
     "cert:generate": "./scripts/generate-cert.sh",
     "cert:trust": "./scripts/trust-cert.sh",
+    "prepare:cert": "pnpm cert:generate && pnpm cert:trust",
     "lint": "biome format && biome lint",
     "lint:fix": "biome format --write && biome lint --write --unsafe"
   },
