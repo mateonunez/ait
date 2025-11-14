@@ -13,6 +13,10 @@ export class RerankingStage implements IPipelineStage<RerankingInput, RerankingO
     this.rerankService = new CollectionRerankService();
   }
 
+  async canExecute(input: RerankingInput): Promise<boolean> {
+    return input.shouldUseFastPath !== true;
+  }
+
   async execute(input: RerankingInput, context: PipelineContext): Promise<RerankingOutput> {
     const startTime = Date.now();
 

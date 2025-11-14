@@ -10,6 +10,7 @@ import {
   Wrench,
   CheckCircle2,
   Circle,
+  MessageSquarePlus,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Conversation, PromptInput, ModelSelector, Suggestions } from "./ai-elements";
@@ -30,18 +31,24 @@ interface AIChatDialogProps {
 type SidePanel = "settings" | null;
 
 export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
-  const { messages, isLoading, currentMetadata, tokenUsage, sendMessage, selectedModel, setSelectedModel } = useAItChat(
-    {
-      enableMetadata: true,
-    },
-  );
+  const {
+    messages,
+    isLoading,
+    currentMetadata,
+    tokenUsage,
+    sendMessage,
+    clearMessages,
+    selectedModel,
+    setSelectedModel,
+  } = useAItChat({
+    enableMetadata: true,
+  });
 
   const [sidePanel, setSidePanel] = useState<SidePanel>(null);
   const [showMetrics, setShowMetrics] = useState(false);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [_modelsLoading, setModelsLoading] = useState(true);
 
-  // Fetch available models on mount
   useEffect(() => {
     setModelsLoading(true);
     listModels()
@@ -55,18 +62,15 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
       });
   }, []);
 
-  // Get current model's context window
   const currentModelInfo = useMemo(
     () => availableModels.find((m) => m.id === selectedModel),
     [availableModels, selectedModel],
   );
 
-  // Use 128K as default (matches GPT-OSS) until models load
   const maxContextWindow = currentModelInfo?.contextWindow || 128000;
 
   const streamingMessageId = isLoading ? messages[messages.length - 1]?.id : undefined;
 
-  // Get metadata from the latest assistant message for display in settings
   const latestAssistantMessage = useMemo(() => {
     for (let i = messages.length - 1; i >= 0; i--) {
       if (messages[i].role === "assistant") {
@@ -114,6 +118,23 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
 
           {/* Header controls */}
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLoading && messages.length > 0) {
+                  clearMessages();
+                }
+              }}
+              disabled={isLoading || messages.length === 0}
+              className={cn(
+                "p-2 rounded-lg hover:bg-muted transition-colors",
+                (isLoading || messages.length === 0) && "opacity-50 cursor-not-allowed",
+              )}
+              title="New Chat"
+            >
+              <MessageSquarePlus className="h-4 w-4" />
+            </button>
+
             <button
               type="button"
               onClick={() => setSidePanel(sidePanel === "settings" ? null : "settings")}

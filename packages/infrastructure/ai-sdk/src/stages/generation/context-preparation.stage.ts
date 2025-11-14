@@ -4,6 +4,7 @@ import type { Document, BaseMetadata } from "../../types/documents";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../../services/prompts/system.prompt";
 import { PipelineBuilder } from "../../services/rag/pipeline/pipeline.builder";
 import { QueryAnalysisStage } from "../rag/query-analysis.stage";
+import { SimpleRetrievalStage } from "../rag/simple-retrieval.stage";
 import { CollectionRoutingStage } from "../rag/collection-routing.stage";
 import { RetrievalStage } from "../rag/retrieval.stage";
 import { FusionStage } from "../rag/fusion.stage";
@@ -41,6 +42,7 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
 
       const ragPipeline = PipelineBuilder.create()
         .addStage(new QueryAnalysisStage())
+        .addStage(new SimpleRetrievalStage(multiCollectionProvider, 100))
         .addStage(new CollectionRoutingStage())
         .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
         .addStage(new FusionStage())

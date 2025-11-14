@@ -11,6 +11,10 @@ export class CollectionRoutingStage implements IPipelineStage<CollectionRoutingI
     this.routerService = new CollectionRouterService(config);
   }
 
+  async canExecute(input: CollectionRoutingInput): Promise<boolean> {
+    return input.shouldUseFastPath !== true;
+  }
+
   async execute(input: CollectionRoutingInput, context: PipelineContext): Promise<CollectionRoutingOutput> {
     const routingResult = await this.routerService.routeCollections(input.query, input.intent, context.traceContext);
 
