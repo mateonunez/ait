@@ -149,5 +149,70 @@ describe("ConnectorSlackMessageRepository", () => {
         assert.equal(saved.length, 0, "No messages should be saved for empty input");
       });
     });
+
+    describe("getMessagesPaginated", () => {
+      it("should return paginated messages", async () => {
+        const now = new Date();
+        const messages: SlackMessageEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `msg-${i + 1}`,
+          channelId: `channel-${(i % 3) + 1}`,
+          channelName: `channel-${(i % 3) + 1}`,
+          text: `Message ${i + 1}`,
+          userId: `user-${(i % 2) + 1}`,
+          userName: `User ${(i % 2) + 1}`,
+          threadTs: null,
+          replyCount: i,
+          permalink: `https://testworkspace.slack.com/archives/channel-${(i % 3) + 1}/p${1234567890 + i}`,
+          ts: `${1234567890 + i}.123456`,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "message",
+        })) as SlackMessageEntity[];
+
+        await repository.saveMessages(messages);
+
+        const result = await repository.getMessagesPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const messages: SlackMessageEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `msg-${i + 1}`,
+          channelId: "channel-1",
+          channelName: "general",
+          text: `Message ${i + 1}`,
+          userId: "user-1",
+          userName: "Test User",
+          threadTs: null,
+          replyCount: 0,
+          permalink: `https://testworkspace.slack.com/archives/channel-1/p${1234567890 + i}`,
+          ts: `${1234567890 + i}.123456`,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "message",
+        })) as SlackMessageEntity[];
+
+        await repository.saveMessages(messages);
+
+        const result = await repository.getMessagesPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no messages exist", async () => {
+        const result = await repository.getMessagesPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
+      });
+    });
   });
 });

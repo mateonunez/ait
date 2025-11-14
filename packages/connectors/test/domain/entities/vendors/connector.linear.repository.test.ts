@@ -1,8 +1,8 @@
 import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { getPostgresClient, closePostgresConnection, drizzleOrm, linearIssues } from "@ait/postgres";
-import type { LinearIssueEntity } from "../../../../src/types/domain/entities/vendors/connector.linear.types";
 import { ConnectorLinearIssueRepository } from "../../../../src/domain/entities/vendors/linear/connector.linear-issue.repository";
+import type { LinearIssueEntity } from "@ait/core";
 
 describe("ConnectorLinearRepository", () => {
   const repository = new ConnectorLinearIssueRepository();
@@ -108,6 +108,77 @@ describe("ConnectorLinearRepository", () => {
         await repository.saveIssues([]);
         const saved = await db.select().from(linearIssues).execute();
         assert.equal(saved.length, 0, "No issues should be saved for empty input");
+      });
+    });
+
+    describe("getIssuesPaginated", () => {
+      it("should return paginated issues", async () => {
+        const now = new Date();
+        const issues: LinearIssueEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `issue-${i + 1}`,
+          title: `Issue ${i + 1}`,
+          description: `Description ${i + 1}`,
+          state: i % 3 === 0 ? "Todo" : i % 3 === 1 ? "In Progress" : "Done",
+          priority: (i % 4) + 1,
+          assigneeId: i % 2 === 0 ? `assignee-${(i % 2) + 1}` : null,
+          assigneeName: i % 2 === 0 ? `Assignee ${(i % 2) + 1}` : null,
+          teamId: `team-${(i % 3) + 1}`,
+          teamName: `Team ${(i % 3) + 1}`,
+          projectId: i % 2 === 0 ? `project-${(i % 2) + 1}` : null,
+          projectName: i % 2 === 0 ? `Project ${(i % 2) + 1}` : null,
+          url: `https://linear.app/issue/issue-${i + 1}`,
+          labels: [`label-${(i % 2) + 1}`],
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "issue",
+        }));
+
+        await repository.saveIssues(issues);
+
+        const result = await repository.getIssuesPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const issues: LinearIssueEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `issue-${i + 1}`,
+          title: `Issue ${i + 1}`,
+          description: `Description ${i + 1}`,
+          state: "Todo",
+          priority: 1,
+          assigneeId: null,
+          assigneeName: null,
+          teamId: "team-1",
+          teamName: "Team One",
+          projectId: null,
+          projectName: null,
+          url: `https://linear.app/issue/issue-${i + 1}`,
+          labels: [],
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          __type: "issue",
+        }));
+
+        await repository.saveIssues(issues);
+
+        const result = await repository.getIssuesPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no issues exist", async () => {
+        const result = await repository.getIssuesPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
       });
     });
   });

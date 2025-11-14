@@ -148,5 +148,74 @@ describe("ConnectorNotionPageRepository", () => {
         assert.equal(saved.length, 0, "No pages should be saved for empty input");
       });
     });
+
+    describe("getPagesPaginated", () => {
+      it("should return paginated pages", async () => {
+        const now = new Date();
+        const pages: NotionPageEntity[] = Array.from({ length: 15 }, (_, i) => ({
+          id: `page-${i + 1}`,
+          title: `Page ${i + 1}`,
+          url: `https://notion.so/page-${i + 1}`,
+          parentType: "workspace",
+          parentId: null,
+          archived: false,
+          icon: null,
+          cover: null,
+          content: `Content ${i + 1}`,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          createdBy: "user-1",
+          lastEditedBy: "user-2",
+          properties: {},
+          __type: "page",
+        })) as NotionPageEntity[];
+
+        await repository.savePages(pages);
+
+        const result = await repository.getPagesPaginated({ page: 1, limit: 5 });
+        assert.equal(result.data.length, 5);
+        assert.equal(result.pagination.page, 1);
+        assert.equal(result.pagination.limit, 5);
+        assert.equal(result.pagination.total, 15);
+        assert.equal(result.pagination.totalPages, 3);
+      });
+
+      it("should return correct page for second page", async () => {
+        const now = new Date();
+        const pages: NotionPageEntity[] = Array.from({ length: 10 }, (_, i) => ({
+          id: `page-${i + 1}`,
+          title: `Page ${i + 1}`,
+          url: `https://notion.so/page-${i + 1}`,
+          parentType: "workspace",
+          parentId: null,
+          archived: false,
+          icon: null,
+          cover: null,
+          content: `Content ${i + 1}`,
+          createdAt: new Date(now.getTime() + i * 1000),
+          updatedAt: new Date(now.getTime() + i * 1000),
+          createdBy: "user-1",
+          lastEditedBy: "user-2",
+          properties: {},
+          __type: "page",
+        })) as NotionPageEntity[];
+
+        await repository.savePages(pages);
+
+        const result = await repository.getPagesPaginated({ page: 2, limit: 3 });
+        assert.equal(result.data.length, 3);
+        assert.equal(result.pagination.page, 2);
+        assert.equal(result.pagination.limit, 3);
+        assert.equal(result.pagination.total, 10);
+        assert.equal(result.pagination.totalPages, 4);
+      });
+
+      it("should return empty array when no pages exist", async () => {
+        const result = await repository.getPagesPaginated({ page: 1, limit: 10 });
+        assert.equal(result.data.length, 0);
+        assert.equal(result.pagination.total, 0);
+        assert.equal(result.pagination.totalPages, 0);
+      });
+    });
   });
 });
