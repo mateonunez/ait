@@ -78,26 +78,26 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
       )}
       onClick={handleClick}
     >
-      <div className="p-5 space-y-4">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         {/* Header with Author Avatar */}
-        <div className="flex items-start gap-3">
-          <Avatar className="h-10 w-10 ring-2 ring-border/50 group-hover:ring-blue-500/20 transition-all flex-shrink-0">
+        <div className="flex items-start gap-2 sm:gap-3">
+          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-border/50 group-hover:ring-blue-500/20 transition-all flex-shrink-0">
             <AvatarImage
               src={`https://unavatar.io/twitter/${tweet.authorUsername}`}
               alt={tweet.authorName || tweet.authorUsername || "User"}
             />
             <AvatarFallback className="bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <User className="h-5 w-5" />
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
             </AvatarFallback>
           </Avatar>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                   {tweet.authorName || tweet.authorUsername || "Unknown"}
                 </h3>
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                   {tweet.authorUsername && (
                     <span className="text-xs text-muted-foreground">@{tweet.authorUsername}</span>
                   )}
@@ -122,7 +122,9 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
         </div>
 
         {/* Tweet Content */}
-        <p className="text-sm text-foreground/90 leading-relaxed line-clamp-4 transition-colors">{tweet.text}</p>
+        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed line-clamp-4 transition-colors">
+          {tweet.text}
+        </p>
 
         {/* Media Attachments */}
         {hasMedia && (
@@ -174,9 +176,9 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
 
         {/* Poll Display */}
         {hasPoll && poll && (
-          <div className="space-y-2 p-3 rounded-lg bg-muted/50 border border-border/50">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-              <BarChart3 className="h-3.5 w-3.5" />
+          <div className="space-y-2 p-2 sm:p-3 rounded-lg bg-muted/50 border border-border/50">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-1.5 sm:mb-2">
+              <BarChart3 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="font-medium">
                 {totalVotes.toLocaleString()} vote{totalVotes !== 1 ? "s" : ""}
               </span>
@@ -202,36 +204,36 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
 
         {/* Location Badge */}
         {hasLocation && (location.full_name || location.name) && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-1 sm:gap-1.5 text-xs text-muted-foreground">
+            <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span>{location.full_name || location.name}</span>
           </div>
         )}
 
         {/* Engagement Stats */}
         {totalEngagement > 0 && (
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
             {tweet.likeCount != null && tweet.likeCount > 0 && (
-              <div className="flex items-center gap-1.5 text-muted-foreground hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
-                <Heart className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
+                <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.likeCount.toLocaleString()}</span>
               </div>
             )}
             {tweet.retweetCount != null && tweet.retweetCount > 0 && (
-              <div className="flex items-center gap-1.5 text-muted-foreground hover:text-green-600 dark:hover:text-green-400 transition-colors">
-                <Repeat2 className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-green-600 dark:hover:text-green-400 transition-colors">
+                <Repeat2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.retweetCount.toLocaleString()}</span>
               </div>
             )}
             {tweet.replyCount != null && tweet.replyCount > 0 && (
-              <div className="flex items-center gap-1.5 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                <MessageCircle className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.replyCount.toLocaleString()}</span>
               </div>
             )}
             {tweet.quoteCount != null && tweet.quoteCount > 0 && (
-              <div className="flex items-center gap-1.5 text-muted-foreground transition-colors">
-                <Quote className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground transition-colors">
+                <Quote className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.quoteCount.toLocaleString()}</span>
               </div>
             )}
@@ -239,8 +241,8 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {tweet.lang && (
               <Badge variant="outline" className="text-xs font-normal uppercase">
                 {tweet.lang}
@@ -256,7 +258,9 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
             )}
           </div>
           {tweet.createdAt && (
-            <span className="text-xs text-muted-foreground">{formatRelativeTime(tweet.createdAt)}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              {formatRelativeTime(tweet.createdAt)}
+            </span>
           )}
         </div>
       </div>

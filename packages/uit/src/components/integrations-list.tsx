@@ -50,7 +50,7 @@ export function IntegrationsList() {
         {enabledIntegrations.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Available Integrations</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
               {enabledIntegrations.map((integration) => {
                 const IconComponent = INTEGRATION_ICONS[integration.id] || Code2;
 
@@ -60,22 +60,22 @@ export function IntegrationsList() {
                     type="button"
                     onClick={() => handleIntegrationClick(integration.route)}
                     className={cn(
-                      "group relative flex flex-col items-center justify-center gap-2 p-3 sm:p-4 rounded-xl",
-                      "border border-border/50 bg-card/50 hover:bg-card hover:border-border",
-                      "transition-all duration-200 hover:scale-105 hover:shadow-lg",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
+                      "aspect-square",
+                      "border border-transparent hover:border-white/20",
+                      "transition-all duration-200 hover:scale-105 hover:shadow-xl",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
                     )}
+                    style={{
+                      backgroundColor: integration.color,
+                    }}
                   >
-                    <div
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
-                      style={{ backgroundColor: integration.color }}
-                    >
-                      <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 bg-white/10 backdrop-blur-sm">
+                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <div className="text-center space-y-0.5">
-                      <p className="text-sm font-semibold leading-tight">{integration.title}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{integration.description}</p>
-                    </div>
+                    <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center">
+                      {integration.title}
+                    </p>
                   </button>
                 );
               })}
@@ -87,7 +87,7 @@ export function IntegrationsList() {
         {disabledIntegrations.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-muted-foreground">Coming Soon</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
               {disabledIntegrations.map((integration) => {
                 const IconComponent = INTEGRATION_ICONS[integration.id] || Code2;
 
@@ -95,25 +95,28 @@ export function IntegrationsList() {
                   <div
                     key={integration.id}
                     className={cn(
-                      "group relative flex flex-col items-center justify-center gap-2 p-3 sm:p-4 rounded-xl",
-                      "border border-border/30 bg-muted/30 opacity-60",
+                      "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
+                      "aspect-square",
+                      "border border-transparent opacity-60",
                       "cursor-not-allowed",
                     )}
+                    style={{
+                      backgroundColor: integration.color,
+                    }}
                   >
-                    <div
-                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: integration.color }}
-                    >
-                      <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-white/10 backdrop-blur-sm">
+                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
-                    <div className="text-center space-y-0.5">
-                      <div className="flex items-center justify-center gap-2">
-                        <p className="text-sm font-semibold leading-tight">{integration.title}</p>
-                        <Badge variant="secondary" className="text-xs">
-                          Soon
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground line-clamp-2">{integration.description}</p>
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center">
+                        {integration.title}
+                      </p>
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] sm:text-xs px-1.5 py-0.5 bg-white/20 text-white border-white/30"
+                      >
+                        Soon
+                      </Badge>
                     </div>
                   </div>
                 );

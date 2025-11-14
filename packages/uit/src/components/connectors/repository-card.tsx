@@ -35,22 +35,27 @@ export function RepositoryCard({ repository, onClick, className }: RepositoryCar
       className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border ${className || ""}`}
       onClick={handleClick}
     >
-      <div className="p-5 space-y-4">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         {/* Header with Avatar and Title */}
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-2 sm:gap-3">
           {ownerAvatar && (
-            <Avatar className="h-10 w-10 ring-2 ring-border/50 group-hover:ring-primary/20 transition-all">
+            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-border/50 group-hover:ring-primary/20 transition-all flex-shrink-0">
               <AvatarImage src={ownerAvatar} alt={ownerLogin || "Repository owner"} />
               <AvatarFallback>
-                <User className="h-5 w-5" />
+                <User className="h-4 w-4 sm:h-5 sm:w-5" />
               </AvatarFallback>
             </Avatar>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-base leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {repository.name}
-              </h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {repository.name}
+                </h3>
+                {repository.fullName && (
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">{repository.fullName}</p>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={handleExternalLinkClick}
@@ -60,38 +65,37 @@ export function RepositoryCard({ repository, onClick, className }: RepositoryCar
                 <ExternalLink className="h-4 w-4" />
               </button>
             </div>
-            {repository.fullName && (
-              <p className="text-xs text-muted-foreground mt-1 truncate">{repository.fullName}</p>
-            )}
           </div>
         </div>
 
         {/* Description */}
         {repository.description && (
-          <p className="text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">{repository.description}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">
+            {repository.description}
+          </p>
         )}
 
         {/* Stats Row */}
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-            <Star className="h-3.5 w-3.5 fill-yellow-400/20 text-yellow-600 dark:text-yellow-400" />
+        <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
+          <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <Star className="h-3 w-3 sm:h-3.5 sm:w-3.5 fill-yellow-400/20 text-yellow-600 dark:text-yellow-400" />
             <span className="font-medium tabular-nums">{repository.stars.toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-            <GitFork className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <GitFork className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-blue-600 dark:text-blue-400" />
             <span className="font-medium tabular-nums">{repository.forks.toLocaleString()}</span>
           </div>
           {repository.language && (
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Code2 className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+              <Code2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="text-xs font-medium">{repository.language}</span>
             </div>
           )}
         </div>
 
         {/* Footer with metadata */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/40">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {repository.private && (
               <Badge variant="outline" className="text-xs font-normal">
                 Private
@@ -109,7 +113,9 @@ export function RepositoryCard({ repository, onClick, className }: RepositoryCar
             )}
           </div>
           {repository.pushedAt && (
-            <span className="text-xs text-muted-foreground">Updated {formatRelativeTime(repository.pushedAt)}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Updated {formatRelativeTime(repository.pushedAt)}
+            </span>
           )}
         </div>
       </div>

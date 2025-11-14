@@ -82,7 +82,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, className }: Mod
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80 max-w-[90vw] sm:max-w-none">
         <DropdownMenuLabel>Select AI Model</DropdownMenuLabel>
         <DropdownMenuSeparator />
 

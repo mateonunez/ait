@@ -1,4 +1,4 @@
-import { GitPullRequest, GitMerge, XCircle, ExternalLink, User, FileText } from "lucide-react";
+import { ExternalLink, User } from "lucide-react";
 import { Card } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
@@ -28,16 +28,6 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
     }
   };
 
-  const getStateIcon = () => {
-    if (pullRequest.merged) {
-      return <GitMerge className="h-5 w-5" />;
-    }
-    if (pullRequest.state === "closed") {
-      return <XCircle className="h-5 w-5" />;
-    }
-    return <GitPullRequest className="h-5 w-5" />;
-  };
-
   const getStateColor = () => {
     if (pullRequest.merged) {
       return "text-purple-600 dark:text-purple-400";
@@ -63,15 +53,33 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
       className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border ${className || ""}`}
       onClick={handleClick}
     >
-      <div className="p-5 space-y-4">
-        {/* Header with Status Icon and User Avatar */}
-        <div className="flex items-start gap-3">
-          <div className={cn("flex-shrink-0 pt-0.5", getStateColor())}>{getStateIcon()}</div>
-          <div className="flex-1 min-w-0 space-y-2">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+        {/* Header with Avatar and Title */}
+        <div className="flex items-start gap-2 sm:gap-3">
+          {userAvatar && (
+            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-border/50 group-hover:ring-blue-500/20 transition-all flex-shrink-0">
+              <AvatarImage src={userAvatar} alt={userLogin || "User"} />
+              <AvatarFallback>
+                <User className="h-4 w-4 sm:h-5 sm:w-5" />
+              </AvatarFallback>
+            </Avatar>
+          )}
+          <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {pullRequest.title}
-              </h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                  {pullRequest.title}
+                </h3>
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
+                  <span className="text-xs text-muted-foreground">#{pullRequest.number}</span>
+                  {pullRequest.repositoryFullName && (
+                    <>
+                      <span className="text-xs text-muted-foreground">•</span>
+                      <span className="text-xs text-muted-foreground truncate">{pullRequest.repositoryFullName}</span>
+                    </>
+                  )}
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={handleExternalLinkClick}
@@ -81,37 +89,17 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
                 <ExternalLink className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">#{pullRequest.number}</span>
-              {pullRequest.repositoryFullName && (
-                <>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground truncate">{pullRequest.repositoryFullName}</span>
-                </>
-              )}
-            </div>
           </div>
-          {userAvatar && (
-            <Avatar className="h-9 w-9 ring-2 ring-border/50 group-hover:ring-primary/20 transition-all">
-              <AvatarImage src={userAvatar} alt={userLogin || "User"} />
-              <AvatarFallback>
-                <User className="h-4 w-4" />
-              </AvatarFallback>
-            </Avatar>
-          )}
         </div>
 
         {/* Body preview */}
         {pullRequest.body && (
-          <div className="flex gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">{pullRequest.body}</p>
-          </div>
+          <p className="text-xs sm:text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">{pullRequest.body}</p>
         )}
 
         {/* Changes Stats */}
         {(pullRequest.additions !== null || pullRequest.deletions !== null || pullRequest.commits !== null) && (
-          <div className="flex items-center gap-3 text-sm font-mono flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono flex-wrap">
             {pullRequest.commits !== null && pullRequest.commits > 0 && (
               <span className="text-muted-foreground font-medium">
                 {pullRequest.commits} {pullRequest.commits === 1 ? "commit" : "commits"}
@@ -134,7 +122,7 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
         {/* Comments & Review Stats */}
         {((pullRequest.comments !== null && pullRequest.comments > 0) ||
           (pullRequest.reviewComments !== null && pullRequest.reviewComments > 0)) && (
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-3 text-xs text-muted-foreground flex-wrap">
             {pullRequest.comments !== null && pullRequest.comments > 0 && (
               <span>
                 💬 {pullRequest.comments} comment{pullRequest.comments === 1 ? "" : "s"}
@@ -149,8 +137,8 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <Badge variant="outline" className={cn("text-xs font-normal", getStateColor())}>
               {getStateText()}
             </Badge>
@@ -173,9 +161,13 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
             )}
           </div>
           {pullRequest.mergedAt ? (
-            <span className="text-xs text-muted-foreground">Merged {formatRelativeTime(pullRequest.mergedAt)}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Merged {formatRelativeTime(pullRequest.mergedAt)}
+            </span>
           ) : pullRequest.prUpdatedAt ? (
-            <span className="text-xs text-muted-foreground">Updated {formatRelativeTime(pullRequest.prUpdatedAt)}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Updated {formatRelativeTime(pullRequest.prUpdatedAt)}
+            </span>
           ) : null}
         </div>
       </div>

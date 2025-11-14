@@ -60,13 +60,13 @@ export function PromptInput({
           disabled && "opacity-50 cursor-not-allowed",
         )}
       >
-        <div className="flex items-end gap-2 p-3">
+        <div className="flex items-end gap-1.5 sm:gap-2 p-2 sm:p-3">
           {/* Future: Attachment button */}
           <button
             type="button"
             disabled={disabled}
             className={cn(
-              "p-2 rounded-lg hover:bg-muted transition-colors",
+              "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
               "text-muted-foreground hover:text-foreground",
               "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
@@ -98,7 +98,7 @@ export function PromptInput({
             type="button"
             disabled={disabled}
             className={cn(
-              "p-2 rounded-lg hover:bg-muted transition-colors",
+              "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
               "text-muted-foreground hover:text-foreground",
               "disabled:opacity-50 disabled:cursor-not-allowed",
             )}
@@ -113,7 +113,7 @@ export function PromptInput({
             onClick={handleSubmit}
             disabled={disabled || !value.trim()}
             className={cn(
-              "p-2 rounded-lg transition-all duration-200",
+              "p-1.5 sm:p-2 rounded-lg transition-all duration-200 flex-shrink-0",
               "bg-primary text-primary-foreground",
               "hover:bg-primary/90 active:scale-95",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary",
@@ -138,9 +138,14 @@ export function PromptInput({
       </div>
 
       {/* Hint text */}
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        Press <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-xs">Enter</kbd> to send,{" "}
-        <kbd className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-xs">Shift + Enter</kbd> for new line
+      <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-1.5 sm:mt-2">
+        Press{" "}
+        <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">Enter</kbd>{" "}
+        to send,{" "}
+        <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">
+          Shift + Enter
+        </kbd>{" "}
+        for new line
       </p>
     </div>
   );

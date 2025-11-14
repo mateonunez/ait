@@ -37,8 +37,8 @@ export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
             <img src={albumImage} alt={album.name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="h-14 w-14 rounded-full bg-orange-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-orange-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
               </div>
             </div>
           </div>
@@ -49,43 +49,45 @@ export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
         )}
 
         {/* Content */}
-        <div className="p-4 space-y-3 flex-1 flex flex-col">
-          <div className="flex-1 space-y-2">
-            <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 flex-1 flex flex-col">
+          <div className="flex-1 space-y-1.5 sm:space-y-2">
+            <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
               {album.name}
             </h3>
-            <p className="text-sm text-muted-foreground line-clamp-1">{artistsList}</p>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{artistsList}</p>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <Music className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+              <Music className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="font-medium tabular-nums">
                 {album.tracks.length} {album.tracks.length === 1 ? "track" : "tracks"}
               </span>
             </div>
             {album.releaseDate && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="font-medium">{album.releaseDate.slice(0, 4)}</span>
               </div>
             )}
             {album.popularity !== null && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <TrendingUp className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 <span className="font-medium tabular-nums">{album.popularity}%</span>
               </div>
             )}
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/40">
+          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
             <Badge variant="outline" className="text-xs font-normal capitalize">
               {album.albumType}
             </Badge>
             {album.createdAt && (
-              <span className="text-xs text-muted-foreground">Added {formatRelativeTime(album.createdAt)}</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                Added {formatRelativeTime(album.createdAt)}
+              </span>
             )}
           </div>
         </div>

@@ -1,13 +1,10 @@
-import { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { AIChatButton } from "@/components/ai-chat-button";
 import { HomeSection } from "@/components/home-section";
 import { IntegrationsList } from "@/components/integrations-list";
-import { useIntegrationsContext } from "@/contexts/integrations.context";
-import { contentAlgorithmService } from "@/services/content-algorithm.service";
-import type { IntegrationEntity, HomeSection as HomeSectionType } from "@/types/integrations.types";
-import { getEntityMetadata } from "@ait/core";
+import { useHomepageData } from "@/hooks/useHomepageData";
+import type { HomeSection as HomeSectionType } from "@/types/integrations.types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const animationVariants = {
@@ -21,7 +18,7 @@ const HOME_SECTIONS: HomeSectionType[] = [
   {
     id: "recent",
     title: "Recent Activity",
-    entityTypes: ["tweet", "issue", "message"],
+    entityTypes: ["tweet", "issue", "message", "recently_played", "pull_request", "page", "repository"],
   },
   {
     id: "music",
@@ -33,64 +30,32 @@ const HOME_SECTIONS: HomeSectionType[] = [
     title: "Code & Projects",
     entityTypes: ["repository", "pull_request"],
   },
+  {
+    id: "tweets",
+    title: "From Twitter",
+    entityTypes: ["tweet"],
+  },
+  {
+    id: "workspace",
+    title: "Your Workspace",
+    entityTypes: ["page"],
+  },
+  {
+    id: "team",
+    title: "Team Updates",
+    entityTypes: ["message"],
+  },
+  {
+    id: "tasks",
+    title: "Tasks & Issues",
+    entityTypes: ["issue"],
+  },
 ];
 
 export default function HomePage() {
-  const { fetchEntityData } = useIntegrationsContext();
-  const [sectionsData, setSectionsData] = useState<Map<string, IntegrationEntity[]>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadHomepageData = async () => {
-      setIsLoading(true);
-      const newSectionsData = new Map<string, IntegrationEntity[]>();
-
-      try {
-        // Fetch data for each section
-        for (const section of HOME_SECTIONS) {
-          const sectionItems: IntegrationEntity[] = [];
-
-          for (const entityType of section.entityTypes) {
-            try {
-              const metadata = getEntityMetadata(entityType);
-              const response = await fetchEntityData(metadata.vendor, entityType, {
-                page: 1,
-                limit: 6, // Fetch 6 items per entity type for homepage
-              });
-
-              // Use algorithm to select 3-4 items from each entity type
-              const selected = contentAlgorithmService.selectItems(response.data, 3);
-              sectionItems.push(...selected);
-            } catch (error) {
-              console.error(`Failed to fetch ${entityType}:`, error);
-              // Continue with other entity types even if one fails
-            }
-          }
-
-          // Shuffle items within section and limit to ~6-8 items per section for better carousel experience
-          const shuffled = contentAlgorithmService.shuffle(sectionItems);
-          const limited = shuffled.slice(0, 8);
-          newSectionsData.set(section.id, limited);
-        }
-
-        setSectionsData(newSectionsData);
-      } catch (error) {
-        console.error("Failed to load homepage data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadHomepageData();
-  }, [fetchEntityData]);
-
-  const totalItems = useMemo(() => {
-    let count = 0;
-    for (const items of sectionsData.values()) {
-      count += items.length;
-    }
-    return count;
-  }, [sectionsData]);
+  const { sectionsData, isLoading, totalItems } = useHomepageData({
+    sections: HOME_SECTIONS,
+  });
 
   return (
     <div className="min-h-dvh flex flex-col bg-background">

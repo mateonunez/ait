@@ -36,8 +36,8 @@ export function ArtistCard({ artist, onClick, className }: ArtistCardProps) {
             <img src={artistImage} alt={artist.name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="h-14 w-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                <Mic2 className="h-6 w-6 text-white" />
+              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+                <Mic2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </div>
             </div>
           </div>
@@ -48,22 +48,22 @@ export function ArtistCard({ artist, onClick, className }: ArtistCardProps) {
         )}
 
         {/* Content */}
-        <div className="p-4 space-y-3 flex-1 flex flex-col">
-          <div className="flex-1 space-y-2">
-            <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 flex-1 flex flex-col">
+          <div className="flex-1 space-y-1.5 sm:space-y-2">
+            <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
               {artist.name}
             </h3>
             {artist.popularity !== null && (
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <TrendingUp className="h-3.5 w-3.5" />
-                <span className="text-sm font-medium tabular-nums">{artist.popularity}% popular</span>
+              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
+                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <span className="text-xs sm:text-sm font-medium tabular-nums">{artist.popularity}% popular</span>
               </div>
             )}
           </div>
 
           {/* Genres */}
           {artist.genres && artist.genres.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1 sm:gap-1.5">
               {artist.genres.slice(0, 2).map((genre, index) => (
                 <Badge key={`${genre}-${index}=${genre}`} variant="secondary" className="text-xs font-normal">
                   {genre.split(":")[1]}
@@ -78,7 +78,7 @@ export function ArtistCard({ artist, onClick, className }: ArtistCardProps) {
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-3 border-t border-border/40">
+          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
             <Badge
               variant="outline"
               className="text-xs font-normal text-green-600 dark:text-green-400 border-green-600/20"
@@ -86,7 +86,9 @@ export function ArtistCard({ artist, onClick, className }: ArtistCardProps) {
               Artist
             </Badge>
             {artist.createdAt && (
-              <span className="text-xs text-muted-foreground">Added {formatRelativeTime(artist.createdAt)}</span>
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                Added {formatRelativeTime(artist.createdAt)}
+              </span>
             )}
           </div>
         </div>

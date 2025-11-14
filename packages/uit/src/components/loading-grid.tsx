@@ -17,8 +17,8 @@ export function LoadingGrid({ count = 12, className }: LoadingGridProps) {
 
 function SkeletonCard() {
   return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
-      <div className="space-y-4">
+    <div className="rounded-xl border bg-card p-3 sm:p-4 md:p-6 shadow-sm">
+      <div className="space-y-3 sm:space-y-4">
         <div className="flex items-start justify-between">
           <div className="h-6 w-3/4 animate-pulse rounded bg-muted" />
           <div className="h-6 w-6 animate-pulse rounded bg-muted" />
