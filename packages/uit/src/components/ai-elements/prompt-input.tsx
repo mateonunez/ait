@@ -8,6 +8,7 @@ interface PromptInputProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  variant?: "default" | "floating";
 }
 
 export function PromptInput({
@@ -15,6 +16,7 @@ export function PromptInput({
   disabled = false,
   placeholder = "Ask AIt anything...",
   className,
+  variant = "default",
 }: PromptInputProps) {
   const [value, setValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -54,26 +56,32 @@ export function PromptInput({
     <div className={cn("w-full", className)}>
       <div
         className={cn(
-          "relative rounded-2xl border-2 transition-all duration-200",
-          "bg-background shadow-lg",
-          isFocused ? "border-primary ring-4 ring-primary/10" : "border-border",
+          "relative rounded-2xl transition-all duration-200",
+          variant === "floating"
+            ? "bg-transparent border-0 shadow-none"
+            : cn(
+                "border-2 bg-background shadow-lg",
+                isFocused ? "border-primary ring-4 ring-primary/10" : "border-border",
+              ),
           disabled && "opacity-50 cursor-not-allowed",
         )}
       >
-        <div className="flex items-end gap-1.5 sm:gap-2 p-2 sm:p-3">
-          {/* Future: Attachment button */}
-          <button
-            type="button"
-            disabled={disabled}
-            className={cn(
-              "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
-              "text-muted-foreground hover:text-foreground",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-            )}
-            title="Attach file (coming soon)"
-          >
-            <Paperclip className="h-4 w-4" />
-          </button>
+        <div className={cn("flex items-end gap-1.5 sm:gap-2", variant === "floating" ? "p-3 sm:p-4" : "p-2 sm:p-3")}>
+          {/* Future: Attachment button - Hidden in floating variant */}
+          {variant !== "floating" && (
+            <button
+              type="button"
+              disabled={disabled}
+              className={cn(
+                "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
+                "text-muted-foreground hover:text-foreground",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+              )}
+              title="Attach file (coming soon)"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+          )}
 
           {/* Textarea */}
           <textarea
@@ -87,41 +95,46 @@ export function PromptInput({
             placeholder={placeholder}
             rows={1}
             className={cn(
-              "flex-1 resize-none bg-transparent text-sm",
+              "resize-none bg-transparent text-sm",
+              variant === "floating" ? "w-full" : "flex-1",
               "focus:outline-none placeholder:text-muted-foreground",
               "disabled:cursor-not-allowed min-h-[24px] max-h-[200px]",
             )}
           />
 
-          {/* Future: Voice input button */}
-          <button
-            type="button"
-            disabled={disabled}
-            className={cn(
-              "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
-              "text-muted-foreground hover:text-foreground",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-            )}
-            title="Voice input (coming soon)"
-          >
-            <Mic className="h-4 w-4" />
-          </button>
+          {/* Future: Voice input button - Hidden in floating variant */}
+          {variant !== "floating" && (
+            <button
+              type="button"
+              disabled={disabled}
+              className={cn(
+                "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
+                "text-muted-foreground hover:text-foreground",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+              )}
+              title="Voice input (coming soon)"
+            >
+              <Mic className="h-4 w-4" />
+            </button>
+          )}
 
-          {/* Send button */}
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={disabled || !value.trim()}
-            className={cn(
-              "p-1.5 sm:p-2 rounded-lg transition-all duration-200 flex-shrink-0",
-              "bg-primary text-primary-foreground",
-              "hover:bg-primary/90 active:scale-95",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary",
-            )}
-            title="Send message"
-          >
-            {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </button>
+          {/* Send button - Hidden in floating variant */}
+          {variant !== "floating" && (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={disabled || !value.trim()}
+              className={cn(
+                "p-1.5 sm:p-2 rounded-lg transition-all duration-200 flex-shrink-0",
+                "bg-primary text-primary-foreground",
+                "hover:bg-primary/90 active:scale-95",
+                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary",
+              )}
+              title="Send message"
+            >
+              {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </button>
+          )}
         </div>
 
         {/* Character count */}
@@ -137,16 +150,20 @@ export function PromptInput({
         )}
       </div>
 
-      {/* Hint text */}
-      <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-1.5 sm:mt-2">
-        Press{" "}
-        <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">Enter</kbd>{" "}
-        to send,{" "}
-        <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">
-          Shift + Enter
-        </kbd>{" "}
-        for new line
-      </p>
+      {/* Hint text - Hidden in floating variant */}
+      {variant !== "floating" && (
+        <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-1.5 sm:mt-2">
+          Press{" "}
+          <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">
+            Enter
+          </kbd>{" "}
+          to send,{" "}
+          <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">
+            Shift + Enter
+          </kbd>{" "}
+          for new line
+        </p>
+      )}
     </div>
   );
 }
