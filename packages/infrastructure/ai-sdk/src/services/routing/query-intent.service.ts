@@ -24,8 +24,6 @@ export class QueryIntentService implements IQueryIntentService {
   async analyzeIntent(query: string): Promise<QueryIntent> {
     const client = getAItClient();
 
-    console.info("Analyzing query intent", { query: query.slice(0, 100) });
-
     try {
       const intent = await client.generateStructured<QueryIntent>({
         schema: QueryIntentSchema,

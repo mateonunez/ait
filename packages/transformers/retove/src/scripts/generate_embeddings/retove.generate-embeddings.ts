@@ -20,7 +20,6 @@ export function generateEmbeddingWithPython(text: string): number[] {
   }
 
   const result = pythonProcess.stdout.toString();
-  console.log(`Generated raw embedding JSON for "${text}": ${result}`);
 
   let embedding: number[];
   try {

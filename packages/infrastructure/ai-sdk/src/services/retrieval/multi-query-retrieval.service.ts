@@ -126,8 +126,6 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
         }
       }
       uniqueCount = uniqueFromParallel.size;
-
-      console.info("Retry without time filter completed", { uniqueCount });
     }
 
     const shouldUseHyDE = this._useHyDE && !!this._hyde && uniqueCount < Math.floor(this._maxDocs * 0.6);
@@ -310,12 +308,6 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   ): Promise<Document<TMetadata>[]> {
     const startTime = Date.now();
 
-    console.info("Multi-collection retrieval initiated", {
-      query: userQuery.slice(0, 100),
-      collectionsCount: collectionWeights.length,
-      collections: collectionWeights.map((c) => `${c.vendor}:${c.weight}`).join(", "),
-    });
-
     // Step 1: Plan queries (same as single-collection)
     const queryPlan = await this._queryPlanner.planQueries(userQuery, traceContext);
     const typeFilterResult = this._typeFilter.inferTypes(queryPlan.tags, queryPlan.originalQuery || userQuery, {
@@ -339,11 +331,6 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       typeFilterResult,
       traceContext || undefined,
     );
-
-    console.info("Multi-collection search completed", {
-      collectionsSearched: searchResults.length,
-      totalDocuments: searchResults.reduce((sum, r) => sum + r.documents.length, 0),
-    });
 
     // Step 3: Prepare results for weighted rank fusion
     const collectionResults = searchResults.map((result) => ({
@@ -369,11 +356,6 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
 
     const fusedDocuments = weightedFusion.fuseResults(collectionResults, this._maxDocs * 2);
 
-    console.info("Weighted rank fusion completed", {
-      fusedDocuments: fusedDocuments.length,
-      collectionDistribution: this._getCollectionDistribution(fusedDocuments),
-    });
-
     // Convert WeightedDocuments to regular Documents
     const allDocuments: Document<TMetadata>[] = fusedDocuments.map((wd) => ({
       pageContent: wd.pageContent,
@@ -391,12 +373,6 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     // Skip LLM reranking for multi-collection scenarios to preserve collection diversity
     // Instead, just apply MMR for diversity within the fused results
     finalResults = this._diversity.applyMMR(finalResults, this._maxDocs);
-
-    console.info("Multi-collection retrieval completed", {
-      finalDocumentCount: finalResults.length,
-      duration: Date.now() - startTime,
-      collectionDistribution: this._getCollectionDistribution(finalResults),
-    });
 
     // Record telemetry
     if (traceContext) {

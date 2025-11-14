@@ -46,13 +46,6 @@ export class FeedbackService {
       this.feedbackRecords = this.feedbackRecords.slice(-this.maxRecords);
     }
 
-    console.log("[Feedback] Recorded feedback", {
-      feedbackId: feedback.feedbackId,
-      traceId: feedback.traceId,
-      rating: feedback.rating,
-      hasComment: !!feedback.comment,
-    });
-
     return feedback;
   }
 

@@ -36,10 +36,6 @@ export class TypeFilterService implements ITypeFilterService {
         : undefined;
 
       if (options.intent.entityTypes && options.intent.entityTypes.length > 0) {
-        console.info("Using entity types from LLM intent", {
-          entityTypes: options.intent.entityTypes,
-          entityCount: options.intent.entityTypes.length,
-        });
         return { types: options.intent.entityTypes, timeRange };
       }
 
@@ -103,14 +99,6 @@ export class TypeFilterService implements ITypeFilterService {
 
     // Delegate to the dedicated temporal date parser
     const result = this._dateParser.parseTimeRange(text);
-
-    if (result) {
-      console.info("Time range parsed for filtering", {
-        input: text.slice(0, 50),
-        from: result.from,
-        to: result.to,
-      });
-    }
 
     return result;
   }

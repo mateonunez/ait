@@ -57,8 +57,6 @@ describe("AIt Personality Integration (AI SDK)", () => {
         cursor: "▌",
       });
 
-      console.log("Generated stream text:", result);
-
       assert.ok(result.trim(), "Generated stream text should not be empty");
     },
   );
@@ -91,9 +89,6 @@ describe("AIt Personality Integration (AI SDK)", () => {
       prefix: "AIt:",
       cursor: "▌",
     });
-
-    console.log("\n=== Streaming with History ===");
-    console.log("Result:", result);
 
     assert.ok(result.trim(), "Streamed text with history should not be empty");
   });

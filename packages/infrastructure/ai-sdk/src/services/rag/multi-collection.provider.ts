@@ -54,12 +54,6 @@ export class MultiCollectionProvider {
     let totalDocuments = 0;
     let queriesExecuted = 0;
 
-    console.info("Searching across collections", {
-      query: query.slice(0, 100),
-      collectionsCount: collections.length,
-      collections: collections.map((c) => `${c.vendor}:${c.weight}`).join(", "),
-    });
-
     const searchPromises = collections.map(async (collectionWeight) => {
       const searchStartTime = Date.now();
 
@@ -115,14 +109,6 @@ export class MultiCollectionProvider {
     }
 
     const totalDuration = Date.now() - startTime;
-
-    console.info("Multi-collection search completed", {
-      totalDocuments,
-      queriesExecuted,
-      collectionsQueried: results.length,
-      totalDuration,
-    });
-
     if (traceContext) {
       recordSpan(
         "multi-collection-search",
@@ -163,19 +149,6 @@ export class MultiCollectionProvider {
     traceContext?: TraceContext,
   ): Promise<Array<{ vendor: CollectionVendor; documents: Array<[Document<TMetadata>, number]> }>> {
     const startTime = Date.now();
-
-    console.info("Searching across collections with scores", {
-      query: query.slice(0, 100),
-      collectionsCount: collections.length,
-      scoreThreshold,
-      filter: filter
-        ? {
-            types: filter.types,
-            timeRange: filter.timeRange ? `${filter.timeRange.from} - ${filter.timeRange.to}` : undefined,
-          }
-        : undefined,
-    });
-
     const searchPromises = collections.map(async (collectionWeight) => {
       try {
         const provider = this.getOrCreateProvider(collectionWeight.vendor);

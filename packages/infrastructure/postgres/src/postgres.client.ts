@@ -49,7 +49,7 @@ let _config: IPostgresConfig = {
   max: 5,
   idleTimeout: 0,
   ssl: false,
-  logger: true,
+  logger: false,
 };
 
 /**
