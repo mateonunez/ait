@@ -74,13 +74,15 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
       )}
       onClick={handleClick}
     >
-      <div className="p-5 space-y-4">
+      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
         {/* Header with State Icon */}
-        <div className="flex items-start gap-3">
-          <div className={cn("flex-shrink-0 pt-0.5", getStateColor())}>{getStateIcon()}</div>
+        <div className="flex items-start gap-2 sm:gap-3">
+          <div className={cn("flex-shrink-0 pt-0.5", getStateColor())}>
+            <div className="h-4 w-4 sm:h-5 sm:w-5">{getStateIcon()}</div>
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-base leading-tight line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+              <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                 {issue.title}
               </h3>
               <button
@@ -98,16 +100,18 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
 
         {/* Description */}
         {issue.description && (
-          <p className="text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">{issue.description}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">
+            {issue.description}
+          </p>
         )}
 
         {/* Labels & Assignee */}
         {(issue.labels && issue.labels.length > 0) ||
           (issue.assigneeName && (
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
               {issue.labels && issue.labels.length > 0 && (
                 <>
-                  <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Tag className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground flex-shrink-0" />
                   {issue.labels.slice(0, 2).map((label) => (
                     <Badge key={label} variant="secondary" className="text-xs font-normal">
                       {label}
@@ -121,17 +125,17 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
                 </>
               )}
               {issue.assigneeName && (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
-                  <User className="h-3.5 w-3.5" />
-                  <span>{issue.assigneeName}</span>
+                <div className="flex items-center gap-1 sm:gap-1.5 text-xs text-muted-foreground ml-auto">
+                  <User className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  <span className="truncate">{issue.assigneeName}</span>
                 </div>
               )}
             </div>
           ))}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/40">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <Badge variant="outline" className={cn("text-xs font-normal", getPriorityColor())}>
               {getPriorityLabel()}
             </Badge>
@@ -140,7 +144,9 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
             </Badge>
           </div>
           {issue.updatedAt && (
-            <span className="text-xs text-muted-foreground">Updated {formatRelativeTime(issue.updatedAt)}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              Updated {formatRelativeTime(issue.updatedAt)}
+            </span>
           )}
         </div>
       </div>
