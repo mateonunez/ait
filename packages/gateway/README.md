@@ -1,92 +1,112 @@
-# Gateway & Connectors Documentation
+# Gateway
 
 ## Overview
 
-The **Gateway** module integrates with the **Connectors** package to provide a unified API for external platforms (via OAuth 2.0). Although the connectors are implemented as a separate module, they are used by the gateway at runtime. This means that any secrets or configuration required by the connectors must be available as environment variables when running the gateway.
+The Gateway module provides a unified API for external platforms via OAuth 2.0. It integrates with the [Connectors](../connectors/README.md) package to handle authentication and data access for GitHub, Linear, Spotify, and X.
 
-## Setup
+## Quick Start
 
-### Install Dependencies
+### Prerequisites
 
-```bash
-corepack enable
-pnpm install
-```
+- Services running: PostgreSQL, Redis
+- Environment variables configured (see Configuration)
 
-### Run Tests
+### Development Mode
 
 ```bash
-pnpm test
+# Generate OpenAPI types (required first time)
+pnpm generate:openapi
+
+# Start development server
+pnpm dev
 ```
 
-## Getting Started
+The gateway runs on `http://localhost:3000` by default.
 
+### HTTPS Setup
+
+For OAuth flows requiring HTTPS, see [HTTPS_SETUP.md](./HTTPS_SETUP.md) for certificate generation and configuration.
+
+## Configuration
 
 ### Environment Variables
 
-Both the gateway and connectors rely on a common set of environment variables. Copy the `.env.example` file to `.env` and configure at least the following variables:
+Both the gateway and connectors rely on common environment variables. Create a `.env` file:
 
-```dotenv
+```bash
+# Server Configuration
 APP_PORT=3000
+USE_HTTPS=false  # Set to true for HTTPS (see HTTPS_SETUP.md)
 
+# Database
 POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
 
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
-# ... any other GitHub scopes
+# OAuth Credentials
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_secret
 
-SPOTIFY_CLIENT_ID=...
-SPOTIFY_CLIENT_SECRET=...
-# ... any other Spotify scopes
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_secret
 
-X_CLIENT_ID=...
-X_CLIENT_SECRET=...
-# ... any other X scopes
+LINEAR_CLIENT_ID=your_linear_client_id
+LINEAR_CLIENT_SECRET=your_linear_secret
+
+X_CLIENT_ID=your_x_client_id
+X_CLIENT_SECRET=your_x_secret
 ```
 
-### Running Services
+See the [Connectors README](../connectors/README.md) for detailed connector configuration.
 
-**Generate OpenAPI Types**:
+## Authentication
 
-This command generates the OpenAPI types for the connectors (the generated types are not committed to the repository to avoid bloating it).
+AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenticate:
+
+- **GitHub**: `http://localhost:3000/api/github/auth`
+- **Linear**: `http://localhost:3000/api/linear/auth`
+- **Spotify**: `http://localhost:3000/api/spotify/auth`
+- **X**: `http://localhost:3000/api/x/auth`
+
+Once authenticated, OAuth tokens are securely stored in the database for future requests.
+
+## API Endpoints
+
+### Authentication Endpoints
+
+- `GET /api/{provider}/auth` - Initiate OAuth flow
+- `GET /api/{provider}/auth/callback` - OAuth callback handler
+- `GET /api/{provider}/auth/status` - Check authentication status
+
+### Data Endpoints
+
+- `GET /api/{provider}/data` - Fetch provider-specific data
+- `POST /api/{provider}/sync` - Trigger manual data synchronization
+
+See individual connector implementations in the [Connectors package](../connectors/README.md) for provider-specific endpoints.
+
+## Development
+
+### Generate OpenAPI Types
+
+Generate TypeScript interfaces from OpenAPI specifications:
 
 ```bash
 pnpm generate:openapi
 ```
 
-> [!NOTE]
-> The generated types are not committed to the repository to avoid bloating the codebase.
+> **Note**: Generated types are not committed to avoid repository bloat.
 
-**Development**:
-
-Run the application in development mode:
+### Testing
 
 ```bash
-pnpm dev
+pnpm test
 ```
 
-### Connectors
+## Integration with Connectors
 
-#### Manual
+The Gateway uses connectors at runtime. Any secrets or configuration required by connectors must be available as environment variables when running the gateway.
 
-**GitHub**:
+For connector implementation details, see the [Connectors README](../connectors/README.md).
 
-```
-https://github.com/login/oauth/authorize?client_id=Ov23liPVDFK2UZgKcv7E&redirect_uri=http://localhost:3000/api/github/auth/callback&scope=repo
-```
-
-**Spotify**:
-
-```
-https://accounts.spotify.com/authorize?client_id=d9f5dd3420704900bfb74b933ec8cbde&response_type=code&redirect_uri=http://localhost:3000/api/spotify/auth/callback&scope=playlist-read-private,playlist-read-collaborative,user-read-playback-state,user-read-currently-playing,user-read-recently-played,user-read-playback-position,user-top-read
-```
-
-**X**:
-
-```
-http://localhost:3000/api/x/auth
-```
-
-### License
+## License
 
 [MIT](../../LICENSE)
