@@ -60,9 +60,13 @@ export default async function githubRoutes(fastify: FastifyInstance) {
         const pullRequests = await githubService.fetchPullRequests();
         await githubService.connector.store.save(pullRequests);
 
+        const commits = await githubService.fetchCommits();
+        await githubService.connector.store.save(commits);
+
         reply.send({
           repositories,
           pullRequests,
+          commits,
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
@@ -114,6 +118,22 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.get(
+    "/data/commits",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+
+        const result = await githubService.getCommitsPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/commits" }, "Failed to fetch commits from DB.");
+        reply.status(500).send({ error: "Failed to fetch commits from database." });
+      }
+    },
+  );
+
   // Refresh endpoint
   fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -123,12 +143,16 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       const pullRequests = await githubService.fetchPullRequests();
       await githubService.connector.store.save(pullRequests);
 
+      const commits = await githubService.fetchCommits();
+      await githubService.connector.store.save(commits);
+
       reply.send({
         success: true,
         message: "GitHub data refreshed successfully",
         counts: {
           repositories: repositories.length,
           pullRequests: pullRequests.length,
+          commits: commits.length,
         },
       });
     } catch (err: unknown) {

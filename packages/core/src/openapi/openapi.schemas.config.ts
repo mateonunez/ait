@@ -11,9 +11,9 @@ export const openApiSchemas: Record<string, OpenApiSchemaConfig> = {
     version: "1.0.0",
   },
   github: {
-    url: "https://raw.githubusercontent.com/github/rest-api-description/fa6d3f50a7dde4ac7671f99796d45c47edbc5f41/descriptions/api.github.com/api.github.com.yaml",
+    url: "https://raw.githubusercontent.com/github/rest-api-description/refs/heads/main/descriptions/api.github.com/api.github.com.yaml",
     outputPath: "./src/types/openapi/openapi.github.types.ts",
-    version: "1.1.4",
+    version: "2.1.0",
   },
   x: {
     url: "https://api.twitter.com/2/openapi.json", // Official Twitter API v2 OpenAPI spec

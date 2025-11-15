@@ -7,6 +7,8 @@ import type {
   GitHubRepositoryExternal,
   GitHubPullRequestEntity,
   GitHubPullRequestExternal,
+  GitHubCommitEntity,
+  GitHubCommitExternal,
   PaginatedResponse,
   PaginationParams,
 } from "@ait/core";
@@ -19,8 +21,10 @@ import {
 export interface IConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap> {
   fetchRepositories(): Promise<GitHubRepositoryEntity[]>;
   fetchPullRequests(): Promise<GitHubPullRequestEntity[]>;
+  fetchCommits(): Promise<GitHubCommitEntity[]>;
   getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>>;
   getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>>;
+  getCommitsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubCommitEntity>>;
 }
 
 export class ConnectorGitHubService
@@ -39,6 +43,11 @@ export class ConnectorGitHubService
       GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST,
       connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST],
     );
+
+    this.registerEntityConfig<GITHUB_ENTITY_TYPES_ENUM.COMMIT, GitHubCommitExternal>(
+      GITHUB_ENTITY_TYPES_ENUM.COMMIT,
+      connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.COMMIT],
+    );
   }
 
   protected createConnector(oauth: ConnectorOAuth): ConnectorGitHub {
@@ -53,11 +62,19 @@ export class ConnectorGitHubService
     return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, true);
   }
 
+  async fetchCommits(): Promise<GitHubCommitEntity[]> {
+    return this.fetchEntities(GITHUB_ENTITY_TYPES_ENUM.COMMIT, true);
+  }
+
   async getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>> {
     return this.connector.repository.repo.getRepositoriesPaginated(params);
   }
 
   async getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>> {
     return this.connector.repository.pullRequest.getPullRequestsPaginated(params);
+  }
+
+  async getCommitsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubCommitEntity>> {
+    return this.connector.repository.commit.getCommitsPaginated(params);
   }
 }

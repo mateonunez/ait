@@ -21,7 +21,7 @@ const HOME_SECTIONS: HomeSectionType[] = [
   {
     id: "recent",
     title: "Recent Activity",
-    entityTypes: ["tweet", "issue", "message", "recently_played", "pull_request", "page", "repository"],
+    entityTypes: ["commit", "tweet", "issue", "message", "recently_played", "pull_request", "page", "repository"],
   },
   {
     id: "music",
@@ -31,7 +31,7 @@ const HOME_SECTIONS: HomeSectionType[] = [
   {
     id: "code",
     title: "Code & Projects",
-    entityTypes: ["repository", "pull_request"],
+    entityTypes: ["commit", "pull_request", "repository"],
   },
   {
     id: "tweets",

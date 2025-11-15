@@ -1,7 +1,7 @@
 import type { components as GitHubComponents } from "../openapi/openapi.github.types";
 
 export interface BaseGitHubEntity {
-  __type: "repository" | "issue" | "pull_request";
+  __type: "repository" | "issue" | "pull_request" | "commit";
 }
 
 export interface GitHubRepositoryEntity extends BaseGitHubEntity {
@@ -98,6 +98,38 @@ export interface GitHubPullRequestEntity {
   __type: "pull_request";
 }
 
+export interface GitHubCommitEntity extends BaseGitHubEntity {
+  sha: string;
+  message: string;
+  messageBody: string | null;
+  htmlUrl: string;
+  commentsUrl: string;
+  nodeId: string;
+  authorName: string | null;
+  authorEmail: string | null;
+  authorDate: Date | null;
+  committerName: string | null;
+  committerEmail: string | null;
+  committerDate: Date | null;
+  treeSha: string;
+  treeUrl: string;
+  parentShas: string[];
+  additions: number;
+  deletions: number;
+  total: number;
+  repositoryId: string | null;
+  repositoryName: string | null;
+  repositoryFullName: string | null;
+  authorData: Record<string, unknown> | null;
+  committerData: Record<string, unknown> | null;
+  filesData: Record<string, unknown>[] | null;
+  verification: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  __type: "commit";
+}
+
 type GitHubRepository = GitHubComponents["schemas"]["repository"];
 export interface GitHubRepositoryExternal extends Omit<GitHubRepository, "__type">, BaseGitHubEntity {
   __type: "repository";
@@ -108,5 +140,10 @@ export interface GitHubPullRequestExternal extends Omit<GitHubPullRequest, "__ty
   __type: "pull_request";
 }
 
-export type GitHubEntity = GitHubRepositoryEntity | GitHubPullRequestEntity;
-export type GitHubExternal = GitHubRepositoryExternal | GitHubPullRequestExternal;
+type GitHubCommit = GitHubComponents["schemas"]["commit"];
+export interface GitHubCommitExternal extends Omit<GitHubCommit, "__type"> {
+  __type: "commit";
+}
+
+export type GitHubEntity = GitHubRepositoryEntity | GitHubPullRequestEntity | GitHubCommitEntity;
+export type GitHubExternal = GitHubRepositoryExternal | GitHubPullRequestExternal | GitHubCommitExternal;

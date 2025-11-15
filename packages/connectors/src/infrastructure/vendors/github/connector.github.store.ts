@@ -24,6 +24,9 @@ export class ConnectorGitHubStore implements IConnectorStore {
         case GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST:
           await this._connectorGitHubRepository.pullRequest.savePullRequest(item, { incremental: false });
           break;
+        case GITHUB_ENTITY_TYPES_ENUM.COMMIT:
+          await this._connectorGitHubRepository.commit.saveCommit(item, { incremental: false });
+          break;
         default:
           throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
       }

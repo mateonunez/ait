@@ -11,6 +11,7 @@ import type {
   LinearIssueEntity,
   SpotifyRecentlyPlayedEntity,
   GitHubPullRequestEntity,
+  GitHubCommitEntity,
   NotionPageEntity,
   SlackMessageEntity,
   EntityType,
@@ -228,6 +229,66 @@ const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (m
   );
 };
 
+const buildGitHubCommit: EntityContentBuilder<GitHubCommitEntity> = (meta) => {
+  const sha = safeString(meta.sha, "");
+  const shortSha = sha.length >= 7 ? sha.substring(0, 7) : sha;
+  const message = safeString(meta.message, "No commit message");
+  const messageBody = safeString(meta.messageBody);
+  const repositoryName = safeString(meta.repositoryFullName || meta.repositoryName);
+  const authorName = safeString(meta.authorName);
+  const committerName = safeString(meta.committerName);
+
+  // Build stats
+  const stats: string[] = [];
+  const additions = safeNumber(meta.additions);
+  const deletions = safeNumber(meta.deletions);
+  if (additions !== null || deletions !== null) {
+    stats.push(`+${additions ?? 0}/-${deletions ?? 0}`);
+  }
+
+  const total = safeNumber(meta.total);
+  if (total !== null && total > 0) {
+    stats.push(`${total} total changes`);
+  }
+
+  // Count files from filesData if available
+  let fileCount = 0;
+  if (meta.filesData && Array.isArray(meta.filesData)) {
+    fileCount = meta.filesData.length;
+  }
+
+  if (fileCount > 0) {
+    stats.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
+  }
+
+  // Build author info
+  const authorInfo = authorName ? ` by ${authorName}` : "";
+  const committerInfo = committerName && committerName !== authorName ? ` (committed by ${committerName})` : "";
+
+  // Build repository context
+  const repoContext = repositoryName ? ` in \`${repositoryName}\`` : "";
+
+  // Include truncated message body if available
+  const bodyPreview = messageBody && messageBody.length > 0 ? `\nDescription: ${truncate(messageBody, 150)}` : "";
+
+  // Build verification status
+  let verified = "";
+  if (meta.verification && typeof meta.verification === "object") {
+    const verification = meta.verification as any;
+    if (verification.verified) {
+      verified = " [verified]";
+    }
+  }
+
+  return joinParts(
+    `I committed ${shortSha}${repoContext}${authorInfo}${committerInfo}`,
+    `: "${message}"`,
+    stats.length > 0 ? `. Changes: ${stats.join(", ")}` : null,
+    verified,
+    bodyPreview,
+  );
+};
+
 const buildXTweet: EntityContentBuilder<XTweetEntity> = (meta, pageContent) => {
   const text = safeString(meta.text || pageContent, "");
   const retweetCount = safeNumber(meta.retweetCount);
@@ -327,6 +388,7 @@ const entityBuilders: Record<EntityType, EntityContentBuilder<any>> = {
   recently_played: buildSpotifyRecentlyPlayed,
   repository: buildGitHubRepository,
   pull_request: buildGitHubPullRequest,
+  commit: buildGitHubCommit,
   tweet: buildXTweet,
   issue: buildLinearIssue,
   page: buildNotionPage,

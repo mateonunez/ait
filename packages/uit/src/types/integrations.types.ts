@@ -8,6 +8,7 @@ import type {
   SpotifyRecentlyPlayedEntity,
   GitHubRepositoryEntity,
   GitHubPullRequestEntity,
+  GitHubCommitEntity,
   LinearIssueEntity,
   XTweetEntity,
   NotionPageEntity,
@@ -22,6 +23,7 @@ export type IntegrationEntity =
   | SpotifyRecentlyPlayedEntity
   | GitHubRepositoryEntity
   | GitHubPullRequestEntity
+  | GitHubCommitEntity
   | LinearIssueEntity
   | XTweetEntity
   | NotionPageEntity

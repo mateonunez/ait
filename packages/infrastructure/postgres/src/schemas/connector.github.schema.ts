@@ -98,9 +98,41 @@ export const githubPullRequests = pgTable("github_pull_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const githubCommits = pgTable("github_commits", {
+  sha: varchar("sha", { length: 255 }).primaryKey(),
+  message: text("message").notNull(),
+  messageBody: text("message_body"),
+  htmlUrl: varchar("html_url", { length: 512 }).notNull(),
+  commentsUrl: varchar("comments_url", { length: 512 }).notNull(),
+  nodeId: varchar("node_id", { length: 255 }),
+  authorName: varchar("author_name", { length: 255 }),
+  authorEmail: varchar("author_email", { length: 255 }),
+  authorDate: timestamp("author_date"),
+  committerName: varchar("committer_name", { length: 255 }),
+  committerEmail: varchar("committer_email", { length: 255 }),
+  committerDate: timestamp("committer_date"),
+  treeSha: varchar("tree_sha", { length: 255 }).notNull(),
+  treeUrl: varchar("tree_url", { length: 512 }).notNull(),
+  parentShas: text("parent_shas").array(),
+  additions: integer("additions").default(0),
+  deletions: integer("deletions").default(0),
+  total: integer("total").default(0),
+  repositoryId: varchar("repository_id", { length: 255 }),
+  repositoryName: varchar("repository_name", { length: 255 }),
+  repositoryFullName: varchar("repository_full_name", { length: 512 }),
+  authorData: jsonb("author_data"),
+  committerData: jsonb("committer_data"),
+  filesData: jsonb("files_data"),
+  verification: jsonb("verification"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 /**
  * DATA TARGET
  * Represents how we store the domain entity in a data layer (DB)
  */
 export type GitHubRepositoryDataTarget = typeof githubRepositories.$inferInsert;
 export type GitHubPullRequestDataTarget = typeof githubPullRequests.$inferInsert;
+export type GitHubCommitDataTarget = typeof githubCommits.$inferInsert;

@@ -8206,6 +8206,8 @@ export interface operations {
                 pagination_token?: string;
                 /** @description Max results to return. */
                 max_results?: number;
+                /** @description The selection of posts to return. Valid values are 'feed_size: small' and 'feed_size: large'. Default is 'feed_size: small', only top AI writers have access to large size feed. */
+                post_selection?: string;
                 /** @description A comma separated list of Tweet fields to display. */
                 "tweet.fields"?: components["parameters"]["TweetFieldsParameter"];
                 /** @description A comma separated list of fields to expand. */

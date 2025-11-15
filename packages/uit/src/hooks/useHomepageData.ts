@@ -13,6 +13,8 @@ function getEntityTimestamp(entity: IntegrationEntity): Date | null {
   if (entityAny.pushedAt) return new Date(entityAny.pushedAt);
   if (entityAny.prUpdatedAt) return new Date(entityAny.prUpdatedAt);
   if (entityAny.playedAt) return new Date(entityAny.playedAt);
+  if (entityAny.authorDate) return new Date(entityAny.authorDate);
+  if (entityAny.committerDate) return new Date(entityAny.committerDate);
 
   return null;
 }

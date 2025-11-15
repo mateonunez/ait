@@ -1,5 +1,6 @@
 import { connectorGithubRepositoryMapper } from "../../domain/mappers/vendors/connector.github.mapper";
 import { connectorGithubPullRequestMapper } from "../../domain/mappers/vendors/connector.github.pull-request.mapper";
+import { connectorGithubCommitMapper } from "../../domain/mappers/vendors/connector.github.commit.mapper";
 import { connectorLinearIssueMapper } from "../../domain/mappers/vendors/connector.linear.mapper";
 import {
   connectorSpotifyAlbumMapper,
@@ -21,6 +22,8 @@ import type {
   GitHubRepositoryExternal,
   GitHubPullRequestEntity,
   GitHubPullRequestExternal,
+  GitHubCommitEntity,
+  GitHubCommitExternal,
   LinearIssueEntity,
   LinearIssueExternal,
   SpotifyArtistEntity,
@@ -50,11 +53,13 @@ export interface EntityConfig<TConnector, TExternal, TDomain> {
 export enum GITHUB_ENTITY_TYPES_ENUM {
   REPOSITORY = "repository",
   PULL_REQUEST = "pull_request",
+  COMMIT = "commit",
 }
 
 export interface GitHubServiceEntityMap {
   [GITHUB_ENTITY_TYPES_ENUM.REPOSITORY]: GitHubRepositoryEntity;
   [GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST]: GitHubPullRequestEntity;
+  [GITHUB_ENTITY_TYPES_ENUM.COMMIT]: GitHubCommitEntity;
 }
 
 export enum SPOTIFY_ENTITY_TYPES_ENUM {
@@ -115,6 +120,11 @@ const githubEntityConfigs = {
     fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchPullRequests(),
     mapper: (pr: GitHubPullRequestExternal) => connectorGithubPullRequestMapper.externalToDomain(pr),
   } satisfies EntityConfig<ConnectorGitHub, GitHubPullRequestExternal, GitHubPullRequestEntity>,
+
+  [GITHUB_ENTITY_TYPES_ENUM.COMMIT]: {
+    fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchCommits(),
+    mapper: (commit: GitHubCommitExternal) => connectorGithubCommitMapper.externalToDomain(commit),
+  } satisfies EntityConfig<ConnectorGitHub, GitHubCommitExternal, GitHubCommitEntity>,
 } as const;
 
 const spotifyEntityConfigs = {

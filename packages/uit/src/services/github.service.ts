@@ -5,6 +5,7 @@ import type {
   RefreshResponse,
   GitHubRepositoryEntity as GitHubRepository,
   GitHubPullRequestEntity as GitHubPullRequest,
+  GitHubCommitEntity as GitHubCommit,
 } from "@ait/core";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";
@@ -38,6 +39,21 @@ export class GitHubService {
 
     const url = `${this.baseUrl}/data/pull-requests${queryParams.toString() ? `?${queryParams}` : ""}`;
     const result = await requestJson<PaginatedResponse<GitHubPullRequest>>(url);
+
+    if (!result.ok) {
+      throw result.error;
+    }
+
+    return result.value.data;
+  }
+
+  async fetchCommits(params?: PaginationParams) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+    const url = `${this.baseUrl}/data/commits${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const result = await requestJson<PaginatedResponse<GitHubCommit>>(url);
 
     if (!result.ok) {
       throw result.error;

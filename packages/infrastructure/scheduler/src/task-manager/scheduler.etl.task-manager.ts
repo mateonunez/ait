@@ -6,6 +6,7 @@ import {
   runSpotifyRecentlyPlayedETL,
   runGitHubRepositoryETL,
   runGitHubPullRequestETL,
+  runGitHubCommitETL,
   runLinearETL,
   runXETL,
   SpotifyETLs,
@@ -187,6 +188,28 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         console.info(`[${GitHubETLs.pullRequest}] Running ETL to Qdrant...`);
         await runGitHubPullRequestETL(qdrant, postgres);
         console.info(`[${GitHubETLs.pullRequest}] Completed`);
+      });
+    });
+
+    // Register GitHub Commit ETL
+    schedulerRegistry.register(GitHubETLs.commit, async (data) => {
+      console.info(`[${GitHubETLs.commit}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        // 1. Fetch fresh data from GitHub API
+        console.info(`[${GitHubETLs.commit}] Fetching commits from GitHub API...`);
+        const commits = await this._githubService.fetchCommits();
+        console.info(`[${GitHubETLs.commit}] Fetched ${commits.length} commits`);
+
+        // 2. Save to Postgres
+        console.info(`[${GitHubETLs.commit}] Saving commits to Postgres...`);
+        await this._githubService.connector.store.save(commits);
+        console.info(`[${GitHubETLs.commit}] Saved to Postgres`);
+
+        // 3. Run ETL to Qdrant
+        console.info(`[${GitHubETLs.commit}] Running ETL to Qdrant...`);
+        await runGitHubCommitETL(qdrant, postgres);
+        console.info(`[${GitHubETLs.commit}] Completed`);
       });
     });
 
