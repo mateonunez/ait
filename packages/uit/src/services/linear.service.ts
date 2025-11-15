@@ -1,7 +1,7 @@
 import { requestJson } from "@ait/core";
 import type { PaginationParams, PaginatedResponse, RefreshResponse, LinearIssueEntity as LinearIssue } from "@ait/core";
 
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";
 
 export class LinearService {
   private baseUrl: string;

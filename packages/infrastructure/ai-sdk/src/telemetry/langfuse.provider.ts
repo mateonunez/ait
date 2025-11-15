@@ -30,7 +30,7 @@ export class LangfuseProvider {
     const enabled = config?.enabled ?? process.env.LANGFUSE_ENABLED === "true";
     const publicKey = config?.publicKey ?? process.env.LANGFUSE_PUBLIC_KEY ?? "";
     const secretKey = config?.secretKey ?? process.env.LANGFUSE_SECRET_KEY ?? "";
-    const baseURL = config?.baseURL ?? process.env.LANGFUSE_BASEURL ?? "http://localhost:3000";
+    const baseURL = config?.baseURL ?? process.env.LANGFUSE_BASEURL ?? "https://localhost:3000";
 
     this.config = {
       enabled,

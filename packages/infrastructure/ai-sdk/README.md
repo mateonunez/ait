@@ -208,7 +208,7 @@ docker-compose up ait_langfuse ait_langfuse_db
 ```bash
 LANGFUSE_PUBLIC_KEY=pk-lf-your-public-key
 LANGFUSE_SECRET_KEY=sk-lf-your-secret-key
-LANGFUSE_BASEURL=http://localhost:3000
+LANGFUSE_BASEURL=https://localhost:3000
 LANGFUSE_ENABLED=true
 ```
 

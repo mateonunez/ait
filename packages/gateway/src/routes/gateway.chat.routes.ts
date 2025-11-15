@@ -40,7 +40,7 @@ const telemetryConfig = {
   enabled: telemetryEnabled,
   publicKey: process.env.LANGFUSE_PUBLIC_KEY,
   secretKey: process.env.LANGFUSE_SECRET_KEY,
-  baseURL: process.env.LANGFUSE_BASEURL || "http://localhost:3000",
+  baseURL: process.env.LANGFUSE_BASEURL || "https://localhost:3000",
   flushAt: 1, // Flush immediately
   flushInterval: 1000, // Flush every second
 };

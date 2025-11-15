@@ -21,7 +21,7 @@ pnpm generate:openapi
 pnpm dev
 ```
 
-The gateway runs on `http://localhost:3000` by default.
+The gateway runs on `https://localhost:3000` by default.
 
 ### HTTPS Setup
 
@@ -61,10 +61,10 @@ See the [Connectors README](../connectors/README.md) for detailed connector conf
 
 AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenticate:
 
-- **GitHub**: `http://localhost:3000/api/github/auth`
-- **Linear**: `http://localhost:3000/api/linear/auth`
-- **Spotify**: `http://localhost:3000/api/spotify/auth`
-- **X**: `http://localhost:3000/api/x/auth`
+- **GitHub**: `https://localhost:3000/api/github/auth`
+- **Linear**: `https://localhost:3000/api/linear/auth`
+- **Spotify**: `https://localhost:3000/api/spotify/auth`
+- **X**: `https://localhost:3000/api/x/auth`
 
 Once authenticated, OAuth tokens are securely stored in the database for future requests.
 
