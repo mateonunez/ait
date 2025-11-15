@@ -102,4 +102,53 @@ export class MetadataEmitterService {
       },
     };
   }
+
+  createReasoningMetadataEvent(reasoning: unknown[]): StreamEvent[] {
+    if (!reasoning || reasoning.length === 0) {
+      return [];
+    }
+    return reasoning.map((step) => ({
+      type: STREAM_EVENT.METADATA,
+      data: {
+        type: METADATA_TYPE.REASONING,
+        data: step as never,
+      },
+    }));
+  }
+
+  createTaskMetadataEvent(tasks: unknown[]): StreamEvent[] {
+    if (!tasks || tasks.length === 0) {
+      return [];
+    }
+    return tasks.map((task) => ({
+      type: STREAM_EVENT.METADATA,
+      data: {
+        type: METADATA_TYPE.TASK,
+        data: task as never,
+      },
+    }));
+  }
+
+  createSuggestionMetadataEvent(suggestions: unknown[]): StreamEvent {
+    return {
+      type: STREAM_EVENT.METADATA,
+      data: {
+        type: METADATA_TYPE.SUGGESTION,
+        data: (suggestions || []) as never,
+      },
+    };
+  }
+
+  createModelMetadataEvent(modelInfo: unknown): StreamEvent | null {
+    if (!modelInfo) {
+      return null;
+    }
+    return {
+      type: STREAM_EVENT.METADATA,
+      data: {
+        type: METADATA_TYPE.MODEL,
+        data: modelInfo as never,
+      },
+    };
+  }
 }

@@ -161,12 +161,7 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
         {/* Main content */}
         <div className="flex-1 flex min-h-0 relative">
           {/* Chat area */}
-          <div
-            className={cn(
-              "flex-1 flex flex-col min-w-0 transition-all duration-200",
-              sidePanel === "settings" && "sm:mr-0 md:mr-[400px]",
-            )}
-          >
+          <div className={cn("flex-1 flex flex-col min-w-0 transition-all duration-200", sidePanel === "settings")}>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               {messages.length === 0 ? (

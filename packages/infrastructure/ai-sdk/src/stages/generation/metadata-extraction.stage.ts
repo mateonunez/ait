@@ -10,7 +10,7 @@ export class MetadataExtractionStage implements IPipelineStage<MetadataExtractio
   readonly name = "metadata-extraction";
 
   async canExecute(input: MetadataExtractionInput): Promise<boolean> {
-    return input.enableMetadata;
+    return true;
   }
 
   async execute(input: MetadataExtractionInput, context: PipelineContext): Promise<MetadataExtractionOutput> {
@@ -19,12 +19,8 @@ export class MetadataExtractionStage implements IPipelineStage<MetadataExtractio
     const suggestionsService = getSuggestionsService();
     const modelInfoService = getModelInfoService();
 
-    const reasoning = reasoningService.detectReasoningPatterns(input.fullResponse)
-      ? reasoningService.extractReasoning(input.fullResponse)
-      : [];
-
+    const reasoning = reasoningService.extractReasoning(input.fullResponse);
     const tasks = taskService.isComplexQuery(input.prompt) ? taskService.breakdownQuery(input.prompt) : [];
-
     const suggestions = suggestionsService.generateSuggestions(input.prompt, input.fullResponse, input.messages);
 
     const client = getAItClient();

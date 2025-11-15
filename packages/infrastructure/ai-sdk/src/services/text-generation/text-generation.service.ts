@@ -16,6 +16,7 @@ import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { StreamEvent } from "../../types";
 import { MetadataEmitterService, type RAGContextMetadata } from "../streaming/metadata-emitter.service";
 import { PromptOrchestrationService } from "../orchestration/prompt-orchestration.service";
+import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
 
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
@@ -139,18 +140,33 @@ export class TextGenerationService implements ITextGenerationService {
           { traceContext: traceContext || undefined },
         );
 
-        if (ragResult.success && ragResult.data) {
-          const ragMetadata = ragResult.data as RAGContextMetadata;
+        if (enableMetadata) {
+          if (ragResult.success && ragResult.data) {
+            const ragMetadata = ragResult.data as RAGContextMetadata;
 
-          if (ragMetadata.context) {
-            contextToUse = ragMetadata.context;
-          }
+            if (ragMetadata.context) {
+              contextToUse = ragMetadata.context;
+            }
 
-          const rawDocuments =
-            ragMetadata.rerankedDocuments || ragMetadata.fusedDocuments || ragMetadata.documents || [];
-          if (enableMetadata && rawDocuments.length > 0) {
             const metadataEvent = this._metadataEmitter.createContextMetadataEvent(ragMetadata, options.prompt);
             yield metadataEvent;
+          } else {
+            const emptyRagMetadata: RAGContextMetadata = {
+              context: "",
+              documents: [],
+              contextMetadata: {
+                documentCount: 0,
+                contextLength: 0,
+                usedTemporalCorrelation: false,
+              },
+            };
+            const metadataEvent = this._metadataEmitter.createContextMetadataEvent(emptyRagMetadata, options.prompt);
+            yield metadataEvent;
+          }
+        } else if (ragResult.success && ragResult.data) {
+          const ragMetadata = ragResult.data as RAGContextMetadata;
+          if (ragMetadata.context) {
+            contextToUse = ragMetadata.context;
           }
         }
       }
@@ -186,6 +202,61 @@ export class TextGenerationService implements ITextGenerationService {
         chunkCount++;
         fullResponse += chunk;
         yield chunk;
+      }
+
+      // Extract and emit metadata after collecting full response
+      // Metadata extraction must always run, even for simple queries
+      const metadataStage = new MetadataExtractionStage();
+      const metadataInput = {
+        fullResponse,
+        prompt: options.prompt,
+        messages: options.messages || [],
+        enableMetadata: true,
+      };
+
+      try {
+        const metadataResult = await metadataStage.execute(metadataInput, {
+          traceContext: traceContext || undefined,
+          metadata: {},
+          state: new Map(),
+          telemetry: { recordStage: () => {} },
+        });
+
+        // Emit metadata events only if enableMetadata is true
+        if (enableMetadata) {
+          // Emit reasoning metadata events
+          if (metadataResult.reasoning && metadataResult.reasoning.length > 0) {
+            const reasoningEvents = this._metadataEmitter.createReasoningMetadataEvent(metadataResult.reasoning);
+            for (const event of reasoningEvents) {
+              yield event;
+            }
+          }
+
+          // Emit task metadata events
+          if (metadataResult.tasks && metadataResult.tasks.length > 0) {
+            const taskEvents = this._metadataEmitter.createTaskMetadataEvent(metadataResult.tasks);
+            for (const event of taskEvents) {
+              yield event;
+            }
+          }
+
+          // Emit suggestions metadata event
+          if (metadataResult.suggestions && metadataResult.suggestions.length > 0) {
+            const suggestionEvent = this._metadataEmitter.createSuggestionMetadataEvent(metadataResult.suggestions);
+            yield suggestionEvent;
+          }
+
+          // Emit model metadata event
+          if (metadataResult.modelInfo) {
+            const modelEvent = this._metadataEmitter.createModelMetadataEvent(metadataResult.modelInfo);
+            if (modelEvent) {
+              yield modelEvent;
+            }
+          }
+        }
+      } catch (error) {
+        // Log error but don't fail the request if metadata extraction fails
+        console.warn("Failed to extract metadata:", error);
       }
 
       const duration = Date.now() - overallStart;
