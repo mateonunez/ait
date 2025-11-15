@@ -2,269 +2,126 @@
 
 Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /eɪt/). It depends. 🤷‍♂️
 
-## Overview
+AIt is a comprehensive platform for extracting, transforming, and loading data from multiple sources (GitHub, Linear, Spotify, X) into vector databases for AI-powered semantic search and text generation.
 
-> Thinking... 🤔
-
-### Key Features
-
-- **Connectors**:
-  - GitHub integration for repository analysis and OAuth 2.0 authentication
-  - Linear integration for issue tracking and project management
-  - Spotify integration for music insights and playlist analysis
-  - X integration for tweets analysis
-  - Modular connector architecture with shared utilities
-  - Type-safe OpenAPI generated interfaces
-  - Automatic token refresh and persistence
-
-- **ETL Pipeline**:
-  - Extract data from multiple sources using typed connectors
-  - Transform using LangChain and multiple embedding options
-  - Load into vector databases for semantic search
-  - Support for both Python and Node.js embedding generation
-  - Flexible pipeline configuration
-
-- **Storage Solutions**:
-  - PostgreSQL for structured data and OAuth tokens
-  - Qdrant for vector similarity search
-  - Ollama for local LLM processing (gpt-oss:20b for generation, mxbai-embed-large for embeddings)
-  - Redis for job queue and caching
-
-- **Scheduler**:
-  - Schedule and manage ETL tasks with BullMQ
-  - Automated token refresh and data synchronization
-  - Supports cron expressions for periodic tasks
-  - Configurable job priorities and retries
-  
-## 🚀 Getting Started
-
-### Prerequisites
-
-1. Install Node.js dependencies:
+## Quick Start
 
 ```bash
+# 1. Install dependencies
 corepack enable
 pnpm install
-```
 
-2. Start required services:
-> It requires Docker and Docker Compose to be installed.
+# 2. Start services (PostgreSQL, Qdrant, Ollama, Redis)
+pnpm start:services
 
-```bash
-pnpm start:services   # Starts PostgreSQL, Qdrant, Ollama, etc
-```
+# 3. Configure environment variables (see Configuration section)
+# Create .env file with required variables (check the example files in the packages)
 
-### 🔧 Configuration
-
-1. Set up environment variables:
-
-> You can follow the `.env.example` file to create your own `.env` file. The project also supports `.env.test` for testing purposes.
-
-```bash
-# Database Configuration
-POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
-
-# GitHub OAuth
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_secret
-GITHUB_ENDPOINT=https://github.com/login/oauth/access_token
-GITHUB_REDIRECT_URI=http://localhost:3000/api/github/auth/callback
-GITHUB_AUTH_URL=https://github.com/login/oauth/authorize
-
-# Linear OAuth
-LINEAR_CLIENT_ID=your_linear_client_id
-LINEAR_CLIENT_SECRET=your_linear_secret
-LINEAR_ENDPOINT=https://api.linear.app/oauth/token
-LINEAR_REDIRECT_URI=http://localhost:3000/api/linear/auth/callback
-LINEAR_AUTH_URL=https://linear.app/oauth/authorize
-LINEAR_API_ENDPOINT=https://api.linear.app/graphql
-
-# Spotify OAuth
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-SPOTIFY_ENDPOINT=https://accounts.spotify.com/api/token
-SPOTIFY_REDIRECT_URI=http://localhost:3000/api/spotify/auth/callback
-SPOTIFY_AUTH_URL=https://accounts.spotify.com/authorize
-SPOTIFY_API_ENDPOINT=https://api.spotify.com/v1
-
-# X OAuth
-X_CLIENT_ID=your_x_client_id
-X_CLIENT_SECRET=your_x_secret
-X_ENDPOINT=https://api.x.com/2/oauth2/token
-X_REDIRECT_URI=http://localhost:3000/api/x/auth/callback
-X_AUTH_URL=https://twitter.com/i/oauth2/authorize
-X_API_ENDPOINT=https://api.x.com/2
-```
-
-2. Initialize the database:
-
-```bash
-# Ensure you have set the required environment variables
-
+# 4. Initialize database
 pnpm migrate
-```
 
-### 🎬 Action
-
-AIt provides flexibility in running the ETL process either automatically through the Scheduler or manually as needed.
-
-#### 1. Automated ETL via Scheduler
-
-The Scheduler manages also the ETL process. It uses BullMQ for job queue management and supports cron expressions for periodic tasks.
-
-```bash
-docker compose build ait_scheduler && docker compose up -d ait_scheduler
-```
-
-Ensure the Scheduler is properly configured by setting the necessary environment variables in `.env`, and the following services are running:
-- ait_postgres
-- ait_qdrant
-- ait_redis
-
-#### 2. Manual ETL
-
-If you prefer to run the ETL process manually, you can do so by following these steps:
-
-```bash
-cd packages/transformers/retove
-
-# Ensure you have set the required environment variables
-
-pnpm etl
-```
-
-#### 3. Text Generation
-
-After the ETL process, you can generate text using the `TextGeneration` service. Here's how to get started:
-
-```bash
-cd packages/infrastructure/langchain # <- The service will move out of this folder soon
-npx tsx src/services/text-generation/text-generation.service.e2e.ts
-```
-
-The E2E tests will:
-
-- Connect to your Qdrant collections (_github_repositories_collection_ and _spotify_tracks_collection_)
-- Generate embeddings for test prompts using mxbai-embed-large
-- Perform similarity searches
-- Generate responses using Ollama (gpt-oss:20b)
-
-### 🌐 Gateway & Connectors
-
-The project provides smart connectors for GitHub, Spotify, X, and more through a unified gateway. Here's how to get started:
-
-#### 1. Generate OpenAPI Types
-
-First, generate the TypeScript interfaces from OpenAPI specifications:
-
-```bash
-cd packages/connectors
-pnpm generate:openapi
-```
-
-> Note: Generated types are not committed to avoid repository bloat.
-
-#### 2. Development Mode
-
-```bash
-cd packages/gateway
+# 5. Start the services
 pnpm dev
 ```
 
-#### 3. Authentication
+## Architecture
 
-AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenticate:
+AIt follows a modular monorepo architecture:
 
-1. GitHub:
-```
-http://localhost:3000/api/github/auth
-```
+- **Connectors** (`packages/connectors`) - OAuth 2.0 integrations with GitHub, Linear, Spotify, X
+- **Gateway** (`packages/gateway`) - Unified API gateway for all connectors
+- **ETL Pipeline** (`packages/transformers/retove`) - Extract, transform, and load data into vector stores
+- **Scheduler** (`packages/infrastructure/scheduler`) - Automated ETL job scheduling with BullMQ
+- **AI SDK** (`packages/infrastructure/ai-sdk`) - RAG, text generation, and embeddings with Ollama
+- **Storage** - PostgreSQL (structured data), Qdrant (vectors), Redis (job queue)
+- **UI** (`packages/uit`) - Web interface for interacting with AIt
 
-2. Linear:
-```
-http://localhost:3000/api/linear/auth
-```
+## Key Features
 
-3. Spotify:
-```
-http://localhost:3000/api/spotify/auth
-```
+- **Multi-source Connectors**: GitHub, Linear, Spotify, X, Notion, Slack and more with OAuth 2.0
+- **Vector Search**: Qdrant-based semantic search with embeddings
+- **Local LLM**: Ollama integration for text generation and embeddings
+- **Automated ETL**: Scheduled data synchronization with configurable priorities
+- **RAG Pipeline**: Multi-collection retrieval-augmented generation
+- **Type-safe**: OpenAPI-generated TypeScript interfaces
 
-4. X:
-```
-http://localhost:3000/api/x/auth
-```
+## Configuration
 
-Once authenticated, AIt securely stores and manages OAuth tokens in the database for future requests.
-
-### 🧠 LLM Processing
-
-AIt uses Ollama for local LLM processing. Here's how to set it up:
-
-1. Start the Ollama service:
+Create a `.env` file in the root directory with the following essential variables:
 
 ```bash
-docker compose up -d ait_ollama
+# Database
+POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
+
+# OAuth (required for connectors)
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_secret
+
+SPOTIFY_CLIENT_ID=your_spotify_client_id
+SPOTIFY_CLIENT_SECRET=your_spotify_secret
+
+LINEAR_CLIENT_ID=your_linear_client_id
+LINEAR_CLIENT_SECRET=your_linear_secret
+
+X_CLIENT_ID=your_x_client_id
+X_CLIENT_SECRET=your_x_secret
+
+NOTION_CLIENT_ID=your_notion_client_id
+NOTION_CLIENT_SECRET=your_notion_secret
+
+SLACK_CLIENT_ID=your_slack_client_id
+SLACK_CLIENT_SECRET=your_slack_secret
+
+# Infrastructure URLs (defaults usually work)
+OLLAMA_BASE_URL=http://localhost:11434
+QDRANT_URL=http://localhost:6333
+REDIS_URL=redis://localhost:6379
 ```
 
-2. Install the models:
+See individual package READMEs for detailed configuration options.
+
+## Development
+
+### Testing
 
 ```bash
-# Install generation model (GPT-OSS 20B)
-docker exec -it ait_ollama sh -c "ollama pull gpt-oss:20b"
-
-# Install embedding model (MixedBread.ai large)
-docker exec -it ait_ollama sh -c "ollama pull mxbai-embed-large"
+pnpm test  # Runs tests with isolated Docker services
 ```
 
-The models are used for:
-- **gpt-oss:20b**: Text generation, reasoning, and agentic tasks
-- **mxbai-embed-large**: Generating embeddings for semantic search via LangChain
-- Similarity search operations in Qdrant vector store
-
-> **Note**: You can easily switch models by setting environment variables or updating the centralized configuration. See `packages/infrastructure/langchain/MODELS.md` for more details.
-
-### 🛠️ Development
-
-#### Testing
-
-Run tests in an isolated environment using Docker Compose:
+### Code Generation
 
 ```bash
-# Run tests (services, migrations and seeding happen automatically)
-pnpm test
+pnpm generate:openapi  # Generate OpenAPI types
+cd packages/infrastructure/postgres && pnpm db:generate  # Generate DB types
 ```
 
-> Note: Ensure the `ait_testing` database is properly initialized. The project uses `.env.test` for test configuration.
-
-#### Code Generation
+### Database Management
 
 ```bash
-# Generate OpenAPI types
-pnpm generate:openapi
-
-# Generate database types
-cd packages/infrastructure/postgres
-pnpm db:generate
+pnpm migrate      # Run migrations
+pnpm db:studio    # Open database UI (from postgres package)
 ```
 
-#### Database Management
+### Linting
 
 ```bash
-# Run migrations
-pnpm db:migrate
-
-# Access database UI
-pnpm db:studio
+pnpm lint      # Check code
+pnpm lint:fix  # Fix issues
 ```
 
-#### Linting
+## Package Documentation
 
-```bash
-pnpm lint      # Run linting
-pnpm lint:fix  # Fix linting issues
-```
+- **[Gateway](packages/gateway/README.md)** - API gateway and OAuth authentication
+- **[Connectors](packages/connectors/README.md)** - Platform integrations framework
+- **[Scheduler](packages/infrastructure/scheduler/README.md)** - ETL job scheduling
+- **[AI SDK](packages/infrastructure/ai-sdk/README.md)** - RAG and text generation
+- **[ETL Pipeline](packages/transformers/retove/README.md)** - Data transformation
+- **[PostgreSQL](packages/infrastructure/postgres/README.md)** - Database client
+- **[Qdrant](packages/infrastructure/qdrant/README.md)** - Vector database
+- **[Ollama](packages/infrastructure/ollama/README.md)** - LLM service setup
+- **[Redis](packages/infrastructure/redis/README.md)** - Job queue and caching
+- **[UI](packages/uit/README.md)** - Web interface
 
-### 📝 License
+## License
 
 [MIT](LICENSE)
