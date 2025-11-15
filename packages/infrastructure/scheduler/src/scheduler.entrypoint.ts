@@ -108,6 +108,13 @@ const SCHEDULED_JOBS: JobConfig[] = [
     priority: 3,
     enabled: true,
   },
+  {
+    name: GitHubETLs.commit,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.mediumPriorityCron,
+    priority: 3,
+    enabled: true,
+  },
 ].filter((job) => job.enabled !== false);
 
 class SchedulerEntrypoint {

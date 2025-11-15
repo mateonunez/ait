@@ -5,25 +5,29 @@ import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { RepositoryCard } from "@/components/connectors/repository-card";
 import { PullRequestCard } from "@/components/connectors/pull-request-card";
+import { CommitCard } from "@/components/connectors/commit-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type {
   GitHubRepositoryEntity as GitHubRepository,
   GitHubPullRequestEntity as GitHubPullRequest,
+  GitHubCommitEntity as GitHubCommit,
 } from "@ait/core";
 
-type TabId = "repositories" | "pull-requests";
+type TabId = "repositories" | "pull-requests" | "commits";
 
 export default function GitHubPage() {
-  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
   const [activeTab, setActiveTab] = useState<TabId>("repositories");
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [pullRequests, setPullRequests] = useState<GitHubPullRequest[]>([]);
+  const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalRepositories, setTotalRepositories] = useState(0);
   const [totalPullRequests, setTotalPullRequests] = useState(0);
+  const [totalCommits, setTotalCommits] = useState(0);
   const pageSize = 50;
 
   const fetchData = useCallback(
@@ -31,33 +35,20 @@ export default function GitHubPage() {
       setIsLoading(true);
       try {
         if (activeTab === "repositories") {
-          const cached = getCachedData("github", "repository");
-          if (cached && page === 1) {
-            setRepositories(cached.data as GitHubRepository[]);
-            setTotalPages(cached.pagination.totalPages);
-            setTotalRepositories(cached.pagination.total);
-            setIsLoading(false);
-            return;
-          }
-
           const response = await fetchEntityData("github", "repository", { page, limit: pageSize });
           setRepositories(response.data as GitHubRepository[]);
           setTotalPages(response.pagination.totalPages);
           setTotalRepositories(response.pagination.total);
-        } else {
-          const cached = getCachedData("github", "pull_request");
-          if (cached && page === 1) {
-            setPullRequests(cached.data as GitHubPullRequest[]);
-            setTotalPages(cached.pagination.totalPages);
-            setTotalPullRequests(cached.pagination.total);
-            setIsLoading(false);
-            return;
-          }
-
+        } else if (activeTab === "pull-requests") {
           const response = await fetchEntityData("github", "pull_request", { page, limit: pageSize });
           setPullRequests(response.data as GitHubPullRequest[]);
           setTotalPages(response.pagination.totalPages);
           setTotalPullRequests(response.pagination.total);
+        } else {
+          const response = await fetchEntityData("github", "commit", { page, limit: pageSize });
+          setCommits(response.data as GitHubCommit[]);
+          setTotalPages(response.pagination.totalPages);
+          setTotalCommits(response.pagination.total);
         }
       } catch (error) {
         console.error("Failed to fetch GitHub data:", error);
@@ -65,7 +56,7 @@ export default function GitHubPage() {
         setIsLoading(false);
       }
     },
-    [activeTab, fetchEntityData, getCachedData],
+    [activeTab, fetchEntityData],
   );
 
   const handleRefresh = async () => {
@@ -96,6 +87,7 @@ export default function GitHubPage() {
   const tabs = [
     { id: "repositories", label: "Repositories", count: totalRepositories },
     { id: "pull-requests", label: "Pull Requests", count: totalPullRequests },
+    { id: "commits", label: "Commits", count: totalCommits },
   ];
 
   return (
@@ -129,6 +121,14 @@ export default function GitHubPage() {
               </div>
             )}
 
+            {activeTab === "commits" && (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {commits.map((commit) => (
+                  <CommitCard key={commit.sha} commit={commit} />
+                ))}
+              </div>
+            )}
+
             {totalPages > 1 && (
               <div className="flex justify-center py-8">
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
@@ -136,7 +136,8 @@ export default function GitHubPage() {
             )}
 
             {((activeTab === "repositories" && repositories.length === 0) ||
-              (activeTab === "pull-requests" && pullRequests.length === 0)) && (
+              (activeTab === "pull-requests" && pullRequests.length === 0) ||
+              (activeTab === "commits" && commits.length === 0)) && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <p className="text-lg text-muted-foreground">No data found</p>
                 <p className="text-sm text-muted-foreground mt-2">Try refreshing or connecting your GitHub account</p>

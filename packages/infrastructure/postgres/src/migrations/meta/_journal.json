@@ -141,6 +141,20 @@
       "when": 1763056582421,
       "tag": "0019_plain_microchip",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1763214958142,
+      "tag": "0020_nice_peter_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1763216031874,
+      "tag": "0021_smooth_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

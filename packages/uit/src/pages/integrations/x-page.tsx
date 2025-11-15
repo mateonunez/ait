@@ -7,7 +7,7 @@ import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { XTweetEntity as XTweet } from "@ait/core";
 
 export default function XPage() {
-  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
   const [tweets, setTweets] = useState<XTweet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -19,14 +19,6 @@ export default function XPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const cached = getCachedData("x", "tweet");
-        if (cached && page === 1) {
-          setTweets(cached.data as XTweet[]);
-          setTotalPages(cached.pagination.totalPages);
-          setIsLoading(false);
-          return;
-        }
-
         const response = await fetchEntityData("x", "tweet", { page, limit: pageSize });
         setTweets(response.data as XTweet[]);
         setTotalPages(response.pagination.totalPages);
@@ -36,7 +28,7 @@ export default function XPage() {
         setIsLoading(false);
       }
     },
-    [fetchEntityData, getCachedData],
+    [fetchEntityData],
   );
 
   const handleRefresh = async () => {

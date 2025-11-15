@@ -20,7 +20,7 @@ import type {
 type TabId = "tracks" | "artists" | "playlists" | "albums" | "recently-played";
 
 export default function SpotifyPage() {
-  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
   const [activeTab, setActiveTab] = useState<TabId>("tracks");
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const [artists, setArtists] = useState<SpotifyArtist[]>([]);
@@ -44,14 +44,6 @@ export default function SpotifyPage() {
       try {
         switch (activeTab) {
           case "tracks": {
-            const cached = getCachedData("spotify", "track");
-            if (cached && page === 1) {
-              setTracks(cached.data as SpotifyTrack[]);
-              setTotalPages(cached.pagination.totalPages);
-              setTotalTracks(cached.pagination.total);
-              setIsLoading(false);
-              return;
-            }
             const response = await fetchEntityData("spotify", "track", { page, limit: pageSize });
             setTracks(response.data as SpotifyTrack[]);
             setTotalPages(response.pagination.totalPages);
@@ -59,14 +51,6 @@ export default function SpotifyPage() {
             break;
           }
           case "artists": {
-            const cached = getCachedData("spotify", "artist");
-            if (cached && page === 1) {
-              setArtists(cached.data as SpotifyArtist[]);
-              setTotalPages(cached.pagination.totalPages);
-              setTotalArtists(cached.pagination.total);
-              setIsLoading(false);
-              return;
-            }
             const response = await fetchEntityData("spotify", "artist", { page, limit: pageSize });
             setArtists(response.data as SpotifyArtist[]);
             setTotalPages(response.pagination.totalPages);
@@ -74,14 +58,6 @@ export default function SpotifyPage() {
             break;
           }
           case "playlists": {
-            const cached = getCachedData("spotify", "playlist");
-            if (cached && page === 1) {
-              setPlaylists(cached.data as SpotifyPlaylist[]);
-              setTotalPages(cached.pagination.totalPages);
-              setTotalPlaylists(cached.pagination.total);
-              setIsLoading(false);
-              return;
-            }
             const response = await fetchEntityData("spotify", "playlist", { page, limit: pageSize });
             setPlaylists(response.data as SpotifyPlaylist[]);
             setTotalPages(response.pagination.totalPages);
@@ -89,14 +65,6 @@ export default function SpotifyPage() {
             break;
           }
           case "albums": {
-            const cached = getCachedData("spotify", "album");
-            if (cached && page === 1) {
-              setAlbums(cached.data as SpotifyAlbum[]);
-              setTotalPages(cached.pagination.totalPages);
-              setTotalAlbums(cached.pagination.total);
-              setIsLoading(false);
-              return;
-            }
             const response = await fetchEntityData("spotify", "album", { page, limit: pageSize });
             setAlbums(response.data as SpotifyAlbum[]);
             setTotalPages(response.pagination.totalPages);
@@ -104,14 +72,6 @@ export default function SpotifyPage() {
             break;
           }
           case "recently-played": {
-            const cached = getCachedData("spotify", "recently_played");
-            if (cached && page === 1) {
-              setRecentlyPlayed(cached.data as SpotifyRecentlyPlayed[]);
-              setTotalPages(cached.pagination.totalPages);
-              setTotalRecentlyPlayed(cached.pagination.total);
-              setIsLoading(false);
-              return;
-            }
             const response = await fetchEntityData("spotify", "recently_played", { page, limit: pageSize });
             setRecentlyPlayed(response.data as SpotifyRecentlyPlayed[]);
             setTotalPages(response.pagination.totalPages);
@@ -125,7 +85,7 @@ export default function SpotifyPage() {
         setIsLoading(false);
       }
     },
-    [activeTab, fetchEntityData, getCachedData],
+    [activeTab, fetchEntityData],
   );
 
   const handleRefresh = async () => {

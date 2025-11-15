@@ -7,7 +7,7 @@ import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { SlackMessageEntity } from "@ait/core";
 
 export default function SlackPage() {
-  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
   const [messages, setMessages] = useState<SlackMessageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -19,14 +19,6 @@ export default function SlackPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const cached = getCachedData("slack", "message");
-        if (cached && page === 1) {
-          setMessages(cached.data as SlackMessageEntity[]);
-          setTotalPages(cached.pagination.totalPages);
-          setIsLoading(false);
-          return;
-        }
-
         const response = await fetchEntityData("slack", "message", { page, limit: pageSize });
         setMessages(response.data as SlackMessageEntity[]);
         setTotalPages(response.pagination.totalPages);
@@ -36,7 +28,7 @@ export default function SlackPage() {
         setIsLoading(false);
       }
     },
-    [fetchEntityData, getCachedData],
+    [fetchEntityData],
   );
 
   const handleRefresh = async () => {

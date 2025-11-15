@@ -10,6 +10,7 @@ import {
   runLinearETL,
   runXETL,
   runGitHubPullRequestETL,
+  runGitHubCommitETL,
   runNotionETL,
   runSlackETL,
 } from "./infrastructure/runners/etl.runners";
@@ -30,6 +31,7 @@ async function main() {
     // Run other vendor ETLs
     await runGitHubRepositoryETL(qdrantClient, pgClient);
     await runGitHubPullRequestETL(qdrantClient, pgClient);
+    await runGitHubCommitETL(qdrantClient, pgClient);
     await runXETL(qdrantClient, pgClient);
     await runLinearETL(qdrantClient, pgClient);
     await runNotionETL(qdrantClient, pgClient);

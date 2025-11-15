@@ -30,8 +30,12 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
     ): Promise<PaginatedResponse<IntegrationEntity>> => {
       const vendorCache = cache[vendor];
       const entityCache = vendorCache?.[entityType];
+      const requestedLimit = params?.limit || 50;
+      const requestedPage = params?.page || 1;
 
-      if (entityCache && (!params?.page || params.page === 1)) {
+      // Return cached data only for page 1 AND when limits match exactly
+      // This prevents integration pages (limit: 50) from using homepage cache (limit: 10-15)
+      if (entityCache && requestedPage === 1 && entityCache.pagination.limit === requestedLimit) {
         return {
           data: entityCache.data,
           pagination: entityCache.pagination,
@@ -72,6 +76,9 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
                 break;
               case "pull_request":
                 response = await githubService.fetchPullRequests(params);
+                break;
+              case "commit":
+                response = await githubService.fetchCommits(params);
                 break;
               default:
                 throw new Error(`Unknown GitHub entity type: ${entityType}`);

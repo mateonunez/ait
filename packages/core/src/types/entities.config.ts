@@ -72,6 +72,14 @@ export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
     description: "GitHub pull requests (timestamps: mergedAt, closedAt)",
     timestampFields: ["mergedAt", "closedAt", "createdAt", "updatedAt"],
   },
+  commit: {
+    label: "Commit",
+    labelPlural: "Commits",
+    keywords: ["commit", "code change", "git", "github", "diff"],
+    vendor: "github",
+    description: "GitHub commits with diffs and file changes (timestamps: authorDate, committerDate)",
+    timestampFields: ["authorDate", "committerDate", "createdAt", "updatedAt"],
+  },
 
   // Linear entities
   issue: {

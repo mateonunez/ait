@@ -1,0 +1,32 @@
+CREATE TABLE "github_commits" (
+	"sha" varchar(255) PRIMARY KEY NOT NULL,
+	"message" text NOT NULL,
+	"message_body" text,
+	"html_url" varchar(512) NOT NULL,
+	"comments_url" varchar(512) NOT NULL,
+	"node_id" varchar(255),
+	"author_name" varchar(255),
+	"author_email" varchar(255),
+	"author_date" timestamp,
+	"committer_name" varchar(255),
+	"committer_email" varchar(255),
+	"committer_date" timestamp,
+	"tree_sha" varchar(255) NOT NULL,
+	"tree_url" varchar(512) NOT NULL,
+	"parent_shas" text[],
+	"additions" integer DEFAULT 0,
+	"deletions" integer DEFAULT 0,
+	"total" integer DEFAULT 0,
+	"repository_id" varchar(255),
+	"repository_name" varchar(255),
+	"repository_full_name" varchar(512),
+	"author_data" jsonb,
+	"committer_data" jsonb,
+	"files_data" jsonb,
+	"verification" jsonb,
+	"metadata" jsonb,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now()
+);
+--> statement-breakpoint
+ALTER TABLE "oauth_tokens" ALTER COLUMN "id" SET DEFAULT '42dbca76-5b76-402a-93f0-ca8c26703339';

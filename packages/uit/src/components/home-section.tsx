@@ -10,6 +10,7 @@ import { AlbumCard } from "@/components/connectors/album-card";
 import { RecentlyPlayedCard } from "@/components/connectors/recently-played-card";
 import { RepositoryCard } from "@/components/connectors/repository-card";
 import { PullRequestCard } from "@/components/connectors/pull-request-card";
+import { CommitCard } from "@/components/connectors/commit-card";
 import { IssueCard } from "@/components/connectors/issue-card";
 import { TweetCard } from "@/components/connectors/tweet-card";
 import { PageCard } from "@/components/connectors/page-card";
@@ -22,6 +23,7 @@ import type {
   SpotifyRecentlyPlayedEntity,
   GitHubRepositoryEntity,
   GitHubPullRequestEntity,
+  GitHubCommitEntity,
   LinearIssueEntity,
   XTweetEntity,
   NotionPageEntity,
@@ -69,6 +71,8 @@ function renderCard(item: IntegrationEntity, onClick?: () => void) {
       return <RepositoryCard repository={item as GitHubRepositoryEntity} onClick={onClick} />;
     case "pull_request":
       return <PullRequestCard pullRequest={item as GitHubPullRequestEntity} onClick={onClick} />;
+    case "commit":
+      return <CommitCard commit={item as GitHubCommitEntity} onClick={onClick} />;
     case "issue":
       return <IssueCard issue={item as LinearIssueEntity} onClick={onClick} />;
     case "tweet":

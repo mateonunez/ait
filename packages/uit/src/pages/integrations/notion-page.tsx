@@ -7,7 +7,7 @@ import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { NotionPageEntity } from "@ait/core";
 
 export default function NotionPage() {
-  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
   const [pages, setPages] = useState<NotionPageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -19,14 +19,6 @@ export default function NotionPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const cached = getCachedData("notion", "page");
-        if (cached && page === 1) {
-          setPages(cached.data as NotionPageEntity[]);
-          setTotalPages(cached.pagination.totalPages);
-          setIsLoading(false);
-          return;
-        }
-
         const response = await fetchEntityData("notion", "page", { page, limit: pageSize });
         setPages(response.data as NotionPageEntity[]);
         setTotalPages(response.pagination.totalPages);
@@ -36,7 +28,7 @@ export default function NotionPage() {
         setIsLoading(false);
       }
     },
-    [fetchEntityData, getCachedData],
+    [fetchEntityData],
   );
 
   const handleRefresh = async () => {

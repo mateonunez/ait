@@ -7,7 +7,7 @@ import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { LinearIssueEntity as LinearIssue } from "@ait/core";
 
 export default function LinearPage() {
-  const { fetchEntityData, refreshVendor, getCachedData } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
   const [issues, setIssues] = useState<LinearIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -19,14 +19,6 @@ export default function LinearPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const cached = getCachedData("linear", "issue");
-        if (cached && page === 1) {
-          setIssues(cached.data as LinearIssue[]);
-          setTotalPages(cached.pagination.totalPages);
-          setIsLoading(false);
-          return;
-        }
-
         const response = await fetchEntityData("linear", "issue", { page, limit: pageSize });
         setIssues(response.data as LinearIssue[]);
         setTotalPages(response.pagination.totalPages);
@@ -36,7 +28,7 @@ export default function LinearPage() {
         setIsLoading(false);
       }
     },
-    [fetchEntityData, getCachedData],
+    [fetchEntityData],
   );
 
   const handleRefresh = async () => {
