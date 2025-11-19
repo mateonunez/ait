@@ -1,7 +1,13 @@
+import type { CollectionVendor } from "../../config/collections.config";
 import { getAllCollections } from "../../config/collections.config";
 
-export function buildCollectionRouterPrompt(userQuery: string, intentHints?: string[]): string {
-  const collections = getAllCollections();
+export function buildCollectionRouterPrompt(
+  userQuery: string,
+  intentHints?: string[],
+  existingVendors?: Set<CollectionVendor>,
+): string {
+  const allCollections = getAllCollections();
+  const collections = existingVendors ? allCollections.filter((c) => existingVendors.has(c.vendor)) : allCollections;
 
   const collectionDescriptions = collections
     .map((c) => {
@@ -13,42 +19,29 @@ export function buildCollectionRouterPrompt(userQuery: string, intentHints?: str
   const intentContext =
     intentHints && intentHints.length > 0 ? `\nDetected intent hints: ${intentHints.join(", ")}` : "";
 
-  return `You are a collection router for a personal knowledge base RAG system. Your task is to analyze the user query and determine which collections should be searched.
+  return `Route this query to relevant collections in a personal knowledge base.
 
-## Available Collections
-
+Available Collections:
 ${collectionDescriptions}
-
-## Query Analysis Task
 
 User query: "${userQuery}"${intentContext}
 
-## Instructions
+Task:
+1. Identify collections with relevant data
+2. Assign weights (0.0-1.0): 1.0=primary, 0.7-0.9=highly relevant, 0.4-0.6=context, <0.4=skip
+3. Choose strategy based on scope
 
-1. Analyze the query to understand what information the user is seeking
-2. Identify which collections contain relevant data for this query
-3. Assign confidence weights (0.0-1.0) to each relevant collection:
-   - 1.0: Extremely relevant, primary focus
-   - 0.7-0.9: Highly relevant, should be included
-   - 0.4-0.6: Moderately relevant, may provide context
-   - 0.0-0.3: Low relevance, skip unless multi-domain query
-4. Provide clear reasoning for your selections
+Special cases:
+- Temporal queries ("yesterday"): Consider multiple collections
+- Multi-domain ("music while coding"): Multiple collections with weights
+- Specific entity ("Spotify playlist"): Focus on that vendor
+- Ambiguous: Broader coverage
 
-## Special Cases
-
-- **Temporal queries** (e.g., "yesterday", "last week"): Consider multiple collections if the time frame could span activities
-- **Multi-domain queries** (e.g., "music while coding"): Select multiple collections with appropriate weights
-- **Specific entity queries** (e.g., "Spotify playlist"): Focus on the specific vendor's collection
-- **Ambiguous queries**: Prefer broader coverage with multiple collections
-
-## Output Requirements
-
-- **strategy**: "single-collection" (one vendor only) | "multi-collection" (2-3 vendors) | "all-collections" (broad/ambiguous)
-- **confidence**: Overall confidence in routing decision (0.0-1.0)
-- **reasoning**: Brief explanation of why these collections were selected
-- **selectedCollections**: Array of {vendor, weight, reasoning} objects. Only include collections with weight >= 0.4
-
-Return a valid JSON object with the exact structure specified above.`;
+Return JSON with:
+- strategy: "single-collection" | "multi-collection" | "all-collections"
+- confidence: 0.0-1.0
+- reasoning: Brief explanation
+- selectedCollections: [{vendor, weight, reasoning}] (only weight >= 0.4)`;
 }
 
 export function buildFallbackRoutingReason(userQuery: string): string {

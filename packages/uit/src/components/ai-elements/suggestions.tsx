@@ -1,17 +1,28 @@
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles, ArrowRight, ChevronUp } from "lucide-react";
 import { cn } from "@/styles/utils";
 import type { SuggestionItem } from "@ait/core";
 import { motion } from "framer-motion";
 import * as Icons from "lucide-react";
+import { useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface SuggestionsProps {
   suggestions: SuggestionItem[];
   onSuggestionClick: (suggestion: SuggestionItem) => void;
   className?: string;
   variant?: "default" | "simple";
+  defaultOpen?: boolean;
 }
 
-export function Suggestions({ suggestions, onSuggestionClick, className, variant = "default" }: SuggestionsProps) {
+export function Suggestions({
+  suggestions,
+  onSuggestionClick,
+  className,
+  variant = "default",
+  defaultOpen = false,
+}: SuggestionsProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
   if (suggestions.length === 0) {
     return null;
   }
@@ -32,25 +43,39 @@ export function Suggestions({ suggestions, onSuggestionClick, className, variant
   }
 
   return (
-    <div className={cn("rounded-lg border border-border bg-background p-4 space-y-3", className)}>
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Suggestions</span>
-      </div>
-
-      {/* Suggestion buttons */}
-      <div className="flex flex-wrap gap-2">
-        {suggestions.map((suggestion, index) => (
-          <SuggestionButton
-            key={suggestion.id}
-            suggestion={suggestion}
-            onClick={() => onSuggestionClick(suggestion)}
-            index={index}
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className={cn("rounded-lg border border-border bg-background", className)}
+    >
+      <CollapsibleTrigger className="w-full p-4">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Suggestions</span>
+          </div>
+          <ChevronUp
+            className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform duration-200",
+              isOpen && "transform rotate-180",
+            )}
           />
-        ))}
-      </div>
-    </div>
+        </div>
+      </CollapsibleTrigger>
+
+      <CollapsibleContent className="px-4 pb-4">
+        <div className="flex flex-wrap gap-2 pt-2">
+          {suggestions.map((suggestion, index) => (
+            <SuggestionButton
+              key={suggestion.id}
+              suggestion={suggestion}
+              onClick={() => onSuggestionClick(suggestion)}
+              index={index}
+            />
+          ))}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 

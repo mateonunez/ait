@@ -5,6 +5,8 @@ import { QueryHeuristicService, type IQueryHeuristicService } from "../routing/q
 import { type QueryIntent, QueryIntentService, type IQueryIntentService } from "../routing/query-intent.service";
 import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { buildQueryPlanningPrompt } from "../prompts/planning.prompts";
+import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
 
 export interface IQueryPlannerService {
   planQueries(userQuery: string, traceContext?: TraceContext | null): Promise<QueryPlanResult>;
@@ -15,17 +17,21 @@ const QueryPlanSchema = z.object({
   tags: z.array(z.string()).optional().describe("Optional semantic tags"),
 });
 
+type QueryPlanResponse = z.infer<typeof QueryPlanSchema>;
+
 export class QueryPlannerService implements IQueryPlannerService {
   private readonly _queriesCount: number;
   private readonly _temperature: number;
   private readonly _minQueryCount: number;
   private readonly _heuristics: IQueryHeuristicService;
   private readonly _intentService: IQueryIntentService;
+  private readonly _textNormalizer: ITextNormalizationService;
 
   constructor(
     config: QueryPlannerConfig = {},
     heuristics: IQueryHeuristicService = new QueryHeuristicService(),
     intentService: IQueryIntentService = new QueryIntentService(),
+    textNormalizer?: ITextNormalizationService,
   ) {
     // Prefer a small initial set; retrieval layer can expand if recall is low
     this._queriesCount = Math.min(Math.max(config.queriesCount ?? 6, 4), 12);
@@ -34,6 +40,7 @@ export class QueryPlannerService implements IQueryPlannerService {
     this._minQueryCount = Math.min(Math.max(configuredMin, 1), this._queriesCount);
     this._heuristics = heuristics;
     this._intentService = intentService;
+    this._textNormalizer = textNormalizer || new TextNormalizationService();
   }
 
   async planQueries(userQuery: string, traceContext?: TraceContext | null): Promise<QueryPlanResult> {
@@ -65,54 +72,18 @@ export class QueryPlannerService implements IQueryPlannerService {
     }
 
     try {
-      const basePrompt = [
-        "Generate search queries for a personal knowledge base with code (PRs, issues), tweets, and music (recently played).",
-        "Preserve the user's meaning. Align to the entities implied by the question.",
-        "Rules: 2-8 words, lowercase, natural language, no ids/urls/hashtags/usernames/duplicates.",
-        `Return approximately ${this._queriesCount} unique queries.`,
-        "",
-        // Avoid generic knowledge queries that don't retrieve the user's data
-        "Avoid generic knowledge queries (no definitions, no troubleshooting, no comparisons) unless explicitly tied to the user's own activity.",
-        "Prefer activity-anchored phrasing like 'my tweets yesterday', 'recently played around noon', 'prs merged this week'.",
-      ];
-
-      // Add intent-specific instructions if available
-      if (intent?.entityTypes && intent.entityTypes.length > 0) {
-        basePrompt.push(
-          "",
-          `IMPORTANT: This query involves these entity types: ${intent.entityTypes.join(", ")}.`,
-          "Generate queries that:",
-          "1. Target each entity type explicitly (tweet | pull_request | recently_played)",
-          "2. Use first-person or owner-anchored phrasing (my, me) when natural",
-        );
-
-        if (intent.isTemporalQuery) {
-          const timeRef = intent.timeReference || "the relevant timeframe";
-          basePrompt.push(
-            "3. Include temporal context and time-based variations",
-            `4. Reference time period: ${timeRef}`,
-            "5. Generate queries that help correlate entities by their timestamps",
-            "6. Prefer concrete windows (e.g., last 3 days, yesterday afternoon)",
-          );
-        }
-
-        basePrompt.push("Ensure balanced coverage of the entity types mentioned; avoid generic knowledge facets.");
-      }
-
-      basePrompt.push(
-        "",
-        "IMPORTANT: Return a valid JSON object with this exact structure:",
-        '{"queries": ["query 1", "query 2", ...], "tags": ["tag1", "tag2", ...]}',
-        "The queries array must contain at least 4 queries. Tags are optional. Exclude definitions, troubleshooting, and generic comparisons.",
-        "",
-        "User query:",
+      const prompt = buildQueryPlanningPrompt(
         userQuery,
+        this._queriesCount,
+        intent?.entityTypes,
+        intent?.isTemporalQuery,
+        intent?.timeReference,
       );
 
-      const object = await client.generateStructured<z.infer<typeof QueryPlanSchema>>({
+      const object = await client.generateStructured<QueryPlanResponse>({
         schema: QueryPlanSchema,
         temperature: this._temperature,
-        prompt: basePrompt.join("\n"),
+        prompt,
       });
 
       // Normalize and validate queries
@@ -228,7 +199,7 @@ export class QueryPlannerService implements IQueryPlannerService {
 
     for (const query of queries) {
       const trimmed = query.trim();
-      const normalized = this._normalize(trimmed);
+      const normalized = this._textNormalizer.normalizeForMatching(trimmed);
       const words = normalized.split(" ").filter(Boolean);
 
       if (words.length >= 2 && words.length <= 8 && !seen.has(normalized)) {
@@ -246,8 +217,8 @@ export class QueryPlannerService implements IQueryPlannerService {
     const trimmed = userQuery.trim();
     if (!trimmed) return result;
 
-    const normalizedOriginal = this._normalize(trimmed);
-    const hasOriginal = result.some((q) => this._normalize(q) === normalizedOriginal);
+    const normalizedOriginal = this._textNormalizer.normalizeForMatching(trimmed);
+    const hasOriginal = result.some((q) => this._textNormalizer.normalizeForMatching(q) === normalizedOriginal);
 
     if (!hasOriginal) {
       result.unshift(trimmed);
@@ -277,14 +248,5 @@ export class QueryPlannerService implements IQueryPlannerService {
     }
 
     return tagMap.size > 0 ? Array.from(tagMap.values()) : undefined;
-  }
-
-  private _normalize(value: string): string {
-    return value
-      .toLowerCase()
-      .replace(/["'`]/g, "")
-      .replace(/[.,;:!?(){}\[\]\\/+*_#@%^&=<>|~]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
   }
 }

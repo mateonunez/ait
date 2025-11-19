@@ -1,428 +1,69 @@
 import { randomUUID } from "node:crypto";
 import type { Document, BaseMetadata } from "../../types/documents";
 import { buildTitleFromMetadata } from "../../types/context";
-import type {
-  SpotifyTrackEntity,
-  SpotifyArtistEntity,
-  SpotifyPlaylistEntity,
-  SpotifyAlbumEntity,
-  GitHubRepositoryEntity,
-  XTweetEntity,
-  LinearIssueEntity,
-  SpotifyRecentlyPlayedEntity,
-  GitHubPullRequestEntity,
-  GitHubCommitEntity,
-  NotionPageEntity,
-  SlackMessageEntity,
-  EntityType,
-} from "@ait/core";
-import { getEntityLabel } from "@ait/core";
+import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
+import { TemporalLabelService, type ITemporalLabelService } from "./temporal-label.service";
+import type { EntityType } from "@ait/core";
 import type { TemporalCluster } from "../filtering/temporal-correlation.service";
+import type { EntityFormatter } from "./formatters/formatter.utils";
+import { safeString } from "./formatters/formatter.utils";
+import {
+  SpotifyTrackFormatter,
+  SpotifyArtistFormatter,
+  SpotifyPlaylistFormatter,
+  SpotifyAlbumFormatter,
+  SpotifyRecentlyPlayedFormatter,
+} from "./formatters/spotify.formatter";
+import {
+  GitHubRepositoryFormatter,
+  GitHubPullRequestFormatter,
+  GitHubCommitFormatter,
+} from "./formatters/github.formatter";
+import { XTweetFormatter } from "./formatters/x.formatter";
+import { NotionPageFormatter } from "./formatters/notion.formatter";
+import { SlackMessageFormatter } from "./formatters/slack.formatter";
+import { LinearIssueFormatter } from "./formatters/linear.formatter";
 
-type EntityContentBuilder<T = BaseMetadata> = (meta: T, pageContent: string) => string;
-
-type TextPart = string | null | undefined;
-
-const safeString = (value: unknown, fallback = ""): string => (typeof value === "string" ? value : fallback);
-
-const safeNumber = (value: unknown): number | null => (typeof value === "number" ? value : null);
-
-const safeArray = <T>(value: unknown): T[] => (Array.isArray(value) ? value : []);
-
-const extractArtistName = (artists: unknown[]): string => {
-  if (artists.length === 0) return "Unknown Artist";
-  const first = artists[0];
-  if (typeof first === "string") return first;
-  if (typeof first === "object" && first !== null && "name" in first && typeof first.name === "string") {
-    return first.name;
-  }
-  return "Unknown Artist";
+const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
+  track: SpotifyTrackFormatter,
+  artist: SpotifyArtistFormatter,
+  playlist: SpotifyPlaylistFormatter,
+  album: SpotifyAlbumFormatter,
+  recently_played: SpotifyRecentlyPlayedFormatter,
+  repository: GitHubRepositoryFormatter,
+  pull_request: GitHubPullRequestFormatter,
+  commit: GitHubCommitFormatter,
+  tweet: XTweetFormatter,
+  issue: LinearIssueFormatter,
+  page: NotionPageFormatter,
+  message: SlackMessageFormatter,
 };
-
-const formatDate = (date: unknown): string | null => {
-  if (!date) return null;
-  try {
-    return new Date(date as string | number | Date).toLocaleDateString();
-  } catch {
-    return null;
-  }
-};
-
-const truncate = (text: string, maxLength: number): string =>
-  text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-
-const joinParts = (...parts: TextPart[]): string => parts.filter((p): p is string => Boolean(p)).join("");
-
-const buildSpotifyTrack: EntityContentBuilder<SpotifyTrackEntity> = (meta) => {
-  const name = safeString(meta.name, "Unknown Track");
-  const artist = safeString(meta.artist, "Unknown Artist");
-  const album = meta.album && meta.album !== name ? meta.album : null;
-  const popularity = safeNumber(meta.popularity);
-  const explicit = meta.explicit ? " [Explicit]" : "";
-
-  return joinParts(
-    `Track: "${name}" by ${artist}`,
-    album ? ` from the album "${album}"` : null,
-    popularity !== null ? ` (popularity: ${popularity}/100)` : null,
-    explicit,
-  );
-};
-
-const buildSpotifyArtist: EntityContentBuilder<SpotifyArtistEntity> = (meta) => {
-  const name = safeString(meta.name, "Unknown Artist");
-  const genres = safeArray<string>(meta.genres)
-    .filter((g) => typeof g === "string")
-    .slice(0, 3);
-  const popularity = safeNumber(meta.popularity);
-
-  return joinParts(
-    `I follow ${name}`,
-    genres.length > 0 ? `, exploring ${genres.join(", ")}` : null,
-    popularity !== null ? ` (popularity: ${popularity}/100)` : null,
-  );
-};
-
-const buildSpotifyPlaylist: EntityContentBuilder<SpotifyPlaylistEntity> = (meta) => {
-  const name = safeString(meta.name, "Unnamed Playlist");
-  const description = safeString(meta.description);
-  const trackCount = safeArray(meta.tracks).length;
-
-  return joinParts(
-    `Playlist: "${name}"`,
-    description ? ` - ${description}` : null,
-    trackCount > 0 ? ` (${trackCount} tracks)` : null,
-  );
-};
-
-const buildSpotifyAlbum: EntityContentBuilder<SpotifyAlbumEntity> = (meta) => {
-  const name = safeString(meta.name, "Unknown Album");
-  const artists = safeArray(meta.artists);
-  const artistName = extractArtistName(artists);
-  const releaseDate = safeString(meta.releaseDate);
-  const totalTracks = safeNumber(meta.totalTracks);
-
-  return joinParts(
-    `Album: "${name}" by ${artistName}`,
-    releaseDate ? ` (${releaseDate})` : null,
-    totalTracks !== null ? `, ${totalTracks} tracks` : null,
-  );
-};
-
-const buildSpotifyRecentlyPlayed: EntityContentBuilder<SpotifyRecentlyPlayedEntity> = (meta) => {
-  const trackName = safeString(meta.trackName, "Unknown Track");
-  const artist = safeString(meta.artist, "Unknown Artist");
-  const album = safeString(meta.album);
-  const duration = safeNumber(meta.durationMs);
-  const explicit = meta.explicit ? " [Explicit]" : "";
-  const popularity = safeNumber(meta.popularity);
-  const durationFormatted = duration
-    ? `${Math.floor(duration / 60000)}:${String(Math.floor((duration % 60000) / 1000)).padStart(2, "0")}`
-    : null;
-  const vibeTag =
-    popularity !== null && popularity >= 70
-      ? " popular track"
-      : popularity !== null && popularity <= 30
-        ? " niche track"
-        : "";
-
-  return joinParts(
-    `I played "${trackName}" by ${artist}`,
-    album ? ` from ${album}` : null,
-    durationFormatted ? ` (${durationFormatted})` : null,
-    explicit,
-    vibeTag,
-  );
-};
-
-const buildGitHubRepository: EntityContentBuilder<GitHubRepositoryEntity> = (meta) => {
-  const name = safeString(meta.fullName || meta.name, "Unknown Repository");
-  const description = safeString(meta.description);
-  const language = safeString(meta.language);
-  const stars = safeNumber(meta.stars);
-  const forks = safeNumber(meta.forks);
-  const watchers = safeNumber(meta.watchersCount);
-  const openIssues = safeNumber(meta.openIssuesCount);
-
-  // Build comprehensive stats
-  const stats: string[] = [];
-  if (stars !== null) stats.push(`${stars} star${stars === 1 ? "" : "s"}`);
-  if (forks !== null) stats.push(`${forks} fork${forks === 1 ? "" : "s"}`);
-  if (watchers !== null && watchers > 0) stats.push(`${watchers} watcher${watchers === 1 ? "" : "s"}`);
-  if (openIssues !== null) stats.push(`${openIssues} open issue${openIssues === 1 ? "" : "s"}`);
-
-  // Build status indicators
-  const statusParts: string[] = [];
-  if (meta.archived) statusParts.push("archived");
-  if (meta.private) statusParts.push("private");
-  if (meta.fork) statusParts.push("fork");
-  if (meta.isTemplate) statusParts.push("template");
-
-  // Build features
-  const features: string[] = [];
-  if (meta.hasWiki) features.push("wiki");
-  if (meta.hasDiscussions) features.push("discussions");
-  if (meta.hasPages) features.push("GitHub Pages");
-
-  // Build topics
-  const topics = meta.topics && meta.topics.length > 0 ? `Topics: ${meta.topics.slice(0, 5).join(", ")}` : null;
-
-  // Build license
-  const license = meta.licenseName ? `License: ${meta.licenseName}` : null;
-
-  return joinParts(
-    `Repository: "${name}"`,
-    statusParts.length > 0 ? ` [${statusParts.join(", ")}]` : null,
-    description ? ` - ${description}` : null,
-    language ? ` (${language})` : null,
-    stats.length > 0 ? `. Stats: ${stats.join(", ")}` : null,
-    features.length > 0 ? `. Features: ${features.join(", ")}` : null,
-    topics ? `. ${topics}` : null,
-    license ? `. ${license}` : null,
-  );
-};
-
-const buildGitHubPullRequest: EntityContentBuilder<GitHubPullRequestEntity> = (meta) => {
-  const number = safeNumber(meta.number);
-  const title = safeString(meta.title, "Unnamed PR");
-  const state = safeString(meta.state);
-  const merged = meta.merged ? "merged" : null;
-  const draft = meta.draft ? "draft" : null;
-  const repositoryName = safeString(meta.repositoryFullName || meta.repositoryName);
-  const body = safeString(meta.body);
-
-  // Build stats
-  const stats: string[] = [];
-  const additions = safeNumber(meta.additions);
-  const deletions = safeNumber(meta.deletions);
-  if (additions !== null || deletions !== null) {
-    stats.push(`+${additions ?? 0}/-${deletions ?? 0}`);
-  }
-
-  const changedFiles = safeNumber(meta.changedFiles);
-  if (changedFiles !== null && changedFiles > 0) {
-    stats.push(`${changedFiles} file${changedFiles === 1 ? "" : "s"}`);
-  }
-
-  const commits = safeNumber(meta.commits);
-  if (commits !== null && commits > 0) {
-    stats.push(`${commits} commit${commits === 1 ? "" : "s"}`);
-  }
-
-  // Build action verb based on state
-  let action = "I worked on PR";
-  if (merged) action = "I merged PR";
-  else if (state === "closed" && !merged) action = "I closed PR";
-  else if (draft) action = "I drafted PR";
-  else if (state === "open") action = "I opened PR";
-
-  // Build repository context
-  const repoContext = repositoryName ? ` in \`${repositoryName}\`` : "";
-
-  // Include truncated body if available
-  const bodyPreview = body && body.length > 0 ? `\nDescription: ${truncate(body, 150)}` : "";
-
-  return joinParts(
-    `${action} #${number ?? "?"}${repoContext}`,
-    `: "${title}"`,
-    stats.length > 0 ? `. Changes: ${stats.join(", ")}` : null,
-    bodyPreview,
-  );
-};
-
-const buildGitHubCommit: EntityContentBuilder<GitHubCommitEntity> = (meta) => {
-  const sha = safeString(meta.sha, "");
-  const shortSha = sha.length >= 7 ? sha.substring(0, 7) : sha;
-  const message = safeString(meta.message, "No commit message");
-  const messageBody = safeString(meta.messageBody);
-  const repositoryName = safeString(meta.repositoryFullName || meta.repositoryName);
-  const authorName = safeString(meta.authorName);
-  const committerName = safeString(meta.committerName);
-
-  // Build stats
-  const stats: string[] = [];
-  const additions = safeNumber(meta.additions);
-  const deletions = safeNumber(meta.deletions);
-  if (additions !== null || deletions !== null) {
-    stats.push(`+${additions ?? 0}/-${deletions ?? 0}`);
-  }
-
-  const total = safeNumber(meta.total);
-  if (total !== null && total > 0) {
-    stats.push(`${total} total changes`);
-  }
-
-  // Count files from filesData if available
-  let fileCount = 0;
-  if (meta.filesData && Array.isArray(meta.filesData)) {
-    fileCount = meta.filesData.length;
-  }
-
-  if (fileCount > 0) {
-    stats.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
-  }
-
-  // Build author info
-  const authorInfo = authorName ? ` by ${authorName}` : "";
-  const committerInfo = committerName && committerName !== authorName ? ` (committed by ${committerName})` : "";
-
-  // Build repository context
-  const repoContext = repositoryName ? ` in \`${repositoryName}\`` : "";
-
-  // Include truncated message body if available
-  const bodyPreview = messageBody && messageBody.length > 0 ? `\nDescription: ${truncate(messageBody, 150)}` : "";
-
-  // Build verification status
-  let verified = "";
-  if (meta.verification && typeof meta.verification === "object") {
-    const verification = meta.verification as any;
-    if (verification.verified) {
-      verified = " [verified]";
-    }
-  }
-
-  return joinParts(
-    `I committed ${shortSha}${repoContext}${authorInfo}${committerInfo}`,
-    `: "${message}"`,
-    stats.length > 0 ? `. Changes: ${stats.join(", ")}` : null,
-    verified,
-    bodyPreview,
-  );
-};
-
-const buildXTweet: EntityContentBuilder<XTweetEntity> = (meta, pageContent) => {
-  const text = safeString(meta.text || pageContent, "");
-  const retweetCount = safeNumber(meta.retweetCount);
-  const likeCount = safeNumber(meta.likeCount);
-  const replyCount = safeNumber(meta.replyCount);
-  const authorName = safeString(meta.authorName);
-  const authorUsername = safeString(meta.authorUsername);
-
-  const engagement: string[] = [];
-  if (retweetCount !== null && retweetCount > 0) engagement.push(`${retweetCount} retweets`);
-  if (likeCount !== null && likeCount > 0) engagement.push(`${likeCount} likes`);
-  if (replyCount !== null && replyCount > 0) engagement.push(`${replyCount} replies`);
-
-  const authorInfo = authorName || authorUsername ? ` (@${authorUsername || authorName})` : "";
-
-  return joinParts(`I tweeted${authorInfo}: ${text}`, engagement.length > 0 ? ` (${engagement.join(", ")})` : null);
-};
-
-const buildLinearIssue: EntityContentBuilder<LinearIssueEntity> = (meta) => {
-  const title = safeString(meta.title, "Unnamed Issue");
-  const description = safeString(meta.description);
-  const state = safeString(meta.state);
-  const priority = safeNumber(meta.priority);
-  const labels = safeArray<string>(meta.labels);
-  const assigneeName = safeString(meta.assigneeName);
-  const teamName = safeString(meta.teamName);
-  const projectName = safeString(meta.projectName);
-
-  const priorityLabels: Record<number, string> = {
-    0: "Urgent",
-    1: "High",
-    2: "Medium",
-    3: "Low",
-    4: "No priority",
-  };
-  const priorityLabel = priority !== null ? priorityLabels[priority] || `Priority ${priority}` : null;
-
-  const parts: string[] = [`Issue: "${title}"`];
-  if (state) parts.push(` [${state}]`);
-  if (teamName) parts.push(` in ${teamName}`);
-  if (priorityLabel) parts.push(` (${priorityLabel})`);
-  if (assigneeName) parts.push(`, assigned to ${assigneeName}`);
-  if (projectName) parts.push(`, project: ${projectName}`);
-  if (description) parts.push(`\n${truncate(description, 200)}`);
-  if (labels.length > 0) parts.push(`\nLabels: ${labels.join(", ")}`);
-
-  return parts.join("");
-};
-
-const buildNotionPage: EntityContentBuilder<NotionPageEntity> = (meta, pageContent) => {
-  const title = safeString(meta.title, "Untitled Page");
-  const content = safeString(meta.content || pageContent);
-  const parentType = safeString(meta.parentType);
-  const archived = meta.archived ? " [Archived]" : "";
-
-  const parts: string[] = [`Notion page: "${title}"${archived}`];
-  if (parentType && parentType !== "workspace") {
-    parts.push(` in ${parentType}`);
-  }
-  if (content) {
-    parts.push(`\n${truncate(content, 300)}`);
-  }
-
-  return parts.join("");
-};
-
-const buildSlackMessage: EntityContentBuilder<SlackMessageEntity> = (meta) => {
-  const text = safeString(meta.text, "");
-  const channelName = safeString(meta.channelName);
-  const userName = safeString(meta.userName);
-  const threadTs = safeString(meta.threadTs);
-
-  const parts: string[] = [];
-  if (channelName) {
-    parts.push(`Slack message in #${channelName}`);
-  } else {
-    parts.push("Slack message");
-  }
-  if (userName) {
-    parts.push(` from ${userName}`);
-  }
-  if (threadTs) {
-    parts.push(" [thread reply]");
-  }
-  if (text) {
-    parts.push(`: ${truncate(text, 200)}`);
-  }
-
-  return parts.join("");
-};
-
-const entityBuilders: Record<EntityType, EntityContentBuilder<any>> = {
-  track: buildSpotifyTrack,
-  artist: buildSpotifyArtist,
-  playlist: buildSpotifyPlaylist,
-  album: buildSpotifyAlbum,
-  recently_played: buildSpotifyRecentlyPlayed,
-  repository: buildGitHubRepository,
-  pull_request: buildGitHubPullRequest,
-  commit: buildGitHubCommit,
-  tweet: buildXTweet,
-  issue: buildLinearIssue,
-  page: buildNotionPage,
-  message: buildSlackMessage,
-};
-
-const cleanPageContent = (content: string): string => {
-  return content
-    .replace(/\{[^}]*\}/g, "")
-    .replace(/\[[^\]]*\]/g, "")
-    .replace(/https?:\/\/[^\s]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-};
-
-const isNaturalText = (text: string): boolean => text.length > 10 && !text.includes("{") && !text.includes("http");
 
 export class ContextBuilder {
+  private readonly _textNormalizer: ITextNormalizationService;
+  private readonly _temporalLabeler: ITemporalLabelService;
+
+  constructor(textNormalizer?: ITextNormalizationService, temporalLabeler?: ITemporalLabelService) {
+    this._textNormalizer = textNormalizer || new TextNormalizationService();
+    this._temporalLabeler = temporalLabeler || new TemporalLabelService();
+  }
+
   private buildNaturalContent(doc: Document<BaseMetadata>): string {
     const meta = doc.metadata;
 
     const originalText = safeString(meta.originalText);
-    if (originalText && isNaturalText(originalText)) {
+    if (originalText && this._textNormalizer.isNaturalText(originalText)) {
       return originalText;
     }
 
     const entityType = meta.__type as EntityType | undefined;
-    const builder = entityType ? entityBuilders[entityType] : null;
+    const formatter = entityType ? entityFormatters[entityType] : null;
 
-    if (builder) {
-      return builder(meta, doc.pageContent);
+    if (formatter) {
+      return formatter.format(meta, doc.pageContent);
     }
 
-    const cleaned = cleanPageContent(doc.pageContent);
+    const cleaned = this._textNormalizer.cleanPageContent(doc.pageContent);
     return cleaned || `${meta.__type || "Document"}: ${meta.id}`;
   }
 
@@ -437,18 +78,11 @@ export class ContextBuilder {
     const sections: string[] = [];
 
     for (const cluster of clusters) {
-      // Build a human-readable time label
-      const timeLabel = this._buildTimeLabel(cluster.centerTimestamp, cluster.timeWindow);
-
-      // Group entities by type within this cluster
+      const timeLabel = this._temporalLabeler.buildTimeLabel(cluster.centerTimestamp, cluster.timeWindow);
       const entityGroups = this._groupEntitiesByType(cluster.entities);
-
-      // Build content for this time cluster
       const clusterContent: string[] = [];
 
-      for (const [entityType, entities] of Object.entries(entityGroups)) {
-        const entityLabels = this._getEntityTypeLabel(entityType);
-
+      for (const [, entities] of Object.entries(entityGroups)) {
         for (const entity of entities) {
           const naturalContent = this.buildNaturalContent(entity.document);
           const header = buildTitleFromMetadata(entity.metadata);
@@ -462,55 +96,6 @@ export class ContextBuilder {
     }
 
     return sections.join("\n\n");
-  }
-
-  private _buildTimeLabel(centerTime: Date, window: { start: Date; end: Date }): string {
-    const now = new Date();
-    const diffMs = now.getTime() - centerTime.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    // Format the date
-    const dateStr = centerTime.toLocaleDateString("en-US", {
-      month: "numeric",
-      day: "numeric",
-      year: "numeric",
-    });
-
-    // Add time of day context if within the same day
-    const timeOfDay = this._getTimeOfDay(centerTime);
-
-    // Create relative time label
-    let relativeLabel = "";
-    if (diffMinutes < 60) {
-      relativeLabel = `${diffMinutes} minutes ago`;
-    } else if (diffHours < 24) {
-      relativeLabel = `${diffHours} hours ago`;
-    } else if (diffDays < 7) {
-      relativeLabel = `${diffDays} days ago`;
-    } else {
-      relativeLabel = dateStr;
-    }
-
-    // If there's a significant time span in the window, note it
-    const windowSpanHours = (window.end.getTime() - window.start.getTime()) / (1000 * 60 * 60);
-
-    if (windowSpanHours > 0.5) {
-      return `${dateStr} ${timeOfDay} (${relativeLabel})`;
-    }
-
-    return `${dateStr} ${timeOfDay}`;
-  }
-
-  private _getTimeOfDay(date: Date): string {
-    const hours = date.getHours();
-
-    if (hours < 6) return "(night)";
-    if (hours < 12) return "(morning)";
-    if (hours < 17) return "(afternoon)";
-    if (hours < 21) return "(evening)";
-    return "(night)";
   }
 
   private _groupEntitiesByType(
@@ -529,24 +114,18 @@ export class ContextBuilder {
     return groups;
   }
 
-  private _getEntityTypeLabel(entityType: string): string {
-    try {
-      return getEntityLabel(entityType as EntityType, true);
-    } catch {
-      return entityType;
-    }
-  }
-
-  public buildContextFromDocuments(documents: Document<BaseMetadata>[]): string {
+  private _buildEntityMap(documents: Document<BaseMetadata>[]): {
+    entityMap: Map<string, string>;
+    metadataMap: Map<string, BaseMetadata>;
+  } {
     const entityMap = new Map<string, string>();
     const metadataMap = new Map<string, BaseMetadata>();
 
     for (const doc of documents) {
       const entityId = doc.metadata.id || randomUUID();
       const naturalContent = this.buildNaturalContent(doc);
-
-      // Merge content for duplicate entities
       const existing = entityMap.get(entityId);
+
       if (existing && !existing.includes(naturalContent)) {
         entityMap.set(entityId, `${existing}\n${naturalContent}`);
       } else if (!existing) {
@@ -556,7 +135,11 @@ export class ContextBuilder {
       metadataMap.set(entityId, doc.metadata);
     }
 
-    const contextFromDocuments = Array.from(entityMap.entries())
+    return { entityMap, metadataMap };
+  }
+
+  private _formatEntities(entityMap: Map<string, string>, metadataMap: Map<string, BaseMetadata>): string {
+    return Array.from(entityMap.entries())
       .map(([id, content]) => {
         const meta = metadataMap.get(id);
         if (!meta) return "";
@@ -566,8 +149,11 @@ export class ContextBuilder {
       })
       .filter(Boolean)
       .join("\n\n");
+  }
 
-    return contextFromDocuments;
+  public buildContextFromDocuments(documents: Document<BaseMetadata>[]): string {
+    const { entityMap, metadataMap } = this._buildEntityMap(documents);
+    return this._formatEntities(entityMap, metadataMap);
   }
 
   public buildContextWithScores(documents: Array<{ doc: Document<BaseMetadata>; score: number }>): {
@@ -583,7 +169,6 @@ export class ContextBuilder {
       const existing = entityMap.get(entityId);
 
       if (existing) {
-        // Merge content and keep highest score
         const mergedContent = existing.content.includes(naturalContent)
           ? existing.content
           : `${existing.content}\n${naturalContent}`;
@@ -599,7 +184,7 @@ export class ContextBuilder {
       metadataMap.set(entityId, doc.metadata);
     }
 
-    const contextFromDocuments = Array.from(entityMap.entries())
+    const context = Array.from(entityMap.entries())
       .map(([id, { content }]) => {
         const meta = metadataMap.get(id);
         if (!meta) return "";
@@ -620,6 +205,6 @@ export class ContextBuilder {
       .filter(Boolean)
       .join("\n");
 
-    return { context: contextFromDocuments, scoreInfo };
+    return { context, scoreInfo };
   }
 }

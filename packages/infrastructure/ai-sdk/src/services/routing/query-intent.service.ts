@@ -69,25 +69,20 @@ export class QueryIntentService implements IQueryIntentService {
 
   private _buildIntentPrompt(query: string): string {
     return [
-      "Analyze this user query and extract structured intent.",
+      "Extract structured intent from this query.",
       "",
       "Entity types available:",
       getEntityDescriptions(),
       "",
-      "IMPORTANT DISTINCTION:",
-      "- Use 'recently_played' when the user asks about what they WERE LISTENING TO, PLAYED, or music DURING an activity",
-      "- Use 'track/artist/playlist/album' when asking about library, favorites, or general music preferences",
+      "Key distinction:",
+      "- 'recently_played': What user WAS LISTENING TO or music DURING an activity",
+      "- 'track/artist/playlist/album': Library, favorites, general music preferences",
       "",
-      "Your task:",
-      "1. Identify which entity types are relevant to this query",
-      "2. Determine if this is a temporal query (needs to correlate entities by their timestamps)",
-      "3. Extract any time reference mentioned",
-      "4. Understand what the user primarily wants to know",
+      "Task: Identify entity types, determine if temporal (correlate by timestamps), extract time reference, understand primary focus.",
       "",
       "Examples:",
       "",
       "Query: 'What was I listening to while tweeting last week?'",
-      "Response:",
       JSON.stringify(
         {
           entityTypes: ["tweet", "recently_played"],
@@ -100,19 +95,13 @@ export class QueryIntentService implements IQueryIntentService {
       ),
       "",
       "Query: 'Show me my favorite Spotify tracks'",
-      "Response:",
       JSON.stringify(
-        {
-          entityTypes: ["track"],
-          isTemporalQuery: false,
-          primaryFocus: "favorite tracks in library",
-        },
+        { entityTypes: ["track"], isTemporalQuery: false, primaryFocus: "favorite tracks in library" },
         null,
         2,
       ),
       "",
       "Query: 'What was I doing on October 30?'",
-      "Response:",
       JSON.stringify(
         {
           entityTypes: ["tweet", "recently_played", "pull_request", "issue"],
@@ -124,7 +113,7 @@ export class QueryIntentService implements IQueryIntentService {
         2,
       ),
       "",
-      "Now analyze this query:",
+      "Analyze:",
       query,
     ].join("\n");
   }

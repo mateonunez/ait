@@ -1,5 +1,6 @@
 import type { ConversationConfig, ConversationContext } from "../../types/text-generation";
 import type { ChatMessage } from "../../types/chat";
+import { TokenEstimationService, type ITokenEstimationService } from "../metadata/token-estimation.service";
 
 /**
  * Interface for conversation manager service
@@ -21,27 +22,29 @@ export class ConversationManagerService implements IConversationManagerService {
   private readonly _maxRecentMessages: number;
   private readonly _maxHistoryTokens: number;
   private readonly _enableSummarization: boolean;
+  private readonly _tokenEstimator: ITokenEstimationService;
 
-  constructor(config: ConversationConfig = {}) {
+  constructor(config: ConversationConfig = {}, tokenEstimator?: ITokenEstimationService) {
     this._maxRecentMessages = Math.max(config.maxRecentMessages ?? 10, 1);
     this._maxHistoryTokens = Math.max(config.maxHistoryTokens ?? 2000, 100);
     this._enableSummarization = config.enableSummarization ?? true;
+    this._tokenEstimator = tokenEstimator || new TokenEstimationService();
   }
 
   async processConversation(messages: ChatMessage[] | undefined, currentPrompt: string): Promise<ConversationContext> {
     if (!messages || messages.length === 0) {
       return {
         recentMessages: [],
-        estimatedTokens: this._estimateTokens(currentPrompt),
+        estimatedTokens: this._tokenEstimator.estimateTokens(currentPrompt),
       };
     }
 
     // Calculate tokens for current prompt
-    const currentPromptTokens = this._estimateTokens(currentPrompt);
+    const currentPromptTokens = this._tokenEstimator.estimateTokens(currentPrompt);
 
     // Take recent messages (not exceeding maxRecentMessages)
     const recentMessages = messages.slice(-this._maxRecentMessages);
-    const recentTokens = this._estimateTokensForMessages(recentMessages);
+    const recentTokens = this._tokenEstimator.estimateTokensForMessages(recentMessages);
 
     // Check if we need summarization
     const totalRecentTokens = currentPromptTokens + recentTokens;
@@ -60,7 +63,7 @@ export class ConversationManagerService implements IConversationManagerService {
       const truncatedMessages = this._truncateMessages(recentMessages, this._maxHistoryTokens - currentPromptTokens);
       return {
         recentMessages: truncatedMessages,
-        estimatedTokens: currentPromptTokens + this._estimateTokensForMessages(truncatedMessages),
+        estimatedTokens: currentPromptTokens + this._tokenEstimator.estimateTokensForMessages(truncatedMessages),
       };
     }
 
@@ -72,13 +75,13 @@ export class ConversationManagerService implements IConversationManagerService {
       const truncatedMessages = this._truncateMessages(recentMessages, this._maxHistoryTokens - currentPromptTokens);
       return {
         recentMessages: truncatedMessages,
-        estimatedTokens: currentPromptTokens + this._estimateTokensForMessages(truncatedMessages),
+        estimatedTokens: currentPromptTokens + this._tokenEstimator.estimateTokensForMessages(truncatedMessages),
       };
     }
 
     // Create summary of older messages
     const summary = this._summarizeMessages(olderMessages);
-    const summaryTokens = this._estimateTokens(summary);
+    const summaryTokens = this._tokenEstimator.estimateTokens(summary);
 
     // Calculate remaining space for recent messages
     const remainingTokens = this._maxHistoryTokens - currentPromptTokens - summaryTokens;
@@ -87,23 +90,9 @@ export class ConversationManagerService implements IConversationManagerService {
     return {
       recentMessages: truncatedRecentMessages,
       summary,
-      estimatedTokens: currentPromptTokens + summaryTokens + this._estimateTokensForMessages(truncatedRecentMessages),
+      estimatedTokens:
+        currentPromptTokens + summaryTokens + this._tokenEstimator.estimateTokensForMessages(truncatedRecentMessages),
     };
-  }
-
-  private _estimateTokens(text: string): number {
-    // Rough estimation: ~4 characters per token
-    // This is a simplification; actual tokenization is more complex
-    return Math.ceil(text.length / 4);
-  }
-
-  private _estimateTokensForMessages(messages: ChatMessage[]): number {
-    let total = 0;
-    for (const msg of messages) {
-      // Account for role prefix (e.g., "User: " or "Assistant: ")
-      total += this._estimateTokens(`${msg.role}: ${msg.content}`);
-    }
-    return total;
   }
 
   private _truncateMessages(messages: ChatMessage[], maxTokens: number): ChatMessage[] {
@@ -113,7 +102,7 @@ export class ConversationManagerService implements IConversationManagerService {
     // Take messages from the end (most recent) until we hit the token limit
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]!;
-      const msgTokens = this._estimateTokens(`${msg.role}: ${msg.content}`);
+      const msgTokens = this._tokenEstimator.estimateTokens(`${msg.role}: ${msg.content}`);
 
       if (currentTokens + msgTokens <= maxTokens) {
         truncated.unshift(msg);

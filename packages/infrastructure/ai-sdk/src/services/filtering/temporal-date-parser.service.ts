@@ -6,6 +6,7 @@ export interface DateRange {
 }
 
 export interface ITemporalDateParser {
+  parseDate(value: unknown): Date | null;
   parseTimeRange(text: string): DateRange | undefined;
 }
 
@@ -42,6 +43,25 @@ const SPANISH_MONTHS: Record<string, string> = {
 const MONTH_TRANSLATIONS = [ITALIAN_MONTHS, SPANISH_MONTHS];
 
 export class TemporalDateParser implements ITemporalDateParser {
+  parseDate(value: unknown): Date | null {
+    if (!value) return null;
+
+    try {
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+
+      if (typeof value === "string" || typeof value === "number") {
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? null : date;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
   parseTimeRange(text: string): DateRange | undefined {
     if (!text) return undefined;
 

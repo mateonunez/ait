@@ -2,6 +2,7 @@ import { AItError } from "@ait/core";
 import { z } from "zod";
 import { getAItClient } from "../../client/ai-sdk.client";
 import type { Document, BaseMetadata } from "../../types/documents";
+import { buildRerankPrompt } from "../prompts/ranking.prompts";
 
 export interface IRerankService {
   rerank<TMetadata extends BaseMetadata>(
@@ -19,6 +20,8 @@ const RerankSchema = z.object({
     }),
   ),
 });
+
+type RerankResponse = z.infer<typeof RerankSchema>;
 
 export class RerankService implements IRerankService {
   private readonly _maxDocsForLLM: number = 100; // Limit LLM reranking to avoid prompt overload
@@ -52,22 +55,13 @@ export class RerankService implements IRerankService {
 
     const llm = getAItClient();
 
-    const docsText = docsToRerank
-      .map((doc, i) => `[${i}] ${doc.pageContent.slice(0, this._docPreviewLength)}`)
-      .join("\n\n");
-
     try {
-      const object = await llm.generateStructured<z.infer<typeof RerankSchema>>({
+      const prompt = buildRerankPrompt(query, docsToRerank, this._docPreviewLength);
+
+      const object = await llm.generateStructured<RerankResponse>({
         schema: RerankSchema,
         temperature: 0.3,
-        prompt: `Rate the relevance of each document to the query. Score 0-10 where 10 is highly relevant.
-
-Query: ${query}
-
-Documents:
-${docsText}
-
-IMPORTANT: Return a valid JSON object with "scores" array containing objects with "index" and "relevance" fields. You must score ALL ${docsToRerank.length} documents.`,
+        prompt,
       });
 
       // Create a map of index -> score from LLM response

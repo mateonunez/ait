@@ -1,6 +1,7 @@
 import type { TypeFilter } from "../../types/rag";
 import type { QueryIntent } from "../routing/query-intent.service";
 import { TemporalDateParser, type ITemporalDateParser } from "./temporal-date-parser.service";
+import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
 import {
   findEntityTypesByKeywords,
   getEntityTypesByVendor,
@@ -19,9 +20,11 @@ export interface ITypeFilterService {
 
 export class TypeFilterService implements ITypeFilterService {
   private readonly _dateParser: ITemporalDateParser;
+  private readonly _textNormalizer: ITextNormalizationService;
 
-  constructor(dateParser?: ITemporalDateParser) {
+  constructor(dateParser?: ITemporalDateParser, textNormalizer?: ITextNormalizationService) {
     this._dateParser = dateParser || new TemporalDateParser();
+    this._textNormalizer = textNormalizer || new TextNormalizationService();
   }
 
   inferTypes(
@@ -44,27 +47,20 @@ export class TypeFilterService implements ITypeFilterService {
       }
     }
 
-    // Fallback to keyword-based detection using centralized config
     const keywordSet = this._buildKeywordSet(tags, userQuery);
 
     if (keywordSet.size === 0) return undefined;
 
-    // Use centralized entity detection
     const keywords = Array.from(keywordSet);
     const matchingTypes = findEntityTypesByKeywords(keywords);
 
-    // Also check for multi-word keywords that might be contained in the query
-    // (e.g., "recently played" in "what am I listening to")
-    const normalizedQuery = userQuery?.toLowerCase().replace(/[.,;:!?(){}\[\]\\/+*_#@%^&=<>|~]/g, " ") || "";
+    const normalizedQuery = userQuery ? this._textNormalizer.normalizeForMatching(userQuery) : "";
     const additionalMatchingTypes = this._findTypesByPhraseMatching(normalizedQuery);
     const allMatchingTypes = Array.from(new Set([...matchingTypes, ...additionalMatchingTypes]));
 
-    // If we found specific types, expand to include all types from matching vendors
-    // This ensures queries like "repository" also return "pull_request" (both GitHub types)
     if (allMatchingTypes.length > 0) {
       const vendorTypes = new Set<EntityType>(allMatchingTypes);
 
-      // For each matched type, add all other types from the same vendor
       for (const matchedType of allMatchingTypes) {
         const vendor = getEntityMetadata(matchedType).vendor;
         const vendorEntityTypes = getEntityTypesByVendor(vendor);
@@ -73,7 +69,6 @@ export class TypeFilterService implements ITypeFilterService {
         }
       }
 
-      // Sort types according to VALID_ENTITY_TYPES order for consistent output
       const sortedTypes = Array.from(vendorTypes).sort((a, b) => {
         const indexA = VALID_ENTITY_TYPES.indexOf(a);
         const indexB = VALID_ENTITY_TYPES.indexOf(b);
@@ -83,7 +78,6 @@ export class TypeFilterService implements ITypeFilterService {
       return { types: sortedTypes, timeRange: this._parseTimeRange(userQuery) };
     }
 
-    // Fallback for generic queries - return all entity types
     if (options?.usedFallback && userQuery) {
       return {
         types: [...VALID_ENTITY_TYPES] as EntityType[],
@@ -96,10 +90,7 @@ export class TypeFilterService implements ITypeFilterService {
 
   private _parseTimeRange(text?: string): { from?: string; to?: string } | undefined {
     if (!text) return undefined;
-
-    // Delegate to the dedicated temporal date parser
     const result = this._dateParser.parseTimeRange(text);
-
     return result;
   }
 
@@ -112,41 +103,33 @@ export class TypeFilterService implements ITypeFilterService {
     }
 
     if (userQuery) {
-      // Normalize query: remove punctuation but keep spaces for multi-word keyword matching
-      const normalized = userQuery.toLowerCase().replace(/[.,;:!?(){}\[\]\\/+*_#@%^&=<>|~]/g, " ");
-
-      // Add the normalized query as a whole (for multi-word keywords like "recently played")
-      keywords.add(normalized.trim());
-
-      // Also add individual tokens (for single-word keywords)
-      const tokens = normalized.split(/\s+/).filter(Boolean);
-      for (const token of tokens) {
-        keywords.add(token);
+      const extractedKeywords = this._textNormalizer.extractKeywords(userQuery);
+      for (const keyword of extractedKeywords) {
+        keywords.add(keyword);
       }
     }
 
     return keywords;
   }
 
-  /**
-   * Finds entity types by checking if multi-word keywords are contained in the query string.
-   * This handles cases like "recently played" keyword matching "what am I listening to" query.
-   */
   private _findTypesByPhraseMatching(normalizedQuery: string): EntityType[] {
     const matchingTypes: EntityType[] = [];
 
     for (const type of VALID_ENTITY_TYPES) {
       const metadata = getEntityMetadata(type);
-      // Check if any multi-word keyword (contains space) is contained in the query
-      const hasMultiWordMatch = metadata.keywords.some((kw) => {
-        if (kw.includes(" ")) {
-          // Multi-word keyword - check if it's contained in the query
-          return normalizedQuery.includes(kw.toLowerCase());
+      const hasMatch = metadata.keywords.some((kw) => {
+        const hasPunctuation = /[.,;:!?(){}\[\]\\/+*_#@%^&=<>|~]/.test(kw);
+        const isMultiWord = kw.includes(" ");
+
+        if (!hasPunctuation && !isMultiWord) {
+          return false;
         }
-        return false;
+
+        const normalizedKeyword = this._textNormalizer.normalizeForMatching(kw);
+        return normalizedKeyword && normalizedQuery.includes(normalizedKeyword);
       });
 
-      if (hasMultiWordMatch) {
+      if (hasMatch) {
         matchingTypes.push(type);
       }
     }
