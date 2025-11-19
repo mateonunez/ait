@@ -19,7 +19,7 @@ The service runs on `localhost:6379` by default.
 Set the following environment variable to customize the connection:
 
 ```bash
-REDIS_URL=redis://localhost:6379  # Default
+REDIS_URL=redis://:myredissecret@localhost:6379
 ```
 
 ## Usage

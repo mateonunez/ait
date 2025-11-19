@@ -18,10 +18,10 @@ describe("PromptBuilderService", () => {
 
       const result = service.buildPrompt(components);
 
-      assert.ok(result.includes("You are a helpful assistant."));
-      assert.ok(result.includes("User: Hello"));
-      assert.ok(result.includes("## Tool Results"));
-      assert.ok(result.includes("User: How are you?"));
+      assert.ok(result.includes("<system>\nYou are a helpful assistant.\n</system>"));
+      assert.ok(result.includes("<history>\nUser: Hello\n\nAssistant: Hi there!\n</history>"));
+      assert.ok(result.includes("<tool_results>\n## Tool Results\n- Data retrieved successfully\n</tool_results>"));
+      assert.ok(result.includes("<user>\nHow are you?\n</user>"));
       assert.ok(result.includes("Assistant:"));
     });
 
@@ -35,10 +35,10 @@ describe("PromptBuilderService", () => {
 
       const result = service.buildPrompt(components);
 
-      assert.ok(result.includes("You are a helpful assistant."));
-      assert.ok(result.includes("User: How are you?"));
+      assert.ok(result.includes("<system>\nYou are a helpful assistant.\n</system>"));
+      assert.ok(result.includes("<user>\nHow are you?\n</user>"));
       assert.ok(result.includes("Assistant:"));
-      assert.ok(!result.includes("undefined"));
+      assert.ok(!result.includes("<history>"));
     });
 
     it("should build prompt without tool results", () => {
@@ -52,10 +52,11 @@ describe("PromptBuilderService", () => {
 
       const result = service.buildPrompt(components);
 
-      assert.ok(result.includes("You are a helpful assistant."));
-      assert.ok(result.includes("User: Hello"));
-      assert.ok(result.includes("User: How are you?"));
+      assert.ok(result.includes("<system>\nYou are a helpful assistant.\n</system>"));
+      assert.ok(result.includes("<history>\nUser: Hello\n\nAssistant: Hi!\n</history>"));
+      assert.ok(result.includes("<user>\nHow are you?\n</user>"));
       assert.ok(result.includes("Assistant:"));
+      assert.ok(!result.includes("<tool_results>"));
     });
 
     it("should handle empty conversation history", () => {
@@ -69,8 +70,9 @@ describe("PromptBuilderService", () => {
 
       const result = service.buildPrompt(components);
 
-      assert.ok(result.includes("You are a helpful assistant."));
-      assert.ok(result.includes("User: How are you?"));
+      assert.ok(result.includes("<system>\nYou are a helpful assistant.\n</system>"));
+      assert.ok(result.includes("<user>\nHow are you?\n</user>"));
+      assert.ok(!result.includes("<history>"));
     });
 
     it("should handle whitespace-only conversation history", () => {
@@ -84,9 +86,23 @@ describe("PromptBuilderService", () => {
 
       const result = service.buildPrompt(components);
 
-      const parts = result.split("\n\n");
-      // Should not include empty history
-      assert.ok(!parts.some((part) => part.trim() === ""));
+      assert.ok(!result.includes("<history>"));
+    });
+
+    it("should handle intent-based style instructions", () => {
+      const service = new PromptBuilderService();
+
+      const components: PromptComponents = {
+        systemMessage: "You are a helpful assistant.",
+        userMessage: "Explain quantum physics.",
+        intent: {
+          requiredStyle: "concise",
+        },
+      };
+
+      const result = service.buildPrompt(components);
+
+      assert.ok(result.includes("Answer concisely. Avoid fluff. Be direct."));
     });
   });
 

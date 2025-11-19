@@ -79,3 +79,7 @@ Return JSON:
 
 Return ONLY the JSON object.`;
 };
+
+export const buildFallbackRoutingReason = (userQuery: string): string => {
+  return `LLM routing unavailable for query: "${userQuery.slice(0, 100)}". Using heuristic fallback.`;
+};

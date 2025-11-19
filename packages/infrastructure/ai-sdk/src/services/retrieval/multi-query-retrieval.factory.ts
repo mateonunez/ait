@@ -9,10 +9,12 @@ import { MultiQueryRetrievalService, type IMultiQueryRetrievalService } from "./
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
 import { QueryHeuristicService } from "../routing/query-heuristic.service";
+import { QueryIntentService } from "../routing/query-intent.service";
 
 export function createMultiQueryRetrievalService(config: MultiQueryConfig = {}): IMultiQueryRetrievalService {
   const heuristics = new QueryHeuristicService();
-  const queryPlanner = new QueryPlannerService(config.queryPlanner, heuristics);
+  const intentService = new QueryIntentService();
+  const queryPlanner = new QueryPlannerService(config.queryPlanner, heuristics, intentService);
   const diversity = new DiversityService(config.diversity);
   const typeFilter = new TypeFilterService();
   const rankFusion = new RankFusionService(config.rankFusion);
@@ -25,5 +27,15 @@ export function createMultiQueryRetrievalService(config: MultiQueryConfig = {}):
   const hyde = new HyDEService(embeddingsService);
   const reranker = new RerankService();
 
-  return new MultiQueryRetrievalService(queryPlanner, diversity, typeFilter, rankFusion, config, hyde, reranker);
+  return new MultiQueryRetrievalService(
+    queryPlanner,
+    diversity,
+    typeFilter,
+    rankFusion,
+    config,
+    hyde,
+    reranker,
+    intentService,
+    heuristics,
+  );
 }

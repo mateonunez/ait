@@ -23,6 +23,7 @@ import { XTweetFormatter } from "./formatters/x.formatter";
 import { NotionPageFormatter } from "./formatters/notion.formatter";
 import { SlackMessageFormatter } from "./formatters/slack.formatter";
 import { LinearIssueFormatter } from "./formatters/linear.formatter";
+import { formatMetadataToXml, formatDocumentToXml } from "../../utils/xml.utils";
 
 const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
   track: SpotifyTrackFormatter,
@@ -206,5 +207,26 @@ export class ContextBuilder {
       .join("\n");
 
     return { context, scoreInfo };
+  }
+
+  /**
+   * Build structured XML context with rich metadata
+   */
+  public buildStructuredContext(documents: Document<BaseMetadata>[]): string {
+    const { entityMap, metadataMap } = this._buildEntityMap(documents);
+
+    const xmlParts: string[] = [];
+
+    for (const [id, content] of entityMap.entries()) {
+      const meta = metadataMap.get(id);
+      if (!meta) continue;
+
+      const metadataXml = formatMetadataToXml(meta);
+      const documentXml = formatDocumentToXml(id, (meta.__type as string) || "unknown", metadataXml, content);
+
+      xmlParts.push(documentXml);
+    }
+
+    return xmlParts.join("\n\n");
   }
 }

@@ -5,12 +5,15 @@ import type { EntityType } from "@ait/core";
 import { VALID_ENTITY_TYPES, getVendorKeywords } from "@ait/core";
 import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
 import type { QueryIntent } from "./query-intent.service";
-import { getAItClient } from "../../client/ai-sdk.client";
-import { buildFallbackRoutingReason } from "./collection-router.prompts";
+import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
-import { buildBroadQueryPrompt, buildCollectionRouterPrompt } from "../prompts/routing.prompts";
+import {
+  buildBroadQueryPrompt,
+  buildCollectionRouterPrompt,
+  buildFallbackRoutingReason,
+} from "../prompts/routing.prompts";
 
 export interface ICollectionRouterService {
   routeCollections(
@@ -46,14 +49,17 @@ export class CollectionRouterService implements ICollectionRouterService {
   private readonly _temperature: number;
   private readonly _minConfidenceThreshold: number;
   private readonly _discoveryService: ICollectionDiscoveryService;
+  private readonly _client: AItClient;
 
   constructor(
     config?: { temperature?: number; minConfidenceThreshold?: number },
     discoveryService?: ICollectionDiscoveryService,
+    client?: AItClient,
   ) {
     this._temperature = config?.temperature ?? 0.3;
     this._minConfidenceThreshold = config?.minConfidenceThreshold ?? 0.4;
     this._discoveryService = discoveryService || new CollectionDiscoveryService();
+    this._client = client || getAItClient();
   }
 
   private async _getExistingCollectionVendors(): Promise<Set<CollectionVendor>> {
@@ -62,7 +68,7 @@ export class CollectionRouterService implements ICollectionRouterService {
 
   private async _isBroadQuery(userQuery: string, traceContext?: TraceContext): Promise<boolean> {
     try {
-      const client = getAItClient();
+      const client = this._client;
       const prompt = buildBroadQueryPrompt(userQuery);
 
       const response = await client.generateStructured<BroadQueryResponse>({
@@ -137,7 +143,7 @@ export class CollectionRouterService implements ICollectionRouterService {
       const intentHints = this.extractIntentHints(queryIntent);
       const prompt = buildCollectionRouterPrompt(userQuery, intentHints, existingVendors);
 
-      const client = getAItClient();
+      const client = this._client;
       const response = await client.generateStructured<CollectionRouterResponse>({
         schema: CollectionRouterSchema,
         temperature: this._temperature,

@@ -37,24 +37,20 @@ export class CollectionRerankService implements ICollectionRerankService {
     }
 
     const documentsByCollection = this.groupByCollection(documents);
-    const rerankedGroups: Array<WeightedDocument<TMetadata>[]> = [];
 
-    for (const [vendor, collectionDocs] of Object.entries(documentsByCollection)) {
+    // Process collections in parallel
+    const rerankPromises = Object.entries(documentsByCollection).map(async ([vendor, collectionDocs]) => {
       try {
-        const reranked = await this.rerankCollectionGroup(
-          vendor as CollectionVendor,
-          collectionDocs,
-          userQuery,
-          traceContext,
-        );
-        rerankedGroups.push(reranked);
+        return await this.rerankCollectionGroup(vendor as CollectionVendor, collectionDocs, userQuery, traceContext);
       } catch (error) {
         console.error(`Reranking failed for collection ${vendor}`, {
           error: error instanceof Error ? error.message : String(error),
         });
-        rerankedGroups.push(collectionDocs);
+        return collectionDocs;
       }
-    }
+    });
+
+    const rerankedGroups = await Promise.all(rerankPromises);
 
     const mergedResults = this.mergeRerankedGroups(rerankedGroups);
     const finalResults = mergedResults.slice(0, maxResults);

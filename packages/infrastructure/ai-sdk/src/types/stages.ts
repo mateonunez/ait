@@ -35,6 +35,7 @@ export interface RetrievalOutput extends CollectionRoutingOutput {
     queriesExecuted: number;
     totalDuration: number;
     documentsPerCollection: Record<string, number>;
+    fromCache?: boolean;
   };
 }
 

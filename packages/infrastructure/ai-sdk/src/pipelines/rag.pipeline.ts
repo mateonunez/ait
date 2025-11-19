@@ -10,6 +10,7 @@ import { ContextBuildingStage } from "../stages/rag/context-building.stage";
 import { MultiCollectionProvider } from "../services/rag/multi-collection.provider";
 import type { QueryAnalysisInput, ContextBuildingOutput } from "../types/stages";
 import { createMultiQueryRetrievalService } from "../services/retrieval/multi-query-retrieval.factory";
+import { getCacheService } from "../services/cache/cache.service";
 
 export interface RAGPipelineConfig {
   embeddingsModel?: string;
@@ -45,11 +46,13 @@ export function createRAGPipeline(
     concurrency: config.concurrency ?? 4,
   });
 
+  const cacheService = getCacheService();
+
   return PipelineBuilder.create<QueryAnalysisInput, ContextBuildingOutput>()
     .addStage(new QueryAnalysisStage())
     .addStage(new SimpleRetrievalStage(multiCollectionProvider, config.maxDocs))
     .addStage(new CollectionRoutingStage(config.collectionRouting))
-    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
+    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider, cacheService))
     .addStage(new FusionStage())
     .addStage(new RerankingStage())
     .addStage(new ContextBuildingStage(config.contextBuilding))
