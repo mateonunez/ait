@@ -1,7 +1,7 @@
 import "dotenv/config";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
-
+import { initializeCacheProvider } from "./services/redis-cache.provider";
 import chatRoutes from "./routes/gateway.chat.routes";
 import modelsRoutes from "./routes/gateway.models.routes";
 import githubRoutes from "./routes/gateway.github.routes";
@@ -13,7 +13,11 @@ import slackRoutes from "./routes/gateway.slack.routes";
 import observabilityRoutes from "./routes/gateway.observability.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
 
+const redisUrl = process.env.REDIS_URL;
+
 export async function startServer(port = 3000): Promise<FastifyInstance> {
+  initializeCacheProvider(redisUrl);
+
   const server = buildServer();
 
   server.register(chatRoutes, { prefix: "/api/chat" });

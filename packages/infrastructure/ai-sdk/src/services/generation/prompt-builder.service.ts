@@ -32,27 +32,53 @@ export interface IPromptBuilderService {
  */
 export class PromptBuilderService implements IPromptBuilderService {
   buildPrompt(components: PromptComponents): string {
-    const parts: string[] = [components.systemMessage];
+    const { systemMessage, conversationHistory, userMessage, toolResults, intent } = components;
 
-    // Add conversation history if present
-    if (components.conversationHistory?.trim()) {
-      parts.push(components.conversationHistory);
+    // Select style-based system instruction
+    let styleInstruction = "";
+    if (intent?.requiredStyle) {
+      switch (intent.requiredStyle) {
+        case "concise":
+          styleInstruction = "Answer concisely. Avoid fluff. Be direct.";
+          break;
+        case "technical":
+          styleInstruction =
+            "Provide technical details, code snippets, and architectural context. Assume the user is an engineer.";
+          break;
+        case "creative":
+          styleInstruction = "Be creative and engaging. Use metaphors where appropriate.";
+          break;
+        default:
+          styleInstruction = "Provide detailed, comprehensive explanations.";
+          break;
+      }
     }
 
-    // Add tool results if present
-    if (components.toolResults?.trim()) {
-      parts.push(components.toolResults);
+    // Build structured XML prompt
+    const parts: string[] = [];
+
+    // 1. System Section
+    const systemParts = ["<system>", systemMessage];
+    if (styleInstruction) {
+      systemParts.push(styleInstruction);
+    }
+    systemParts.push("</system>");
+    parts.push(systemParts.join("\n"));
+
+    // 2. Context/History Section
+    if (conversationHistory?.trim()) {
+      parts.push(`<history>\n${conversationHistory}\n</history>`);
     }
 
-    // Separator before current query
-    if (components.conversationHistory?.trim()) {
-      parts.push("---");
+    // 3. Tool Results Section
+    if (toolResults?.trim()) {
+      parts.push(`<tool_results>\n${toolResults}\n</tool_results>`);
     }
 
-    // Add current user message
-    parts.push(`User: ${components.userMessage}`);
+    // 4. User Input Section
+    parts.push(`<user>\n${userMessage}\n</user>`);
 
-    // Add assistant prompt
+    // 5. Assistant Trigger
     parts.push("Assistant:");
 
     return parts.join("\n\n");

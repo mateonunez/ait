@@ -1,4 +1,4 @@
-import type { MultiQueryConfig, QueryResult } from "../../types/rag";
+import type { MultiQueryConfig, QueryPlanResult, QueryResult } from "../../types/rag";
 import type { Document, BaseMetadata } from "../../types/documents";
 import type { QdrantProvider } from "../rag/qdrant.provider";
 import type { IQueryPlannerService } from "./query-planner.service";
@@ -11,6 +11,8 @@ import { recordSpan } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
 import type { CollectionWeight } from "../../types/collections";
+import type { IQueryHeuristicService } from "../routing/query-heuristic.service";
+import type { IQueryIntentService } from "../routing/query-intent.service";
 
 export interface IMultiQueryRetrievalService {
   retrieve<TMetadata extends BaseMetadata = BaseMetadata>(
@@ -38,6 +40,8 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   private readonly _hyde?: IHyDEService;
   private readonly _reranker?: IRerankService;
   private readonly _useHyDE: boolean;
+  private readonly _intentService?: IQueryIntentService;
+  private readonly _heuristicService?: IQueryHeuristicService;
 
   constructor(
     queryPlanner: IQueryPlannerService,
@@ -47,6 +51,8 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     config: MultiQueryConfig = {},
     hyde?: IHyDEService,
     reranker?: IRerankService,
+    intentService?: IQueryIntentService,
+    heuristicService?: IQueryHeuristicService,
   ) {
     this._queryPlanner = queryPlanner;
     this._diversity = diversity;
@@ -54,6 +60,8 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     this._rankFusion = rankFusion;
     this._hyde = hyde;
     this._reranker = reranker;
+    this._intentService = intentService;
+    this._heuristicService = heuristicService;
 
     this._maxDocs = config.maxDocs ?? 100;
     this._concurrency = Math.min(Math.max(config.concurrency ?? 4, 1), 8);
@@ -132,7 +140,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
 
     if (shouldUseHyDE) {
       try {
-        const hydeVector = await this._hyde.generateHyDEEmbedding(userQuery);
+        const hydeVector = await this._hyde!.generateHyDEEmbedding(userQuery);
         const hydeDocs = await vectorStore.similaritySearchWithVector(hydeVector, perQueryK, typeFilterResult);
         const hydeResults: QueryResult<TMetadata> = {
           queryIdx: -1,
@@ -308,8 +316,26 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   ): Promise<Document<TMetadata>[]> {
     const startTime = Date.now();
 
-    // Step 1: Plan queries (same as single-collection)
-    const queryPlan = await this._queryPlanner.planQueries(userQuery, traceContext);
+    // Step 1: Plan queries (or skip generation if optimized)
+    let queryPlan: QueryPlanResult;
+    if (this._intentService && this._heuristicService) {
+      console.debug("Using optimized query planning (skipping generation)");
+      const intent = await this._intentService.analyzeIntent(userQuery);
+      const tags = this._heuristicService.inferTags(userQuery);
+
+      queryPlan = {
+        queries: [userQuery], // Only keep original query as placeholder
+        tags,
+        intent,
+        originalQuery: userQuery,
+        usedFallback: false,
+        isDiverse: false,
+        source: "llm" as const, // Pretend it's LLM to match type, or modify type
+      };
+    } else {
+      queryPlan = await this._queryPlanner.planQueries(userQuery, traceContext);
+    }
+
     const typeFilterResult = this._typeFilter.inferTypes(queryPlan.tags, queryPlan.originalQuery || userQuery, {
       usedFallback: queryPlan.usedFallback,
       intent: queryPlan.intent,

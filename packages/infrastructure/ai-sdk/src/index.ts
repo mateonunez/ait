@@ -125,3 +125,12 @@ export type {
 } from "./services/feedback/types";
 
 export { smoothStream } from "./services/text-generation/utils/stream.utils";
+
+export {
+  type ICacheProvider,
+  type ICacheService,
+  getCacheService,
+  setCacheProvider,
+  resetCacheService,
+  MemoryCacheProvider,
+} from "./services/cache/cache.service";

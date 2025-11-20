@@ -75,7 +75,7 @@ SLACK_CLIENT_SECRET=your_slack_secret
 # Infrastructure URLs (defaults usually work)
 OLLAMA_BASE_URL=http://localhost:11434
 QDRANT_URL=http://localhost:6333
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://:myredissecret@localhost:6379
 ```
 
 See individual package READMEs for detailed configuration options.

@@ -33,7 +33,7 @@ High-performance, priority-based job scheduler built on BullMQ and Redis. Manage
 
 ```bash
 # Redis Configuration
-REDIS_URL=redis://localhost:6379
+REDIS_URL=redis://:myredissecret@localhost:6379
 
 # Performance Tuning
 ETL_CONCURRENCY=2          # Concurrent workers (default: 2)

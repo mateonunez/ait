@@ -118,6 +118,16 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         // Generate custom traceId for telemetry
         const traceId = `trace-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
+        console.info("Generating stream", {
+          prompt,
+          conversationHistory,
+          tools,
+          maxToolRounds: 1,
+          enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
+          enableMetadata,
+          traceId,
+        });
+
         const stream = textGenerationService.generateStream({
           prompt,
           enableRAG: true,

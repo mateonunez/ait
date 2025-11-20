@@ -5,10 +5,15 @@ import type { EntityType } from "@ait/core";
 import { VALID_ENTITY_TYPES, getVendorKeywords } from "@ait/core";
 import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
 import type { QueryIntent } from "./query-intent.service";
-import { getAItClient } from "../../client/ai-sdk.client";
-import { buildCollectionRouterPrompt, buildFallbackRoutingReason } from "./collection-router.prompts";
+import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
+import {
+  buildBroadQueryPrompt,
+  buildCollectionRouterPrompt,
+  buildFallbackRoutingReason,
+} from "../prompts/routing.prompts";
 
 export interface ICollectionRouterService {
   routeCollections(
@@ -31,15 +36,69 @@ const CollectionRouterSchema = z.object({
   ),
 });
 
+const BroadQuerySchema = z.object({
+  isBroad: z.boolean(),
+  confidence: z.number().min(0).max(1),
+  reasoning: z.string(),
+});
+
 type CollectionRouterResponse = z.infer<typeof CollectionRouterSchema>;
+type BroadQueryResponse = z.infer<typeof BroadQuerySchema>;
 
 export class CollectionRouterService implements ICollectionRouterService {
   private readonly _temperature: number;
   private readonly _minConfidenceThreshold: number;
+  private readonly _discoveryService: ICollectionDiscoveryService;
+  private readonly _client: AItClient;
 
-  constructor(config?: { temperature?: number; minConfidenceThreshold?: number }) {
+  constructor(
+    config?: { temperature?: number; minConfidenceThreshold?: number },
+    discoveryService?: ICollectionDiscoveryService,
+    client?: AItClient,
+  ) {
     this._temperature = config?.temperature ?? 0.3;
     this._minConfidenceThreshold = config?.minConfidenceThreshold ?? 0.4;
+    this._discoveryService = discoveryService || new CollectionDiscoveryService();
+    this._client = client || getAItClient();
+  }
+
+  private async _getExistingCollectionVendors(): Promise<Set<CollectionVendor>> {
+    return this._discoveryService.getExistingCollectionVendors();
+  }
+
+  private async _isBroadQuery(userQuery: string, traceContext?: TraceContext): Promise<boolean> {
+    try {
+      const client = this._client;
+      const prompt = buildBroadQueryPrompt(userQuery);
+
+      const response = await client.generateStructured<BroadQueryResponse>({
+        schema: BroadQuerySchema,
+        temperature: 0.2,
+        prompt,
+      });
+
+      if (traceContext) {
+        recordSpan(
+          "broad-query-detection",
+          "routing",
+          traceContext,
+          { query: userQuery.slice(0, 100) },
+          {
+            isBroad: response.isBroad,
+            confidence: response.confidence,
+            reasoning: response.reasoning,
+          },
+        );
+      }
+
+      // Consider it broad if LLM says so with confidence >= 0.6
+      return response.isBroad && response.confidence >= 0.6;
+    } catch (error) {
+      console.warn("Failed to detect broad query with LLM, defaulting to false", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
   }
 
   async routeCollections(
@@ -48,18 +107,50 @@ export class CollectionRouterService implements ICollectionRouterService {
     traceContext?: TraceContext,
   ): Promise<CollectionRouterResult> {
     const startTime = Date.now();
+
+    // Check if query is broad/ambiguous - if so, return all existing collections
+    const isBroad = await this._isBroadQuery(userQuery, traceContext);
+    if (isBroad) {
+      const existingVendors = await this._getExistingCollectionVendors();
+      if (existingVendors.size > 0) {
+        const allCollections = getAllCollections();
+        const existingCollections = allCollections.filter((c) => existingVendors.has(c.vendor));
+
+        console.info("Broad query detected, selecting all existing collections", {
+          query: userQuery.slice(0, 100),
+          collections: Array.from(existingVendors),
+        });
+
+        return {
+          selectedCollections: existingCollections.map((c) => ({
+            vendor: c.vendor,
+            weight: c.defaultWeight,
+            reasoning: "Broad query - all existing collections",
+          })),
+          reasoning: "Broad/ambiguous query detected - searching all existing collections",
+          strategy: "all-collections",
+          confidence: 0.8,
+          suggestedEntityTypes: queryIntent?.entityTypes
+            ? this.validateEntityTypes(queryIntent.entityTypes)
+            : undefined,
+        };
+      }
+    }
+
+    const existingVendors = await this._getExistingCollectionVendors();
+
     try {
       const intentHints = this.extractIntentHints(queryIntent);
-      const prompt = buildCollectionRouterPrompt(userQuery, intentHints);
+      const prompt = buildCollectionRouterPrompt(userQuery, intentHints, existingVendors);
 
-      const client = getAItClient();
+      const client = this._client;
       const response = await client.generateStructured<CollectionRouterResponse>({
         schema: CollectionRouterSchema,
         temperature: this._temperature,
         prompt,
       });
 
-      const validatedResult = this.validateAndNormalizeResult(response, queryIntent);
+      const validatedResult = await this.validateAndNormalizeResult(response, queryIntent, existingVendors);
 
       console.info("Collection routing completed (LLM)", {
         strategy: validatedResult.strategy,
@@ -101,7 +192,7 @@ export class CollectionRouterService implements ICollectionRouterService {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      return this.buildHeuristicFallback(userQuery, queryIntent, traceContext);
+      return this.buildHeuristicFallback(userQuery, queryIntent, traceContext, existingVendors);
     }
   }
 
@@ -121,17 +212,23 @@ export class CollectionRouterService implements ICollectionRouterService {
     return hints;
   }
 
-  private validateAndNormalizeResult(
+  private async validateAndNormalizeResult(
     response: CollectionRouterResponse,
     queryIntent?: QueryIntent,
-  ): CollectionRouterResult {
+    existingVendors?: Set<CollectionVendor>,
+  ): Promise<CollectionRouterResult> {
     const allCollections = getAllCollections();
     const validVendors = new Set(allCollections.map((c) => c.vendor));
+    const existing = existingVendors || (await this._getExistingCollectionVendors());
 
     const normalizedCollections: CollectionWeight[] = response.selectedCollections
       .filter((c) => {
         if (!validVendors.has(c.vendor as CollectionVendor)) {
           console.warn(`Invalid vendor in LLM response: ${c.vendor}`);
+          return false;
+        }
+        if (!existing.has(c.vendor as CollectionVendor)) {
+          console.warn(`Collection ${c.vendor} does not exist in Qdrant, filtering out`);
           return false;
         }
         return c.weight >= this._minConfidenceThreshold;
@@ -144,8 +241,8 @@ export class CollectionRouterService implements ICollectionRouterService {
       .sort((a, b) => b.weight - a.weight);
 
     if (normalizedCollections.length === 0) {
-      console.warn("No valid collections after normalization, using all collections");
-      return this.buildAllCollectionsFallback(response.reasoning || "No collections met threshold");
+      console.warn("No valid collections after normalization, using all existing collections");
+      return this.buildAllExistingCollectionsFallback(response.reasoning || "No collections met threshold", existing);
     }
 
     // Validate and cast entity types
@@ -162,12 +259,14 @@ export class CollectionRouterService implements ICollectionRouterService {
     };
   }
 
-  private buildHeuristicFallback(
+  private async buildHeuristicFallback(
     userQuery: string,
     queryIntent?: QueryIntent,
     traceContext?: TraceContext,
-  ): CollectionRouterResult {
+    existingVendors?: Set<CollectionVendor>,
+  ): Promise<CollectionRouterResult> {
     const lowerQuery = userQuery.toLowerCase();
+    const existing = existingVendors || (await this._getExistingCollectionVendors());
 
     const heuristics: Array<{ vendor: CollectionVendor; keywords: readonly string[]; weight: number }> = [
       {
@@ -205,6 +304,11 @@ export class CollectionRouterService implements ICollectionRouterService {
     const selectedCollections: CollectionWeight[] = [];
 
     for (const { vendor, keywords, weight } of heuristics) {
+      // Only consider collections that exist
+      if (!existing.has(vendor)) {
+        continue;
+      }
+
       const matchCount = keywords.filter((kw) => lowerQuery.includes(kw)).length;
       if (matchCount > 0) {
         const adjustedWeight = Math.min(weight * (matchCount / keywords.length) + 0.5, 1.0);
@@ -220,22 +324,27 @@ export class CollectionRouterService implements ICollectionRouterService {
       const validEntityTypes = this.validateEntityTypes(queryIntent.entityTypes);
       const intentCollections = getCollectionsByEntityTypes(validEntityTypes);
       for (const collection of intentCollections) {
-        const existing = selectedCollections.find((c) => c.vendor === collection.vendor);
-        if (!existing) {
+        // Only consider collections that exist
+        if (!existing.has(collection.vendor)) {
+          continue;
+        }
+
+        const existingCollection = selectedCollections.find((c) => c.vendor === collection.vendor);
+        if (!existingCollection) {
           selectedCollections.push({
             vendor: collection.vendor,
             weight: 0.8,
             reasoning: "Intent-based selection",
           });
-        } else if (existing.weight < 0.8) {
-          existing.weight = 0.8;
-          existing.reasoning = `${existing.reasoning} + intent`;
+        } else if (existingCollection.weight < 0.8) {
+          existingCollection.weight = 0.8;
+          existingCollection.reasoning = `${existingCollection.reasoning} + intent`;
         }
       }
     }
 
     if (selectedCollections.length === 0) {
-      return this.buildAllCollectionsFallback("No keyword or intent matches");
+      return this.buildAllExistingCollectionsFallback("No keyword or intent matches", existing);
     }
 
     selectedCollections.sort((a, b) => b.weight - a.weight);
@@ -273,16 +382,21 @@ export class CollectionRouterService implements ICollectionRouterService {
     return result;
   }
 
-  private buildAllCollectionsFallback(reason: string): CollectionRouterResult {
+  private buildAllExistingCollectionsFallback(
+    reason: string,
+    existingVendors: Set<CollectionVendor>,
+  ): CollectionRouterResult {
     const allCollections = getAllCollections();
+    const existingCollections = allCollections.filter((c) => existingVendors.has(c.vendor));
 
     return {
-      selectedCollections: allCollections.map((c) => ({
+      selectedCollections: existingCollections.map((c) => ({
         vendor: c.vendor,
         weight: c.defaultWeight,
-        reasoning: "Fallback to all collections",
+        reasoning: "Fallback to all existing collections",
+        // Default strategies
       })),
-      reasoning: `All collections selected: ${reason}`,
+      reasoning: `All existing collections selected: ${reason}`,
       strategy: "all-collections",
       confidence: 0.5,
     };

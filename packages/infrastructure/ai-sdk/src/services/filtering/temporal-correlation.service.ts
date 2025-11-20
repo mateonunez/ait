@@ -1,4 +1,5 @@
 import type { Document, BaseMetadata } from "../../types/documents";
+import { TemporalDateParser, type ITemporalDateParser } from "./temporal-date-parser.service";
 
 export interface TemporalEntity {
   type: string;
@@ -21,10 +22,12 @@ export interface ITemporalCorrelationService {
 export class TemporalCorrelationService implements ITemporalCorrelationService {
   private readonly _defaultWindowHours: number;
   private readonly _mergeGapMinutes: number;
+  private readonly _dateParser: ITemporalDateParser;
 
-  constructor(defaultWindowHours = 3, mergeGapMinutes = 30) {
+  constructor(defaultWindowHours = 3, mergeGapMinutes = 30, dateParser?: ITemporalDateParser) {
     this._defaultWindowHours = defaultWindowHours;
     this._mergeGapMinutes = mergeGapMinutes;
+    this._dateParser = dateParser || new TemporalDateParser();
   }
 
   correlateByTimeWindow(
@@ -117,22 +120,7 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
   }
 
   private _parseDate(value: unknown): Date | null {
-    if (!value) return null;
-
-    try {
-      if (value instanceof Date) {
-        return Number.isNaN(value.getTime()) ? null : value;
-      }
-
-      if (typeof value === "string" || typeof value === "number") {
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? null : date;
-      }
-
-      return null;
-    } catch {
-      return null;
-    }
+    return this._dateParser.parseDate(value);
   }
 
   private _clusterByTimeWindow(entities: TemporalEntity[], windowHours: number): TemporalCluster[] {

@@ -105,4 +105,10 @@ export interface PromptComponents {
   userMessage: string;
   /** Tool results (optional) */
   toolResults?: string;
+  /** Query intent for style adaptation (optional) */
+  intent?: {
+    requiredStyle?: "concise" | "technical" | "creative" | "detailed";
+    complexityScore?: number;
+    primaryFocus?: string;
+  };
 }

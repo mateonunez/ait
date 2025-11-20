@@ -2,6 +2,7 @@ import type { IPipelineStage, PipelineContext } from "../../services/rag/pipelin
 import type { RerankingInput, RerankingOutput } from "../../types/stages";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
 import { CollectionRerankService } from "../../services/ranking/collection-rerank.service";
+import { RerankService } from "../../services/ranking/rerank.service";
 import type { CollectionVendor } from "@/types";
 
 export class RerankingStage implements IPipelineStage<RerankingInput, RerankingOutput> {
@@ -10,7 +11,8 @@ export class RerankingStage implements IPipelineStage<RerankingInput, RerankingO
   private readonly rerankService: CollectionRerankService;
 
   constructor() {
-    this.rerankService = new CollectionRerankService();
+    const reranker = new RerankService();
+    this.rerankService = new CollectionRerankService(reranker);
   }
 
   async canExecute(input: RerankingInput): Promise<boolean> {

@@ -1,5 +1,8 @@
 import type { ConversationConfig, ConversationContext } from "../../types/text-generation";
 import type { ChatMessage } from "../../types/chat";
+import { TokenEstimationService, type ITokenEstimationService } from "../metadata/token-estimation.service";
+import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
+import { buildSummarizationPrompt } from "../prompts/summarization.prompt";
 
 /**
  * Interface for conversation manager service
@@ -21,89 +24,79 @@ export class ConversationManagerService implements IConversationManagerService {
   private readonly _maxRecentMessages: number;
   private readonly _maxHistoryTokens: number;
   private readonly _enableSummarization: boolean;
+  private readonly _tokenEstimator: ITokenEstimationService;
+  private readonly _client: AItClient;
 
-  constructor(config: ConversationConfig = {}) {
+  constructor(config: ConversationConfig = {}, tokenEstimator?: ITokenEstimationService, client?: AItClient) {
     this._maxRecentMessages = Math.max(config.maxRecentMessages ?? 10, 1);
     this._maxHistoryTokens = Math.max(config.maxHistoryTokens ?? 2000, 100);
     this._enableSummarization = config.enableSummarization ?? true;
+    this._tokenEstimator = tokenEstimator || new TokenEstimationService();
+    this._client = client || getAItClient();
   }
 
   async processConversation(messages: ChatMessage[] | undefined, currentPrompt: string): Promise<ConversationContext> {
     if (!messages || messages.length === 0) {
       return {
         recentMessages: [],
-        estimatedTokens: this._estimateTokens(currentPrompt),
+        estimatedTokens: this._tokenEstimator.estimateTokens(currentPrompt),
       };
     }
 
-    // Calculate tokens for current prompt
-    const currentPromptTokens = this._estimateTokens(currentPrompt);
-
-    // Take recent messages (not exceeding maxRecentMessages)
+    // Split messages into recent and older
     const recentMessages = messages.slice(-this._maxRecentMessages);
-    const recentTokens = this._estimateTokensForMessages(recentMessages);
-
-    // Check if we need summarization
-    const totalRecentTokens = currentPromptTokens + recentTokens;
-
-    if (totalRecentTokens <= this._maxHistoryTokens) {
-      // Everything fits, no summarization needed
-      return {
-        recentMessages,
-        estimatedTokens: totalRecentTokens,
-      };
-    }
-
-    // Need to reduce recent messages or apply summarization
-    if (!this._enableSummarization) {
-      // Just truncate recent messages
-      const truncatedMessages = this._truncateMessages(recentMessages, this._maxHistoryTokens - currentPromptTokens);
-      return {
-        recentMessages: truncatedMessages,
-        estimatedTokens: currentPromptTokens + this._estimateTokensForMessages(truncatedMessages),
-      };
-    }
-
-    // Apply summarization strategy
     const olderMessages = messages.slice(0, -this._maxRecentMessages);
 
-    if (olderMessages.length === 0) {
-      // No older messages to summarize, just truncate recent
+    const currentPromptTokens = this._tokenEstimator.estimateTokens(currentPrompt);
+    const recentTokens = this._tokenEstimator.estimateTokensForMessages(recentMessages);
+
+    // Case 1: No summarization enabled or no older messages
+    if (!this._enableSummarization || olderMessages.length === 0) {
+      const totalTokens = currentPromptTokens + recentTokens;
+
+      if (totalTokens <= this._maxHistoryTokens) {
+        return {
+          recentMessages,
+          estimatedTokens: totalTokens,
+        };
+      }
+
+      // Truncate recent messages to fit
       const truncatedMessages = this._truncateMessages(recentMessages, this._maxHistoryTokens - currentPromptTokens);
       return {
         recentMessages: truncatedMessages,
-        estimatedTokens: currentPromptTokens + this._estimateTokensForMessages(truncatedMessages),
+        estimatedTokens: currentPromptTokens + this._tokenEstimator.estimateTokensForMessages(truncatedMessages),
       };
     }
 
-    // Create summary of older messages
-    const summary = this._summarizeMessages(olderMessages);
-    const summaryTokens = this._estimateTokens(summary);
+    // Case 2: Summarization enabled AND we have older messages
+    const summary = await this._summarizeMessages(olderMessages);
+    const summaryTokens = this._tokenEstimator.estimateTokens(summary);
 
-    // Calculate remaining space for recent messages
+    // Check if everything fits (Summary + Recent + Prompt)
+    const totalTokensWithSummary = currentPromptTokens + summaryTokens + recentTokens;
+
+    if (totalTokensWithSummary <= this._maxHistoryTokens) {
+      return {
+        recentMessages,
+        summary,
+        estimatedTokens: totalTokensWithSummary,
+      };
+    }
+
+    // If not, truncate recent messages to fit remaining space
     const remainingTokens = this._maxHistoryTokens - currentPromptTokens - summaryTokens;
-    const truncatedRecentMessages = this._truncateMessages(recentMessages, remainingTokens);
+
+    // If remaining space is too small (e.g. < 0), we might need to drop summary or handle differently
+    // For now, we prioritize summary and truncate recent as much as needed
+    const truncatedRecentMessages = this._truncateMessages(recentMessages, Math.max(0, remainingTokens));
 
     return {
       recentMessages: truncatedRecentMessages,
       summary,
-      estimatedTokens: currentPromptTokens + summaryTokens + this._estimateTokensForMessages(truncatedRecentMessages),
+      estimatedTokens:
+        currentPromptTokens + summaryTokens + this._tokenEstimator.estimateTokensForMessages(truncatedRecentMessages),
     };
-  }
-
-  private _estimateTokens(text: string): number {
-    // Rough estimation: ~4 characters per token
-    // This is a simplification; actual tokenization is more complex
-    return Math.ceil(text.length / 4);
-  }
-
-  private _estimateTokensForMessages(messages: ChatMessage[]): number {
-    let total = 0;
-    for (const msg of messages) {
-      // Account for role prefix (e.g., "User: " or "Assistant: ")
-      total += this._estimateTokens(`${msg.role}: ${msg.content}`);
-    }
-    return total;
   }
 
   private _truncateMessages(messages: ChatMessage[], maxTokens: number): ChatMessage[] {
@@ -113,7 +106,7 @@ export class ConversationManagerService implements IConversationManagerService {
     // Take messages from the end (most recent) until we hit the token limit
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]!;
-      const msgTokens = this._estimateTokens(`${msg.role}: ${msg.content}`);
+      const msgTokens = this._tokenEstimator.estimateTokens(`${msg.role}: ${msg.content}`);
 
       if (currentTokens + msgTokens <= maxTokens) {
         truncated.unshift(msg);
@@ -126,41 +119,139 @@ export class ConversationManagerService implements IConversationManagerService {
     return truncated;
   }
 
-  private _summarizeMessages(messages: ChatMessage[]): string {
+  private async _summarizeMessages(messages: ChatMessage[], currentSummary?: string): Promise<string> {
     if (messages.length === 0) {
-      return "";
+      return currentSummary || "";
     }
 
-    // Extract key topics and information
-    const userMessages = messages.filter((m) => m.role === "user");
-    const assistantMessages = messages.filter((m) => m.role === "assistant");
+    try {
+      const prompt = buildSummarizationPrompt(messages, currentSummary);
 
+      const response = await this._client.generateText({
+        prompt,
+        temperature: 0.3, // Low temperature for factual summarization
+      });
+
+      return response.text.trim();
+    } catch (error) {
+      console.warn("Failed to summarize conversation with LLM, falling back to simple concatenation", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Fallback: Extract key topics from messages for a more meaningful summary
+      const topics = this._extractTopicsFromMessages(messages);
+      const topicSummary = topics.length > 0 ? `Topics discussed: ${topics.join(", ")}` : "";
+
+      const messageSummary = `${messages.length} messages processed`;
+      const fallbackText = topicSummary ? `${topicSummary}. ${messageSummary}` : messageSummary;
+
+      return currentSummary
+        ? `${currentSummary}\n\n[Additional history]: ${fallbackText}.`
+        : `[History summary]: ${fallbackText}.`;
+    }
+  }
+
+  private _extractTopicsFromMessages(messages: ChatMessage[]): string[] {
     const topics = new Set<string>();
+    const commonWords = new Set([
+      "the",
+      "a",
+      "an",
+      "and",
+      "or",
+      "but",
+      "in",
+      "on",
+      "at",
+      "to",
+      "for",
+      "of",
+      "with",
+      "by",
+      "from",
+      "is",
+      "are",
+      "was",
+      "were",
+      "be",
+      "been",
+      "being",
+      "have",
+      "has",
+      "had",
+      "do",
+      "does",
+      "did",
+      "will",
+      "would",
+      "should",
+      "could",
+      "may",
+      "might",
+      "can",
+      "about",
+      "this",
+      "that",
+      "these",
+      "those",
+      "i",
+      "you",
+      "he",
+      "she",
+      "it",
+      "we",
+      "they",
+      "me",
+      "him",
+      "her",
+      "us",
+      "them",
+      "my",
+      "your",
+      "his",
+      "its",
+      "our",
+      "their",
+      "what",
+      "which",
+      "who",
+      "when",
+      "where",
+      "why",
+      "how",
+      "all",
+      "each",
+      "every",
+      "both",
+      "few",
+      "more",
+      "most",
+      "other",
+      "some",
+      "such",
+      "tell",
+      "asked",
+      "ask",
+      "please",
+      "thanks",
+      "thank",
+      "hello",
+      "hi",
+      "hey",
+    ]);
 
-    // Extract potential topics from user messages (simple keyword extraction)
-    for (const msg of userMessages) {
-      const words = msg.content.toLowerCase().split(/\s+/);
-      // Look for important words (longer than 4 chars, not common words)
-      const commonWords = new Set(["what", "when", "where", "which", "this", "that", "these", "those", "with"]);
-      for (const word of words) {
-        if (word.length > 4 && !commonWords.has(word)) {
-          topics.add(word);
-        }
+    for (const message of messages) {
+      const words = message.content
+        .toLowerCase()
+        .replace(/[^\w\s]/g, " ")
+        .split(/\s+/)
+        .filter((word) => word.length > 3 && !commonWords.has(word) && !/^\d+$/.test(word));
+
+      for (const word of words.slice(0, 3)) {
+        topics.add(word);
       }
     }
 
-    const summaryParts: string[] = ["[Previous conversation summary]"];
-
-    if (userMessages.length > 0) {
-      summaryParts.push(`User asked about: ${Array.from(topics).slice(0, 5).join(", ")}`);
-    }
-
-    if (assistantMessages.length > 0) {
-      summaryParts.push(`Assistant provided ${assistantMessages.length} response(s)`);
-    }
-
-    summaryParts.push(`[End of summary - ${messages.length} messages]`);
-
-    return summaryParts.join(". ");
+    return Array.from(topics).slice(0, 5);
   }
 }

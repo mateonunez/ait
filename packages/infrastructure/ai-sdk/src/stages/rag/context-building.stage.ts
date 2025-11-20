@@ -41,7 +41,7 @@ export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput
     }
 
     if (!usedTemporalCorrelation) {
-      builtContext = this.contextBuilder.buildContextFromDocuments(documents);
+      builtContext = this.contextBuilder.buildStructuredContext(documents);
     }
 
     if (builtContext.length > this.maxContextChars) {
