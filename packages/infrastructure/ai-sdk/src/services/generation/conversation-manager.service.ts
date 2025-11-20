@@ -138,10 +138,45 @@ export class ConversationManagerService implements IConversationManagerService {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      // Fallback: Simple concatenation if LLM fails
+      // Fallback: Extract key topics from messages for a more meaningful summary
+      const topics = this._extractTopicsFromMessages(messages);
+      const topicSummary = topics.length > 0 ? `Topics discussed: ${topics.join(", ")}` : "";
+      
+      const messageSummary = `${messages.length} messages processed`;
+      const fallbackText = topicSummary ? `${topicSummary}. ${messageSummary}` : messageSummary;
+
       return currentSummary
-        ? `${currentSummary}\n\n[Additional history]: ${messages.length} messages processed.`
-        : `[History summary]: ${messages.length} messages processed.`;
+        ? `${currentSummary}\n\n[Additional history]: ${fallbackText}.`
+        : `[History summary]: ${fallbackText}.`;
     }
+  }
+
+  private _extractTopicsFromMessages(messages: ChatMessage[]): string[] {
+    const topics = new Set<string>();
+    const commonWords = new Set([
+      "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "from",
+      "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did",
+      "will", "would", "should", "could", "may", "might", "can", "about", "this", "that", "these",
+      "those", "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them",
+      "my", "your", "his", "its", "our", "their", "what", "which", "who", "when", "where", "why",
+      "how", "all", "each", "every", "both", "few", "more", "most", "other", "some", "such",
+      "tell", "asked", "ask", "please", "thanks", "thank", "hello", "hi", "hey"
+    ]);
+
+    for (const message of messages) {
+      const words = message.content
+        .toLowerCase()
+        .replace(/[^\w\s]/g, " ")
+        .split(/\s+/)
+        .filter(word => 
+          word.length > 3 &&
+          !commonWords.has(word) &&
+          !/^\d+$/.test(word)
+        );
+
+      words.slice(0, 3).forEach(word => topics.add(word));
+    }
+
+    return Array.from(topics).slice(0, 5);
   }
 }
