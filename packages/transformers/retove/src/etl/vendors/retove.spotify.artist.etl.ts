@@ -1,6 +1,6 @@
 import type { getPostgresClient, SpotifyArtistDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { spotifyArtists } from "@ait/postgres";
+import { spotifyArtists, drizzleOrm } from "@ait/postgres";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { RetoveBaseETLAbstract, type BaseVectorPoint, type RetryOptions } from "../retove.base-etl.abstract";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
@@ -19,9 +19,13 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<SpotifyArtistDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyArtistDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(spotifyArtists).limit(limit).execute();
+      let query = tx.select().from(spotifyArtists) as any;
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(spotifyArtists.updatedAt, lastProcessedTimestamp));
+      }
+      return query.orderBy(drizzleOrm.asc(spotifyArtists.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -33,8 +37,17 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(track);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 2_000_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const artists = data as SpotifyArtistDataTarget[];
+    if (artists.length === 0) return new Date();
+    return artists.reduce((max, artist) => {
+      const artistDate = artist.updatedAt ? new Date(artist.updatedAt) : new Date(0);
+      return artistDate > max ? artistDate : max;
+    }, new Date(0));
   }
 }
 

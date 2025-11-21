@@ -1,4 +1,4 @@
-import { type getPostgresClient, notionPages, type NotionPageDataTarget } from "@ait/postgres";
+import { type getPostgresClient, notionPages, type NotionPageDataTarget, drizzleOrm } from "@ait/postgres";
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
@@ -19,9 +19,15 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("notion"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<NotionPageDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<NotionPageDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(notionPages).limit(limit).execute();
+      let query = tx.select().from(notionPages) as any;
+
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(notionPages.updatedAt, lastProcessedTimestamp));
+      }
+
+      return query.orderBy(drizzleOrm.asc(notionPages.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -33,8 +39,17 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(page);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 7_000_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const pages = data as NotionPageDataTarget[];
+    if (pages.length === 0) return new Date();
+    return pages.reduce((max, page) => {
+      const pageDate = page.updatedAt ? new Date(page.updatedAt) : new Date(0);
+      return pageDate > max ? pageDate : max;
+    }, new Date(0));
   }
 }
 

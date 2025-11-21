@@ -1,4 +1,4 @@
-import { type getPostgresClient, linearIssues, type LinearIssueDataTarget } from "@ait/postgres";
+import { type getPostgresClient, linearIssues, type LinearIssueDataTarget, drizzleOrm } from "@ait/postgres";
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
@@ -19,9 +19,15 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("linear"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<LinearIssueDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<LinearIssueDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(linearIssues).limit(limit).execute();
+      let query = tx.select().from(linearIssues) as any;
+
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(linearIssues.updatedAt, lastProcessedTimestamp));
+      }
+
+      return query.orderBy(drizzleOrm.asc(linearIssues.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -33,8 +39,17 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(issue);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 6_000_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const issues = data as LinearIssueDataTarget[];
+    if (issues.length === 0) return new Date();
+    return issues.reduce((max, issue) => {
+      const issueDate = issue.updatedAt ? new Date(issue.updatedAt) : new Date(0);
+      return issueDate > max ? issueDate : max;
+    }, new Date(0));
   }
 }
 

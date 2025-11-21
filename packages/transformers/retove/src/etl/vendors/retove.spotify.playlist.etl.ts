@@ -1,5 +1,5 @@
 import type { qdrant } from "@ait/qdrant";
-import { spotifyPlaylists, type getPostgresClient } from "@ait/postgres";
+import { spotifyPlaylists, type getPostgresClient, drizzleOrm } from "@ait/postgres";
 import type { SpotifyPlaylistDataTarget } from "@ait/postgres";
 import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
@@ -19,9 +19,15 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<SpotifyPlaylistDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyPlaylistDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(spotifyPlaylists).limit(limit).execute();
+      let query = tx.select().from(spotifyPlaylists) as any;
+
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(spotifyPlaylists.updatedAt, lastProcessedTimestamp));
+      }
+
+      return query.orderBy(drizzleOrm.asc(spotifyPlaylists.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -33,8 +39,17 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(playlist);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 3_000_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const playlists = data as SpotifyPlaylistDataTarget[];
+    if (playlists.length === 0) return new Date();
+    return playlists.reduce((max, playlist) => {
+      const playlistDate = playlist.updatedAt ? new Date(playlist.updatedAt) : new Date(0);
+      return playlistDate > max ? playlistDate : max;
+    }, new Date(0));
   }
 }
 

@@ -1,4 +1,4 @@
-import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTarget } from "@ait/postgres";
+import { type getPostgresClient, githubRepositories, type GitHubRepositoryDataTarget, drizzleOrm } from "@ait/postgres";
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
@@ -20,9 +20,15 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("github"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<GitHubRepositoryDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GitHubRepositoryDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(githubRepositories).limit(limit).execute();
+      let query = tx.select().from(githubRepositories) as any;
+
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(githubRepositories.updatedAt, lastProcessedTimestamp));
+      }
+
+      return query.orderBy(drizzleOrm.asc(githubRepositories.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -34,8 +40,20 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(repository);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 5_000_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const repositories = data as GitHubRepositoryDataTarget[];
+    if (repositories.length === 0) {
+      return new Date();
+    }
+    const latest = repositories.reduce((max, repo) => {
+      const repoDate = repo.updatedAt ? new Date(repo.updatedAt) : new Date(0);
+      return repoDate > max ? repoDate : max;
+    }, new Date(0));
+    return latest;
   }
 }
 export interface RetoveGitHubRepositoryVectorPoint extends BaseVectorPoint {
