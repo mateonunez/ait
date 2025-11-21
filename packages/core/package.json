@@ -25,7 +25,9 @@
   "keywords": ["core", "errors", "types", "http"],
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
-  "dependencies": {},
+  "dependencies": {
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
     "@redocly/openapi-core": "^2.6.0",
     "openapi-typescript": "^7.10.1",

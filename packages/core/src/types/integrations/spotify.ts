@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { components as SpotifyComponents } from "../openapi/openapi.spotify.types";
 
 export interface BaseSpotifyEntity {
@@ -15,103 +16,117 @@ export interface SpotifyFollowers {
   total: number;
 }
 
-export interface SpotifyTrackEntity extends BaseSpotifyEntity {
-  id: string;
-  name: string;
-  artist: string;
-  album: string | null;
-  durationMs: number;
-  explicit: boolean;
-  isPlayable: boolean | null;
-  previewUrl: string | null;
-  trackNumber: number | null;
-  discNumber: number | null;
-  uri: string | null;
-  href: string | null;
-  isLocal: boolean;
-  popularity: number | null;
-  albumData: Record<string, unknown> | null;
-  artistsData: Array<Record<string, unknown>>;
-  externalIds: Record<string, unknown> | null;
-  externalUrls: Record<string, unknown> | null;
-  addedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "track";
-}
+const SpotifyImageSchema = z.object({
+  url: z.string(),
+  height: z.number(),
+  width: z.number(),
+});
 
-export interface SpotifyArtistEntity extends BaseSpotifyEntity {
-  id: string;
-  name: string;
-  popularity: number;
-  genres: string[];
-  images: SpotifyImage[] | null;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "artist";
-}
+export const SpotifyTrackEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  artist: z.string(),
+  album: z.string().nullable(),
+  durationMs: z.number(),
+  explicit: z.boolean(),
+  isPlayable: z.boolean().nullable(),
+  previewUrl: z.string().nullable(),
+  trackNumber: z.number().nullable(),
+  discNumber: z.number().nullable(),
+  uri: z.string().nullable(),
+  href: z.string().nullable(),
+  isLocal: z.boolean(),
+  popularity: z.number().nullable(),
+  albumData: z.record(z.string(), z.unknown()).nullable(),
+  artistsData: z.array(z.record(z.string(), z.unknown())),
+  externalIds: z.record(z.string(), z.unknown()).nullable(),
+  externalUrls: z.record(z.string(), z.unknown()).nullable(),
+  addedAt: z.date().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("track"),
+});
 
-export interface SpotifyPlaylistEntity extends BaseSpotifyEntity {
-  id: string;
-  name: string;
-  description: string | null;
-  public: boolean;
-  collaborative: boolean;
-  owner: string;
-  tracks: string[];
-  followers: number;
-  snapshotId: string;
-  externalUrls: string[];
-  uri: string;
-  href: string;
-  images: SpotifyImage[] | null;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "playlist";
-}
+export const SpotifyArtistEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  popularity: z.number(),
+  genres: z.array(z.string()),
+  images: z.array(SpotifyImageSchema).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("artist"),
+});
 
-export interface SpotifyAlbumEntity extends BaseSpotifyEntity {
-  id: string;
-  name: string;
-  albumType: string;
-  artists: string[];
-  tracks: string[];
-  totalTracks: number;
-  releaseDate: string | null;
-  releaseDatePrecision: string | null;
-  isPlayable: boolean;
-  uri: string | null;
-  href: string | null;
-  popularity: number | null;
-  label: string | null;
-  copyrights: string[];
-  externalIds: string[];
-  genres: string[];
-  images: SpotifyImage[] | null;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "album";
-}
+export const SpotifyPlaylistEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  public: z.boolean(),
+  collaborative: z.boolean(),
+  owner: z.string(),
+  tracks: z.array(z.string()),
+  followers: z.number(),
+  snapshotId: z.string(),
+  externalUrls: z.array(z.string()),
+  uri: z.string(),
+  href: z.string(),
+  images: z.array(SpotifyImageSchema).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("playlist"),
+});
 
-export interface SpotifyRecentlyPlayedEntity extends BaseSpotifyEntity {
-  id: string;
-  trackId: string;
-  trackName: string;
-  artist: string;
-  album: string | null;
-  durationMs: number;
-  explicit: boolean;
-  popularity: number | null;
-  playedAt: Date;
-  context: {
-    type: string;
-    uri: string;
-  } | null;
-  albumData: Record<string, unknown> | null;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "recently_played";
-}
+export const SpotifyAlbumEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  albumType: z.string(),
+  artists: z.array(z.string()),
+  tracks: z.array(z.string()),
+  totalTracks: z.number(),
+  releaseDate: z.string().nullable(),
+  releaseDatePrecision: z.string().nullable(),
+  isPlayable: z.boolean(),
+  uri: z.string().nullable(),
+  href: z.string().nullable(),
+  popularity: z.number().nullable(),
+  label: z.string().nullable(),
+  copyrights: z.array(z.string()),
+  externalIds: z.array(z.string()),
+  genres: z.array(z.string()),
+  images: z.array(SpotifyImageSchema).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("album"),
+});
+
+export const SpotifyRecentlyPlayedEntitySchema = z.object({
+  id: z.string(),
+  trackId: z.string(),
+  trackName: z.string(),
+  artist: z.string(),
+  album: z.string().nullable(),
+  durationMs: z.number(),
+  explicit: z.boolean(),
+  popularity: z.number().nullable(),
+  playedAt: z.date(),
+  context: z
+    .object({
+      type: z.string(),
+      uri: z.string(),
+    })
+    .nullable(),
+  albumData: z.record(z.string(), z.unknown()).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("recently_played"),
+});
+
+export type SpotifyTrackEntity = z.infer<typeof SpotifyTrackEntitySchema>;
+export type SpotifyArtistEntity = z.infer<typeof SpotifyArtistEntitySchema>;
+export type SpotifyPlaylistEntity = z.infer<typeof SpotifyPlaylistEntitySchema>;
+export type SpotifyAlbumEntity = z.infer<typeof SpotifyAlbumEntitySchema>;
+export type SpotifyRecentlyPlayedEntity = z.infer<typeof SpotifyRecentlyPlayedEntitySchema>;
 
 type SpotifyArtist = SpotifyComponents["schemas"]["ArtistObject"];
 type SpotifyTrack = SpotifyComponents["schemas"]["TrackObject"];
