@@ -1,5 +1,5 @@
 import { type Job, Queue, Worker, QueueEvents, type JobsOptions } from "bullmq";
-import { getRedisClient, initRedisClient, type IRedisConfig } from "@ait/redis";
+import type { IRedisConfig } from "@ait/redis";
 import { schedulerRegistry } from "./registry/scheduler.etl.registry";
 
 export class SchedulerError extends Error {
@@ -19,7 +19,7 @@ export class Scheduler implements IScheduler {
   private readonly _queue: Queue;
   private readonly _worker: Worker;
   private readonly _queueEvents: QueueEvents;
-  private readonly _client: ReturnType<typeof getRedisClient>;
+  private readonly _redisUrl: string;
   private readonly _concurrency: number;
 
   constructor(config: ISchedulerConfig) {
@@ -28,7 +28,7 @@ export class Scheduler implements IScheduler {
     }
 
     this._concurrency = config.concurrency || 2; // Default to 2 concurrent jobs
-    this._client = this._initializeRedis(config.redisConfig);
+    this._redisUrl = config.redisConfig.url;
     this._queue = this._initializeQueue(config.queueName);
     this._worker = this._initializeWorker(config.queueName);
     this._queueEvents = this._initializeQueueEvents(config.queueName);
@@ -121,14 +121,9 @@ export class Scheduler implements IScheduler {
 
   // Private Methods
 
-  private _initializeRedis(redisConfig: IRedisConfig) {
-    initRedisClient(redisConfig);
-    return getRedisClient();
-  }
-
   private _initializeQueue(queueName: string): Queue {
     return new Queue(queueName, {
-      connection: this._client,
+      connection: { url: this._redisUrl, maxRetriesPerRequest: null },
       defaultJobOptions: {
         removeOnComplete: {
           age: 3600,
@@ -164,7 +159,7 @@ export class Scheduler implements IScheduler {
         }
       },
       {
-        connection: this._client,
+        connection: { url: this._redisUrl, maxRetriesPerRequest: null },
         concurrency: this._concurrency,
         limiter: {
           max: 10,
@@ -176,7 +171,7 @@ export class Scheduler implements IScheduler {
 
   private _initializeQueueEvents(queueName: string): QueueEvents {
     return new QueueEvents(queueName, {
-      connection: this._client,
+      connection: { url: this._redisUrl, maxRetriesPerRequest: null },
     });
   }
 
