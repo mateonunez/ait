@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { createTool } from "../../types/tools";
-import type { ConnectorSpotifyService } from "@ait/connectors";
-import type { SpotifyCurrentlyPlayingExternal, SpotifyTrackEntity, SpotifyTrackExternal } from "@ait/core";
+import type { SpotifyServiceInterface } from "../../interfaces/spotify.service.interface";
 
 // Spotify Schemas
 export const spotifySearchSchema = z.object({
@@ -76,16 +75,7 @@ export interface SearchResponse<T> {
   error?: string;
 }
 
-interface ExtendedSpotifyService extends ConnectorSpotifyService {
-  fetchCurrentlyPlaying(): Promise<
-    | (SpotifyCurrentlyPlayingExternal & {
-        item: SpotifyTrackExternal & { trackEntity: SpotifyTrackEntity };
-      })
-    | null
-  >;
-}
-
-export function createSpotifyTools(spotifyService?: ExtendedSpotifyService) {
+export function createSpotifyTools(spotifyService?: SpotifyServiceInterface) {
   return {
     getCurrentlyPlaying: createTool({
       description:

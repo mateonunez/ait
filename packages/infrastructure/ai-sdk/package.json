@@ -31,7 +31,6 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@ait/connectors": "workspace:*",
     "@types/node": "^24.9.1",
     "@types/sinon": "^17.0.4",
     "c8": "^10.1.3",
