@@ -17,7 +17,7 @@ export class ConnectorXService
   constructor() {
     super(getConnectorConfig("x"));
 
-    this.registerEntityConfig<X_ENTITY_TYPES_ENUM.TWEET, XTweetExternal>(
+    this.registerPaginatedEntityConfig<X_ENTITY_TYPES_ENUM.TWEET, XTweetExternal>(
       X_ENTITY_TYPES_ENUM.TWEET,
       connectorEntityConfigs.x[X_ENTITY_TYPES_ENUM.TWEET],
     );

@@ -184,6 +184,186 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       throw new AItError("GITHUB_FETCH_COMMITS", `Invalid fetch commits: ${message}`, { message }, error);
     }
   }
+
+  async fetchAllRepositories(): Promise<GitHubRepositoryExternal[]> {
+    const allRepos: GitHubRepositoryExternal[] = [];
+    let page = 1;
+    const limit = 100; // Maximize page size for efficiency
+
+    while (true) {
+      const repos = await this.fetchRepositories({ page, limit });
+      allRepos.push(...repos);
+      if (repos.length < limit) break;
+      page++;
+    }
+    return allRepos;
+  }
+
+  async fetchPullRequestsPaginated(
+    cursor?: string,
+  ): Promise<{ data: GitHubPullRequestExternal[]; nextCursor?: string }> {
+    const repositories = await this.fetchAllRepositories();
+    if (repositories.length === 0) return { data: [], nextCursor: undefined };
+
+    const parts = cursor ? cursor.split(":").map(Number) : [];
+    let repoIndex = parts[0] ?? 0;
+    let page = parts[1] ?? 1;
+    const limit = 50;
+
+    while (repoIndex < repositories.length) {
+      const repo = repositories[repoIndex];
+      if (!repo) {
+        repoIndex++;
+        continue;
+      }
+      const owner = repo.owner?.login;
+      const repoName = repo.name;
+
+      if (!owner || !repoName) {
+        repoIndex++;
+        page = 1;
+        continue;
+      }
+
+      try {
+        const listResponse = await this.octokit.pulls.list({
+          owner,
+          repo: repoName,
+          state: "all",
+          per_page: limit,
+          page: page,
+          sort: "updated",
+          direction: "desc",
+        });
+
+        const prs = listResponse.data;
+
+        if (prs.length > 0) {
+          // Enrich PRs with details
+          const enrichedPRs: GitHubPullRequestExternal[] = [];
+          for (const pr of prs) {
+            try {
+              const detailedResponse = await this.octokit.pulls.get({
+                owner,
+                repo: repoName,
+                pull_number: pr.number,
+              });
+              enrichedPRs.push({
+                ...detailedResponse.data,
+                __type: "pull_request" as const,
+              } as GitHubPullRequestExternal);
+            } catch (e) {
+              enrichedPRs.push({ ...pr, __type: "pull_request" as const } as GitHubPullRequestExternal);
+            }
+          }
+
+          // Return this batch
+          // If we got a full page, next cursor is same repo, next page
+          // If we got a partial page, we move to next repo, page 1 (effectively skipping empty checks for next page)
+          // BUT: Standard pagination logic says if length == limit, there MIGHT be more.
+          // So:
+          const nextCursor = prs.length === limit ? `${repoIndex}:${page + 1}` : `${repoIndex + 1}:1`;
+
+          return { data: enrichedPRs, nextCursor };
+        }
+
+        // If no PRs found for this page, move to next repo
+        repoIndex++;
+        page = 1;
+      } catch (error) {
+        console.error(`Failed to fetch PRs for ${repo.full_name}:`, error);
+        repoIndex++;
+        page = 1;
+      }
+    }
+
+    return { data: [], nextCursor: undefined };
+  }
+
+  async fetchCommitsPaginated(cursor?: string): Promise<{ data: GitHubCommitExternal[]; nextCursor?: string }> {
+    const repositories = await this.fetchAllRepositories();
+    if (repositories.length === 0) return { data: [], nextCursor: undefined };
+
+    const parts = cursor ? cursor.split(":").map(Number) : [];
+    let repoIndex = parts[0] ?? 0;
+    let page = parts[1] ?? 1;
+    const limit = 50;
+
+    while (repoIndex < repositories.length) {
+      const repo = repositories[repoIndex];
+      if (!repo) {
+        repoIndex++;
+        continue;
+      }
+      const owner = repo.owner?.login;
+      const repoName = repo.name;
+
+      if (!owner || !repoName) {
+        repoIndex++;
+        page = 1;
+        continue;
+      }
+
+      try {
+        const listResponse = await this.octokit.repos.listCommits({
+          owner,
+          repo: repoName,
+          per_page: limit,
+          page: page,
+          sort: "updated",
+          direction: "desc",
+        });
+
+        const commits = listResponse.data;
+
+        if (commits.length > 0) {
+          const enrichedCommits: GitHubCommitExternal[] = [];
+          for (const commitListItem of commits) {
+            try {
+              const detailedResponse = await this.octokit.repos.getCommit({
+                owner,
+                repo: repoName,
+                ref: commitListItem.sha,
+              });
+
+              enrichedCommits.push({
+                ...detailedResponse.data,
+                __type: "commit" as const,
+                _repositoryContext: {
+                  id: repo.id.toString(),
+                  name: repo.name,
+                  fullName: repo.full_name || (repo as any).fullName || `${owner}/${repoName}`,
+                },
+              } as GitHubCommitExternal & { _repositoryContext?: { id: string; name: string; fullName: string } });
+            } catch (e) {
+              enrichedCommits.push({
+                ...commitListItem,
+                __type: "commit" as const,
+                _repositoryContext: {
+                  id: repo.id.toString(),
+                  name: repo.name,
+                  fullName: repo.full_name || (repo as any).fullName || `${owner}/${repoName}`,
+                },
+              } as GitHubCommitExternal & { _repositoryContext?: { id: string; name: string; fullName: string } });
+            }
+          }
+
+          const nextCursor = commits.length === limit ? `${repoIndex}:${page + 1}` : `${repoIndex + 1}:1`;
+
+          return { data: enrichedCommits, nextCursor };
+        }
+
+        repoIndex++;
+        page = 1;
+      } catch (error) {
+        console.error(`Failed to fetch commits for ${repo.full_name}:`, error);
+        repoIndex++;
+        page = 1;
+      }
+    }
+
+    return { data: [], nextCursor: undefined };
+  }
 }
 export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];
@@ -192,4 +372,7 @@ export interface IConnectorGitHubDataSource {
   fetchRepositories(params?: PaginationParams): Promise<GitHubRepositoryExternal[]>;
   fetchPullRequests(params?: PaginationParams): Promise<GitHubPullRequestExternal[]>;
   fetchCommits(params?: PaginationParams): Promise<GitHubCommitExternal[]>;
+  fetchAllRepositories(): Promise<GitHubRepositoryExternal[]>;
+  fetchPullRequestsPaginated(cursor?: string): Promise<{ data: GitHubPullRequestExternal[]; nextCursor?: string }>;
+  fetchCommitsPaginated(cursor?: string): Promise<{ data: GitHubCommitExternal[]; nextCursor?: string }>;
 }

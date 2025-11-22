@@ -3,13 +3,17 @@ import { AItError } from "@ait/core";
 import type { LinearIssueExternal } from "@ait/core";
 
 export interface IConnectorLinearDataSource {
-  fetchIssues(): Promise<LinearIssueExternal[]>;
+  fetchIssues(cursor?: string): Promise<{ issues: LinearIssueExternal[]; nextCursor?: string }>;
 }
 
 interface LinearGraphQLResponse {
   data?: {
     issues: {
       nodes: any[];
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string;
+      };
     };
   };
   errors?: Array<{ message: string }>;
@@ -24,10 +28,10 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
     this.accessToken = accessToken;
   }
 
-  async fetchIssues(): Promise<LinearIssueExternal[]> {
+  async fetchIssues(cursor?: string): Promise<{ issues: LinearIssueExternal[]; nextCursor?: string }> {
     const query = `
-      query {
-        issues(first: 50, orderBy: updatedAt) {
+      query($after: String) {
+        issues(first: 50, after: $after, orderBy: updatedAt) {
           nodes {
             id
             title
@@ -57,6 +61,10 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
             createdAt
             updatedAt
           }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
         }
       }
     `;
@@ -68,7 +76,7 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
           Authorization: `Bearer ${this.accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query, variables: { after: cursor } }),
       });
 
       if (!result.ok) {
@@ -88,8 +96,7 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         __type: "issue" as const,
       }));
 
-      // Sort by priority (higher first), then state (In Progress > Todo > Done), then by updated date
-      return issues.sort((a, b) => {
+      const sortedIssues = issues.sort((a, b) => {
         // Priority (higher priority first, 0 = urgent, 4 = low)
         const priorityA = a.priority ?? 4;
         const priorityB = b.priority ?? 4;
@@ -114,6 +121,11 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         // Updated date (most recent first)
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
+
+      return {
+        issues: sortedIssues,
+        nextCursor: payload.data.issues.pageInfo.hasNextPage ? payload.data.issues.pageInfo.endCursor : undefined,
+      };
     } catch (error: any) {
       if (error instanceof AItError) {
         throw error;

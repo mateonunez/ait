@@ -7,13 +7,21 @@ import type {
   SpotifyCurrentlyPlayingExternal,
 } from "@ait/core";
 
+interface SpotifyPaginatedResponse<T> {
+  items: T[];
+  nextCursor?: string;
+}
+
 export interface IConnectorSpotifyDataSource {
-  fetchTracks(): Promise<SpotifyTrackExternal[]>;
+  fetchTracks(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyTrackExternal>>;
   fetchTopArtists(): Promise<SpotifyArtistExternal[]>;
-  fetchPlaylists(): Promise<SpotifyPlaylistExternal[]>;
+  fetchPlaylists(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyPlaylistExternal>>;
   fetchPlaylistById(playlistId: string): Promise<SpotifyPlaylistExternal>;
-  fetchAlbums(): Promise<SpotifyAlbumExternal[]>;
+  fetchAlbums(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyAlbumExternal>>;
   fetchAlbumById(albumId: string): Promise<SpotifyAlbumExternal>;
-  fetchRecentlyPlayed(limit?: number): Promise<SpotifyRecentlyPlayedExternal[]>;
+  fetchRecentlyPlayed(
+    cursor?: string,
+    limit?: number,
+  ): Promise<SpotifyPaginatedResponse<SpotifyRecentlyPlayedExternal>>;
   fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null>;
 }

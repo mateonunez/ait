@@ -34,17 +34,28 @@ export class ConnectorGitHubService
   constructor() {
     super(getConnectorConfig("github"));
 
-    this.registerEntityConfig<GITHUB_ENTITY_TYPES_ENUM.REPOSITORY, GitHubRepositoryExternal>(
+    const repoConfig = connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.REPOSITORY];
+    if (!repoConfig.paginatedFetcher) {
+      throw new Error("GitHub repository config missing paginatedFetcher");
+    }
+
+    this.registerPaginatedEntityConfig<GITHUB_ENTITY_TYPES_ENUM.REPOSITORY, GitHubRepositoryExternal>(
       GITHUB_ENTITY_TYPES_ENUM.REPOSITORY,
-      connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.REPOSITORY],
+      {
+        paginatedFetcher: repoConfig.paginatedFetcher,
+        mapper: repoConfig.mapper,
+        cacheTtl: repoConfig.cacheTtl,
+        batchSize: repoConfig.batchSize,
+        checksumEnabled: repoConfig.checksumEnabled,
+      },
     );
 
-    this.registerEntityConfig<GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, GitHubPullRequestExternal>(
+    this.registerPaginatedEntityConfig<GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, GitHubPullRequestExternal>(
       GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST,
       connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST],
     );
 
-    this.registerEntityConfig<GITHUB_ENTITY_TYPES_ENUM.COMMIT, GitHubCommitExternal>(
+    this.registerPaginatedEntityConfig<GITHUB_ENTITY_TYPES_ENUM.COMMIT, GitHubCommitExternal>(
       GITHUB_ENTITY_TYPES_ENUM.COMMIT,
       connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.COMMIT],
     );

@@ -47,14 +47,18 @@ describe("ConnectorLinearDataSource", () => {
                   updatedAt: "2025-01-01T00:00:00Z",
                 },
               ],
+              pageInfo: {
+                hasNextPage: false,
+                endCursor: "cursor-1",
+              },
             },
           },
         });
 
       const result = await dataSource.fetchIssues();
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.id, "issue-1");
-      assert.equal(result[0]?.__type, "issue");
+      assert.equal(result.issues.length, 1);
+      assert.equal(result.issues[0]?.id, "issue-1");
+      assert.equal(result.issues[0]?.__type, "issue");
     });
 
     it("should handle invalid access token error", async () => {

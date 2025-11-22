@@ -21,7 +21,7 @@ export class ConnectorSlackService
   constructor() {
     super(getConnectorConfig("slack"));
 
-    this.registerEntityConfig<SLACK_ENTITY_TYPES_ENUM.MESSAGE, SlackMessageExternal>(
+    this.registerPaginatedEntityConfig<SLACK_ENTITY_TYPES_ENUM.MESSAGE, SlackMessageExternal>(
       SLACK_ENTITY_TYPES_ENUM.MESSAGE,
       connectorEntityConfigs.slack[SLACK_ENTITY_TYPES_ENUM.MESSAGE],
     );

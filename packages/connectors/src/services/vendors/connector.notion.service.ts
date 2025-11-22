@@ -21,7 +21,7 @@ export class ConnectorNotionService
   constructor() {
     super(getConnectorConfig("notion"));
 
-    this.registerEntityConfig<NOTION_ENTITY_TYPES_ENUM.PAGE, NotionPageExternal>(
+    this.registerPaginatedEntityConfig<NOTION_ENTITY_TYPES_ENUM.PAGE, NotionPageExternal>(
       NOTION_ENTITY_TYPES_ENUM.PAGE,
       connectorEntityConfigs.notion[NOTION_ENTITY_TYPES_ENUM.PAGE],
     );

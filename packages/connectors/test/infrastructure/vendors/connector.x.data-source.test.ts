@@ -52,11 +52,11 @@ describe("ConnectorXDataSource", () => {
         });
 
       const result = await dataSource.fetchTweets();
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.id, "t1");
-      assert.equal(result[0]?.__type, "tweet");
-      assert.equal(result[0]?.username, "testuser");
-      assert.equal(result[0]?.name, "Test User");
+      assert.equal(result.tweets.length, 1);
+      assert.equal(result.tweets[0]?.id, "t1");
+      assert.equal(result.tweets[0]?.__type, "tweet");
+      assert.equal(result.tweets[0]?.username, "testuser");
+      assert.equal(result.tweets[0]?.name, "Test User");
     });
 
     it("should handle invalid access token error", async () => {

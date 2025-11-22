@@ -7,11 +7,9 @@ import {
   ConnectorOAuthRequestError,
 } from "../shared/auth/lib/oauth/connector.oauth";
 import { retryWithBackoff } from "../shared/utils/retry.utils";
+import { getLogger, type Logger } from "@ait/core";
+import { createHash } from "node:crypto";
 
-/**
- * Shared connector logic for authenticating and reusing
- * existing sessions among multiple connector implementations.
- */
 export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, StoreType, RepositoryType>
   implements IConnector<AuthenticatorType, DataSourceType, StoreType>
 {
@@ -20,22 +18,33 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   protected _store: StoreType;
   protected _repository: RepositoryType;
   private _refreshInProgress: Promise<void> | null = null;
+  protected _logger: Logger;
 
   constructor(authenticator: AuthenticatorType, repository: RepositoryType, store: StoreType) {
     this._authenticator = authenticator;
     this._repository = repository;
     this._store = store;
+    this._logger = getLogger();
   }
 
   public async connect(code = AIT): Promise<void> {
     const authenticatedData = await this.getAuthenticatedData();
 
     if (!authenticatedData) {
+      this._logger.info("[Connector] No existing authentication found. Authenticating...");
       await this._handleAuthentication(code);
       return;
     }
 
+    this._logger.info("[Connector] Found existing authentication. Verifying token...");
     await this._handleExistingAuthentication(authenticatedData);
+  }
+
+  public async getSessionId(): Promise<string> {
+    const data = await this.getAuthenticatedData();
+    if (!data?.accessToken) return "anonymous";
+
+    return createHash("sha256").update(data.accessToken).digest("hex");
   }
 
   private async _handleAuthentication(code: string): Promise<void> {
@@ -45,6 +54,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
 
   private async _handleExistingAuthentication(authenticatedData: any): Promise<void> {
     if (this._isTokenExpired(authenticatedData)) {
+      this._logger.info("[Connector] Token expired. Refreshing...");
       if (this._refreshInProgress) {
         await this._refreshInProgress;
 
@@ -69,8 +79,10 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   private async _handleTokenRefresh(authenticatedData: OAuthTokenDataTarget): Promise<void> {
     const startTime = Date.now();
     const provider = authenticatedData.provider || "unknown";
+    const _logger = this._logger.child({ provider, operation: "refresh_token" });
 
     if (!authenticatedData.refreshToken) {
+      _logger.warn("No refresh token available. Re-authenticating...");
       await this._handleAuthentication(AIT);
       return;
     }
@@ -83,11 +95,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
         backoffMultiplier: 2,
         shouldRetry: (error: Error, attempt: number) => {
           if (error instanceof ConnectorOAuthNetworkError) {
-            console.warn(`[Connector:${provider}] Network error on attempt ${attempt}. Will retry...`, {
-              provider,
-              attempt,
-              error: error.message,
-            });
+            _logger.warn(`Network error on attempt ${attempt}. Will retry...`, { error: error.message });
             return true;
           }
           return false;
@@ -95,15 +103,15 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
       });
 
       const duration = Date.now() - startTime;
+      _logger.info("Token refreshed successfully", { durationMs: duration });
       await this._updateDataSourceAndSaveAuth(response);
     } catch (error: any) {
       const duration = Date.now() - startTime;
 
       if (error instanceof ConnectorOAuthRefreshTokenExpiredError) {
-        console.warn(
-          `[Connector:${provider}] Refresh token has expired or been revoked. Clearing stored tokens and triggering re-authentication...`,
+        _logger.warn(
+          "Refresh token has expired or been revoked. Clearing stored tokens and triggering re-authentication...",
           {
-            provider,
             durationMs: duration,
             statusCode: error.statusCode,
           },
@@ -111,24 +119,20 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
         await this._clearAuthenticationData();
         await this._handleAuthentication(AIT);
       } else if (error instanceof ConnectorOAuthNetworkError) {
-        console.error(`[Connector:${provider}] Network error during token refresh after all retry attempts`, {
-          provider,
+        _logger.error("Network error during token refresh after all retry attempts", {
           durationMs: duration,
           error: error.message,
         });
-        console.error("[Connector] Will retry on next connection attempt");
         throw error;
       } else if (error instanceof ConnectorOAuthRequestError) {
-        console.error(`[Connector:${provider}] OAuth request failed`, {
-          provider,
+        _logger.error("OAuth request failed", {
           statusCode: error.statusCode,
           durationMs: duration,
           responseBody: error.responseBody,
         });
         throw error;
       } else {
-        console.error(`[Connector:${provider}] Unexpected error during token refresh`, {
-          provider,
+        _logger.error("Unexpected error during token refresh", {
           durationMs: duration,
           error: error.message,
         });
@@ -159,10 +163,9 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
     try {
       await this.clearAuthenticatedData();
     } catch (error: unknown) {
-      console.error(
-        "[Connector] Failed to clear authentication data:",
-        error instanceof Error ? error.message : String(error),
-      );
+      this._logger.error("Failed to clear authentication data", {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 

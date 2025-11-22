@@ -19,8 +19,11 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/ai-sdk": "workspace:*",
     "@ait/core": "workspace:*",
     "@ait/postgres": "workspace:*",
+    "@ait/qdrant": "workspace:*",
+    "@ait/redis": "workspace:*",
     "@fastify/secure-session": "^8.2.0",
     "@octokit/plugin-paginate-rest": "^13.2.0",
     "@octokit/rest": "^22.0.0",
@@ -29,7 +32,8 @@
     "fastify-cors": "^6.1.0",
     "fastify-env": "^2.2.0",
     "postgres": "^3.4.7",
-    "undici": "^7.16.0"
+    "undici": "^7.16.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@octokit/plugin-rest-endpoint-methods": "^16.1.0",

@@ -30,3 +30,6 @@ export type * from "./types/domain/entities/vendors/connector.linear.types";
 export type * from "./types/domain/entities/vendors/connector.spotify.types";
 export type * from "./types/domain/entities/vendors/connector.x.repository.types";
 export type * from "./types/domain/entities/vendors/connector.slack.types";
+
+// Sync state service
+export * from "./services/shared/sync";

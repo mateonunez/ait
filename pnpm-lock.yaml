@@ -35,12 +35,21 @@ importers:
 
   packages/connectors:
     dependencies:
+      '@ait/ai-sdk':
+        specifier: workspace:*
+        version: link:../infrastructure/ai-sdk
       '@ait/core':
         specifier: workspace:*
         version: link:../core
       '@ait/postgres':
         specifier: workspace:*
         version: link:../infrastructure/postgres
+      '@ait/qdrant':
+        specifier: workspace:*
+        version: link:../infrastructure/qdrant
+      '@ait/redis':
+        specifier: workspace:*
+        version: link:../infrastructure/redis
       '@fastify/secure-session':
         specifier: ^8.2.0
         version: 8.2.0
@@ -68,6 +77,9 @@ importers:
       undici:
         specifier: ^7.16.0
         version: 7.16.0
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@octokit/plugin-rest-endpoint-methods':
         specifier: ^16.1.0
@@ -95,6 +107,10 @@ importers:
         version: 5.9.3
 
   packages/core:
+    dependencies:
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@redocly/openapi-core':
         specifier: ^2.6.0
@@ -254,8 +270,8 @@ importers:
         specifier: ^17.2.2
         version: 17.2.2
       ioredis:
-        specifier: ^5.8.0
-        version: 5.8.0
+        specifier: ^5.8.2
+        version: 5.8.2
     devDependencies:
       '@types/dotenv':
         specifier: ^8.2.3
@@ -278,6 +294,9 @@ importers:
       '@ait/ai-sdk':
         specifier: workspace:*
         version: link:../../infrastructure/ai-sdk
+      '@ait/connectors':
+        specifier: workspace:*
+        version: link:../../connectors
       '@ait/postgres':
         specifier: workspace:*
         version: link:../../infrastructure/postgres
@@ -3370,6 +3389,10 @@ packages:
     resolution: {integrity: sha512-AUXbKn9gvo9hHKvk6LbZJQSKn/qIfkWXrnsyL9Yrf+oeXmla9Nmf6XEumOddyhM8neynpK5oAV6r9r99KBuwzA==}
     engines: {node: '>=12.22.0'}
 
+  ioredis@5.8.2:
+    resolution: {integrity: sha512-C6uC+kleiIMmjViJINWk80sOQw5lEzse1ZmvD+S/s8p8CWapftSaC+kocGTx6xrbrJ4WmYQGC08ffHLr6ToR6Q==}
+    engines: {node: '>=12.22.0'}
+
   ipaddr.js@2.2.0:
     resolution: {integrity: sha512-Ag3wB2o37wslZS19hZqorUnrnzSkpOVy+IiiDEiTqNubEYpYuHWIf6K4psgN2ZWKExS4xhVCrRVfb/wfW8fWJA==}
     engines: {node: '>= 10'}
@@ -4722,6 +4745,9 @@ packages:
     resolution: {integrity: sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==}
     peerDependencies:
       zod: ^3.24.1
+
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
   zod@4.1.12:
     resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
@@ -8092,6 +8118,20 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  ioredis@5.8.2:
+    dependencies:
+      '@ioredis/commands': 1.4.0
+      cluster-key-slot: 1.1.2
+      debug: 4.4.3(supports-color@10.2.2)
+      denque: 2.1.0
+      lodash.defaults: 4.2.0
+      lodash.isarguments: 3.1.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   ipaddr.js@2.2.0: {}
 
   is-alphabetical@2.0.1: {}
@@ -9691,6 +9731,8 @@ snapshots:
   zod-to-json-schema@3.24.6(zod@4.1.12):
     dependencies:
       zod: 4.1.12
+
+  zod@3.25.76: {}
 
   zod@4.1.12: {}
 
