@@ -181,7 +181,6 @@ async function main() {
 
     const redisConfig: IRedisConfig = {
       url: process.env.REDIS_URL || "redis://localhost:6379",
-      maxRetriesPerRequest: null,
     };
 
     const concurrency = Number.parseInt(process.env.ETL_CONCURRENCY || "2", 10);

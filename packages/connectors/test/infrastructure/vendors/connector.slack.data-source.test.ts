@@ -122,14 +122,14 @@ describe("ConnectorSlackDataSource", () => {
 
       const result = await dataSource.fetchMessages();
 
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.__type, "message");
-      assert.equal(result[0]?.channel, "channel-1");
-      assert.equal(result[0]?.channelName, "general");
-      assert.equal(result[0]?.text, "Hello, world!");
-      assert.equal(result[0]?.user, "user-1");
-      assert.ok(result[0]?.userName);
-      assert.ok(result[0]?.permalink);
+      assert.equal(result.messages.length, 1);
+      assert.equal(result.messages[0]?.__type, "message");
+      assert.equal(result.messages[0]?.channel, "channel-1");
+      assert.equal(result.messages[0]?.channelName, "general");
+      assert.equal(result.messages[0]?.text, "Hello, world!");
+      assert.equal(result.messages[0]?.user, "user-1");
+      assert.ok(result.messages[0]?.userName);
+      assert.ok(result.messages[0]?.permalink);
     });
 
     it("should handle pagination for conversations", async () => {
@@ -232,7 +232,7 @@ describe("ConnectorSlackDataSource", () => {
       const result = await dataSource.fetchMessages();
 
       // Should process both channels
-      assert.ok(Array.isArray(result));
+      assert.ok(Array.isArray(result.messages));
     });
 
     it("should filter out bot messages and system messages", async () => {
@@ -328,8 +328,8 @@ describe("ConnectorSlackDataSource", () => {
       const result = await dataSource.fetchMessages();
 
       // Should only include the valid message
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.text, "Valid message");
+      assert.equal(result.messages.length, 1);
+      assert.equal(result.messages[0]?.text, "Valid message");
     });
 
     it("should handle authentication errors", async () => {
@@ -410,7 +410,7 @@ describe("ConnectorSlackDataSource", () => {
       const result = await dataSource.fetchMessages();
 
       // Should handle gracefully and return empty array
-      assert.ok(Array.isArray(result));
+      assert.ok(Array.isArray(result.messages));
     });
 
     it("should skip channels where bot is not a member", async () => {
@@ -496,8 +496,8 @@ describe("ConnectorSlackDataSource", () => {
       const result = await dataSource.fetchMessages();
 
       // Should only fetch from channel-2 where bot is a member
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.channel, "channel-2");
+      assert.equal(result.messages.length, 1);
+      assert.equal(result.messages[0]?.channel, "channel-2");
     });
 
     it("should sort messages by timestamp (most recent first)", async () => {
@@ -579,10 +579,10 @@ describe("ConnectorSlackDataSource", () => {
 
       const result = await dataSource.fetchMessages();
 
-      assert.equal(result.length, 2);
+      assert.equal(result.messages.length, 2);
       // Most recent should be first
-      assert.equal(result[0]?.ts, "1234567890.200000");
-      assert.equal(result[1]?.ts, "1234567890.100000");
+      assert.equal(result.messages[0]?.ts, "1234567890.200000");
+      assert.equal(result.messages[1]?.ts, "1234567890.100000");
     });
   });
 });

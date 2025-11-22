@@ -1,8 +1,8 @@
-import { requestJson, AItError } from "@ait/core";
+import { requestJson, AItError, getLogger } from "@ait/core";
 import type { SlackMessageExternal, SlackApiResponse, SlackUser, SlackConversation } from "@ait/core";
 
 export interface IConnectorSlackDataSource {
-  fetchMessages(): Promise<SlackMessageExternal[]>;
+  fetchMessages(cursor?: string): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }>;
 }
 
 // Internal API response types - these are implementation-specific and stay here
@@ -38,7 +38,9 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
   private readonly apiUrl: string;
   private accessToken: string;
   private userCache: Map<string, SlackUser> = new Map();
+  private conversationCache: SlackConversation[] | null = null;
   private workspaceUrl?: string;
+  private _logger = getLogger();
 
   constructor(accessToken: string) {
     this.apiUrl = process.env.SLACK_API_ENDPOINT || "https://slack.com/api";
@@ -153,6 +155,10 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
    * Fetches all conversations (channels, DMs, group DMs) accessible to the app
    */
   private async fetchConversations(): Promise<SlackConversation[]> {
+    if (this.conversationCache) {
+      return this.conversationCache;
+    }
+
     const allConversations: SlackConversation[] = [];
     let cursor: string | undefined;
 
@@ -193,7 +199,8 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
         cursor = response.response_metadata?.next_cursor;
       } while (cursor);
 
-      return allConversations;
+      this.conversationCache = allConversations.sort((a, b) => a.id.localeCompare(b.id));
+      return this.conversationCache;
     } catch (error: any) {
       if (error instanceof AItError) {
         throw error;
@@ -237,84 +244,85 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
   /**
    * Fetches message history for a specific conversation
    */
-  private async fetchConversationHistory(channelId: string, channelName: string): Promise<SlackMessageExternal[]> {
-    const allMessages: SlackMessageExternal[] = [];
-    let cursor: string | undefined;
+  /**
+   * Fetches message history for a specific conversation (single page)
+   */
+  private async fetchConversationHistoryPage(
+    channelId: string,
+    channelName: string,
+    cursor?: string,
+  ): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }> {
     const oldest = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60; // Last 90 days
 
     try {
-      do {
-        const url = `${this.apiUrl}/conversations.history`;
-        const params = new URLSearchParams({
-          channel: channelId,
-          limit: "200",
-          oldest: oldest.toString(),
-          include_all_metadata: "true", // Include all metadata (files, attachments, reactions, etc.)
-        });
+      const url = `${this.apiUrl}/conversations.history`;
+      const params = new URLSearchParams({
+        channel: channelId,
+        limit: "50", // Batch size
+        oldest: oldest.toString(),
+        include_all_metadata: "true",
+      });
 
-        if (cursor) {
-          params.append("cursor", cursor);
+      if (cursor) {
+        params.append("cursor", cursor);
+      }
+
+      const result = await requestJson<SlackConversationsHistoryResponse>(`${url}?${params.toString()}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+
+      if (!result.ok) {
+        throw result.error;
+      }
+
+      const response = result.value.data;
+      if (!response.ok) {
+        // Some channels might not be accessible, skip them gracefully
+        if (
+          response.error === "channel_not_found" ||
+          response.error === "not_authed" ||
+          response.error === "not_in_channel"
+        ) {
+          console.debug(`Skipping channel ${channelName} (${channelId}): ${response.error}`);
+          return { messages: [], nextCursor: undefined };
         }
+        throw new AItError("SLACK_API_ERROR", response.error || "Failed to fetch conversation history");
+      }
 
-        const result = await requestJson<SlackConversationsHistoryResponse>(`${url}?${params.toString()}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        });
+      let messages: SlackMessageExternal[] = [];
+      if (response.messages && Array.isArray(response.messages)) {
+        messages = response.messages
+          .filter((msg) => {
+            return msg.text && msg.ts && !msg.bot_id && !msg.subtype;
+          })
+          .map(
+            (msg): SlackMessageExternal => ({
+              ...msg,
+              channel: channelId,
+              channelName: channelName,
+              reply_count: msg.reply_count || 0,
+              files: msg.files || [],
+              attachments: msg.attachments || [],
+              reactions: msg.reactions || [],
+              pinned_to: msg.pinned_to || [],
+              __type: "message" as const,
+            }),
+          );
+      }
 
-        if (!result.ok) {
-          throw result.error;
-        }
+      const enrichedMessages = await this._enrichMessages(messages);
 
-        const response = result.value.data;
-        if (!response.ok) {
-          // Some channels might not be accessible, skip them gracefully
-          if (
-            response.error === "channel_not_found" ||
-            response.error === "not_authed" ||
-            response.error === "not_in_channel"
-          ) {
-            console.debug(`Skipping channel ${channelName} (${channelId}): ${response.error}`);
-            break;
-          }
-          throw new AItError("SLACK_API_ERROR", response.error || "Failed to fetch conversation history");
-        }
-
-        if (response.messages && Array.isArray(response.messages)) {
-          const messages = response.messages
-            .filter((msg) => {
-              // Filter out: empty messages, bot messages, system messages
-              return (
-                msg.text &&
-                msg.ts &&
-                !msg.bot_id && // Exclude bot messages
-                !msg.subtype // Exclude system messages (channel_join, etc)
-              );
-            })
-            .map(
-              (msg): SlackMessageExternal => ({
-                ...msg,
-                channel: channelId,
-                channelName: channelName,
-                reply_count: msg.reply_count || 0,
-                files: msg.files || [],
-                attachments: msg.attachments || [],
-                reactions: msg.reactions || [],
-                pinned_to: msg.pinned_to || [],
-                __type: "message" as const,
-              }),
-            );
-
-          allMessages.push(...messages);
-        }
-
-        cursor = response.response_metadata?.next_cursor;
-      } while (cursor);
-
-      // Enrich messages with user information and permalinks
-      return await this._enrichMessages(allMessages);
+      return {
+        messages: enrichedMessages,
+        nextCursor:
+          response.has_more && response.response_metadata?.next_cursor
+            ? response.response_metadata.next_cursor
+            : undefined,
+      };
     } catch (error: any) {
       if (error instanceof AItError) {
         throw error;
@@ -331,43 +339,66 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
   /**
    * Fetches all messages from all accessible conversations
    */
-  async fetchMessages(): Promise<SlackMessageExternal[]> {
+  /**
+   * Fetches messages with pagination across all conversations
+   */
+  async fetchMessages(cursorStr?: string): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }> {
     try {
-      // Fetch all users upfront for efficient lookup
       await this.fetchAllUsers();
-
       const conversations = await this.fetchConversations();
-      const allMessages: SlackMessageExternal[] = [];
 
-      // Fetch messages from each conversation
-      for (const conversation of conversations) {
+      let channelIndex = 0;
+      let messageCursor: string | undefined;
+
+      if (cursorStr) {
         try {
-          const channelName = conversation.name || conversation.id;
-
-          // For channels (public/private), only fetch if bot is a member
-          // For DMs (im/mpim), the bot is automatically "in" the conversation
-          if (conversation.is_im || conversation.is_mpim || conversation.is_member !== false) {
-            const messages = await this.fetchConversationHistory(conversation.id, channelName);
-            allMessages.push(...messages);
-          } else {
-            console.debug(`Skipping channel ${channelName} - bot is not a member`);
-          }
-        } catch (error: any) {
-          // Handle not_in_channel errors gracefully
-          if (error instanceof AItError && error.message?.includes("not_in_channel")) {
-            console.debug(`Skipping channel ${conversation.name || conversation.id} - bot not in channel`);
-            continue;
-          }
-          console.error(
-            `Failed to fetch messages for conversation ${conversation.name || conversation.id}:`,
-            error.message,
-          );
-          // Continue with other conversations
+          const parsed = JSON.parse(cursorStr);
+          channelIndex = parsed.channelIndex || 0;
+          messageCursor = parsed.messageCursor;
+        } catch {
+          // Invalid cursor, start from beginning
+          this._logger.warn("Invalid cursor, starting from beginning");
         }
       }
 
-      // Sort by timestamp (most recent first)
-      return allMessages.sort((a, b) => Number.parseFloat(b.ts) - Number.parseFloat(a.ts));
+      while (channelIndex < conversations.length) {
+        const conversation = conversations[channelIndex];
+        if (!conversation) {
+          channelIndex++;
+          continue;
+        }
+        const channelName = conversation.name || conversation.id;
+
+        // Check if we should process this channel
+        if (conversation.is_im || conversation.is_mpim || conversation.is_member !== false) {
+          const { messages, nextCursor } = await this.fetchConversationHistoryPage(
+            conversation.id,
+            channelName,
+            messageCursor,
+          );
+
+          if (messages.length > 0 || nextCursor) {
+            // We found messages or there are more messages in this channel
+            const newCursor = nextCursor
+              ? JSON.stringify({ channelIndex, messageCursor: nextCursor })
+              : JSON.stringify({ channelIndex: channelIndex + 1 }); // Move to next channel next time
+
+            // Sort by timestamp (most recent first) within the batch
+            const sortedMessages = messages.sort((a, b) => Number.parseFloat(b.ts) - Number.parseFloat(a.ts));
+
+            return {
+              messages: sortedMessages,
+              nextCursor: newCursor,
+            };
+          }
+        }
+
+        // Move to next channel immediately if current one is skipped or empty
+        channelIndex++;
+        messageCursor = undefined;
+      }
+
+      return { messages: [], nextCursor: undefined };
     } catch (error: any) {
       if (error instanceof AItError) {
         throw error;

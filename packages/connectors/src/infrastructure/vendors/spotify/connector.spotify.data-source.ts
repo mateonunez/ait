@@ -11,6 +11,11 @@ import dotenv from "dotenv";
 import { requestJson } from "@ait/core";
 import { AItError } from "@ait/core";
 
+interface SpotifyPaginatedResponse<T> {
+  items: T[];
+  nextCursor?: string;
+}
+
 dotenv.config();
 
 export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
@@ -22,13 +27,22 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     this.accessToken = accessToken;
   }
 
-  async fetchTracks(): Promise<SpotifyTrackExternal[]> {
+  async fetchTracks(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyTrackExternal>> {
+    const limit = 50;
+    const offset = cursor ? Number.parseInt(cursor, 10) : 0;
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
     const response = await this._fetchFromSpotify<{
       items: {
         added_at: string;
         track: SpotifyTrackExternal;
       }[];
-    }>("/me/tracks");
+      next: string | null;
+      total: number;
+    }>(`/me/tracks?${params.toString()}`);
 
     const tracks =
       response?.items?.map((item) => ({
@@ -37,7 +51,10 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
         __type: "track" as const,
       })) ?? [];
 
-    return tracks;
+    return {
+      items: tracks,
+      nextCursor: response.next ? (offset + limit).toString() : undefined,
+    };
   }
 
   async fetchTopArtists(): Promise<SpotifyArtistExternal[]> {
@@ -48,16 +65,28 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     return response.items;
   }
 
-  async fetchPlaylists(): Promise<SpotifyPlaylistExternal[]> {
+  async fetchPlaylists(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyPlaylistExternal>> {
+    const limit = 50;
+    const offset = cursor ? Number.parseInt(cursor, 10) : 0;
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
     const response = await this._fetchFromSpotify<{
       items: SpotifyPlaylistExternal[];
-    }>("/me/playlists");
+      next: string | null;
+      total: number;
+    }>(`/me/playlists?${params.toString()}`);
 
     const prioritizedPlaylists = response.items.sort((a, b) => {
       return a.owner?.display_name?.toLowerCase() === "mateonunez" ? -1 : 1;
     });
 
-    return prioritizedPlaylists;
+    return {
+      items: prioritizedPlaylists,
+      nextCursor: response.next ? (offset + limit).toString() : undefined,
+    };
   }
 
   async fetchPlaylistById(playlistId: string): Promise<SpotifyPlaylistExternal> {
@@ -68,13 +97,22 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     };
   }
 
-  async fetchAlbums(): Promise<SpotifyAlbumExternal[]> {
+  async fetchAlbums(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyAlbumExternal>> {
+    const limit = 50;
+    const offset = cursor ? Number.parseInt(cursor, 10) : 0;
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
     const response = await this._fetchFromSpotify<{
       items: {
         added_at: string;
         album: SpotifyAlbumExternal;
       }[];
-    }>("/me/albums");
+      next: string | null;
+      total: number;
+    }>(`/me/albums?${params.toString()}`);
 
     const albums = response.items.map((album) => ({
       ...album.album,
@@ -85,7 +123,10 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     // Sort by popularity to prioritize more significant albums
     const sortedAlbums = albums.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
-    return sortedAlbums;
+    return {
+      items: sortedAlbums,
+      nextCursor: response.next ? (offset + limit).toString() : undefined,
+    };
   }
 
   async fetchAlbumById(albumId: string): Promise<SpotifyAlbumExternal> {
@@ -96,17 +137,36 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     };
   }
 
-  async fetchRecentlyPlayed(limit = 20): Promise<SpotifyRecentlyPlayedExternal[]> {
+  async fetchRecentlyPlayed(
+    cursor?: string,
+    limit = 50,
+  ): Promise<SpotifyPaginatedResponse<SpotifyRecentlyPlayedExternal>> {
     const params = new URLSearchParams({ limit: limit.toString() });
+    if (cursor) {
+      params.append("after", cursor);
+    }
 
     const response = await this._fetchFromSpotify<{
       items: SpotifyRecentlyPlayedExternal[];
+      cursors?: {
+        after: string;
+        before: string;
+      };
+      next?: string;
     }>(`/me/player/recently-played?${params}`);
 
-    return response.items.map((item) => ({
-      ...item,
-      __type: "recently_played" as const,
-    }));
+    // Spotify recently-played API is unique:
+    // 'after' returns items *after* the timestamp (older to newer).
+    // 'cursors.after' is the timestamp of the *newest* item in the batch.
+    // To paginate forward, we use the 'cursors.after' from the response.
+
+    return {
+      items: response.items.map((item) => ({
+        ...item,
+        __type: "recently_played" as const,
+      })),
+      nextCursor: response.cursors?.after,
+    };
   }
 
   async fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null> {

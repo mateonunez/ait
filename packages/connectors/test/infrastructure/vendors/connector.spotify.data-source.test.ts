@@ -49,7 +49,7 @@ describe("ConnectorSpotifyDataSource", () => {
       const mockClient = agent.get(spotifyEndpoint);
       mockClient
         .intercept({
-          path: "/v1/me/tracks",
+          path: "/v1/me/tracks?limit=50&offset=0",
           method: "GET",
           headers: {
             authorization: `Bearer ${mockAccessToken}`,
@@ -59,9 +59,9 @@ describe("ConnectorSpotifyDataSource", () => {
 
       const result = await dataSource.fetchTracks();
 
-      assert.equal(result.length, 1);
+      assert.equal(result.items.length, 1);
       // @ts-ignore - TODO: fix this
-      assert.equal(result[0]?.track.id, "1");
+      assert.equal(result.items[0]?.track.id, "1");
     });
   });
 

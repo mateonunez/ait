@@ -1,4 +1,4 @@
-import { type getPostgresClient, githubCommits, type GitHubCommitDataTarget } from "@ait/postgres";
+import { type getPostgresClient, githubCommits, type GitHubCommitDataTarget, drizzleOrm } from "@ait/postgres";
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
@@ -19,9 +19,13 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("github"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<GitHubCommitDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GitHubCommitDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(githubCommits).limit(limit).execute();
+      let query = tx.select().from(githubCommits) as any;
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(githubCommits.updatedAt, lastProcessedTimestamp));
+      }
+      return query.orderBy(drizzleOrm.asc(githubCommits.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -33,8 +37,17 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(commit);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 5_200_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const commits = data as GitHubCommitDataTarget[];
+    if (commits.length === 0) return new Date();
+    return commits.reduce((max, commit) => {
+      const commitDate = commit.updatedAt ? new Date(commit.updatedAt) : new Date(0);
+      return commitDate > max ? commitDate : max;
+    }, new Date(0));
   }
 }
 

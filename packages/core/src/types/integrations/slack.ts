@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export interface BaseSlackEntity {
   __type: "message";
 }
@@ -87,26 +89,88 @@ export interface SlackReaction {
   users?: string[];
 }
 
-export interface SlackMessageEntity extends BaseSlackEntity {
-  id: string;
-  channelId: string;
-  channelName: string;
-  text: string;
-  userId: string | null;
-  userName: string | null;
-  threadTs: string | null;
-  replyCount: number;
-  permalink: string | null;
-  files: SlackFile[];
-  attachments: SlackAttachment[];
-  reactions: SlackReaction[];
-  edited: { user?: string; ts?: string } | null;
-  pinnedTo: string[];
-  ts: string;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "message";
-}
+const SlackFileSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  title: z.string().optional(),
+  mimetype: z.string().optional(),
+  filetype: z.string().optional(),
+  size: z.number().optional(),
+  url_private: z.string().optional(),
+  url_private_download: z.string().optional(),
+  thumb_64: z.string().optional(),
+  thumb_80: z.string().optional(),
+  thumb_160: z.string().optional(),
+  thumb_360: z.string().optional(),
+  thumb_480: z.string().optional(),
+  thumb_720: z.string().optional(),
+  thumb_800: z.string().optional(),
+  thumb_960: z.string().optional(),
+  thumb_1024: z.string().optional(),
+  thumb_tiny: z.string().optional(),
+  original_w: z.number().optional(),
+  original_h: z.number().optional(),
+  permalink: z.string().optional(),
+  permalink_public: z.string().optional(),
+});
+
+const SlackAttachmentSchema = z.object({
+  id: z.number().optional(),
+  color: z.string().optional(),
+  fallback: z.string().optional(),
+  title: z.string().optional(),
+  title_link: z.string().optional(),
+  text: z.string().optional(),
+  fields: z
+    .array(
+      z.object({
+        title: z.string().optional(),
+        value: z.string().optional(),
+        short: z.boolean().optional(),
+      }),
+    )
+    .optional(),
+  image_url: z.string().optional(),
+  thumb_url: z.string().optional(),
+  footer: z.string().optional(),
+  footer_icon: z.string().optional(),
+  ts: z.number().optional(),
+  from_url: z.string().optional(),
+});
+
+const SlackReactionSchema = z.object({
+  name: z.string(),
+  count: z.number(),
+  users: z.array(z.string()).optional(),
+});
+
+export const SlackMessageEntitySchema = z.object({
+  id: z.string(),
+  channelId: z.string(),
+  channelName: z.string(),
+  text: z.string(),
+  userId: z.string().nullable(),
+  userName: z.string().nullable(),
+  threadTs: z.string().nullable(),
+  replyCount: z.number(),
+  permalink: z.string().nullable(),
+  files: z.array(SlackFileSchema),
+  attachments: z.array(SlackAttachmentSchema),
+  reactions: z.array(SlackReactionSchema),
+  edited: z
+    .object({
+      user: z.string().optional(),
+      ts: z.string().optional(),
+    })
+    .nullable(),
+  pinnedTo: z.array(z.string()),
+  ts: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("message"),
+});
+
+export type SlackMessageEntity = z.infer<typeof SlackMessageEntitySchema>;
 
 /**
  * External Slack message representation from the API

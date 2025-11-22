@@ -3,7 +3,7 @@ import { AItError } from "@ait/core";
 import type { NotionPageExternal } from "@ait/core";
 
 export interface IConnectorNotionDataSource {
-  fetchPages(): Promise<NotionPageExternal[]>;
+  fetchPages(cursor?: string): Promise<{ pages: NotionPageExternal[]; nextCursor?: string }>;
 }
 
 type NotionPageRaw = Omit<NotionPageExternal, "__type"> & {
@@ -156,79 +156,77 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
    * the integration has access to, regardless of their parent.
    * See: https://developers.notion.com/reference/post-search
    */
-  async fetchPages(): Promise<NotionPageExternal[]> {
+  async fetchPages(cursor?: string): Promise<{ pages: NotionPageExternal[]; nextCursor?: string }> {
     const searchUrl = `${this.apiUrl}/search`;
-    const allPages: NotionPageExternal[] = [];
-    let nextCursor: string | null = null;
 
     try {
-      do {
-        // Search for all pages - this includes nested pages if they're shared with the integration
-        const requestBody: Record<string, unknown> = {
-          filter: {
-            property: "object",
-            value: "page",
-          },
-          page_size: 100,
-        };
+      // Search for pages - this includes nested pages if they're shared with the integration
+      const requestBody: Record<string, unknown> = {
+        filter: {
+          property: "object",
+          value: "page",
+        },
+        page_size: 50, // Reduced batch size for better control
+      };
 
-        if (nextCursor) {
-          requestBody.start_cursor = nextCursor;
-        }
+      if (cursor) {
+        requestBody.start_cursor = cursor;
+      }
 
-        const result = await requestJson<NotionSearchResponse>(searchUrl, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Notion-Version": "2022-06-28",
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(requestBody),
-        });
+      const result = await requestJson<NotionSearchResponse>(searchUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Notion-Version": "2022-06-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
 
-        if (!result.ok) {
-          throw result.error;
-        }
+      if (!result.ok) {
+        throw result.error;
+      }
 
-        const response = result.value.data;
+      const response = result.value.data;
 
-        if (!response || !Array.isArray(response.results)) {
-          throw new AItError("NOTION_NO_DATA", "Notion API returned invalid response structure");
-        }
+      if (!response || !Array.isArray(response.results)) {
+        throw new AItError("NOTION_NO_DATA", "Notion API returned invalid response structure");
+      }
 
-        const pages = await Promise.all(
-          response.results
-            .filter((page: NotionPageRaw) => page.object === "page")
-            .map(async (page: NotionPageRaw) => {
-              // Fetch page content
-              const content = await this.fetchPageContent(page.id);
+      const pages = await Promise.all(
+        response.results
+          .filter((page: NotionPageRaw) => page.object === "page")
+          .map(async (page: NotionPageRaw) => {
+            // Fetch page content
+            const content = await this.fetchPageContent(page.id);
 
-              return {
-                id: page.id,
-                created_time: page.created_time,
-                last_edited_time: page.last_edited_time,
-                created_by: page.created_by || { object: "user", id: "" },
-                last_edited_by: page.last_edited_by || { object: "user", id: "" },
-                cover: page.cover || null,
-                icon: page.icon || null,
-                parent: page.parent || { type: "workspace" },
-                archived: page.archived || false,
-                properties: page.properties || {},
-                url: page.url || "",
-                content: content || null,
-                __type: "page" as const,
-              } as NotionPageExternal;
-            }),
-        );
-
-        allPages.push(...pages);
-        nextCursor = response.next_cursor;
-      } while (nextCursor);
+            return {
+              id: page.id,
+              created_time: page.created_time,
+              last_edited_time: page.last_edited_time,
+              created_by: page.created_by || { object: "user", id: "" },
+              last_edited_by: page.last_edited_by || { object: "user", id: "" },
+              cover: page.cover || null,
+              icon: page.icon || null,
+              parent: page.parent || { type: "workspace" },
+              archived: page.archived || false,
+              properties: page.properties || {},
+              url: page.url || "",
+              content: content || null,
+              __type: "page" as const,
+            } as NotionPageExternal;
+          }),
+      );
 
       // Sort by last edited time (most recent first)
-      return allPages.sort((a, b) => {
+      const sortedPages = pages.sort((a, b) => {
         return new Date(b.last_edited_time).getTime() - new Date(a.last_edited_time).getTime();
       });
+
+      return {
+        pages: sortedPages,
+        nextCursor: response.next_cursor || undefined,
+      };
     } catch (error: any) {
       if (error instanceof AItError) {
         throw error;

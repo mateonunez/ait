@@ -1,22 +1,6 @@
-export interface BaseNotionEntity {
-  __type: "page";
-}
+import { z } from "zod";
 
-export interface NotionPageEntity extends BaseNotionEntity {
-  id: string;
-  title: string;
-  url: string;
-  parentType: string | null;
-  parentId: string | null;
-  archived: boolean;
-  icon: string | null;
-  cover: string | null;
-  content: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string | null;
-  lastEditedBy: string | null;
-  properties: Record<string, unknown>;
+export interface BaseNotionEntity {
   __type: "page";
 }
 
@@ -55,6 +39,25 @@ export interface NotionPageExternal extends BaseNotionEntity {
   content: string | null;
   __type: "page";
 }
+export const NotionPageEntitySchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  url: z.string(),
+  parentType: z.string().nullable(),
+  parentId: z.string().nullable(),
+  archived: z.boolean(),
+  icon: z.string().nullable(),
+  cover: z.string().nullable(),
+  content: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  createdBy: z.string().nullable(),
+  lastEditedBy: z.string().nullable(),
+  properties: z.record(z.string(), z.unknown()),
+  __type: z.literal("page"),
+});
+
+export type NotionPageEntity = z.infer<typeof NotionPageEntitySchema>;
 
 export type NotionEntity = NotionPageEntity;
 export type NotionExternal = NotionPageExternal;

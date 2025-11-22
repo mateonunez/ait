@@ -46,8 +46,12 @@ import type {
 import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {
-  fetcher: (connector: TConnector) => Promise<TExternal[]>;
+  fetcher?: (connector: TConnector) => Promise<TExternal[]>;
+  paginatedFetcher?: (connector: TConnector, cursor?: string) => Promise<{ data: TExternal[]; nextCursor?: string }>;
   mapper: (external: TExternal) => TDomain;
+  cacheTtl?: number;
+  batchSize?: number;
+  checksumEnabled?: boolean;
 }
 
 export enum GITHUB_ENTITY_TYPES_ENUM {
@@ -113,24 +117,57 @@ export interface SlackServiceEntityMap {
 const githubEntityConfigs = {
   [GITHUB_ENTITY_TYPES_ENUM.REPOSITORY]: {
     fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchRepositories(),
+    paginatedFetcher: async (connector: ConnectorGitHub, cursor?: string) => {
+      const page = cursor ? Number.parseInt(cursor) : 1;
+      const limit = 50;
+      const repos = await connector.dataSource.fetchRepositories({ page, limit });
+      return {
+        data: repos,
+        nextCursor: repos.length === limit ? String(page + 1) : undefined,
+      };
+    },
     mapper: (repo: GitHubRepositoryExternal) => connectorGithubRepositoryMapper.externalToDomain(repo),
+    cacheTtl: 3600,
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorGitHub, GitHubRepositoryExternal, GitHubRepositoryEntity>,
 
   [GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST]: {
     fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchPullRequests(),
+    paginatedFetcher: async (connector: ConnectorGitHub, cursor?: string) => {
+      return connector.dataSource.fetchPullRequestsPaginated(cursor);
+    },
     mapper: (pr: GitHubPullRequestExternal) => connectorGithubPullRequestMapper.externalToDomain(pr),
+    cacheTtl: 300,
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorGitHub, GitHubPullRequestExternal, GitHubPullRequestEntity>,
 
   [GITHUB_ENTITY_TYPES_ENUM.COMMIT]: {
     fetcher: (connector: ConnectorGitHub) => connector.dataSource.fetchCommits(),
+    paginatedFetcher: async (connector: ConnectorGitHub, cursor?: string) => {
+      return connector.dataSource.fetchCommitsPaginated(cursor);
+    },
     mapper: (commit: GitHubCommitExternal) => connectorGithubCommitMapper.externalToDomain(commit),
+    cacheTtl: 300,
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorGitHub, GitHubCommitExternal, GitHubCommitEntity>,
 } as const;
 
 const spotifyEntityConfigs = {
   [SPOTIFY_ENTITY_TYPES_ENUM.TRACK]: {
-    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchTracks(),
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchTracks().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorSpotify, cursor?: string) => {
+      const response = await connector.dataSource.fetchTracks(cursor);
+      return {
+        data: response.items,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (track: SpotifyTrackExternal) => connectorSpotifyTrackMapper.externalToDomain(track),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyTrackExternal, SpotifyTrackEntity>,
 
   [SPOTIFY_ENTITY_TYPES_ENUM.ARTIST]: {
@@ -139,46 +176,109 @@ const spotifyEntityConfigs = {
   } satisfies EntityConfig<ConnectorSpotify, SpotifyArtistExternal, SpotifyArtistEntity>,
 
   [SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST]: {
-    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchPlaylists(),
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchPlaylists().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorSpotify, cursor?: string) => {
+      const response = await connector.dataSource.fetchPlaylists(cursor);
+      return {
+        data: response.items,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (playlist: SpotifyPlaylistExternal) => connectorSpotifyPlaylistMapper.externalToDomain(playlist),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyPlaylistExternal, SpotifyPlaylistEntity>,
 
   [SPOTIFY_ENTITY_TYPES_ENUM.ALBUM]: {
-    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchAlbums(),
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchAlbums().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorSpotify, cursor?: string) => {
+      const response = await connector.dataSource.fetchAlbums(cursor);
+      return {
+        data: response.items,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (album: SpotifyAlbumExternal) => connectorSpotifyAlbumMapper.externalToDomain(album),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyAlbumExternal, SpotifyAlbumEntity>,
 
   [SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED]: {
-    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchRecentlyPlayed(),
+    fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchRecentlyPlayed().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorSpotify, cursor?: string) => {
+      const response = await connector.dataSource.fetchRecentlyPlayed(cursor);
+      return {
+        data: response.items,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (item: SpotifyRecentlyPlayedExternal) => connectorSpotifyRecentlyPlayedMapper.externalToDomain(item),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyRecentlyPlayedExternal, SpotifyRecentlyPlayedEntity>,
 } as const;
 
 const xEntityConfigs = {
   [X_ENTITY_TYPES_ENUM.TWEET]: {
-    fetcher: (connector: ConnectorX) => connector.dataSource.fetchTweets(),
+    fetcher: (connector: ConnectorX) => connector.dataSource.fetchTweets().then((res) => res.tweets),
+    paginatedFetcher: async (connector: ConnectorX, cursor?: string) => {
+      const response = await connector.dataSource.fetchTweets(cursor);
+      return {
+        data: response.tweets,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (tweet: XTweetExternal) => connectorXTweetMapper.externalToDomain(tweet),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorX, XTweetExternal, XTweetEntity>,
 } as const;
 
 const linearEntityConfigs = {
   [LINEAR_ENTITY_TYPES_ENUM.ISSUE]: {
-    fetcher: (connector: ConnectorLinear) => connector.dataSource.fetchIssues(),
+    fetcher: (connector: ConnectorLinear) => connector.dataSource.fetchIssues().then((res) => res.issues), // Keep legacy fetcher for backward compatibility if needed, or remove
+    paginatedFetcher: async (connector: ConnectorLinear, cursor?: string) => {
+      const response = await connector.dataSource.fetchIssues(cursor);
+      return {
+        data: response.issues,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (issue: LinearIssueExternal) => connectorLinearIssueMapper.externalToDomain(issue),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorLinear, LinearIssueExternal, LinearIssueEntity>,
 } as const;
 
 const notionEntityConfigs = {
   [NOTION_ENTITY_TYPES_ENUM.PAGE]: {
-    fetcher: (connector: ConnectorNotion) => connector.dataSource.fetchPages(),
+    fetcher: (connector: ConnectorNotion) => connector.dataSource.fetchPages().then((res) => res.pages),
+    paginatedFetcher: async (connector: ConnectorNotion, cursor?: string) => {
+      const response = await connector.dataSource.fetchPages(cursor);
+      return {
+        data: response.pages,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (page: NotionPageExternal) => connectorNotionPageMapper.externalToDomain(page),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorNotion, NotionPageExternal, NotionPageEntity>,
 } as const;
 
 const slackEntityConfigs = {
   [SLACK_ENTITY_TYPES_ENUM.MESSAGE]: {
-    fetcher: (connector: ConnectorSlack) => connector.dataSource.fetchMessages(),
+    fetcher: (connector: ConnectorSlack) => connector.dataSource.fetchMessages().then((res) => res.messages),
+    paginatedFetcher: async (connector: ConnectorSlack, cursor?: string) => {
+      const response = await connector.dataSource.fetchMessages(cursor);
+      return {
+        data: response.messages,
+        nextCursor: response.nextCursor,
+      };
+    },
     mapper: (message: SlackMessageExternal) => connectorSlackMessageMapper.externalToDomain(message),
+    checksumEnabled: true,
+    batchSize: 50,
   } satisfies EntityConfig<ConnectorSlack, SlackMessageExternal, SlackMessageEntity>,
 } as const;
 

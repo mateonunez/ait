@@ -4,7 +4,7 @@ import type { XTweetExternal, XTweetIncludes, XMediaEntity, XPollEntity, XPlaceE
 import { ait } from "../../../shared/constants/ait.constant";
 
 export interface IConnectorXDataSource {
-  fetchTweets(): Promise<XTweetExternal[]>;
+  fetchTweets(cursor?: string): Promise<{ tweets: XTweetExternal[]; nextCursor?: string }>;
 }
 
 interface XAPIResponse {
@@ -28,42 +28,37 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
     this.accessToken = accessToken;
   }
 
-  async fetchTweets(): Promise<XTweetExternal[]> {
+  async fetchTweets(cursor?: string): Promise<{ tweets: XTweetExternal[]; nextCursor?: string }> {
     const userInfo = await this._fetchUserInfo();
-    const allTweets: XTweetExternal[] = [];
-    let paginationToken: string | undefined;
 
-    // Paginate through all tweets
-    do {
-      const params = new URLSearchParams({
-        "tweet.fields":
-          "author_id,created_at,id,text,public_metrics,entities,lang,conversation_id,in_reply_to_user_id,attachments,geo",
-        expansions: "attachments.media_keys,attachments.poll_ids,geo.place_id,referenced_tweets.id",
-        "media.fields": "media_key,type,url,preview_image_url,width,height,duration_ms,alt_text",
-        "poll.fields": "id,options,duration_minutes,end_datetime,voting_status",
-        "place.fields": "id,name,full_name,country,country_code,place_type,geo",
-        max_results: "5",
-      });
+    const params = new URLSearchParams({
+      "tweet.fields":
+        "author_id,created_at,id,text,public_metrics,entities,lang,conversation_id,in_reply_to_user_id,attachments,geo",
+      expansions: "attachments.media_keys,attachments.poll_ids,geo.place_id,referenced_tweets.id",
+      "media.fields": "media_key,type,url,preview_image_url,width,height,duration_ms,alt_text",
+      "poll.fields": "id,options,duration_minutes,end_datetime,voting_status",
+      "place.fields": "id,name,full_name,country,country_code,place_type,geo",
+      max_results: "5", // Batch size
+    });
 
-      if (paginationToken) {
-        params.append("pagination_token", paginationToken);
-      }
+    if (cursor) {
+      params.append("pagination_token", cursor);
+    }
 
-      const endpoint = `/users/${userInfo.id}/tweets?${params.toString()}`;
-      const response = await this._fetchFromX<XAPIResponse>(endpoint);
+    const endpoint = `/users/${userInfo.id}/tweets?${params.toString()}`;
+    const response = await this._fetchFromX<XAPIResponse>(endpoint);
 
-      if (!response.data || response.data.length === 0) {
-        break;
-      }
+    if (!response.data || response.data.length === 0) {
+      return { tweets: [], nextCursor: undefined };
+    }
 
-      // Enrich tweets with includes data
-      const enrichedTweets = this._enrichTweetsWithIncludes(response.data, response.includes, userInfo);
-      allTweets.push(...enrichedTweets);
+    // Enrich tweets with includes data
+    const enrichedTweets = this._enrichTweetsWithIncludes(response.data, response.includes, userInfo);
 
-      paginationToken = response.meta.next_token;
-    } while (paginationToken);
-
-    return allTweets;
+    return {
+      tweets: enrichedTweets,
+      nextCursor: response.meta.next_token,
+    };
   }
 
   private async _fetchFromX<T>(

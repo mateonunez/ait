@@ -95,11 +95,11 @@ describe("ConnectorNotionDataSource", () => {
 
       const result = await dataSource.fetchPages();
 
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.id, "page-1");
-      assert.equal(result[0]?.__type, "page");
-      assert.equal(result[0]?.url, "https://notion.so/page-1");
-      assert.ok(result[0]?.content?.includes("This is test content"));
+      assert.equal(result.pages.length, 1);
+      assert.equal(result.pages[0]?.id, "page-1");
+      assert.equal(result.pages[0]?.__type, "page");
+      assert.equal(result.pages[0]?.url, "https://notion.so/page-1");
+      assert.ok(result.pages[0]?.content?.includes("This is test content"));
     });
 
     it("should handle pagination", async () => {
@@ -205,11 +205,14 @@ describe("ConnectorNotionDataSource", () => {
         })
         .reply(200, mockBlocksResponse);
 
-      const result = await dataSource.fetchPages();
+      const result1 = await dataSource.fetchPages();
+      assert.equal(result1.pages.length, 1);
+      assert.equal(result1.pages[0]?.id, "page-1");
+      assert.equal(result1.nextCursor, "cursor-123");
 
-      assert.equal(result.length, 2);
-      assert.equal(result[0]?.id, "page-1");
-      assert.equal(result[1]?.id, "page-2");
+      const result2 = await dataSource.fetchPages(result1.nextCursor);
+      assert.equal(result2.pages.length, 1);
+      assert.equal(result2.pages[0]?.id, "page-2");
     });
 
     it("should handle authentication errors", async () => {
@@ -304,10 +307,10 @@ describe("ConnectorNotionDataSource", () => {
 
       const result = await dataSource.fetchPages();
 
-      assert.equal(result.length, 1);
-      assert.equal(result[0]?.id, "page-1");
+      assert.equal(result.pages.length, 1);
+      assert.equal(result.pages[0]?.id, "page-1");
       // Content should be null when block fetch fails (empty string becomes null due to || null)
-      assert.equal(result[0]?.content, null);
+      assert.equal(result.pages[0]?.content, null);
     });
 
     it("should extract text from different block types", async () => {
@@ -382,10 +385,10 @@ describe("ConnectorNotionDataSource", () => {
 
       const result = await dataSource.fetchPages();
 
-      assert.equal(result.length, 1);
-      assert.ok(result[0]?.content?.includes("Paragraph text"));
-      assert.ok(result[0]?.content?.includes("Code: const x = 1;"));
-      assert.ok(result[0]?.content?.includes("• List item"));
+      assert.equal(result.pages.length, 1);
+      assert.ok(result.pages[0]?.content?.includes("Paragraph text"));
+      assert.ok(result.pages[0]?.content?.includes("Code: const x = 1;"));
+      assert.ok(result.pages[0]?.content?.includes("• List item"));
     });
 
     it("should sort pages by last edited time (most recent first)", async () => {
@@ -458,10 +461,10 @@ describe("ConnectorNotionDataSource", () => {
 
       const result = await dataSource.fetchPages();
 
-      assert.equal(result.length, 2);
+      assert.equal(result.pages.length, 2);
       // Most recent should be first
-      assert.equal(result[0]?.id, "page-new");
-      assert.equal(result[1]?.id, "page-old");
+      assert.equal(result.pages[0]?.id, "page-new");
+      assert.equal(result.pages[1]?.id, "page-old");
     });
   });
 });

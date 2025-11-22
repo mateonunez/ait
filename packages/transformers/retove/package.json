@@ -18,6 +18,7 @@
   "license": "MIT",
   "dependencies": {
     "@ait/ai-sdk": "workspace:*",
+    "@ait/connectors": "workspace:*",
     "@ait/postgres": "workspace:*",
     "@ait/qdrant": "workspace:*",
     "dotenv": "^17.2.3"

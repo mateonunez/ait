@@ -5,6 +5,7 @@ export interface Logger {
   warn(message: string, meta?: LoggerMeta): void;
   error(message: string, meta?: LoggerMeta): void;
   debug(message: string, meta?: LoggerMeta): void;
+  child(meta: LoggerMeta): Logger;
 }
 
 function formatMeta(meta?: LoggerMeta): Record<string, unknown> | undefined {
@@ -12,12 +13,36 @@ function formatMeta(meta?: LoggerMeta): Record<string, unknown> | undefined {
   return meta;
 }
 
-const defaultLogger: Logger = {
-  info: (message, meta) => console.info(message, formatMeta(meta)),
-  warn: (message, meta) => console.warn(message, formatMeta(meta)),
-  error: (message, meta) => console.error(message, formatMeta(meta)),
-  debug: (message, meta) => console.debug(message, formatMeta(meta)),
-};
+class ConsoleLogger implements Logger {
+  constructor(private defaultMeta: LoggerMeta = {}) {}
+
+  private mergeMeta(meta?: LoggerMeta): LoggerMeta | undefined {
+    const merged = { ...this.defaultMeta, ...meta };
+    return Object.keys(merged).length > 0 ? merged : undefined;
+  }
+
+  info(message: string, meta?: LoggerMeta): void {
+    console.info(message, formatMeta(this.mergeMeta(meta)));
+  }
+
+  warn(message: string, meta?: LoggerMeta): void {
+    console.warn(message, formatMeta(this.mergeMeta(meta)));
+  }
+
+  error(message: string, meta?: LoggerMeta): void {
+    console.error(message, formatMeta(this.mergeMeta(meta)));
+  }
+
+  debug(message: string, meta?: LoggerMeta): void {
+    console.debug(message, formatMeta(this.mergeMeta(meta)));
+  }
+
+  child(meta: LoggerMeta): Logger {
+    return new ConsoleLogger({ ...this.defaultMeta, ...meta });
+  }
+}
+
+const defaultLogger: Logger = new ConsoleLogger();
 
 let currentLogger: Logger = defaultLogger;
 

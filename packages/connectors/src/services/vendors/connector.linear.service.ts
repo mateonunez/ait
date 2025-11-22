@@ -21,7 +21,7 @@ export class ConnectorLinearService
   constructor() {
     super(getConnectorConfig("linear"));
 
-    this.registerEntityConfig<LINEAR_ENTITY_TYPES_ENUM.ISSUE, LinearIssueExternal>(
+    this.registerPaginatedEntityConfig<LINEAR_ENTITY_TYPES_ENUM.ISSUE, LinearIssueExternal>(
       LINEAR_ENTITY_TYPES_ENUM.ISSUE,
       connectorEntityConfigs.linear[LINEAR_ENTITY_TYPES_ENUM.ISSUE],
     );

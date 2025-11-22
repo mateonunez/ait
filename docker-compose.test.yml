@@ -24,6 +24,20 @@ services:
       retries: 10
       start_period: 10s
 
+  ait_redis:
+    image: redis:7-alpine
+    container_name: ait_redis_test
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
   ait_qdrant:
     image: qdrant/qdrant:latest
     container_name: ait_qdrant_test

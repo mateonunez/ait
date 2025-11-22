@@ -1,6 +1,7 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { EmbeddingsService, getEmbeddingModelConfig, type IEmbeddingsService, getCollectionsNames } from "@ait/ai-sdk";
+import { SyncStateService, type ISyncStateService } from "@ait/connectors";
 
 export interface BaseVectorPoint {
   id: number;
@@ -23,6 +24,7 @@ export abstract class RetoveBaseETLAbstract {
   protected readonly _transformConcurrency: number = 10;
   protected readonly _batchUpsertConcurrency: number = 5;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
+  protected readonly _syncStateService: ISyncStateService = new SyncStateService();
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -58,9 +60,26 @@ export abstract class RetoveBaseETLAbstract {
     try {
       console.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
-      const data = await this.extract(limit);
+
+      const syncState = await this._syncStateService.getState(this._collectionName, "etl");
+      const lastProcessedTimestamp = syncState?.lastProcessedTimestamp;
+
+      if (lastProcessedTimestamp) {
+        console.info(`Processing records updated after: ${lastProcessedTimestamp.toISOString()}`);
+      } else {
+        console.info("No previous ETL run found, processing all records");
+      }
+
+      const data = await this.extract(limit, lastProcessedTimestamp);
       const transformedData = await this.transform(data);
       await this.load(transformedData);
+
+      if (data.length > 0) {
+        const latestTimestamp = this.getLatestTimestamp(data);
+        await this._syncStateService.updateETLTimestamp(this._collectionName, "etl", latestTimestamp);
+        console.info(`Updated last processed timestamp to: ${latestTimestamp.toISOString()}`);
+      }
+
       console.info(`✅ ETL process completed successfully for collection: ${this._collectionName}`);
     } catch (error) {
       console.error(`ETL process failed for collection: ${this._collectionName}`, error);
@@ -377,13 +396,10 @@ export abstract class RetoveBaseETLAbstract {
     }
   }
 
-  protected abstract extract(limit: number): Promise<unknown[]>;
+  protected abstract extract(limit: number, lastProcessedTimestamp?: Date): Promise<unknown[]>;
   protected abstract getTextForEmbedding(item: Record<string, unknown>): string;
   protected abstract getPayload(item: Record<string, unknown>): Record<string, unknown>;
-  /**
-   * Returns a large numeric offset that namespaces point IDs per ETL implementation,
-   * ensuring uniqueness when multiple ETLs share a single collection.
-   */
+  protected abstract getLatestTimestamp(data: unknown[]): Date;
   protected getIdBaseOffset(): number {
     return 0;
   }

@@ -29,6 +29,7 @@ import {
   ConnectorNotionService,
   ConnectorSlackService,
 } from "@ait/connectors";
+import { GITHUB_ENTITY_TYPES_ENUM, LINEAR_ENTITY_TYPES_ENUM, NOTION_ENTITY_TYPES_ENUM, SLACK_ENTITY_TYPES_ENUM, SPOTIFY_ENTITY_TYPES_ENUM } from "@ait/connectors/dist/src/services/vendors/connector.vendors.config";
 
 export interface ISchedulerETLTaskManager {
   registerTasks(): void;
@@ -57,13 +58,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.track}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.track}] Fetching tracks from Spotify API...`);
-        const tracks = await this._spotifyService.fetchTracks();
-        console.info(`[${SpotifyETLs.track}] Fetched ${tracks.length} tracks`);
+        console.info(`[${SpotifyETLs.track}] Fetching tracks from Spotify API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${SpotifyETLs.track}] Saving tracks to Postgres...`);
-        await this._spotifyService.connector.store.save(tracks);
-        console.info(`[${SpotifyETLs.track}] Saved to Postgres`);
+        for await (const batch of this._spotifyService.fetchEntitiesPaginated(
+          SPOTIFY_ENTITY_TYPES_ENUM.TRACK,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${SpotifyETLs.track}] Processing batch of ${batch.length} tracks...`);
+          await this._spotifyService.connector.store.save(batch);
+        }
+
+        console.info(`[${SpotifyETLs.track}] Fetched ${totalFetched} tracks (changed only)`);
 
         console.info(`[${SpotifyETLs.track}] Running ETL to Qdrant...`);
         await runSpotifyTrackETL(qdrant, postgres);
@@ -95,13 +102,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.playlist}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.playlist}] Fetching playlists from Spotify API...`);
-        const playlists = await this._spotifyService.fetchPlaylists();
-        console.info(`[${SpotifyETLs.playlist}] Fetched ${playlists.length} playlists`);
+        console.info(`[${SpotifyETLs.playlist}] Fetching playlists from Spotify API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${SpotifyETLs.playlist}] Saving playlists to Postgres...`);
-        await this._spotifyService.connector.store.save(playlists);
-        console.info(`[${SpotifyETLs.playlist}] Saved to Postgres`);
+        for await (const batch of this._spotifyService.fetchEntitiesPaginated(
+          SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${SpotifyETLs.playlist}] Processing batch of ${batch.length} playlists...`);
+          await this._spotifyService.connector.store.save(batch);
+        }
+
+        console.info(`[${SpotifyETLs.playlist}] Fetched ${totalFetched} playlists (changed only)`);
 
         console.info(`[${SpotifyETLs.playlist}] Running ETL to Qdrant...`);
         await runSpotifyPlaylistETL(qdrant, postgres);
@@ -114,13 +127,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.album}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.album}] Fetching albums from Spotify API...`);
-        const albums = await this._spotifyService.fetchAlbums();
-        console.info(`[${SpotifyETLs.album}] Fetched ${albums.length} albums`);
+        console.info(`[${SpotifyETLs.album}] Fetching albums from Spotify API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${SpotifyETLs.album}] Saving albums to Postgres...`);
-        await this._spotifyService.connector.store.save(albums);
-        console.info(`[${SpotifyETLs.album}] Saved to Postgres`);
+        for await (const batch of this._spotifyService.fetchEntitiesPaginated(
+          SPOTIFY_ENTITY_TYPES_ENUM.ALBUM,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${SpotifyETLs.album}] Processing batch of ${batch.length} albums...`);
+          await this._spotifyService.connector.store.save(batch);
+        }
+
+        console.info(`[${SpotifyETLs.album}] Fetched ${totalFetched} albums (changed only)`);
 
         console.info(`[${SpotifyETLs.album}] Running ETL to Qdrant...`);
         await runSpotifyAlbumETL(qdrant, postgres);
@@ -133,13 +152,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SpotifyETLs.recentlyPlayed}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Fetching recently played from Spotify API...`);
-        const recentlyPlayed = await this._spotifyService.fetchRecentlyPlayed();
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Fetched ${recentlyPlayed.length} recently played items`);
+        console.info(`[${SpotifyETLs.recentlyPlayed}] Fetching recently played from Spotify API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Saving recently played to Postgres...`);
-        await this._spotifyService.connector.store.save(recentlyPlayed);
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Saved to Postgres`);
+        for await (const batch of this._spotifyService.fetchEntitiesPaginated(
+          SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${SpotifyETLs.recentlyPlayed}] Processing batch of ${batch.length} items...`);
+          await this._spotifyService.connector.store.save(batch);
+        }
+
+        console.info(`[${SpotifyETLs.recentlyPlayed}] Fetched ${totalFetched} recently played items`);
 
         console.info(`[${SpotifyETLs.recentlyPlayed}] Running ETL to Qdrant...`);
         await runSpotifyRecentlyPlayedETL(qdrant, postgres);
@@ -152,15 +177,25 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${GitHubETLs.repository}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        // 1. Fetch fresh data from GitHub API
-        console.info(`[${GitHubETLs.repository}] Fetching repositories from GitHub API...`);
-        const repositories = await this._githubService.fetchRepositories();
-        console.info(`[${GitHubETLs.repository}] Fetched ${repositories.length} repositories`);
+        // 1. Fetch fresh data from GitHub API using pagination
+        console.info(`[${GitHubETLs.repository}] Fetching repositories from GitHub API (incremental)...`);
+        let totalFetched = 0;
+        let totalChanged = 0;
 
-        // 2. Save to Postgres
-        console.info(`[${GitHubETLs.repository}] Saving repositories to Postgres...`);
-        await this._githubService.connector.store.save(repositories);
-        console.info(`[${GitHubETLs.repository}] Saved to Postgres`);
+        for await (const batch of this._githubService.fetchEntitiesPaginated(
+          GITHUB_ENTITY_TYPES_ENUM.REPOSITORY,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          totalChanged += batch.length; // All yielded items are changed (checksum filtered)
+
+          console.info(`[${GitHubETLs.repository}] Processing batch of ${batch.length} repositories...`);
+
+          // 2. Save batch to Postgres
+          await this._githubService.connector.store.save(batch);
+        }
+
+        console.info(`[${GitHubETLs.repository}] Fetched ${totalFetched} repositories (${totalChanged} changed)`);
 
         // 3. Run ETL to Qdrant
         console.info(`[${GitHubETLs.repository}] Running ETL to Qdrant...`);
@@ -174,15 +209,25 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${GitHubETLs.pullRequest}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        // 1. Fetch fresh data from GitHub API
-        console.info(`[${GitHubETLs.pullRequest}] Fetching pull requests from GitHub API...`);
-        const pullRequests = await this._githubService.fetchPullRequests();
-        console.info(`[${GitHubETLs.pullRequest}] Fetched ${pullRequests.length} pull requests`);
+        // 1. Fetch fresh data from GitHub API (incremental)
+        console.info(`[${GitHubETLs.pullRequest}] Fetching pull requests from GitHub API (incremental)...`);
+        let totalFetched = 0;
 
-        // 2. Save to Postgres
-        console.info(`[${GitHubETLs.pullRequest}] Saving pull requests to Postgres...`);
-        await this._githubService.connector.store.save(pullRequests);
-        console.info(`[${GitHubETLs.pullRequest}] Saved to Postgres`);
+        try {
+          for await (const batch of this._githubService.fetchEntitiesPaginated(
+            GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST,
+            true, // shouldConnect
+          )) {
+            totalFetched += batch.length;
+            console.info(`[${GitHubETLs.pullRequest}] Processing batch of ${batch.length} pull requests...`);
+
+            // 2. Save batch to Postgres
+            await this._githubService.connector.store.save(batch);
+          }
+          console.info(`[${GitHubETLs.pullRequest}] Fetched ${totalFetched} pull requests`);
+        } catch (error) {
+          console.error(`[${GitHubETLs.pullRequest}] Error fetching pull requests (likely rate limit). Proceeding to ETL...`, error);
+        }
 
         // 3. Run ETL to Qdrant
         console.info(`[${GitHubETLs.pullRequest}] Running ETL to Qdrant...`);
@@ -196,15 +241,25 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${GitHubETLs.commit}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        // 1. Fetch fresh data from GitHub API
-        console.info(`[${GitHubETLs.commit}] Fetching commits from GitHub API...`);
-        const commits = await this._githubService.fetchCommits();
-        console.info(`[${GitHubETLs.commit}] Fetched ${commits.length} commits`);
+        // 1. Fetch fresh data from GitHub API (incremental)
+        console.info(`[${GitHubETLs.commit}] Fetching commits from GitHub API (incremental)...`);
+        let totalFetched = 0;
 
-        // 2. Save to Postgres
-        console.info(`[${GitHubETLs.commit}] Saving commits to Postgres...`);
-        await this._githubService.connector.store.save(commits);
-        console.info(`[${GitHubETLs.commit}] Saved to Postgres`);
+        try {
+          for await (const batch of this._githubService.fetchEntitiesPaginated(
+            GITHUB_ENTITY_TYPES_ENUM.COMMIT,
+            true, // shouldConnect
+          )) {
+            totalFetched += batch.length;
+            console.info(`[${GitHubETLs.commit}] Processing batch of ${batch.length} commits...`);
+
+            // 2. Save batch to Postgres
+            await this._githubService.connector.store.save(batch);
+          }
+          console.info(`[${GitHubETLs.commit}] Fetched ${totalFetched} commits`);
+        } catch (error) {
+          console.error(`[${GitHubETLs.commit}] Error fetching commits (likely rate limit). Proceeding to ETL...`, error);
+        }
 
         // 3. Run ETL to Qdrant
         console.info(`[${GitHubETLs.commit}] Running ETL to Qdrant...`);
@@ -218,13 +273,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${LinearETLs.issue}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${LinearETLs.issue}] Fetching issues from Linear API...`);
-        const issues = await this._linearService.fetchIssues();
-        console.info(`[${LinearETLs.issue}] Fetched ${issues.length} issues`);
+        console.info(`[${LinearETLs.issue}] Fetching issues from Linear API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${LinearETLs.issue}] Saving issues to Postgres...`);
-        await this._linearService.connector.store.save(issues);
-        console.info(`[${LinearETLs.issue}] Saved to Postgres`);
+        for await (const batch of this._linearService.fetchEntitiesPaginated(
+          LINEAR_ENTITY_TYPES_ENUM.ISSUE,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${LinearETLs.issue}] Processing batch of ${batch.length} issues...`);
+          await this._linearService.connector.store.save(batch);
+        }
+
+        console.info(`[${LinearETLs.issue}] Fetched ${totalFetched} issues (changed only)`);
 
         console.info(`[${LinearETLs.issue}] Running ETL to Qdrant...`);
         await runLinearETL(qdrant, postgres);
@@ -256,13 +317,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${NotionETLs.page}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${NotionETLs.page}] Fetching pages from Notion API...`);
-        const pages = await this._notionService.fetchPages();
-        console.info(`[${NotionETLs.page}] Fetched ${pages.length} pages`);
+        console.info(`[${NotionETLs.page}] Fetching pages from Notion API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${NotionETLs.page}] Saving pages to Postgres...`);
-        await this._notionService.connector.store.save(pages);
-        console.info(`[${NotionETLs.page}] Saved to Postgres`);
+        for await (const batch of this._notionService.fetchEntitiesPaginated(
+          NOTION_ENTITY_TYPES_ENUM.PAGE,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${NotionETLs.page}] Processing batch of ${batch.length} pages...`);
+          await this._notionService.connector.store.save(batch);
+        }
+
+        console.info(`[${NotionETLs.page}] Fetched ${totalFetched} pages (changed only)`);
 
         console.info(`[${NotionETLs.page}] Running ETL to Qdrant...`);
         await runNotionETL(qdrant, postgres);
@@ -275,13 +342,19 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
       console.info(`[${SlackETLs.message}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SlackETLs.message}] Fetching messages from Slack API...`);
-        const messages = await this._slackService.fetchMessages();
-        console.info(`[${SlackETLs.message}] Fetched ${messages.length} messages`);
+        console.info(`[${SlackETLs.message}] Fetching messages from Slack API (incremental)...`);
+        let totalFetched = 0;
 
-        console.info(`[${SlackETLs.message}] Saving messages to Postgres...`);
-        await this._slackService.connector.store.save(messages);
-        console.info(`[${SlackETLs.message}] Saved to Postgres`);
+        for await (const batch of this._slackService.fetchEntitiesPaginated(
+          SLACK_ENTITY_TYPES_ENUM.MESSAGE,
+          true, // shouldConnect
+        )) {
+          totalFetched += batch.length;
+          console.info(`[${SlackETLs.message}] Processing batch of ${batch.length} messages...`);
+          await this._slackService.connector.store.save(batch);
+        }
+
+        console.info(`[${SlackETLs.message}] Fetched ${totalFetched} messages (changed only)`);
 
         console.info(`[${SlackETLs.message}] Running ETL to Qdrant...`);
         await runSlackETL(qdrant, postgres);

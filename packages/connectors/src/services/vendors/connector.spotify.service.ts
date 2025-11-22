@@ -47,7 +47,7 @@ export class ConnectorSpotifyService
   constructor() {
     super(getConnectorConfig("spotify"));
 
-    this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.TRACK, SpotifyTrackExternal>(
+    this.registerPaginatedEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.TRACK, SpotifyTrackExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.TRACK,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.TRACK],
     );
@@ -55,15 +55,15 @@ export class ConnectorSpotifyService
       SPOTIFY_ENTITY_TYPES_ENUM.ARTIST,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.ARTIST],
     );
-    this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST, SpotifyPlaylistExternal>(
+    this.registerPaginatedEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST, SpotifyPlaylistExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST],
     );
-    this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.ALBUM, SpotifyAlbumExternal>(
+    this.registerPaginatedEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.ALBUM, SpotifyAlbumExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.ALBUM,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.ALBUM],
     );
-    this.registerEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED, SpotifyRecentlyPlayedExternal>(
+    this.registerPaginatedEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED, SpotifyRecentlyPlayedExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED,
       connectorEntityConfigs.spotify[SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED],
     );

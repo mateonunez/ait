@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { components as XComponents } from "../openapi/openapi.x.types";
 
 export interface BaseXEntity {
@@ -60,27 +61,75 @@ export interface XTweetIncludes {
   tweets?: Array<Record<string, unknown>>;
 }
 
-export interface XTweetEntity {
-  id: string;
-  text: string;
-  authorId: string;
-  authorUsername: string | null;
-  authorName: string | null;
-  lang?: string;
-  retweetCount?: number;
-  likeCount?: number;
-  replyCount?: number;
-  quoteCount?: number;
-  conversationId?: string | null;
-  inReplyToUserId?: string | null;
-  mediaAttachments?: XMediaEntity[] | null;
-  pollData?: XPollEntity | null;
-  placeData?: XPlaceEntity | null;
-  jsonData: Record<string, unknown>;
-  createdAt: Date;
-  updatedAt: Date;
-  __type: "tweet";
-}
+const XMediaEntitySchema = z.object({
+  media_key: z.string(),
+  type: z.enum(["photo", "video", "animated_gif"]),
+  url: z.string().optional(),
+  preview_image_url: z.string().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
+  duration_ms: z.number().optional(),
+  alt_text: z.string().optional(),
+});
+
+const XPollEntitySchema = z.object({
+  id: z.string(),
+  options: z.array(
+    z.object({
+      position: z.number(),
+      label: z.string(),
+      votes: z.number(),
+    }),
+  ),
+  duration_minutes: z.number(),
+  end_datetime: z.string(),
+  voting_status: z.enum(["open", "closed"]),
+});
+
+const XPlaceEntitySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  full_name: z.string(),
+  country: z.string().optional(),
+  country_code: z.string().optional(),
+  place_type: z.string().optional(),
+  geo: z
+    .object({
+      type: z.string(),
+      bbox: z.array(z.number()).optional(),
+      geometry: z
+        .object({
+          type: z.string(),
+          coordinates: z.array(z.number()),
+        })
+        .optional(),
+    })
+    .optional(),
+});
+
+export const XTweetEntitySchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  authorId: z.string(),
+  authorUsername: z.string().nullable(),
+  authorName: z.string().nullable(),
+  lang: z.string().optional(),
+  retweetCount: z.number().optional(),
+  likeCount: z.number().optional(),
+  replyCount: z.number().optional(),
+  quoteCount: z.number().optional(),
+  conversationId: z.string().nullable().optional(),
+  inReplyToUserId: z.string().nullable().optional(),
+  mediaAttachments: z.array(XMediaEntitySchema).nullable().optional(),
+  pollData: XPollEntitySchema.nullable().optional(),
+  placeData: XPlaceEntitySchema.nullable().optional(),
+  jsonData: z.record(z.string(), z.unknown()),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  __type: z.literal("tweet"),
+});
+
+export type XTweetEntity = z.infer<typeof XTweetEntitySchema>;
 
 type XTweet = XComponents["schemas"]["Tweet"];
 

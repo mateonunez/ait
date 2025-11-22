@@ -1,4 +1,4 @@
-import { type getPostgresClient, slackMessages, type SlackMessageDataTarget } from "@ait/postgres";
+import { type getPostgresClient, slackMessages, type SlackMessageDataTarget, drizzleOrm } from "@ait/postgres";
 import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
 import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
@@ -19,9 +19,15 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("slack"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number): Promise<SlackMessageDataTarget[]> {
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SlackMessageDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
-      return tx.select().from(slackMessages).limit(limit).execute();
+      let query = tx.select().from(slackMessages) as any;
+
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt(slackMessages.updatedAt, lastProcessedTimestamp));
+      }
+
+      return query.orderBy(drizzleOrm.asc(slackMessages.updatedAt)).limit(limit).execute();
     });
   }
 
@@ -33,8 +39,17 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(message);
   }
 
-  protected override getIdBaseOffset(): number {
+  protected getIdBaseOffset(): number {
     return 8_000_000_000_000;
+  }
+
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const messages = data as SlackMessageDataTarget[];
+    if (messages.length === 0) return new Date();
+    return messages.reduce((max, message) => {
+      const messageDate = message.updatedAt ? new Date(message.updatedAt) : new Date(0);
+      return messageDate > max ? messageDate : max;
+    }, new Date(0));
   }
 }
 
