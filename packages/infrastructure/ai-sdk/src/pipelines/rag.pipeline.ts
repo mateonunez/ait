@@ -21,6 +21,12 @@ export interface RAGPipelineConfig {
   collectionRouting?: {
     temperature?: number;
     minConfidenceThreshold?: number;
+    enableLLMRouting?: boolean;
+    llmRoutingConfidenceThreshold?: number;
+  };
+  reranking?: {
+    enableLLMReranking?: boolean;
+    useCollectionSpecificPrompts?: boolean;
   };
   contextBuilding?: {
     temporalWindowHours?: number;
@@ -54,7 +60,7 @@ export function createRAGPipeline(
     .addStage(new CollectionRoutingStage(config.collectionRouting))
     .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider, cacheService))
     .addStage(new FusionStage())
-    .addStage(new RerankingStage())
+    .addStage(new RerankingStage(config.reranking))
     .addStage(new ContextBuildingStage(config.contextBuilding))
     .withFailureMode("continue-on-error")
     .withTelemetry(config.enableTelemetry ?? true)

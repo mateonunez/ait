@@ -13,6 +13,7 @@ import { ContextBuildingStage } from "../rag/context-building.stage";
 import { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
 import { createMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.factory";
+import { getCacheService } from "../../services/cache/cache.service";
 
 export class ContextPreparationStage implements IPipelineStage<ContextPreparationInput, ContextPreparationOutput> {
   readonly name = "context-preparation";
@@ -40,11 +41,13 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
         concurrency: 4,
       });
 
+      const cacheService = getCacheService();
+
       const ragPipeline = PipelineBuilder.create()
         .addStage(new QueryAnalysisStage())
         .addStage(new SimpleRetrievalStage(multiCollectionProvider, 100))
         .addStage(new CollectionRoutingStage())
-        .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
+        .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider, cacheService))
         .addStage(new FusionStage())
         .addStage(new RerankingStage())
         .addStage(new ContextBuildingStage())

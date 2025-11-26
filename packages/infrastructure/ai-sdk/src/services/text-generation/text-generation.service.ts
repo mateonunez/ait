@@ -33,6 +33,10 @@ export class TextGenerationError extends Error {
 export interface TextGenerationConfig extends TextGenerationFeatureConfig {
   model?: string;
   embeddingsModel?: string;
+  reranking?: {
+    enableLLMReranking?: boolean;
+    useCollectionSpecificPrompts?: boolean;
+  };
 }
 
 export interface GenerateOptions {
@@ -88,6 +92,10 @@ export class TextGenerationService implements ITextGenerationService {
       queriesCount: config.multipleQueryPlannerConfig?.queriesCount ?? 12,
       concurrency: config.multipleQueryPlannerConfig?.concurrency ?? 4,
       enableTelemetry: true,
+      reranking: {
+        enableLLMReranking: config.reranking?.enableLLMReranking ?? false,
+        useCollectionSpecificPrompts: config.reranking?.useCollectionSpecificPrompts ?? true,
+      },
     });
 
     this._metadataEmitter = new MetadataEmitterService();

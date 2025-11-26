@@ -2,9 +2,13 @@ import type { IPipelineStage, PipelineContext } from "../../services/rag/pipelin
 import type { RetrievalInput, RetrievalOutput } from "../../types/stages";
 import type { IMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.service";
 import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { ICacheService } from "../../services/cache/cache.service";
 import { getCacheAnalyticsService } from "../../services/analytics/cache-analytics.service";
+import type { CollectionWeight } from "../../types/collections";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalOutput> {
   readonly name = "retrieval";
@@ -30,30 +34,36 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
   async execute(input: RetrievalInput, context: PipelineContext): Promise<RetrievalOutput> {
     const startTime = Date.now();
     const cacheAnalytics = getCacheAnalyticsService();
+    const endSpan = context.traceContext
+      ? createSpanWithTiming(this.name, "retrieval", context.traceContext, {
+          query: input.query.slice(0, 100),
+          collections: input.routingResult.selectedCollections.map((c) => c.vendor),
+        })
+      : null;
 
     if (this.cacheService) {
-      const cachedDocs = await this.cacheService.get<any[]>(input.query);
+      const cacheKey = this._buildCacheKey(input.query, input.routingResult.selectedCollections);
+      logger.debug("Checking cache", { cacheKey, query: input.query.slice(0, 50) });
+
+      const cachedResult = this.cacheService.get<any[]>(cacheKey);
+      const cachedDocs = cachedResult instanceof Promise ? await cachedResult : cachedResult;
+
       if (cachedDocs) {
         const duration = Date.now() - startTime;
+
+        logger.debug("Cache hit", { cacheKey, documentCount: cachedDocs.length, duration });
 
         // Record cache hit
         cacheAnalytics.recordCacheHit(input.query, duration, cachedDocs.length);
 
-        if (context.traceContext) {
-          recordSpan(
-            this.name,
-            "retrieval",
-            context.traceContext,
-            {
-              query: input.query.slice(0, 100),
-              cacheHit: true,
-            },
-            {
-              documentCount: cachedDocs.length,
-              duration,
-              source: "cache",
-            },
-          );
+        if (endSpan) {
+          endSpan({
+            documentCount: cachedDocs.length,
+            duration,
+            source: "cache",
+            cacheHit: true,
+            cacheKey,
+          });
         }
 
         return {
@@ -68,6 +78,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
         };
       }
 
+      logger.debug("Cache miss", { cacheKey });
       cacheAnalytics.recordCacheMiss(input.query, 0); // Latency updated after retrieval
     }
 
@@ -81,7 +92,12 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     const totalDuration = Date.now() - startTime;
 
     if (this.cacheService) {
-      await this.cacheService.set(input.query, documents);
+      const cacheKey = this._buildCacheKey(input.query, input.routingResult.selectedCollections);
+      const setResult = this.cacheService.set(cacheKey, documents);
+      if (setResult instanceof Promise) {
+        await setResult;
+      }
+      logger.debug("Cached retrieval results", { cacheKey, documentCount: documents.length });
     }
 
     const documentsPerCollection: Record<string, number> = {};
@@ -90,23 +106,14 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       documentsPerCollection[vendor] = (documentsPerCollection[vendor] || 0) + 1;
     }
 
-    if (context.traceContext) {
-      recordSpan(
-        this.name,
-        "retrieval",
-        context.traceContext,
-        {
-          query: input.query.slice(0, 100),
-          collections: input.routingResult.selectedCollections.map((c) => c.vendor),
-          cacheHit: false,
-        },
-        {
-          documentCount: documents.length,
-          duration: totalDuration,
-          collectionsQueried: input.routingResult.selectedCollections.length,
-          documentsPerCollection,
-        },
-      );
+    if (endSpan) {
+      endSpan({
+        documentCount: documents.length,
+        duration: totalDuration,
+        collectionsQueried: input.routingResult.selectedCollections.length,
+        documentsPerCollection,
+        cacheHit: false,
+      });
     }
 
     return {
@@ -119,5 +126,28 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
         fromCache: false,
       },
     };
+  }
+
+  /**
+   * Normalize query string for consistent cache key generation
+   */
+  private _normalizeQuery(query: string): string {
+    return query.trim().toLowerCase().replace(/\s+/g, " ");
+  }
+
+  /**
+   * Build cache key that includes normalized query and collection routing information
+   */
+  private _buildCacheKey(query: string, collections: CollectionWeight[]): string {
+    const normalizedQuery = this._normalizeQuery(query);
+
+    // Sort collections by vendor name for stable cache key
+    const sortedVendors = collections
+      .map((c) => c.vendor)
+      .sort()
+      .join(",");
+
+    // Create cache key with query and collections
+    return `rag:retrieval:${normalizedQuery}:${sortedVendors}`;
   }
 }

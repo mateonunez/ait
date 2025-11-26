@@ -1,33 +1,35 @@
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { QueryAnalysisInput, QueryAnalysisOutput } from "../../types/stages";
-import { QueryIntentService } from "../../services/routing/query-intent.service";
 import type { QueryIntent } from "../../services/routing/query-intent.service";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import { getFastQueryAnalyzer, type FastQueryAnalysis } from "../../services/routing/fast-query-analyzer.service";
 
 export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, QueryAnalysisOutput> {
   readonly name = "query-analysis";
 
-  private readonly intentService: QueryIntentService;
-
-  constructor() {
-    this.intentService = new QueryIntentService();
-  }
+  private readonly fastAnalyzer = getFastQueryAnalyzer();
 
   async execute(input: QueryAnalysisInput, context: PipelineContext): Promise<QueryAnalysisOutput> {
     const startTime = Date.now();
+    const endSpan = context.traceContext
+      ? createSpanWithTiming(this.name, "rag", context.traceContext, { query: input.query.slice(0, 100) })
+      : null;
 
-    const intent = await this.intentService.analyzeIntent(input.query);
+    // Use fast heuristic-based analysis (< 1ms)
+    const analysis = this.fastAnalyzer.analyze(input.query);
 
-    const complexity = this._determineComplexity(input.query, intent.entityTypes?.length || 0);
-    const shouldUseFastPath = this._determineFastPath(complexity, intent);
+    // Convert FastQueryAnalysis to QueryIntent for backward compatibility
+    const intent = this._toQueryIntent(analysis);
+
+    const shouldUseFastPath = this._determineFastPath(analysis);
 
     const output: QueryAnalysisOutput = {
       query: input.query,
       intent,
       heuristics: {
-        isTemporalQuery: intent.isTemporalQuery,
-        entityTypes: intent.entityTypes || [],
-        complexity,
+        isTemporalQuery: analysis.isTemporalQuery,
+        entityTypes: analysis.entityTypes,
+        complexity: analysis.complexity,
       },
       shouldUseFastPath,
       traceContext: input.traceContext,
@@ -35,46 +37,59 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
 
     if (shouldUseFastPath) {
       console.info("Fast path selected for simple query", {
-        complexity,
-        entityTypes: intent.entityTypes,
-        isTemporalQuery: intent.isTemporalQuery,
+        complexity: analysis.complexity,
+        entityTypes: analysis.entityTypes,
+        isTemporalQuery: analysis.isTemporalQuery,
       });
     }
 
-    if (context.traceContext) {
-      recordSpan(
-        this.name,
-        "rag",
-        context.traceContext,
-        { query: input.query.slice(0, 100) },
-        {
-          primaryFocus: intent.primaryFocus,
-          entityCount: intent.entityTypes?.length || 0,
-          isTemporalQuery: intent.isTemporalQuery,
-          complexity,
-          shouldUseFastPath,
-          duration: Date.now() - startTime,
-        },
-      );
+    const duration = Date.now() - startTime;
+    if (endSpan) {
+      endSpan({
+        primaryFocus: intent.primaryFocus,
+        entityCount: intent.entityTypes?.length || 0,
+        isTemporalQuery: intent.isTemporalQuery,
+        isBroadQuery: analysis.isBroadQuery,
+        complexity: analysis.complexity,
+        shouldUseFastPath,
+        duration,
+        method: "heuristic",
+      });
     }
 
     return output;
   }
 
-  private _determineComplexity(query: string, entityCount: number): "simple" | "moderate" | "complex" {
-    const wordCount = query.split(/\s+/).length;
-
-    if (wordCount < 5 && entityCount <= 1) return "simple";
-    if (wordCount < 15 && entityCount <= 2) return "moderate";
-    return "complex";
+  /**
+   * Convert FastQueryAnalysis to QueryIntent for backward compatibility
+   */
+  private _toQueryIntent(analysis: FastQueryAnalysis): QueryIntent {
+    return {
+      entityTypes: analysis.entityTypes,
+      isTemporalQuery: analysis.isTemporalQuery,
+      timeReference: analysis.timeReference,
+      primaryFocus: analysis.primaryFocus,
+      complexityScore: analysis.complexity === "simple" ? 2 : analysis.complexity === "moderate" ? 5 : 8,
+      requiredStyle: analysis.requiredStyle,
+      topicShift: false, // Heuristics can't detect topic shift without conversation history
+    };
   }
 
-  private _determineFastPath(complexity: "simple" | "moderate" | "complex", intent: QueryIntent): boolean {
-    if (complexity !== "simple") return false;
-    if (intent.isTemporalQuery) return false;
+  /**
+   * Determine if query can use fast path (skip complex routing/retrieval)
+   */
+  private _determineFastPath(analysis: FastQueryAnalysis): boolean {
+    // Broad queries need full pipeline
+    if (analysis.isBroadQuery) return false;
 
-    const entityCount = intent.entityTypes?.length || 0;
-    if (entityCount > 1) return false;
+    // Simple queries with single entity type can use fast path
+    if (analysis.complexity !== "simple") return false;
+
+    // Temporal queries need more processing
+    if (analysis.isTemporalQuery) return false;
+
+    // Multiple entity types need full routing
+    if (analysis.entityTypes.length > 1) return false;
 
     return true;
   }

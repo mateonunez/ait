@@ -103,11 +103,52 @@ export {
   createTraceContext,
   recordSpan,
   recordGeneration,
+  createSpanWithTiming,
   updateTraceInput,
   endTraceWithOutput,
   endTraceWithError,
   shouldEnableTelemetry,
 } from "./telemetry/telemetry.middleware";
+
+// Query analysis and routing services
+export {
+  FastQueryAnalyzerService,
+  getFastQueryAnalyzer,
+  type FastQueryAnalysis,
+  type IFastQueryAnalyzerService,
+} from "./services/routing/fast-query-analyzer.service";
+
+export {
+  CollectionRouterService,
+  type ICollectionRouterService,
+  type CollectionRouterConfig,
+} from "./services/routing/collection-router.service";
+
+export {
+  QueryIntentService,
+  type IQueryIntentService,
+  type QueryIntent,
+} from "./services/routing/query-intent.service";
+
+// Ranking services
+export {
+  FastRerankService,
+  getFastRerankService,
+  resetFastRerankService,
+  type FastRerankConfig,
+} from "./services/ranking/fast-rerank.service";
+
+export {
+  RerankService,
+  type IRerankService,
+} from "./services/ranking/rerank.service";
+
+export {
+  CollectionRerankService,
+  type ICollectionRerankService,
+} from "./services/ranking/collection-rerank.service";
+
+export type { RerankingStageConfig } from "./stages/rag/reranking.stage";
 export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
 export { getAnalyticsService } from "./services/analytics/analytics.service";
@@ -134,3 +175,51 @@ export {
   resetCacheService,
   MemoryCacheProvider,
 } from "./services/cache/cache.service";
+
+// Insights services
+export { InsightsService, getInsightsService, resetInsightsService } from "./services/insights/insights.service";
+export {
+  AnomalyDetectorService,
+  getAnomalyDetectorService,
+  resetAnomalyDetectorService,
+} from "./services/insights/anomaly-detector.service";
+export {
+  CorrelationEngineService,
+  getCorrelationEngineService,
+  resetCorrelationEngineService,
+} from "./services/insights/correlation-engine.service";
+export {
+  GoalTrackingService,
+  getGoalTrackingService,
+  resetGoalTrackingService,
+} from "./services/insights/goal-tracking.service";
+export {
+  IntegrationRegistryService,
+  getIntegrationRegistryService,
+  resetIntegrationRegistryService,
+} from "./services/insights/integration-registry.service";
+export {
+  ActivityAggregatorService,
+  createActivityAggregatorService,
+  type IConnectorServiceFactory,
+} from "./services/insights/activity-aggregator.service";
+
+// Insights types
+export type {
+  InsightsData,
+  InsightSummary,
+  InsightCorrelation,
+  InsightAnomaly,
+  InsightRecommendation,
+  Insight,
+  InsightType,
+  GoalData,
+  GoalType,
+  GoalPeriod,
+  CreateGoalRequest,
+  UpdateGoalRequest,
+  ActivityData,
+  InsightsConfig,
+} from "./services/insights/insights.types";
+
+export { DEFAULT_INSIGHTS_CONFIG } from "./services/insights/insights.types";

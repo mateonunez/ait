@@ -1,6 +1,6 @@
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { ContextBuildingInput, ContextBuildingOutput } from "../../types/stages";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { ContextBuilder } from "../../services/context/context.builder";
 import { TemporalCorrelationService } from "../../services/filtering/temporal-correlation.service";
 
@@ -18,9 +18,14 @@ export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput
   }
 
   async execute(input: ContextBuildingInput, context: PipelineContext): Promise<ContextBuildingOutput> {
-    const startTime = Date.now();
-
     const documents = input.rerankedDocuments.length > 0 ? input.rerankedDocuments : input.documents;
+
+    const endSpan = context.traceContext
+      ? createSpanWithTiming(this.name, "context_preparation", context.traceContext, {
+          documentCount: documents.length,
+          isTemporalQuery: input.heuristics.isTemporalQuery,
+        })
+      : null;
 
     let builtContext = "";
     let usedTemporalCorrelation = false;
@@ -49,20 +54,11 @@ export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput
       builtContext = builtContext.slice(0, cut > 0 ? cut : this.maxContextChars);
     }
 
-    if (context.traceContext) {
-      recordSpan(
-        this.name,
-        "context_preparation",
-        context.traceContext,
-        {
-          documentCount: documents.length,
-          usedTemporalCorrelation,
-        },
-        {
-          contextLength: builtContext.length,
-          duration: Date.now() - startTime,
-        },
-      );
+    if (endSpan) {
+      endSpan({
+        contextLength: builtContext.length,
+        usedTemporalCorrelation,
+      });
     }
 
     return {

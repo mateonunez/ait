@@ -6,14 +6,10 @@ import { VALID_ENTITY_TYPES, getVendorKeywords } from "@ait/core";
 import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
 import type { QueryIntent } from "./query-intent.service";
 import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
-import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
+import { recordSpan, recordGeneration, createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
-import {
-  buildBroadQueryPrompt,
-  buildCollectionRouterPrompt,
-  buildFallbackRoutingReason,
-} from "../prompts/routing.prompts";
+import { buildCollectionRouterPrompt, buildFallbackRoutingReason } from "../prompts/routing.prompts";
 
 export interface ICollectionRouterService {
   routeCollections(
@@ -21,6 +17,13 @@ export interface ICollectionRouterService {
     queryIntent?: QueryIntent,
     traceContext?: TraceContext,
   ): Promise<CollectionRouterResult>;
+}
+
+export interface CollectionRouterConfig {
+  temperature?: number;
+  minConfidenceThreshold?: number;
+  enableLLMRouting?: boolean;
+  llmRoutingConfidenceThreshold?: number;
 }
 
 const CollectionRouterSchema = z.object({
@@ -36,28 +39,21 @@ const CollectionRouterSchema = z.object({
   ),
 });
 
-const BroadQuerySchema = z.object({
-  isBroad: z.boolean(),
-  confidence: z.number().min(0).max(1),
-  reasoning: z.string(),
-});
-
 type CollectionRouterResponse = z.infer<typeof CollectionRouterSchema>;
-type BroadQueryResponse = z.infer<typeof BroadQuerySchema>;
 
 export class CollectionRouterService implements ICollectionRouterService {
   private readonly _temperature: number;
   private readonly _minConfidenceThreshold: number;
+  private readonly _enableLLMRouting: boolean;
+  private readonly _llmRoutingConfidenceThreshold: number;
   private readonly _discoveryService: ICollectionDiscoveryService;
   private readonly _client: AItClient;
 
-  constructor(
-    config?: { temperature?: number; minConfidenceThreshold?: number },
-    discoveryService?: ICollectionDiscoveryService,
-    client?: AItClient,
-  ) {
+  constructor(config?: CollectionRouterConfig, discoveryService?: ICollectionDiscoveryService, client?: AItClient) {
     this._temperature = config?.temperature ?? 0.3;
     this._minConfidenceThreshold = config?.minConfidenceThreshold ?? 0.4;
+    this._enableLLMRouting = config?.enableLLMRouting ?? false;
+    this._llmRoutingConfidenceThreshold = config?.llmRoutingConfidenceThreshold ?? 0.5;
     this._discoveryService = discoveryService || new CollectionDiscoveryService();
     this._client = client || getAItClient();
   }
@@ -66,39 +62,38 @@ export class CollectionRouterService implements ICollectionRouterService {
     return this._discoveryService.getExistingCollectionVendors();
   }
 
-  private async _isBroadQuery(userQuery: string, traceContext?: TraceContext): Promise<boolean> {
-    try {
-      const client = this._client;
-      const prompt = buildBroadQueryPrompt(userQuery);
+  /**
+   * Fast heuristic-based broad query detection
+   * Replaces expensive LLM call with instant pattern matching
+   */
+  private _isBroadQueryHeuristic(userQuery: string): boolean {
+    const normalized = userQuery.toLowerCase().trim();
+    const wordCount = normalized.split(/\s+/).length;
 
-      const response = await client.generateStructured<BroadQueryResponse>({
-        schema: BroadQuerySchema,
-        temperature: 0.2,
-        prompt,
-      });
-
-      if (traceContext) {
-        recordSpan(
-          "broad-query-detection",
-          "routing",
-          traceContext,
-          { query: userQuery.slice(0, 100) },
-          {
-            isBroad: response.isBroad,
-            confidence: response.confidence,
-            reasoning: response.reasoning,
-          },
-        );
-      }
-
-      // Consider it broad if LLM says so with confidence >= 0.6
-      return response.isBroad && response.confidence >= 0.6;
-    } catch (error) {
-      console.warn("Failed to detect broad query with LLM, defaulting to false", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return false;
+    // Very short queries are often broad
+    if (wordCount <= 2) {
+      return true;
     }
+
+    // Known broad query patterns
+    const broadPatterns = [
+      /^(what|who|how)\s+(are|is)\s+(you|ait|this)/i,
+      /^(tell|show)\s+me\s+(about\s+)?(yourself|you|everything)/i,
+      /^(hello|hi|hey|help)/i,
+      /^what\s+can\s+you\s+do/i,
+      /^(give|show)\s+me\s+(an?\s+)?overview/i,
+      /^summarize\s+(everything|all|my\s+data)/i,
+      /everything\s+about/i,
+      /all\s+my\s+data/i,
+    ];
+
+    for (const pattern of broadPatterns) {
+      if (pattern.test(normalized)) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   async routeCollections(
@@ -107,21 +102,28 @@ export class CollectionRouterService implements ICollectionRouterService {
     traceContext?: TraceContext,
   ): Promise<CollectionRouterResult> {
     const startTime = Date.now();
+    const endSpan = traceContext
+      ? createSpanWithTiming("collection-routing", "routing", traceContext, {
+          query: userQuery.slice(0, 100),
+          entityTypes: queryIntent?.entityTypes,
+        })
+      : null;
 
-    // Check if query is broad/ambiguous - if so, return all existing collections
-    const isBroad = await this._isBroadQuery(userQuery, traceContext);
+    const existingVendors = await this._getExistingCollectionVendors();
+
+    // Fast heuristic-based broad query detection (no LLM call)
+    const isBroad = this._isBroadQueryHeuristic(userQuery);
     if (isBroad) {
-      const existingVendors = await this._getExistingCollectionVendors();
       if (existingVendors.size > 0) {
         const allCollections = getAllCollections();
         const existingCollections = allCollections.filter((c) => existingVendors.has(c.vendor));
 
-        console.info("Broad query detected, selecting all existing collections", {
+        console.info("Broad query detected (heuristic), selecting all existing collections", {
           query: userQuery.slice(0, 100),
           collections: Array.from(existingVendors),
         });
 
-        return {
+        const result: CollectionRouterResult = {
           selectedCollections: existingCollections.map((c) => ({
             vendor: c.vendor,
             weight: c.defaultWeight,
@@ -134,11 +136,64 @@ export class CollectionRouterService implements ICollectionRouterService {
             ? this.validateEntityTypes(queryIntent.entityTypes)
             : undefined,
         };
+
+        const duration = Date.now() - startTime;
+        if (endSpan) {
+          endSpan({
+            strategy: result.strategy,
+            confidence: result.confidence,
+            collectionsCount: result.selectedCollections.length,
+            duration,
+            method: "heuristic-broad",
+          });
+        }
+
+        return result;
       }
     }
 
-    const existingVendors = await this._getExistingCollectionVendors();
+    // Try heuristic routing first (always fast)
+    const heuristicResult = this._buildHeuristicRouting(userQuery, queryIntent, existingVendors);
 
+    // If heuristics are confident enough OR LLM routing is disabled, use heuristic result
+    if (!this._enableLLMRouting || heuristicResult.confidence >= this._llmRoutingConfidenceThreshold) {
+      console.info("Collection routing completed (heuristic)", {
+        strategy: heuristicResult.strategy,
+        confidence: heuristicResult.confidence,
+        collectionsCount: heuristicResult.selectedCollections.length,
+        collections: heuristicResult.selectedCollections.map((c) => `${c.vendor}:${c.weight.toFixed(2)}`).join(", "),
+      });
+
+      const duration = Date.now() - startTime;
+      if (endSpan) {
+        endSpan({
+          strategy: heuristicResult.strategy,
+          confidence: heuristicResult.confidence,
+          collectionsCount: heuristicResult.selectedCollections.length,
+          duration,
+          method: "heuristic",
+        });
+      }
+
+      if (traceContext) {
+        recordSpan(
+          "collection-routing-heuristic",
+          "routing",
+          traceContext,
+          { query: userQuery.slice(0, 100) },
+          {
+            strategy: heuristicResult.strategy,
+            confidence: heuristicResult.confidence,
+            collectionsCount: heuristicResult.selectedCollections.length,
+            method: "heuristic",
+          },
+        );
+      }
+
+      return heuristicResult;
+    }
+
+    // Only use LLM if enabled AND heuristics have low confidence
     try {
       const intentHints = this.extractIntentHints(queryIntent);
       const prompt = buildCollectionRouterPrompt(userQuery, intentHints, existingVendors);
@@ -171,28 +226,38 @@ export class CollectionRouterService implements ICollectionRouterService {
           },
           { model: client.generationModelConfig.name, temperature: this._temperature },
         );
+      }
 
-        recordSpan(
-          "collection-routing",
-          "routing",
-          traceContext,
-          { query: userQuery.slice(0, 100) },
-          {
-            strategy: validatedResult.strategy,
-            confidence: validatedResult.confidence,
-            collectionsCount: validatedResult.selectedCollections.length,
-            duration: Date.now() - startTime,
-          },
-        );
+      const duration = Date.now() - startTime;
+      if (endSpan) {
+        endSpan({
+          strategy: validatedResult.strategy,
+          confidence: validatedResult.confidence,
+          collectionsCount: validatedResult.selectedCollections.length,
+          duration,
+          method: "llm",
+        });
       }
 
       return validatedResult;
     } catch (error) {
-      console.warn("LLM collection routing failed, using heuristic fallback", {
+      console.warn("LLM collection routing failed, using heuristic result", {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      return this.buildHeuristicFallback(userQuery, queryIntent, traceContext, existingVendors);
+      const duration = Date.now() - startTime;
+      if (endSpan) {
+        endSpan({
+          strategy: heuristicResult.strategy,
+          confidence: heuristicResult.confidence,
+          collectionsCount: heuristicResult.selectedCollections.length,
+          duration,
+          method: "heuristic-fallback",
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+
+      return heuristicResult;
     }
   }
 
@@ -245,7 +310,6 @@ export class CollectionRouterService implements ICollectionRouterService {
       return this.buildAllExistingCollectionsFallback(response.reasoning || "No collections met threshold", existing);
     }
 
-    // Validate and cast entity types
     const suggestedEntityTypes = queryIntent?.entityTypes
       ? this.validateEntityTypes(queryIntent.entityTypes)
       : undefined;
@@ -259,58 +323,37 @@ export class CollectionRouterService implements ICollectionRouterService {
     };
   }
 
-  private async buildHeuristicFallback(
+  /**
+   * Build routing result using fast keyword-based heuristics
+   */
+  private _buildHeuristicRouting(
     userQuery: string,
     queryIntent?: QueryIntent,
-    traceContext?: TraceContext,
     existingVendors?: Set<CollectionVendor>,
-  ): Promise<CollectionRouterResult> {
+  ): CollectionRouterResult {
     const lowerQuery = userQuery.toLowerCase();
-    const existing = existingVendors || (await this._getExistingCollectionVendors());
+    const existing = existingVendors || new Set<CollectionVendor>();
 
     const heuristics: Array<{ vendor: CollectionVendor; keywords: readonly string[]; weight: number }> = [
-      {
-        vendor: "spotify",
-        keywords: getVendorKeywords("spotify"),
-        weight: 1.0,
-      },
-      {
-        vendor: "github",
-        keywords: getVendorKeywords("github"),
-        weight: 1.0,
-      },
-      {
-        vendor: "linear",
-        keywords: getVendorKeywords("linear"),
-        weight: 1.0,
-      },
-      {
-        vendor: "x",
-        keywords: getVendorKeywords("x"),
-        weight: 1.0,
-      },
-      {
-        vendor: "notion",
-        keywords: getVendorKeywords("notion"),
-        weight: 1.0,
-      },
-      {
-        vendor: "slack",
-        keywords: getVendorKeywords("slack"),
-        weight: 1.0,
-      },
+      { vendor: "spotify", keywords: getVendorKeywords("spotify"), weight: 1.0 },
+      { vendor: "github", keywords: getVendorKeywords("github"), weight: 1.0 },
+      { vendor: "linear", keywords: getVendorKeywords("linear"), weight: 1.0 },
+      { vendor: "x", keywords: getVendorKeywords("x"), weight: 1.0 },
+      { vendor: "notion", keywords: getVendorKeywords("notion"), weight: 1.0 },
+      { vendor: "slack", keywords: getVendorKeywords("slack"), weight: 1.0 },
     ];
 
     const selectedCollections: CollectionWeight[] = [];
+    let totalMatches = 0;
 
     for (const { vendor, keywords, weight } of heuristics) {
-      // Only consider collections that exist
       if (!existing.has(vendor)) {
         continue;
       }
 
       const matchCount = keywords.filter((kw) => lowerQuery.includes(kw)).length;
       if (matchCount > 0) {
+        totalMatches += matchCount;
         const adjustedWeight = Math.min(weight * (matchCount / keywords.length) + 0.5, 1.0);
         selectedCollections.push({
           vendor,
@@ -320,11 +363,12 @@ export class CollectionRouterService implements ICollectionRouterService {
       }
     }
 
+    // Also consider entity types from query intent
     if (queryIntent?.entityTypes && queryIntent.entityTypes.length > 0) {
       const validEntityTypes = this.validateEntityTypes(queryIntent.entityTypes);
       const intentCollections = getCollectionsByEntityTypes(validEntityTypes);
+
       for (const collection of intentCollections) {
-        // Only consider collections that exist
         if (!existing.has(collection.vendor)) {
           continue;
         }
@@ -343,43 +387,23 @@ export class CollectionRouterService implements ICollectionRouterService {
       }
     }
 
+    // If no matches, return all existing collections with lower confidence
     if (selectedCollections.length === 0) {
       return this.buildAllExistingCollectionsFallback("No keyword or intent matches", existing);
     }
 
     selectedCollections.sort((a, b) => b.weight - a.weight);
 
-    const result: CollectionRouterResult = {
+    // Calculate confidence based on match quality
+    const confidence = Math.min(0.5 + totalMatches * 0.1, 0.9);
+
+    return {
       selectedCollections: selectedCollections.slice(0, 4),
       reasoning: buildFallbackRoutingReason(userQuery),
       strategy: this.inferStrategy(selectedCollections.length),
-      confidence: 0.6,
+      confidence,
       suggestedEntityTypes: queryIntent?.entityTypes ? this.validateEntityTypes(queryIntent.entityTypes) : undefined,
     };
-
-    console.info("Collection routing completed (heuristic)", {
-      strategy: result.strategy,
-      confidence: result.confidence,
-      collectionsCount: result.selectedCollections.length,
-      collections: result.selectedCollections.map((c) => `${c.vendor}:${c.weight.toFixed(2)}`).join(", "),
-    });
-
-    if (traceContext) {
-      recordSpan(
-        "collection-routing-fallback",
-        "routing",
-        traceContext,
-        { query: userQuery.slice(0, 100) },
-        {
-          strategy: result.strategy,
-          confidence: result.confidence,
-          collectionsCount: result.selectedCollections.length,
-          method: "heuristic",
-        },
-      );
-    }
-
-    return result;
   }
 
   private buildAllExistingCollectionsFallback(
@@ -394,7 +418,6 @@ export class CollectionRouterService implements ICollectionRouterService {
         vendor: c.vendor,
         weight: c.defaultWeight,
         reasoning: "Fallback to all existing collections",
-        // Default strategies
       })),
       reasoning: `All existing collections selected: ${reason}`,
       strategy: "all-collections",
@@ -410,7 +433,6 @@ export class CollectionRouterService implements ICollectionRouterService {
 
   private validateEntityTypes(entityTypes: string[]): EntityType[] {
     const validTypesSet = new Set<string>(VALID_ENTITY_TYPES);
-
     return entityTypes.filter((type): type is EntityType => validTypesSet.has(type));
   }
 }

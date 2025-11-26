@@ -18,11 +18,16 @@ interface TraceState {
   spanCount: number;
 }
 
+interface SpanState {
+  span: any;
+  startTime: Date;
+}
+
 export class LangfuseProvider {
   private client: Langfuse | null = null;
   private config: Required<TelemetryConfig>;
   private activeTraces = new Map<string, TraceState>();
-  private activeSpans = new Map<string, any>();
+  private activeSpans = new Map<string, SpanState>();
   private flushRetries = 3;
   private flushTimeout = 10000; // 10 seconds
 
@@ -120,16 +125,18 @@ export class LangfuseProvider {
         return null;
       }
 
+      const startTime = new Date();
       const span = traceState.trace.span({
         id: spanId,
         name,
+        startTime,
         metadata: {
           type,
           ...metadata,
         } as Record<string, unknown>,
       });
 
-      this.activeSpans.set(spanId, span);
+      this.activeSpans.set(spanId, { span, startTime });
       traceState.spanCount++;
 
       return spanId;
@@ -145,10 +152,12 @@ export class LangfuseProvider {
     }
 
     try {
-      const span = this.activeSpans.get(spanId);
-      if (!span) {
+      const spanState = this.activeSpans.get(spanId);
+      if (!spanState) {
         return;
       }
+
+      const { span } = spanState;
 
       if (input) {
         span.update({
@@ -178,14 +187,18 @@ export class LangfuseProvider {
     }
 
     try {
-      const span = this.activeSpans.get(spanId);
-      if (!span) {
+      const spanState = this.activeSpans.get(spanId);
+      if (!spanState) {
         return;
       }
+
+      const { span } = spanState;
+      const endTime = new Date();
 
       if (output) {
         span.update({
           output: output as Record<string, unknown>,
+          endTime,
         });
       }
 
@@ -196,8 +209,9 @@ export class LangfuseProvider {
         span.update({
           level: "ERROR",
           statusMessage: errorMessage,
+          endTime,
           metadata: {
-            errorStack: errorStack?.split("\n").slice(0, 5).join("\n"), // First 5 lines
+            errorStack: errorStack?.split("\n").slice(0, 5).join("\n"),
             errorCategory: errorMetadata?.errorCategory,
             errorSeverity: errorMetadata?.errorSeverity,
             errorFingerprint: errorMetadata?.errorFingerprint,
@@ -207,7 +221,8 @@ export class LangfuseProvider {
         });
       }
 
-      span.end();
+      // End span with explicit endTime for accurate duration
+      span.end({ endTime });
       this.activeSpans.delete(spanId);
     } catch (err) {
       console.warn("Failed to end span:", err);
@@ -302,12 +317,12 @@ export class LangfuseProvider {
     }
 
     try {
-      const span = this.activeSpans.get(spanId);
-      if (!span) {
+      const spanState = this.activeSpans.get(spanId);
+      if (!spanState) {
         return;
       }
 
-      span.event({
+      spanState.span.event({
         name: event.name,
         metadata: {
           type: event.type,
@@ -327,12 +342,12 @@ export class LangfuseProvider {
     }
 
     try {
-      const span = this.activeSpans.get(spanId);
-      if (!span) {
+      const spanState = this.activeSpans.get(spanId);
+      if (!spanState) {
         return;
       }
 
-      span.generation({
+      spanState.span.generation({
         name,
         input: input as Record<string, unknown>,
         output: output as Record<string, unknown>,
