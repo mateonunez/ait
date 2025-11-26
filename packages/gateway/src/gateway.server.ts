@@ -12,6 +12,8 @@ import notionRoutes from "./routes/gateway.notion.routes";
 import slackRoutes from "./routes/gateway.slack.routes";
 import observabilityRoutes from "./routes/gateway.observability.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
+import discoveryRoutes from "./routes/gateway.discovery.routes";
+import insightsRoutes from "./routes/gateway.insights.routes";
 
 const redisUrl = process.env.REDIS_URL;
 
@@ -30,7 +32,8 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(slackRoutes, { prefix: "/api/slack" });
   server.register(observabilityRoutes, { prefix: "/api/observability" });
   server.register(feedbackRoutes, { prefix: "/api/feedback" });
-
+  server.register(discoveryRoutes, { prefix: "/api/discovery" });
+  server.register(insightsRoutes, { prefix: "/api/insights" });
   try {
     await server.listen({ port, host: "0.0.0.0" });
     const protocol = (server.server as { key?: Buffer })?.key ? "https" : "http";

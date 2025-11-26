@@ -37,13 +37,24 @@ export class RedisCacheProvider implements ICacheProvider {
   async clear(): Promise<void> {
     await this.redis.flushdb();
   }
+
+  /**
+   * Get the underlying Redis client
+   */
+  getRedisClient(): Redis {
+    return this.redis;
+  }
 }
+
+// Global instance
+let _redisProvider: RedisCacheProvider | null = null;
 
 export function initializeCacheProvider(redisUrl?: string): void {
   if (redisUrl) {
     try {
       console.log("Initializing Redis Cache Provider...");
       const redisProvider = new RedisCacheProvider(redisUrl);
+      _redisProvider = redisProvider;
       setCacheProvider(redisProvider);
       console.log("Redis Cache Provider initialized successfully");
     } catch (error) {
@@ -52,4 +63,11 @@ export function initializeCacheProvider(redisUrl?: string): void {
   } else {
     console.warn("REDIS_URL not provided, using Memory Cache for ai-sdk");
   }
+}
+
+/**
+ * Get the Redis client instance for direct access
+ */
+export function getRedisClient(): Redis | null {
+  return _redisProvider?.getRedisClient() || null;
 }

@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Conversation, PromptInput, ModelSelector, Suggestions } from "./ai-elements";
-import { StatsDashboard } from "./stats/stats-dashboard";
 import { ContextWindowTracker } from "./context-window-tracker";
 import { useAItChat } from "@/hooks/useAItChat";
 import { cn } from "@/styles/utils";
@@ -22,6 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { listModels } from "@/utils/api";
+import { Link } from "wouter";
 
 interface AIChatDialogProps {
   open: boolean;
@@ -45,7 +45,6 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
   });
 
   const [sidePanel, setSidePanel] = useState<SidePanel>(null);
-  const [showMetrics, setShowMetrics] = useState(false);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [_modelsLoading, setModelsLoading] = useState(true);
 
@@ -362,10 +361,12 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
                           <p className="text-xs text-muted-foreground mb-3">
                             Monitor performance, health, and quality metrics in real-time.
                           </p>
-                          <Button onClick={() => setShowMetrics(true)} variant="outline" className="w-full" size="sm">
-                            <BarChart3 className="h-4 w-4 mr-2" />
-                            Open Metrics Dashboard
-                          </Button>
+                          <Link href="/stats">
+                            <Button variant="outline" className="w-full" size="sm">
+                              <BarChart3 className="h-4 w-4 mr-2" />
+                              Open Metrics Dashboard
+                            </Button>
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -376,9 +377,6 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
           </AnimatePresence>
         </div>
       </DialogContent>
-
-      {/* Metrics Dashboard */}
-      <StatsDashboard isOpen={showMetrics} onClose={() => setShowMetrics(false)} />
     </Dialog>
   );
 }
