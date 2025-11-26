@@ -6,7 +6,7 @@
     "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "dist",
-    "rootDir": "./src",
+
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -24,7 +24,12 @@
     "incremental": true,
     "baseUrl": "./",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@ait/core": ["../../core/src/index.ts"],
+      "@ait/connectors": ["../../connectors/src/index.ts"],
+      "@ait/retove": ["../../transformers/retove/src/index.ts"],
+      "@ait/postgres": ["../../infrastructure/postgres/src/index.ts"],
+      "@ait/qdrant": ["../../infrastructure/qdrant/src/index.ts"]
     },
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },

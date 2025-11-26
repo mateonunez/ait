@@ -1,5 +1,5 @@
-import { requestJson } from "@ait/core";
-import type { Response } from "undici";
+import { requestJson, RateLimitError, AItError } from "@ait/core";
+
 import type { XTweetExternal, XTweetIncludes, XMediaEntity, XPollEntity, XPlaceEntity } from "@ait/core";
 import { ait } from "../../../shared/constants/ait.constant";
 
@@ -80,9 +80,12 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
 
     // Handle rate limit (429 status)
     if (!result.ok) {
-      const error = result.error as any;
-      if (error.status === 429 && error.response) {
-        return this._handleRateLimitExceeded(error.response as Response, endpoint, method, body);
+      const error = result.error;
+      if (error instanceof AItError && (error.code === "HTTP_429" || error.meta?.status === 429)) {
+        const headers = (error.meta?.headers as Record<string, string>) || {};
+        const reset = headers["x-rate-limit-reset"];
+        const resetTime = reset ? Number.parseInt(reset, 10) * 1000 : Date.now() + 15 * 60 * 1000; // Default 15 min
+        throw new RateLimitError("x", resetTime, "X rate limit exceeded");
       }
       throw result.error;
     }
@@ -164,45 +167,5 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
       name: response.data.name,
     };
     return this._userInfo;
-  }
-
-  private async _handleRateLimitExceeded<T>(
-    response: Response,
-    endpoint: string,
-    method: "GET" | "POST",
-    body?: Record<string, unknown>,
-  ): Promise<T> {
-    const MINIMUM_DELAY_MS = 1000;
-    const LOG_INTERVAL_MS = 30000;
-
-    const resetTime = this._parseRateLimitResetTime(response);
-    const delay = Math.max(resetTime - Date.now(), MINIMUM_DELAY_MS);
-    const delaySeconds = Math.ceil(delay / 1000);
-
-    console.warn(`[X API] Rate limit exceeded. Waiting ${delaySeconds}s`);
-
-    const intervalId = setInterval(() => {
-      const remaining = Math.ceil((resetTime - Date.now()) / 1000);
-      console.info(`[X API] Still waiting. Estimated remaining time: ${remaining}s`);
-    }, LOG_INTERVAL_MS);
-
-    try {
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(null);
-          clearInterval(intervalId);
-        }, delay);
-      });
-    } finally {
-      clearInterval(intervalId);
-    }
-
-    console.info("[X API] Retrying request");
-    return this._fetchFromX(endpoint, method, body);
-  }
-
-  private _parseRateLimitResetTime(response: Response): number {
-    const resetTimestamp = Number(response.headers.get("x-rate-limit-reset") || "0") * 1000;
-    return Number.isNaN(resetTimestamp) ? Date.now() + 5000 : resetTimestamp;
   }
 }

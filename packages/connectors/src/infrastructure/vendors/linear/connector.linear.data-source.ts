@@ -1,5 +1,5 @@
 import { requestJson } from "@ait/core";
-import { AItError } from "@ait/core";
+import { AItError, RateLimitError } from "@ait/core";
 import type { LinearIssueExternal } from "@ait/core";
 
 export interface IConnectorLinearDataSource {
@@ -128,6 +128,12 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
       };
     } catch (error: any) {
       if (error instanceof AItError) {
+        if (error.code === "HTTP_429" || error.meta?.status === 429) {
+          const headers = (error.meta?.headers as Record<string, string>) || {};
+          const reset = headers["x-ratelimit-reset"];
+          const resetTime = reset ? Number.parseInt(reset, 10) * 1000 : Date.now() + 60 * 60 * 1000;
+          throw new RateLimitError("linear", resetTime, "Linear rate limit exceeded");
+        }
         throw error;
       }
       throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);

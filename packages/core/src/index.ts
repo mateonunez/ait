@@ -1,4 +1,5 @@
 export * from "./errors/ait-error";
+export * from "./errors/rate-limit.error";
 export * from "./types/result";
 export * from "./http/http-client";
 export * from "./logging/logger";

@@ -1,6 +1,7 @@
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
 import {
   AItError,
+  RateLimitError,
   type PaginationParams,
   type GitHubCommitExternal,
   type GitHubPullRequestExternal,
@@ -37,8 +38,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         __type: "repository" as const,
       }));
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || "Unknown error";
-      throw new AItError("GITHUB_FETCH_REPOS", `Invalid fetch repositories: ${message}`, { message }, error);
+      this._handleError(error, "GITHUB_FETCH_REPOS");
     }
   }
 
@@ -99,8 +99,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
       return allPullRequests;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.message || "Unknown error";
-      throw new AItError("GITHUB_FETCH_PRS", `Invalid fetch pull requests: ${message}`, { message }, error);
+      this._handleError(error, "GITHUB_FETCH_PRS");
     }
   }
 
@@ -180,8 +179,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
       return allCommits;
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      throw new AItError("GITHUB_FETCH_COMMITS", `Invalid fetch commits: ${message}`, { message }, error);
+      this._handleError(error, "GITHUB_FETCH_COMMITS");
     }
   }
 
@@ -272,6 +270,10 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         page = 1;
       } catch (error) {
         console.error(`Failed to fetch PRs for ${repo.full_name}:`, error);
+        // If it's a rate limit error, rethrow it to be handled by the scheduler
+        if (error instanceof RateLimitError || (error as any).status === 403 || (error as any).status === 429) {
+          this._handleError(error, "GITHUB_FETCH_PRS_PAGINATED");
+        }
         repoIndex++;
         page = 1;
       }
@@ -357,12 +359,31 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         page = 1;
       } catch (error) {
         console.error(`Failed to fetch commits for ${repo.full_name}:`, error);
+        // If it's a rate limit error, rethrow it to be handled by the scheduler
+        if (error instanceof RateLimitError || (error as any).status === 403 || (error as any).status === 429) {
+          this._handleError(error, "GITHUB_FETCH_COMMITS_PAGINATED");
+        }
         repoIndex++;
         page = 1;
       }
     }
 
     return { data: [], nextCursor: undefined };
+  }
+
+  private _handleError(error: any, context: string): never {
+    if (error.status === 403 || error.status === 429) {
+      const resetHeader = error.response?.headers?.["x-ratelimit-reset"];
+      const remainingHeader = error.response?.headers?.["x-ratelimit-remaining"];
+
+      if (remainingHeader === "0" || error.status === 429) {
+        const resetTime = resetHeader ? Number.parseInt(resetHeader, 10) * 1000 : Date.now() + 60 * 60 * 1000; // Default 1 hour
+        throw new RateLimitError("github", resetTime, `GitHub rate limit exceeded in ${context}`);
+      }
+    }
+
+    const message = error.response?.data?.message || error.message || "Unknown error";
+    throw new AItError(context, `Invalid ${context}: ${message}`, { message }, error);
   }
 }
 export type ConnectorGitHubFetchRepositoriesResponse =

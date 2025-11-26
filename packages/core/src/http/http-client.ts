@@ -56,6 +56,7 @@ export async function requestJson<T>(
         new AItError(`HTTP_${response.status}`, "HTTP error", {
           status: response.status,
           url: String(url),
+          headers: normalizeHeaders(response.headers),
         }),
       );
     }

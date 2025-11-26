@@ -8,8 +8,7 @@ import type {
 } from "@ait/core";
 import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
 import dotenv from "dotenv";
-import { requestJson } from "@ait/core";
-import { AItError } from "@ait/core";
+import { requestJson, AItError, RateLimitError } from "@ait/core";
 
 interface SpotifyPaginatedResponse<T> {
   items: T[];
@@ -221,6 +220,12 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       return result.value.data as unknown as T;
     } catch (error: any) {
       if (error instanceof AItError) {
+        if (error.code === "HTTP_429" || error.meta?.status === 429) {
+          const headers = (error.meta?.headers as Record<string, string>) || {};
+          const retryAfter = headers["retry-after"];
+          const resetTime = retryAfter ? Date.now() + Number.parseInt(retryAfter, 10) * 1000 : Date.now() + 60 * 1000;
+          throw new RateLimitError("spotify", resetTime, "Spotify rate limit exceeded");
+        }
         throw error;
       }
       throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);

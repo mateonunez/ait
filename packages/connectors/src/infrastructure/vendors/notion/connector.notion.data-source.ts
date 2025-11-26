@@ -1,5 +1,5 @@
 import { requestJson } from "@ait/core";
-import { AItError } from "@ait/core";
+import { AItError, RateLimitError } from "@ait/core";
 import type { NotionPageExternal } from "@ait/core";
 
 export interface IConnectorNotionDataSource {
@@ -229,6 +229,12 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
       };
     } catch (error: any) {
       if (error instanceof AItError) {
+        if (error.code === "HTTP_429" || error.meta?.status === 429) {
+          const headers = (error.meta?.headers as Record<string, string>) || {};
+          const retryAfter = headers["retry-after"];
+          const resetTime = retryAfter ? Date.now() + Number.parseInt(retryAfter, 10) * 1000 : Date.now() + 60 * 1000;
+          throw new RateLimitError("notion", resetTime, "Notion rate limit exceeded");
+        }
         throw error;
       }
       throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);

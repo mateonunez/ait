@@ -1,4 +1,4 @@
-import { requestJson, AItError, getLogger } from "@ait/core";
+import { requestJson, AItError, getLogger, RateLimitError } from "@ait/core";
 import type { SlackMessageExternal, SlackApiResponse, SlackUser, SlackConversation } from "@ait/core";
 
 export interface IConnectorSlackDataSource {
@@ -347,6 +347,8 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
       await this.fetchAllUsers();
       const conversations = await this.fetchConversations();
 
+      console.log(`[SlackDataSource] Found ${conversations.length} total conversations`);
+
       let channelIndex = 0;
       let messageCursor: string | undefined;
 
@@ -355,6 +357,17 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
           const parsed = JSON.parse(cursorStr);
           channelIndex = parsed.channelIndex || 0;
           messageCursor = parsed.messageCursor;
+
+          // If cursor points past the end, we've completed a full cycle - start over
+          if (channelIndex >= conversations.length) {
+            console.log(
+              `[SlackDataSource] Cursor channelIndex=${channelIndex} >= conversations.length=${conversations.length}, wrapping to start`,
+            );
+            channelIndex = 0;
+            messageCursor = undefined;
+          } else {
+            console.log(`[SlackDataSource] Resuming from channelIndex=${channelIndex}, messageCursor=${messageCursor}`);
+          }
         } catch {
           // Invalid cursor, start from beginning
           this._logger.warn("Invalid cursor, starting from beginning");
@@ -370,37 +383,71 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
         const channelName = conversation.name || conversation.id;
 
         // Check if we should process this channel
-        if (conversation.is_im || conversation.is_mpim || conversation.is_member !== false) {
+        const shouldProcess = conversation.is_im || conversation.is_mpim || conversation.is_member !== false;
+        console.log(
+          `[SlackDataSource] Channel ${channelIndex}/${conversations.length}: ${channelName} (is_im=${conversation.is_im}, is_mpim=${conversation.is_mpim}, is_member=${conversation.is_member}) - ${shouldProcess ? "PROCESSING" : "SKIPPING"}`,
+        );
+
+        if (shouldProcess) {
           const { messages, nextCursor } = await this.fetchConversationHistoryPage(
             conversation.id,
             channelName,
             messageCursor,
           );
 
-          if (messages.length > 0 || nextCursor) {
-            // We found messages or there are more messages in this channel
-            const newCursor = nextCursor
-              ? JSON.stringify({ channelIndex, messageCursor: nextCursor })
-              : JSON.stringify({ channelIndex: channelIndex + 1 }); // Move to next channel next time
+          console.log(
+            `[SlackDataSource] Fetched ${messages.length} messages from ${channelName}, nextCursor=${nextCursor}`,
+          );
+
+          // Only return if we actually found messages
+          if (messages.length > 0) {
+            let newCursor: string | undefined;
+
+            if (nextCursor) {
+              // More pages in current channel
+              newCursor = JSON.stringify({ channelIndex, messageCursor: nextCursor });
+            } else if (channelIndex + 1 < conversations.length) {
+              // Move to next channel (not at the end yet)
+              newCursor = JSON.stringify({ channelIndex: channelIndex + 1 });
+            } else {
+              // We're at the last channel with no more pages - cycle complete, return undefined
+              newCursor = undefined;
+            }
 
             // Sort by timestamp (most recent first) within the batch
             const sortedMessages = messages.sort((a, b) => Number.parseFloat(b.ts) - Number.parseFloat(a.ts));
+
+            console.log(`[SlackDataSource] Returning ${sortedMessages.length} messages with cursor: ${newCursor}`);
 
             return {
               messages: sortedMessages,
               nextCursor: newCursor,
             };
           }
+
+          // If there's a nextCursor but no messages, continue to next page of same channel
+          if (nextCursor) {
+            console.log(`[SlackDataSource] No messages but has nextCursor, continuing to next page of ${channelName}`);
+            messageCursor = nextCursor;
+            continue;
+          }
         }
 
-        // Move to next channel immediately if current one is skipped or empty
+        // Move to next channel if current one is skipped or exhausted
         channelIndex++;
         messageCursor = undefined;
       }
 
+      console.log(`[SlackDataSource] Exhausted all ${conversations.length} conversations, no messages found`);
       return { messages: [], nextCursor: undefined };
     } catch (error: any) {
       if (error instanceof AItError) {
+        if (error.code === "HTTP_429" || error.meta?.status === 429) {
+          const headers = (error.meta?.headers as Record<string, string>) || {};
+          const retryAfter = headers["retry-after"];
+          const resetTime = retryAfter ? Date.now() + Number.parseInt(retryAfter, 10) * 1000 : Date.now() + 60 * 1000;
+          throw new RateLimitError("slack", resetTime, "Slack rate limit exceeded");
+        }
         throw error;
       }
       throw new AItError("NETWORK", `Network error fetching messages: ${error.message}`, undefined, error);

@@ -21,6 +21,7 @@
   "license": "MIT",
   "dependencies": {
     "@ait/connectors": "workspace:*",
+    "@ait/core": "workspace:*",
     "@ait/postgres": "workspace:*",
     "@ait/qdrant": "workspace:*",
     "@ait/redis": "workspace:*",
