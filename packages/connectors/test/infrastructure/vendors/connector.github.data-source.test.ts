@@ -84,7 +84,7 @@ describe("ConnectorGitHubDataSource", () => {
       .reply(500, { message: "kaboom" });
 
     await assert.rejects(dataSource.fetchRepositories(), (error: Error) => {
-      assert.ok(error.message.includes("Invalid fetch repositories"));
+      assert.ok(error.message.includes("GITHUB_FETCH_REPOS"));
       return true;
     });
   });
@@ -99,7 +99,7 @@ describe("ConnectorGitHubDataSource", () => {
       .reply(401, { message: "Bad credentials" });
 
     await assert.rejects(dataSource.fetchRepositories(), (error: Error) => {
-      assert.ok(error.message.includes("Invalid fetch repositories"));
+      assert.ok(error.message.includes("GITHUB_FETCH_REPOS"));
       assert.ok(error.message.includes("Bad credentials"));
       return true;
     });
@@ -204,7 +204,7 @@ describe("ConnectorGitHubDataSource", () => {
         .reply(500, { message: "API Error" });
 
       await assert.rejects(dataSource.fetchPullRequests(), (error: Error) => {
-        assert.ok(error.message.includes("Invalid fetch pull requests"));
+        assert.ok(error.message.includes("GITHUB_FETCH_PRS"));
         return true;
       });
     });

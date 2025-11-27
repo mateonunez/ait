@@ -34,15 +34,14 @@ interface ChatRequestBody {
   enableMetadata?: boolean;
 }
 
-// Initialize AI SDK with telemetry
 const telemetryEnabled = process.env.LANGFUSE_ENABLED === "true";
 const telemetryConfig = {
   enabled: telemetryEnabled,
   publicKey: process.env.LANGFUSE_PUBLIC_KEY,
   secretKey: process.env.LANGFUSE_SECRET_KEY,
   baseURL: process.env.LANGFUSE_BASEURL || "https://localhost:3000",
-  flushAt: 1, // Flush immediately
-  flushInterval: 1000, // Flush every second
+  flushAt: 1,
+  flushInterval: 1000,
 };
 
 initAItClient({
@@ -69,8 +68,6 @@ function isErrorEvent(event: StreamEvent): event is StreamEvent & { type: typeof
   return event.type === STREAM_EVENT.ERROR;
 }
 
-// Global message-to-trace mapping for feedback correlation
-// In production, this should be stored in a database or cache
 if (!(global as any).__messageToTraceMap) {
   (global as any).__messageToTraceMap = {};
 }
@@ -135,8 +132,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           tools,
           maxToolRounds: 1,
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
-          enableMetadata, // Enable metadata streaming
-          traceId, // Pass custom traceId
+          enableMetadata,
+          traceId,
           userId: request.headers["x-user-id"] as string | undefined,
           sessionId: request.headers["x-session-id"] as string | undefined,
           tags: ["gateway", "chat"],
@@ -150,34 +147,25 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
         let firstChunk = true;
         for await (const chunk of stream) {
-          // Check if chunk is a string (old format) or StreamEvent (new format)
           if (typeof chunk === "string") {
-            // Text chunk - use text event type
             reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(chunk)}\n`);
           } else {
-            // StreamEvent - handle different event types
             const event = chunk as StreamEvent;
 
             if (isTextChunk(event)) {
-              // Text content
               reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(event.data)}\n`);
             } else if (isMetadataChunk(event)) {
-              // Metadata (context, reasoning, tasks, suggestions, etc.)
               reply.raw.write(`${STREAM_EVENT.METADATA}:${JSON.stringify(event.data)}\n`);
             } else if (isCompletionData(event)) {
-              // Completion data
               reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify(event.data)}\n`);
             } else if (isErrorEvent(event)) {
-              // Error event
               reply.raw.write(`${STREAM_EVENT.ERROR}:${JSON.stringify(event.data)}\n`);
             }
           }
 
-          // On first chunk, store the traceId mapping for feedback
           if (firstChunk) {
             const timestamp = Date.now();
             (global as any).__messageToTraceMap[timestamp] = traceId;
-            // Clean up old mappings (older than 5 minutes)
             const fiveMinutesAgo = timestamp - 5 * 60 * 1000;
             for (const key of Object.keys((global as any).__messageToTraceMap)) {
               if (Number.parseInt(key) < fiveMinutesAgo) {
@@ -193,15 +181,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         const langfuseProvider = getLangfuseProvider();
         if (langfuseProvider?.isEnabled()) {
           try {
-            // Give a small delay to ensure all trace updates are processed
-            await new Promise((resolve) => setTimeout(resolve, 100));
-
-            // Flush with timeout protection
-            const flushTimeout = 15000; // 15 seconds
-            await Promise.race([
-              langfuseProvider.flush(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Flush timeout in gateway")), flushTimeout)),
-            ]);
+            await langfuseProvider.flush();
           } catch (flushError: unknown) {
             console.error(
               "[Gateway] Telemetry flush failed:",
@@ -216,11 +196,10 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           `${STREAM_EVENT.ERROR}:${JSON.stringify(streamError instanceof Error ? streamError.message : String(streamError) || "Stream generation failed")}\n`,
         );
 
-        // Attempt to flush telemetry even on error
         const langfuseProvider = getLangfuseProvider();
         if (langfuseProvider?.isEnabled()) {
           try {
-            await Promise.race([langfuseProvider.flush(), new Promise((resolve) => setTimeout(resolve, 5000))]);
+            await langfuseProvider.flush();
           } catch {
             // Silently fail telemetry flush on error
           }

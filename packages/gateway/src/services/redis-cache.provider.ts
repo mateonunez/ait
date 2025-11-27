@@ -38,15 +38,11 @@ export class RedisCacheProvider implements ICacheProvider {
     await this.redis.flushdb();
   }
 
-  /**
-   * Get the underlying Redis client
-   */
   getRedisClient(): Redis {
     return this.redis;
   }
 }
 
-// Global instance
 let _redisProvider: RedisCacheProvider | null = null;
 
 export function initializeCacheProvider(redisUrl?: string): void {
@@ -65,9 +61,6 @@ export function initializeCacheProvider(redisUrl?: string): void {
   }
 }
 
-/**
- * Get the Redis client instance for direct access
- */
 export function getRedisClient(): Redis | null {
   return _redisProvider?.getRedisClient() || null;
 }

@@ -13,19 +13,3 @@ export interface SuggestionAction {
   type: "prompt" | "tool_call" | "navigation";
   payload: string | Record<string, unknown>;
 }
-
-export function createSuggestion(text: string, type: SuggestionType = "question", icon?: string): SuggestionItem {
-  return {
-    id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    text,
-    type,
-    icon,
-  };
-}
-
-export function createActionSuggestion(text: string, action: SuggestionAction, icon?: string): SuggestionItem {
-  return {
-    ...createSuggestion(text, "action", icon),
-    action,
-  };
-}

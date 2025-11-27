@@ -54,21 +54,20 @@ describe("CollectionRouterService", () => {
   });
 
   it("should fallback to heuristics on LLM failure", async () => {
-    const service = new CollectionRouterService({}, mockDiscoveryService, mockClient);
+    // Enable LLM routing with threshold higher than heuristic confidence (0.6) to force LLM path
+    const service = new CollectionRouterService(
+      { enableLLMRouting: true, llmRoutingConfidenceThreshold: 0.7 },
+      mockDiscoveryService,
+      mockClient,
+    );
 
-    // Mock broad query check (false)
-    mockGenerateStructured.mock.mockImplementationOnce(async () => ({
-      isBroad: false,
-      confidence: 0.9,
-      reasoning: "Specific query",
-    }));
-
-    // Mock routing failure
+    // Mock routing failure (LLM call)
     mockGenerateStructured.mock.mockImplementationOnce(async () => {
       throw new Error("API Error");
     });
 
-    const result = await service.routeCollections("spotify music");
+    // Query > 2 words (not broad), with "spotify" keyword (heuristic confidence ~0.6)
+    const result = await service.routeCollections("play my favorite spotify music please");
 
     assert.ok(result.selectedCollections.some((c) => c.vendor === "spotify"));
     assert.ok(result.reasoning.includes("heuristic"));

@@ -19,6 +19,19 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.artist", field_schema: "keyword" as const },
+      { field_name: "metadata.name", field_schema: "keyword" as const },
+      { field_name: "metadata.album", field_schema: "keyword" as const },
+      { field_name: "metadata.addedAt", field_schema: "datetime" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "track";
+  }
+
   protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyTrackDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyTracks) as any;
@@ -37,10 +50,6 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
 
   protected getPayload(track: SpotifyTrackDataTarget): RetoveSpotifyTrackVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(track);
-  }
-
-  protected getIdBaseOffset(): number {
-    return 1_000_000_000_000;
   }
 
   protected getLatestTimestamp(data: unknown[]): Date {

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { Document, BaseMetadata } from "../../types/documents";
-import { buildTitleFromMetadata } from "../../types/context";
+import { buildTitleFromMetadata } from "../../utils/context.utils";
 import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
 import { TemporalLabelService, type ITemporalLabelService } from "./temporal-label.service";
 import type { EntityType } from "@ait/core";

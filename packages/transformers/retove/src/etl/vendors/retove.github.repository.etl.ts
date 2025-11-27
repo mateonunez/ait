@@ -20,6 +20,20 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("github"), retryOptions, embeddingsService);
   }
 
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.fullName", field_schema: "keyword" as const },
+      { field_name: "metadata.language", field_schema: "keyword" as const },
+      { field_name: "metadata.pushedAt", field_schema: "datetime" as const },
+      { field_name: "metadata.createdAt", field_schema: "datetime" as const },
+      { field_name: "metadata.archived", field_schema: "bool" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "repository";
+  }
+
   protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GitHubRepositoryDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubRepositories) as any;
@@ -38,10 +52,6 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
 
   protected getPayload(repository: GitHubRepositoryDataTarget): RetoveGitHubRepositoryVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(repository);
-  }
-
-  protected getIdBaseOffset(): number {
-    return 5_000_000_000_000;
   }
 
   protected getLatestTimestamp(data: unknown[]): Date {

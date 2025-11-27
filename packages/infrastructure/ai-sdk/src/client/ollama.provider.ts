@@ -12,7 +12,6 @@ import type {
   OllamaGenerateResult,
 } from "../types/providers/ollama.types";
 
-// Re-export Ollama types for backward compatibility
 export type {
   OllamaTool,
   OllamaToolCall,

@@ -53,7 +53,6 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
 
         logger.debug("Cache hit", { cacheKey, documentCount: cachedDocs.length, duration });
 
-        // Record cache hit
         cacheAnalytics.recordCacheHit(input.query, duration, cachedDocs.length);
 
         if (endSpan) {
@@ -93,7 +92,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
 
     if (this.cacheService) {
       const cacheKey = this._buildCacheKey(input.query, input.routingResult.selectedCollections);
-      const setResult = this.cacheService.set(cacheKey, documents);
+      const setResult = this.cacheService.set(cacheKey, documents, 60 * 60 * 1000);
       if (setResult instanceof Promise) {
         await setResult;
       }
@@ -128,26 +127,18 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     };
   }
 
-  /**
-   * Normalize query string for consistent cache key generation
-   */
   private _normalizeQuery(query: string): string {
     return query.trim().toLowerCase().replace(/\s+/g, " ");
   }
 
-  /**
-   * Build cache key that includes normalized query and collection routing information
-   */
   private _buildCacheKey(query: string, collections: CollectionWeight[]): string {
     const normalizedQuery = this._normalizeQuery(query);
 
-    // Sort collections by vendor name for stable cache key
     const sortedVendors = collections
       .map((c) => c.vendor)
       .sort()
       .join(",");
 
-    // Create cache key with query and collections
     return `rag:retrieval:${normalizedQuery}:${sortedVendors}`;
   }
 }

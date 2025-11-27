@@ -4,22 +4,10 @@ import { TokenEstimationService, type ITokenEstimationService } from "../metadat
 import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import { buildSummarizationPrompt } from "../prompts/summarization.prompt";
 
-/**
- * Interface for conversation manager service
- */
 export interface IConversationManagerService {
-  /**
-   * Process conversation history and apply context window constraints
-   * @param messages - Full conversation history
-   * @param currentPrompt - Current user prompt
-   * @returns Conversation context with recent messages and optional summary
-   */
   processConversation(messages: ChatMessage[] | undefined, currentPrompt: string): Promise<ConversationContext>;
 }
 
-/**
- * Service for managing conversation history and context windows
- */
 export class ConversationManagerService implements IConversationManagerService {
   private readonly _maxRecentMessages: number;
   private readonly _maxHistoryTokens: number;
@@ -43,14 +31,12 @@ export class ConversationManagerService implements IConversationManagerService {
       };
     }
 
-    // Split messages into recent and older
     const recentMessages = messages.slice(-this._maxRecentMessages);
     const olderMessages = messages.slice(0, -this._maxRecentMessages);
 
     const currentPromptTokens = this._tokenEstimator.estimateTokens(currentPrompt);
     const recentTokens = this._tokenEstimator.estimateTokensForMessages(recentMessages);
 
-    // Case 1: No summarization enabled or no older messages
     if (!this._enableSummarization || olderMessages.length === 0) {
       const totalTokens = currentPromptTokens + recentTokens;
 
@@ -61,7 +47,6 @@ export class ConversationManagerService implements IConversationManagerService {
         };
       }
 
-      // Truncate recent messages to fit
       const truncatedMessages = this._truncateMessages(recentMessages, this._maxHistoryTokens - currentPromptTokens);
       return {
         recentMessages: truncatedMessages,
@@ -69,11 +54,9 @@ export class ConversationManagerService implements IConversationManagerService {
       };
     }
 
-    // Case 2: Summarization enabled AND we have older messages
     const summary = await this._summarizeMessages(olderMessages);
     const summaryTokens = this._tokenEstimator.estimateTokens(summary);
 
-    // Check if everything fits (Summary + Recent + Prompt)
     const totalTokensWithSummary = currentPromptTokens + summaryTokens + recentTokens;
 
     if (totalTokensWithSummary <= this._maxHistoryTokens) {
@@ -84,11 +67,7 @@ export class ConversationManagerService implements IConversationManagerService {
       };
     }
 
-    // If not, truncate recent messages to fit remaining space
     const remainingTokens = this._maxHistoryTokens - currentPromptTokens - summaryTokens;
-
-    // If remaining space is too small (e.g. < 0), we might need to drop summary or handle differently
-    // For now, we prioritize summary and truncate recent as much as needed
     const truncatedRecentMessages = this._truncateMessages(recentMessages, Math.max(0, remainingTokens));
 
     return {
@@ -103,7 +82,6 @@ export class ConversationManagerService implements IConversationManagerService {
     const truncated: ChatMessage[] = [];
     let currentTokens = 0;
 
-    // Take messages from the end (most recent) until we hit the token limit
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]!;
       const msgTokens = this._tokenEstimator.estimateTokens(`${msg.role}: ${msg.content}`);
@@ -138,7 +116,6 @@ export class ConversationManagerService implements IConversationManagerService {
         error: error instanceof Error ? error.message : String(error),
       });
 
-      // Fallback: Extract key topics from messages for a more meaningful summary
       const topics = this._extractTopicsFromMessages(messages);
       const topicSummary = topics.length > 0 ? `Topics discussed: ${topics.join(", ")}` : "";
 

@@ -1,6 +1,9 @@
 import { createActivityAggregatorService, type IConnectorServiceFactory } from "@ait/ai-sdk";
 import { connectorServiceFactory } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+
+const logger = getLogger();
 
 interface TimeSeriesQuery {
   range?: "week" | "month" | "year";
@@ -68,6 +71,14 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
           const activity = activityData[integration];
           totals[integration] = activity?.total || 0;
         }
+
+        // Log summary for debugging
+        logger.info("Discovery stats calculated", {
+          range,
+          totals,
+          integrations: integrationKeys,
+          emptyIntegrations: integrationKeys.filter((k) => totals[k] === 0),
+        });
 
         const response: DiscoveryStatsResponse = {
           timeRange: range,

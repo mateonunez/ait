@@ -108,7 +108,8 @@ describe("ConnectorXDataSource", () => {
         () => dataSource.fetchTweets(),
         (error) => {
           assert.ok(error instanceof AItError);
-          assert.strictEqual(error.code, "HTTP_429");
+          // RateLimitError wraps 429 with code "RATE_LIMIT"
+          assert.strictEqual(error.code, "RATE_LIMIT");
           return true;
         },
       );

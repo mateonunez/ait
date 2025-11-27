@@ -14,4 +14,6 @@ export interface ISyncStateService {
   saveState(state: ISyncState): Promise<void>;
   updateChecksums(connectorName: string, entityType: string, checksums: Record<string, string>): Promise<void>;
   updateETLTimestamp(connectorName: string, entityType: string, lastProcessedTimestamp: Date): Promise<void>;
+  clearState(connectorName: string, entityType: string): Promise<void>;
+  clearCursor(connectorName: string, entityType: string): Promise<void>;
 }

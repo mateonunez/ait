@@ -34,6 +34,7 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(feedbackRoutes, { prefix: "/api/feedback" });
   server.register(discoveryRoutes, { prefix: "/api/discovery" });
   server.register(insightsRoutes, { prefix: "/api/insights" });
+
   try {
     await server.listen({ port, host: "0.0.0.0" });
     const protocol = (server.server as { key?: Buffer })?.key ? "https" : "http";

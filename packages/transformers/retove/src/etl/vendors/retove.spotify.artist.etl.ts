@@ -37,10 +37,6 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(track);
   }
 
-  protected getIdBaseOffset(): number {
-    return 2_000_000_000_000;
-  }
-
   protected getLatestTimestamp(data: unknown[]): Date {
     const artists = data as SpotifyArtistDataTarget[];
     if (artists.length === 0) return new Date();
@@ -48,6 +44,17 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
       const artistDate = artist.updatedAt ? new Date(artist.updatedAt) : new Date(0);
       return artistDate > max ? artistDate : max;
     }, new Date(0));
+  }
+
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.name", field_schema: "keyword" as const },
+      { field_name: "metadata.genres", field_schema: "keyword" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "artist";
   }
 }
 

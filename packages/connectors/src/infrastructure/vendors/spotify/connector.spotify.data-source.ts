@@ -7,19 +7,17 @@ import type {
   SpotifyTrackExternal,
 } from "@ait/core";
 import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
-import dotenv from "dotenv";
-import { requestJson, AItError, RateLimitError } from "@ait/core";
+import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
 
 interface SpotifyPaginatedResponse<T> {
   items: T[];
   nextCursor?: string;
 }
 
-dotenv.config();
-
 export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
   private readonly apiUrl: string;
   private accessToken: string;
+  private _logger = getLogger();
 
   constructor(accessToken: string) {
     this.apiUrl = process.env.SPOTIFY_API_ENDPOINT || "https://api.spotify.com/v1";
@@ -61,7 +59,10 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       items: SpotifyArtistExternal[];
     }>("/me/top/artists");
 
-    return response.items;
+    return response.items.map((artist) => ({
+      ...artist,
+      __type: "artist" as const,
+    }));
   }
 
   async fetchPlaylists(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyPlaylistExternal>> {
@@ -78,12 +79,8 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       total: number;
     }>(`/me/playlists?${params.toString()}`);
 
-    const prioritizedPlaylists = response.items.sort((a, b) => {
-      return a.owner?.display_name?.toLowerCase() === "mateonunez" ? -1 : 1;
-    });
-
     return {
-      items: prioritizedPlaylists,
+      items: response.items,
       nextCursor: response.next ? (offset + limit).toString() : undefined,
     };
   }
@@ -113,13 +110,13 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       total: number;
     }>(`/me/albums?${params.toString()}`);
 
-    const albums = response.items.map((album) => ({
-      ...album.album,
-      addedAt: album.added_at,
+    const albums = response.items.map((item) => ({
+      ...item.album,
+      addedAt: item.added_at,
       __type: "album" as const,
     }));
 
-    // Sort by popularity to prioritize more significant albums
+    // Sort by popularity (most popular first)
     const sortedAlbums = albums.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
     return {
@@ -153,11 +150,6 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       };
       next?: string;
     }>(`/me/player/recently-played?${params}`);
-
-    // Spotify recently-played API is unique:
-    // 'after' returns items *after* the timestamp (older to newer).
-    // 'cursors.after' is the timestamp of the *newest* item in the batch.
-    // To paginate forward, we use the 'cursors.after' from the response.
 
     return {
       items: response.items.map((item) => ({

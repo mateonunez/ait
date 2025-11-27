@@ -6,9 +6,9 @@ export class ETLNotionPageDescriptor implements IETLEmbeddingDescriptor<NotionPa
   public getEmbeddingText(page: NotionPageDataTarget): string {
     const parts: string[] = [];
 
-    // Title is always present
+    // Page identity - factual description
     const sanitizedTitle = TextSanitizer.sanitize(page.title);
-    parts.push(sanitizedTitle);
+    parts.push(`Notion page: "${sanitizedTitle}"`);
 
     // Add parent context if available
     if (page.parentType && page.parentType !== "workspace") {
@@ -18,14 +18,13 @@ export class ETLNotionPageDescriptor implements IETLEmbeddingDescriptor<NotionPa
     // Add content if available (this is the main text content from blocks)
     if (page.content) {
       const sanitizedContent = TextSanitizer.sanitize(page.content);
-      // Limit content length to avoid overwhelming the embedding
       const contentPreview = sanitizedContent.length > 500 ? `${sanitizedContent.slice(0, 500)}...` : sanitizedContent;
       parts.push(contentPreview);
     }
 
     // Add archived status
     if (page.archived) {
-      parts.push("archived");
+      parts.push("(archived)");
     }
 
     return parts.join(", ");

@@ -16,8 +16,6 @@ export {
   type LlmStructuredGenerationOptions,
 } from "./client/ai-sdk.client";
 
-export { getOllamaProvider } from "./client/ai-sdk-ollama.provider";
-
 export {
   getGenerationModel,
   getEmbeddingModel,
@@ -62,8 +60,24 @@ export {
 
 export { type IEmbeddingsService, EmbeddingsService } from "./services/embeddings/embeddings.service";
 
-export { type ChatMessage, type MessageRole, formatConversationHistory } from "./types/chat";
-export { type Tool, type ToolResult, createTool, createSuccessResult, createErrorResult } from "./types/tools";
+export {
+  OPTIMAL_CHUNK_SIZE,
+  OPTIMAL_CHUNK_OVERLAP,
+  type EmbeddingsConfig,
+} from "./services/embeddings/embeddings.config";
+
+export {
+  SparseVectorService,
+  getSparseVectorService,
+  resetSparseVectorService,
+  type ISparseVectorService,
+  type SparseVector,
+} from "./services/embeddings/sparse-vector.service";
+
+export type { ChatMessage, MessageRole } from "./types/chat";
+export { formatConversationHistory } from "./utils/chat.utils";
+export type { Tool, ToolResult } from "./types/tools";
+export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";
 export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
 
 export { convertToOllamaTools } from "./tools/tool.converter";
@@ -110,7 +124,6 @@ export {
   shouldEnableTelemetry,
 } from "./telemetry/telemetry.middleware";
 
-// Query analysis and routing services
 export {
   FastQueryAnalyzerService,
   getFastQueryAnalyzer,

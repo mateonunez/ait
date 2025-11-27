@@ -18,6 +18,17 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("x"), retryOptions, embeddingsService);
   }
 
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.createdAt", field_schema: "datetime" as const },
+      { field_name: "metadata.authorId", field_schema: "keyword" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "tweet";
+  }
+
   protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<XTweetDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(xTweets) as any;
@@ -36,10 +47,6 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
 
   protected getPayload(tweet: XTweetDataTarget): RetoveXTweetVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(tweet);
-  }
-
-  protected getIdBaseOffset(): number {
-    return 7_000_000_000_000;
   }
 
   protected getLatestTimestamp(data: unknown[]): Date {
