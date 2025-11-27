@@ -50,19 +50,38 @@ export function StatsProvider({ children }: { children: ReactNode }) {
     try {
       const data = await fetchAllMetrics(windowMinutes);
 
-      if (data.health) setHealth(data.health);
-      if (data.performance) setPerformance(data.performance);
-      if (data.cache) setCache(data.cache);
-      if (data.cost) setCost(data.cost);
-      if (data.errors) setErrors(data.errors);
-      if (data.quality) setQuality(data.quality);
-      if (data.feedback) setFeedback(data.feedback);
-      if (data.system) setSystem(data.system);
+      // Update all state from unified response
+      setHealth(data.health);
+      setPerformance(data.performance);
+      setCache(data.cache);
+      setCost(data.cost);
+      setErrors(data.errors);
+      setQuality(data.quality);
+      setFeedback(data.feedback);
+      setSystem(data.system);
 
       setLastUpdated(new Date());
-      console.log("[Stats] Refreshed all metrics");
+
+      // Log any fetch errors
+      const errorKeys = Object.keys(data.fetchErrors || {}).filter(
+        (key) => data.fetchErrors?.[key as keyof typeof data.fetchErrors],
+      );
+      if (errorKeys.length > 0) {
+        console.warn("[Stats] Some metrics failed to load:", errorKeys);
+      } else {
+        console.log("[Stats] All metrics refreshed successfully");
+      }
     } catch (error) {
       console.error("[Stats] Failed to refresh metrics:", error);
+      // Reset all metrics on critical error
+      setHealth(null);
+      setPerformance(null);
+      setCache(null);
+      setCost(null);
+      setErrors(null);
+      setQuality(null);
+      setFeedback(null);
+      setSystem(null);
     } finally {
       setIsLoading(false);
     }

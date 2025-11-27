@@ -2,7 +2,7 @@ import type { Document, BaseMetadata } from "../../types/documents";
 import type { CollectionVendor } from "../../config/collections.config";
 import type { WeightedDocument } from "../../types/collections";
 import type { IRerankService } from "./rerank.service";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 
 export interface ICollectionRerankService {
@@ -29,12 +29,17 @@ export class CollectionRerankService implements ICollectionRerankService {
     maxResults = 100,
     traceContext?: TraceContext,
   ): Promise<WeightedDocument<TMetadata>[]> {
-    const startTime = Date.now();
-
     if (documents.length === 0) {
       console.warn("No documents to rerank");
       return [];
     }
+
+    const endSpan = traceContext
+      ? createSpanWithTiming("collection-rerank", "rag", traceContext, {
+          query: userQuery.slice(0, 100),
+          inputDocuments: documents.length,
+        })
+      : null;
 
     const documentsByCollection = this.groupByCollection(documents);
 
@@ -55,23 +60,12 @@ export class CollectionRerankService implements ICollectionRerankService {
     const mergedResults = this.mergeRerankedGroups(rerankedGroups);
     const finalResults = mergedResults.slice(0, maxResults);
 
-    const duration = Date.now() - startTime;
-    if (traceContext) {
-      recordSpan(
-        "collection-rerank",
-        "rag",
-        traceContext,
-        {
-          query: userQuery.slice(0, 100),
-          inputDocuments: documents.length,
-        },
-        {
-          outputDocuments: finalResults.length,
-          collectionsProcessed: Object.keys(documentsByCollection).length,
-          duration,
-          collectionDistribution: this.getCollectionDistribution(finalResults),
-        },
-      );
+    if (endSpan) {
+      endSpan({
+        outputDocuments: finalResults.length,
+        collectionsProcessed: Object.keys(documentsByCollection).length,
+        collectionDistribution: this.getCollectionDistribution(finalResults),
+      });
     }
 
     return finalResults;

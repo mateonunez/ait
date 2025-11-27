@@ -6,9 +6,13 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
   public getEmbeddingText(repository: GitHubRepositoryDataTarget): string {
     const parts: string[] = [];
 
-    // Repository name and description
+    // Repository identity - factual, third-person description
     const repoName = repository.fullName || repository.name;
-    parts.push(`I maintain ${repoName}`);
+    if (repository.fork) {
+      parts.push(`Repository \`${repoName}\` (forked)`);
+    } else {
+      parts.push(`Repository \`${repoName}\``);
+    }
 
     // CRITICAL: Include the repository description for semantic understanding
     if (repository.description) {
@@ -24,7 +28,7 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
       parts.push(activityStatus);
     }
 
-    // Visibility and fork status
+    // Visibility and template status
     const visibilityInfo = this._getVisibilityInfo(repository);
     if (visibilityInfo) {
       parts.push(visibilityInfo);
@@ -71,15 +75,9 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
       return "a disabled repository";
     }
 
+    // Use absolute date instead of relative time to avoid stale embeddings
     if (repository.pushedAt) {
-      const daysSinceLastPush = this._getDaysSince(repository.pushedAt);
-      if (daysSinceLastPush < 30) {
-        return "an actively developed repository";
-      }
-      if (daysSinceLastPush < 180) {
-        return "a recently updated repository";
-      }
-      return "a mature repository";
+      return `last pushed on ${this._formatDate(repository.pushedAt)}`;
     }
 
     return "a repository";
@@ -89,13 +87,9 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
     const parts: string[] = [];
 
     if (repository.visibility) {
-      parts.push(`${repository.visibility} repository`);
+      parts.push(`${repository.visibility}`);
     } else if (repository.private) {
-      parts.push("private repository");
-    }
-
-    if (repository.fork) {
-      parts.push("forked from another project");
+      parts.push("private");
     }
 
     if (repository.isTemplate) {
@@ -189,11 +183,17 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
     return parts.length > 0 ? parts.join(", ") : null;
   }
 
-  private _getDaysSince(date: Date | string): number {
+  /**
+   * Format date as absolute, stable string for embeddings.
+   * Using absolute dates prevents embeddings from becoming stale.
+   */
+  private _formatDate(date: Date | string): string {
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    const now = new Date();
-    const diffMs = now.getTime() - dateObj.getTime();
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubRepositoryDataTarget): U {
@@ -222,9 +222,9 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
   public getEmbeddingText(pullRequest: GitHubPullRequestDataTarget): string {
     const parts: string[] = [];
 
-    // PR title and number
-    const prIdentifier = `PR #${pullRequest.number} '${pullRequest.title}'`;
-    parts.push(`I ${this._getAuthorAction(pullRequest)} ${prIdentifier}`);
+    // PR identity - factual, third-person description
+    const sanitizedTitle = TextSanitizer.sanitize(pullRequest.title, 200);
+    parts.push(`PR #${pullRequest.number}: "${sanitizedTitle}"`);
 
     // Repository context (if available)
     const repoName = pullRequest.repositoryFullName || pullRequest.repositoryName;
@@ -234,9 +234,14 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
       parts.push(`in repository ${pullRequest.repositoryId}`);
     }
 
+    // Author information - who created this PR
+    const authorInfo = this._getAuthorInfo(pullRequest);
+    if (authorInfo) {
+      parts.push(authorInfo);
+    }
+
     // CRITICAL: Include PR body/description for context about WHY changes were made
     if (pullRequest.body && pullRequest.body.trim().length > 0) {
-      // Sanitize and truncate to prevent JSON encoding errors
       const sanitizedBody = TextSanitizer.sanitize(pullRequest.body, 300);
       if (sanitizedBody) {
         parts.push(`Description: ${sanitizedBody}`);
@@ -296,14 +301,14 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
     return `${parts.join(", ")}.`;
   }
 
-  private _getAuthorAction(pullRequest: GitHubPullRequestDataTarget): string {
+  private _getAuthorInfo(pullRequest: GitHubPullRequestDataTarget): string | null {
     if (pullRequest.userData && typeof pullRequest.userData === "object") {
       const user = pullRequest.userData as any;
       if (user.login) {
-        return "created";
+        return `authored by ${user.login}`;
       }
     }
-    return "have";
+    return null;
   }
 
   private _getStateInfo(pullRequest: GitHubPullRequestDataTarget): string | null {
@@ -379,39 +384,35 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
     return parts.length > 0 ? parts.join(" ") : null;
   }
 
+  /**
+   * Get timeline info using absolute dates (not relative) to prevent stale embeddings.
+   */
   private _getTimelineInfo(pullRequest: GitHubPullRequestDataTarget): string | null {
     if (pullRequest.mergedAt) {
-      const daysSinceMerge = this._getDaysSince(pullRequest.mergedAt);
-      return `merged ${this._formatDaysAgo(daysSinceMerge)}`;
+      return `merged on ${this._formatDate(pullRequest.mergedAt)}`;
     }
 
     if (pullRequest.closedAt) {
-      const daysSinceClosed = this._getDaysSince(pullRequest.closedAt);
-      return `closed ${this._formatDaysAgo(daysSinceClosed)}`;
+      return `closed on ${this._formatDate(pullRequest.closedAt)}`;
     }
 
     if (pullRequest.createdAt) {
-      const daysSinceCreated = this._getDaysSince(pullRequest.createdAt);
-      return `created ${this._formatDaysAgo(daysSinceCreated)}`;
+      return `created on ${this._formatDate(pullRequest.createdAt)}`;
     }
 
     return null;
   }
 
-  private _getDaysSince(date: Date | string): number {
+  /**
+   * Format date as absolute, stable string for embeddings.
+   */
+  private _formatDate(date: Date | string): string {
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    const now = new Date();
-    const diffMs = now.getTime() - dateObj.getTime();
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  }
-
-  private _formatDaysAgo(days: number): string {
-    if (days === 0) return "today";
-    if (days === 1) return "yesterday";
-    if (days < 7) return `${days} days ago`;
-    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-    if (days < 365) return `${Math.floor(days / 30)} months ago`;
-    return `${Math.floor(days / 365)} years ago`;
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubPullRequestDataTarget): U {
@@ -436,9 +437,9 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
   public getEmbeddingText(commit: GitHubCommitDataTarget): string {
     const parts: string[] = [];
 
-    // Commit SHA and message
+    // Commit identity - factual, third-person description
     const commitSha = commit.sha.substring(0, 7);
-    parts.push(`I committed ${commitSha}`);
+    parts.push(`Commit ${commitSha}`);
 
     // Repository context
     const repoName = commit.repositoryFullName || commit.repositoryName;
@@ -448,11 +449,17 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
       parts.push(`in repository ${commit.repositoryId}`);
     }
 
+    // Author information - who wrote this commit
+    const authorInfo = this._getAuthorInfo(commit);
+    if (authorInfo) {
+      parts.push(authorInfo);
+    }
+
     // CRITICAL: Include commit message (subject) for semantic understanding
     if (commit.message) {
       const sanitizedMessage = TextSanitizer.sanitize(commit.message, 200);
       if (sanitizedMessage) {
-        parts.push(`with message: ${sanitizedMessage}`);
+        parts.push(`message: "${sanitizedMessage}"`);
       }
     }
 
@@ -462,12 +469,6 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
       if (sanitizedBody) {
         parts.push(`Description: ${sanitizedBody}`);
       }
-    }
-
-    // Author information
-    const authorInfo = this._getAuthorInfo(commit);
-    if (authorInfo) {
-      parts.push(authorInfo);
     }
 
     // Code change stats
@@ -509,10 +510,6 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
       }
     }
 
-    if (commit.committerName && commit.committerName !== commit.authorName) {
-      parts.push(`committed by ${commit.committerName}`);
-    }
-
     return parts.length > 0 ? parts.join(" ") : null;
   }
 
@@ -552,34 +549,31 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
     return null;
   }
 
+  /**
+   * Get timeline info using absolute dates (not relative) to prevent stale embeddings.
+   */
   private _getTimelineInfo(commit: GitHubCommitDataTarget): string | null {
     if (commit.authorDate) {
-      const daysSinceCommit = this._getDaysSince(commit.authorDate);
-      return `committed ${this._formatDaysAgo(daysSinceCommit)}`;
+      return `committed on ${this._formatDate(commit.authorDate)}`;
     }
 
     if (commit.committerDate) {
-      const daysSinceCommit = this._getDaysSince(commit.committerDate);
-      return `committed ${this._formatDaysAgo(daysSinceCommit)}`;
+      return `committed on ${this._formatDate(commit.committerDate)}`;
     }
 
     return null;
   }
 
-  private _getDaysSince(date: Date | string): number {
+  /**
+   * Format date as absolute, stable string for embeddings.
+   */
+  private _formatDate(date: Date | string): string {
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    const now = new Date();
-    const diffMs = now.getTime() - dateObj.getTime();
-    return Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  }
-
-  private _formatDaysAgo(days: number): string {
-    if (days === 0) return "today";
-    if (days === 1) return "yesterday";
-    if (days < 7) return `${days} days ago`;
-    if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
-    if (days < 365) return `${Math.floor(days / 30)} months ago`;
-    return `${Math.floor(days / 365)} years ago`;
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubCommitDataTarget): U {

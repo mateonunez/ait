@@ -1,4 +1,5 @@
-import { createSuggestion, createActionSuggestion, type SuggestionItem, type ChatMessage } from "../../types";
+import { createSuggestion, createActionSuggestion } from "../../utils/metadata.utils";
+import type { SuggestionItem, ChatMessage } from "../../types";
 
 /**
  * Service for generating contextual follow-up suggestions

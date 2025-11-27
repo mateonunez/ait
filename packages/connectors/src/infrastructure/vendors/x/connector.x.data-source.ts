@@ -1,5 +1,5 @@
-import { requestJson } from "@ait/core";
-import type { Response } from "undici";
+import { requestJson, RateLimitError, AItError, getLogger } from "@ait/core";
+
 import type { XTweetExternal, XTweetIncludes, XMediaEntity, XPollEntity, XPlaceEntity } from "@ait/core";
 import { ait } from "../../../shared/constants/ait.constant";
 
@@ -22,6 +22,7 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
   private readonly apiUrl: string;
   private accessToken: string;
   private _userInfo: { id: string; username: string; name: string } | null = null;
+  private _logger = getLogger();
 
   constructor(accessToken: string) {
     this.apiUrl = process.env.X_API_ENDPOINT || "https://api.x.com/2";
@@ -38,7 +39,7 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
       "media.fields": "media_key,type,url,preview_image_url,width,height,duration_ms,alt_text",
       "poll.fields": "id,options,duration_minutes,end_datetime,voting_status",
       "place.fields": "id,name,full_name,country,country_code,place_type,geo",
-      max_results: "5", // Batch size
+      max_results: "100", // X API allows up to 100 per request
     });
 
     if (cursor) {
@@ -52,7 +53,6 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
       return { tweets: [], nextCursor: undefined };
     }
 
-    // Enrich tweets with includes data
     const enrichedTweets = this._enrichTweetsWithIncludes(response.data, response.includes, userInfo);
 
     return {
@@ -78,11 +78,13 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    // Handle rate limit (429 status)
     if (!result.ok) {
-      const error = result.error as any;
-      if (error.status === 429 && error.response) {
-        return this._handleRateLimitExceeded(error.response as Response, endpoint, method, body);
+      const error = result.error;
+      if (error instanceof AItError && (error.code === "HTTP_429" || error.meta?.status === 429)) {
+        const headers = (error.meta?.headers as Record<string, string>) || {};
+        const reset = headers["x-rate-limit-reset"];
+        const resetTime = reset ? Number.parseInt(reset, 10) * 1000 : Date.now() + 15 * 60 * 1000;
+        throw new RateLimitError("x", resetTime, "X rate limit exceeded");
       }
       throw result.error;
     }
@@ -95,7 +97,6 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
     includes: XTweetIncludes | undefined,
     userInfo: { username: string; name: string },
   ): XTweetExternal[] {
-    // Create lookup maps for efficient matching
     const mediaMap = new Map<string, XMediaEntity>();
     const pollMap = new Map<string, XPollEntity>();
     const placeMap = new Map<string, XPlaceEntity>();
@@ -126,7 +127,6 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
         __type: "tweet" as const,
       };
 
-      // Attach media if present
       const attachments = tweet.attachments as { media_keys?: string[]; poll_ids?: string[] } | undefined;
       if (attachments?.media_keys && attachments.media_keys.length > 0) {
         enrichedTweet.media = attachments.media_keys
@@ -134,15 +134,13 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
           .filter((media): media is XMediaEntity => media !== undefined);
       }
 
-      // Attach poll if present
       if (attachments?.poll_ids && attachments.poll_ids.length > 0) {
-        const pollId = attachments.poll_ids[0]; // Tweets can only have one poll
+        const pollId = attachments.poll_ids[0];
         if (pollId) {
           enrichedTweet.poll = pollMap.get(pollId);
         }
       }
 
-      // Attach place if present
       const geo = tweet.geo as { place_id?: string } | undefined;
       if (geo?.place_id) {
         enrichedTweet.place = placeMap.get(geo.place_id);
@@ -164,45 +162,5 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
       name: response.data.name,
     };
     return this._userInfo;
-  }
-
-  private async _handleRateLimitExceeded<T>(
-    response: Response,
-    endpoint: string,
-    method: "GET" | "POST",
-    body?: Record<string, unknown>,
-  ): Promise<T> {
-    const MINIMUM_DELAY_MS = 1000;
-    const LOG_INTERVAL_MS = 30000;
-
-    const resetTime = this._parseRateLimitResetTime(response);
-    const delay = Math.max(resetTime - Date.now(), MINIMUM_DELAY_MS);
-    const delaySeconds = Math.ceil(delay / 1000);
-
-    console.warn(`[X API] Rate limit exceeded. Waiting ${delaySeconds}s`);
-
-    const intervalId = setInterval(() => {
-      const remaining = Math.ceil((resetTime - Date.now()) / 1000);
-      console.info(`[X API] Still waiting. Estimated remaining time: ${remaining}s`);
-    }, LOG_INTERVAL_MS);
-
-    try {
-      await new Promise((resolve) => {
-        setTimeout(() => {
-          resolve(null);
-          clearInterval(intervalId);
-        }, delay);
-      });
-    } finally {
-      clearInterval(intervalId);
-    }
-
-    console.info("[X API] Retrying request");
-    return this._fetchFromX(endpoint, method, body);
-  }
-
-  private _parseRateLimitResetTime(response: Response): number {
-    const resetTimestamp = Number(response.headers.get("x-rate-limit-reset") || "0") * 1000;
-    return Number.isNaN(resetTimestamp) ? Date.now() + 5000 : resetTimestamp;
   }
 }

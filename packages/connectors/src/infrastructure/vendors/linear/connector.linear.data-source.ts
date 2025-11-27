@@ -1,5 +1,4 @@
-import { requestJson } from "@ait/core";
-import { AItError } from "@ait/core";
+import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
 import type { LinearIssueExternal } from "@ait/core";
 
 export interface IConnectorLinearDataSource {
@@ -22,6 +21,7 @@ interface LinearGraphQLResponse {
 export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
   private readonly apiUrl: string;
   private accessToken: string;
+  private _logger = getLogger();
 
   constructor(accessToken: string) {
     this.apiUrl = process.env.LINEAR_API_ENDPOINT || "https://api.linear.app/graphql";
@@ -91,20 +91,20 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
       if (!payload.data) {
         throw new AItError("LINEAR_NO_DATA", "Linear API returned no data");
       }
+
       const issues = payload.data.issues.nodes.map((issue: any) => ({
         ...issue,
         __type: "issue" as const,
       }));
 
-      const sortedIssues = issues.sort((a, b) => {
-        // Priority (higher priority first, 0 = urgent, 4 = low)
+      // Sort by priority and state
+      const sortedIssues = issues.sort((a: any, b: any) => {
         const priorityA = a.priority ?? 4;
         const priorityB = b.priority ?? 4;
         if (priorityA !== priorityB) {
-          return priorityA - priorityB; // Lower number = higher priority
+          return priorityA - priorityB;
         }
 
-        // State priority (In Progress > Todo > Done)
         const statePriority: Record<string, number> = {
           "In Progress": 1,
           Todo: 2,
@@ -118,7 +118,6 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
           return stateA - stateB;
         }
 
-        // Updated date (most recent first)
         return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
       });
 
@@ -128,6 +127,12 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
       };
     } catch (error: any) {
       if (error instanceof AItError) {
+        if (error.code === "HTTP_429" || error.meta?.status === 429) {
+          const headers = (error.meta?.headers as Record<string, string>) || {};
+          const reset = headers["x-ratelimit-reset"];
+          const resetTime = reset ? Number.parseInt(reset, 10) * 1000 : Date.now() + 60 * 60 * 1000;
+          throw new RateLimitError("linear", resetTime, "Linear rate limit exceeded");
+        }
         throw error;
       }
       throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);

@@ -39,10 +39,6 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(page);
   }
 
-  protected getIdBaseOffset(): number {
-    return 7_000_000_000_000;
-  }
-
   protected getLatestTimestamp(data: unknown[]): Date {
     const pages = data as NotionPageDataTarget[];
     if (pages.length === 0) return new Date();
@@ -50,6 +46,18 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
       const pageDate = page.updatedAt ? new Date(page.updatedAt) : new Date(0);
       return pageDate > max ? pageDate : max;
     }, new Date(0));
+  }
+
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.title", field_schema: "keyword" as const },
+      { field_name: "metadata.createdAt", field_schema: "datetime" as const },
+      { field_name: "metadata.lastEditedAt", field_schema: "datetime" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "page";
   }
 }
 

@@ -16,8 +16,6 @@ export {
   type LlmStructuredGenerationOptions,
 } from "./client/ai-sdk.client";
 
-export { getOllamaProvider } from "./client/ai-sdk-ollama.provider";
-
 export {
   getGenerationModel,
   getEmbeddingModel,
@@ -62,8 +60,24 @@ export {
 
 export { type IEmbeddingsService, EmbeddingsService } from "./services/embeddings/embeddings.service";
 
-export { type ChatMessage, type MessageRole, formatConversationHistory } from "./types/chat";
-export { type Tool, type ToolResult, createTool, createSuccessResult, createErrorResult } from "./types/tools";
+export {
+  OPTIMAL_CHUNK_SIZE,
+  OPTIMAL_CHUNK_OVERLAP,
+  type EmbeddingsConfig,
+} from "./services/embeddings/embeddings.config";
+
+export {
+  SparseVectorService,
+  getSparseVectorService,
+  resetSparseVectorService,
+  type ISparseVectorService,
+  type SparseVector,
+} from "./services/embeddings/sparse-vector.service";
+
+export type { ChatMessage, MessageRole } from "./types/chat";
+export { formatConversationHistory } from "./utils/chat.utils";
+export type { Tool, ToolResult } from "./types/tools";
+export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";
 export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
 
 export { convertToOllamaTools } from "./tools/tool.converter";
@@ -103,11 +117,51 @@ export {
   createTraceContext,
   recordSpan,
   recordGeneration,
+  createSpanWithTiming,
   updateTraceInput,
   endTraceWithOutput,
   endTraceWithError,
   shouldEnableTelemetry,
 } from "./telemetry/telemetry.middleware";
+
+export {
+  FastQueryAnalyzerService,
+  getFastQueryAnalyzer,
+  type FastQueryAnalysis,
+  type IFastQueryAnalyzerService,
+} from "./services/routing/fast-query-analyzer.service";
+
+export {
+  CollectionRouterService,
+  type ICollectionRouterService,
+  type CollectionRouterConfig,
+} from "./services/routing/collection-router.service";
+
+export {
+  QueryIntentService,
+  type IQueryIntentService,
+  type QueryIntent,
+} from "./services/routing/query-intent.service";
+
+// Ranking services
+export {
+  FastRerankService,
+  getFastRerankService,
+  resetFastRerankService,
+  type FastRerankConfig,
+} from "./services/ranking/fast-rerank.service";
+
+export {
+  RerankService,
+  type IRerankService,
+} from "./services/ranking/rerank.service";
+
+export {
+  CollectionRerankService,
+  type ICollectionRerankService,
+} from "./services/ranking/collection-rerank.service";
+
+export type { RerankingStageConfig } from "./stages/rag/reranking.stage";
 export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
 export { getAnalyticsService } from "./services/analytics/analytics.service";
@@ -134,3 +188,51 @@ export {
   resetCacheService,
   MemoryCacheProvider,
 } from "./services/cache/cache.service";
+
+// Insights services
+export { InsightsService, getInsightsService, resetInsightsService } from "./services/insights/insights.service";
+export {
+  AnomalyDetectorService,
+  getAnomalyDetectorService,
+  resetAnomalyDetectorService,
+} from "./services/insights/anomaly-detector.service";
+export {
+  CorrelationEngineService,
+  getCorrelationEngineService,
+  resetCorrelationEngineService,
+} from "./services/insights/correlation-engine.service";
+export {
+  GoalTrackingService,
+  getGoalTrackingService,
+  resetGoalTrackingService,
+} from "./services/insights/goal-tracking.service";
+export {
+  IntegrationRegistryService,
+  getIntegrationRegistryService,
+  resetIntegrationRegistryService,
+} from "./services/insights/integration-registry.service";
+export {
+  ActivityAggregatorService,
+  createActivityAggregatorService,
+  type IConnectorServiceFactory,
+} from "./services/insights/activity-aggregator.service";
+
+// Insights types
+export type {
+  InsightsData,
+  InsightSummary,
+  InsightCorrelation,
+  InsightAnomaly,
+  InsightRecommendation,
+  Insight,
+  InsightType,
+  GoalData,
+  GoalType,
+  GoalPeriod,
+  CreateGoalRequest,
+  UpdateGoalRequest,
+  ActivityData,
+  InsightsConfig,
+} from "./services/insights/insights.types";
+
+export { DEFAULT_INSIGHTS_CONFIG } from "./services/insights/insights.types";

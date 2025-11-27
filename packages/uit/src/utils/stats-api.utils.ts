@@ -86,6 +86,9 @@ export async function fetchFeedbackStats(windowMinutes = 60): Promise<FeedbackDa
 /**
  * Fetch system information
  */
+/**
+ * Fetch system information
+ */
 export async function fetchSystemInfo(): Promise<SystemData> {
   const res = await apiGet<SystemData>(`${API_BASE_URL}/observability/system`);
   if (!res.ok) throw new Error(res.error || "Failed to fetch system info");
@@ -93,67 +96,83 @@ export async function fetchSystemInfo(): Promise<SystemData> {
 }
 
 /**
- * Fetch all metrics in parallel
+ * Unified stats response type
+ */
+export interface UnifiedStatsResponse {
+  timestamp: string;
+  window: string;
+  health: HealthData;
+  performance: PerformanceData;
+  cache: CacheData;
+  cost: CostData;
+  errors: ErrorData;
+  quality: QualityData;
+  system: SystemData;
+}
+
+/**
+ * Fetch unified stats from single endpoint
+ * This is the preferred method - single source of truth
+ */
+export async function fetchUnifiedStats(windowMinutes = 60): Promise<UnifiedStatsResponse> {
+  const res = await apiGet<UnifiedStatsResponse>(`${API_BASE_URL}/observability/stats?window=${windowMinutes}`);
+  if (!res.ok) {
+    console.error("[Stats API] Unified stats fetch failed:", res.error);
+    throw new Error(res.error || "Failed to fetch unified stats");
+  }
+
+  return res.data as UnifiedStatsResponse;
+}
+
+/**
+ * Fetch all metrics using unified endpoint
+ * This replaces the previous parallel fetch approach for better performance
  */
 export async function fetchAllMetrics(windowMinutes = 60) {
   try {
-    console.log("[Stats API] Fetching all metrics with window:", windowMinutes);
-    const [health, performance, cache, cost, errors, quality, feedback, system] = await Promise.allSettled([
-      fetchHealthMetrics(),
-      fetchPerformanceMetrics(windowMinutes),
-      fetchCacheMetrics(windowMinutes),
-      fetchCostMetrics(),
-      fetchErrorMetrics(windowMinutes),
-      fetchQualityMetrics(windowMinutes),
-      fetchFeedbackStats(windowMinutes),
-      fetchSystemInfo(),
-    ]);
+    console.log("[Stats API] Fetching unified stats with window:", windowMinutes);
+    const unifiedStats = await fetchUnifiedStats(windowMinutes);
 
-    // Log rejected promises
-    if (health.status === "rejected") console.error("[Stats API] Health failed:", health.reason);
-    if (performance.status === "rejected") console.error("[Stats API] Performance failed:", performance.reason);
-    if (cache.status === "rejected") console.error("[Stats API] Cache failed:", cache.reason);
-    if (cost.status === "rejected") console.error("[Stats API] Cost failed:", cost.reason);
-    if (errors.status === "rejected") console.error("[Stats API] Errors failed:", errors.reason);
-    if (quality.status === "rejected") console.error("[Stats API] Quality failed:", quality.reason);
-    if (feedback.status === "rejected") console.error("[Stats API] Feedback failed:", feedback.reason);
-    if (system.status === "rejected") console.error("[Stats API] System failed:", system.reason);
-
+    // Transform unified response to match expected format
     const result = {
-      health: health.status === "fulfilled" ? health.value : null,
-      performance: performance.status === "fulfilled" ? performance.value : null,
-      cache: cache.status === "fulfilled" ? cache.value : null,
-      cost: cost.status === "fulfilled" ? cost.value : null,
-      errors: errors.status === "fulfilled" ? errors.value : null,
-      quality: quality.status === "fulfilled" ? quality.value : null,
-      feedback: feedback.status === "fulfilled" ? feedback.value : null,
-      system: system.status === "fulfilled" ? system.value : null,
-      fetchErrors: {
-        health: health.status === "rejected" ? health.reason : null,
-        performance: performance.status === "rejected" ? performance.reason : null,
-        cache: cache.status === "rejected" ? cache.reason : null,
-        cost: cost.status === "rejected" ? cost.reason : null,
-        errors: errors.status === "rejected" ? errors.reason : null,
-        quality: quality.status === "rejected" ? quality.reason : null,
-        feedback: feedback.status === "rejected" ? feedback.reason : null,
-        system: system.status === "rejected" ? system.reason : null,
-      },
+      health: unifiedStats.health,
+      performance: unifiedStats.performance,
+      cache: unifiedStats.cache,
+      cost: unifiedStats.cost,
+      errors: unifiedStats.errors,
+      quality: unifiedStats.quality,
+      feedback: null, // Feedback is now part of quality data
+      system: unifiedStats.system,
+      fetchErrors: {},
     };
 
-    console.log("[Stats API] Fetch complete. Results:", {
-      health: !!result.health,
-      performance: !!result.performance,
-      cache: !!result.cache,
-      cost: !!result.cost,
-      errors: !!result.errors,
-      quality: !!result.quality,
-      feedback: !!result.feedback,
-      system: !!result.system,
-    });
+    console.log("[Stats API] Unified stats fetch complete. All metrics loaded successfully.");
 
     return result;
   } catch (error) {
-    console.error("[Stats API] Failed to fetch all metrics:", error);
-    throw error;
+    console.error("[Stats API] Failed to fetch unified stats:", error);
+    // Return empty result on error
+    return {
+      health: null,
+      performance: null,
+      cache: null,
+      cost: null,
+      errors: null,
+      quality: null,
+      feedback: null,
+      system: null,
+      fetchErrors: {
+        unified: error instanceof Error ? error.message : "Unknown error",
+      },
+    };
   }
+}
+
+/**
+ * Fetch discovery stats
+ */
+export async function fetchDiscoveryStats(range: "week" | "month" | "year" = "week"): Promise<any> {
+  const res = await apiGet<any>(`${API_BASE_URL}/discovery/stats?range=${range}`);
+  if (!res.ok) throw new Error(res.error || "Failed to fetch discovery stats");
+  return res.data;
 }

@@ -1,6 +1,6 @@
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { FusionInput, FusionOutput } from "../../types/stages";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { WeightedRankFusionService } from "../../services/ranking/weighted-rank-fusion.service";
 import { DiversityService } from "../../services/filtering/diversity.service";
 
@@ -20,7 +20,12 @@ export class FusionStage implements IPipelineStage<FusionInput, FusionOutput> {
   }
 
   async execute(input: FusionInput, context: PipelineContext): Promise<FusionOutput> {
-    const startTime = Date.now();
+    const endSpan = context.traceContext
+      ? createSpanWithTiming(this.name, "fusion", context.traceContext, {
+          inputCount: input.documents.length,
+          collectionCount: input.routingResult.selectedCollections.length,
+        })
+      : null;
 
     const collectionResults = input.routingResult.selectedCollections.map((cw) => ({
       vendor: cw.vendor,
@@ -46,20 +51,11 @@ export class FusionStage implements IPipelineStage<FusionInput, FusionOutput> {
 
     fusedDocuments = this.diversityService.applyMMR(fusedDocuments, input.documents.length);
 
-    if (context.traceContext) {
-      recordSpan(
-        this.name,
-        "fusion",
-        context.traceContext,
-        {
-          inputCount: input.documents.length,
-          collectionCount: input.routingResult.selectedCollections.length,
-        },
-        {
-          outputCount: fusedDocuments.length,
-          duration: Date.now() - startTime,
-        },
-      );
+    if (endSpan) {
+      endSpan({
+        outputCount: fusedDocuments.length,
+        strategy: "weighted-rank-fusion",
+      });
     }
 
     return {

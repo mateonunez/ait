@@ -44,7 +44,7 @@ export function IntegrationsList() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className="w-full">
       <div className="container mx-auto max-w-7xl space-y-4">
         {/* Enabled Integrations */}
         {enabledIntegrations.length > 0 && (

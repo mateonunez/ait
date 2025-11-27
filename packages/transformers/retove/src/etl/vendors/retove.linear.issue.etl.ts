@@ -19,6 +19,19 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("linear"), retryOptions, embeddingsService);
   }
 
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.state", field_schema: "keyword" as const },
+      { field_name: "metadata.priority", field_schema: "integer" as const },
+      { field_name: "metadata.createdAt", field_schema: "datetime" as const },
+      { field_name: "metadata.teamId", field_schema: "keyword" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "issue";
+  }
+
   protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<LinearIssueDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(linearIssues) as any;
@@ -37,10 +50,6 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
 
   protected getPayload(issue: LinearIssueDataTarget): RetoveLinearIssueVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(issue);
-  }
-
-  protected getIdBaseOffset(): number {
-    return 6_000_000_000_000;
   }
 
   protected getLatestTimestamp(data: unknown[]): Date {

@@ -2,13 +2,16 @@ import { z } from "zod";
 
 import { getEmbeddingModel } from "../../config/models.config";
 
+export const OPTIMAL_CHUNK_SIZE = 1500;
+export const OPTIMAL_CHUNK_OVERLAP = 100;
+
 export const embeddingsConfigSchema = z.object({
   model: z.string(),
   expectedVectorSize: z.number().positive(),
-  chunkSize: z.number().positive().default(4096),
-  chunkOverlap: z.number().nonnegative().default(200),
+  chunkSize: z.number().positive().default(OPTIMAL_CHUNK_SIZE),
+  chunkOverlap: z.number().nonnegative().default(OPTIMAL_CHUNK_OVERLAP),
   concurrencyLimit: z.number().positive().default(1),
-  weightChunks: z.boolean().default(false),
+  weightChunks: z.boolean().default(true),
   normalizeText: z.boolean().default(true),
   preserveSentences: z.boolean().default(true),
   maxRetries: z.number().nonnegative().default(3),
@@ -22,10 +25,10 @@ const embeddingModelConfig = getEmbeddingModel();
 export const defaultEmbeddingsConfig: EmbeddingsConfig = {
   model: embeddingModelConfig.name,
   expectedVectorSize: embeddingModelConfig.vectorSize,
-  chunkSize: Number.parseInt(process.env.EMBEDDINGS_CHUNK_SIZE || "4096", 10),
-  chunkOverlap: Number.parseInt(process.env.EMBEDDINGS_CHUNK_OVERLAP || "200", 10),
+  chunkSize: Number.parseInt(process.env.EMBEDDINGS_CHUNK_SIZE || String(OPTIMAL_CHUNK_SIZE), 10),
+  chunkOverlap: Number.parseInt(process.env.EMBEDDINGS_CHUNK_OVERLAP || String(OPTIMAL_CHUNK_OVERLAP), 10),
   concurrencyLimit: Number.parseInt(process.env.EMBEDDINGS_CONCURRENCY_LIMIT || "1", 10),
-  weightChunks: process.env.EMBEDDINGS_WEIGHT_CHUNKS === "true",
+  weightChunks: process.env.EMBEDDINGS_WEIGHT_CHUNKS !== "false",
   normalizeText: process.env.EMBEDDINGS_NORMALIZE_TEXT !== "false",
   preserveSentences: process.env.EMBEDDINGS_PRESERVE_SENTENCES !== "false",
   maxRetries: Number.parseInt(process.env.EMBEDDINGS_MAX_RETRIES || "3", 10),

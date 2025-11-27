@@ -69,7 +69,6 @@ export default async function slackRoutes(fastify: FastifyInstance) {
 
         const messages = await slackService.fetchMessages();
         await slackService.connector.store.save(messages);
-
         reply.send({
           messages,
         });

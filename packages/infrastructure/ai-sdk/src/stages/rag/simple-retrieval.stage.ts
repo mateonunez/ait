@@ -1,7 +1,7 @@
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { QueryAnalysisOutput, ContextBuildingInput } from "../../types/stages";
 import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { getCollectionByEntityType } from "../../config/collections.config";
 import type { CollectionVendor } from "../../config/collections.config";
 import type { EntityType } from "@ait/core";
@@ -22,9 +22,15 @@ export class SimpleRetrievalStage implements IPipelineStage<QueryAnalysisOutput,
   }
 
   async execute(input: QueryAnalysisOutput, context: PipelineContext): Promise<ContextBuildingInput> {
-    const startTime = Date.now();
-
     const selectedVendor = this.selectCollectionVendor(input.intent.entityTypes || []);
+
+    const endSpan = context.traceContext
+      ? createSpanWithTiming(this.name, "retrieval", context.traceContext, {
+          query: input.query.slice(0, 100),
+          vendor: selectedVendor,
+          fastPath: true,
+        })
+      : null;
 
     console.info("Simple retrieval using direct search", {
       vendor: selectedVendor,
@@ -41,29 +47,16 @@ export class SimpleRetrievalStage implements IPipelineStage<QueryAnalysisOutput,
 
     const documents = searchResult.results.flatMap((result) => result.documents);
 
-    const totalDuration = Date.now() - startTime;
-
     console.info("Simple retrieval completed", {
       vendor: selectedVendor,
       documentsFound: documents.length,
-      duration: totalDuration,
     });
 
-    if (context.traceContext) {
-      recordSpan(
-        this.name,
-        "retrieval",
-        context.traceContext,
-        {
-          query: input.query.slice(0, 100),
-          vendor: selectedVendor,
-          fastPath: true,
-        },
-        {
-          documentCount: documents.length,
-          duration: totalDuration,
-        },
-      );
+    if (endSpan) {
+      endSpan({
+        documentCount: documents.length,
+        vendor: selectedVendor,
+      });
     }
 
     return {
@@ -83,7 +76,7 @@ export class SimpleRetrievalStage implements IPipelineStage<QueryAnalysisOutput,
       documents,
       retrievalMetadata: {
         queriesExecuted: 1,
-        totalDuration,
+        totalDuration: 0, // Duration tracked by telemetry
         documentsPerCollection: {
           [selectedVendor]: documents.length,
         },

@@ -1,37 +1,71 @@
-import { requestJson, AItError, getLogger } from "@ait/core";
+import { requestJson, AItError, getLogger, RateLimitError } from "@ait/core";
 import type { SlackMessageExternal, SlackApiResponse, SlackUser, SlackConversation } from "@ait/core";
 
 export interface IConnectorSlackDataSource {
   fetchMessages(cursor?: string): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }>;
 }
 
-// Internal API response types - these are implementation-specific and stay here
 interface SlackConversationsListResponse extends SlackApiResponse<SlackConversation[]> {
   channels: SlackConversation[];
-  response_metadata?: {
-    next_cursor?: string;
-  };
+  response_metadata?: { next_cursor?: string };
 }
 
-// Internal API response type - uses SlackMessageExternal for the raw API response
 interface SlackConversationsHistoryResponse extends SlackApiResponse<SlackMessageExternal[]> {
   messages: SlackMessageExternal[];
   has_more: boolean;
-  response_metadata?: {
-    next_cursor?: string;
-  };
+  is_limited?: boolean;
+  response_metadata?: { next_cursor?: string };
 }
 
-// Internal API response types
 interface SlackUsersListResponse extends SlackApiResponse<SlackUser[]> {
   members: SlackUser[];
-  response_metadata?: {
-    next_cursor?: string;
-  };
+  response_metadata?: { next_cursor?: string };
 }
 
-interface SlackUsersInfoResponse extends SlackApiResponse<SlackUser> {
-  user: SlackUser;
+interface SlackThreadRepliesResponse extends SlackApiResponse<SlackMessageExternal[]> {
+  messages: SlackMessageExternal[];
+  has_more: boolean;
+  is_limited?: boolean;
+  response_metadata?: { next_cursor?: string };
+}
+
+const SYSTEM_SUBTYPES = new Set([
+  "channel_join",
+  "channel_leave",
+  "channel_topic",
+  "channel_purpose",
+  "channel_name",
+  "channel_archive",
+  "channel_unarchive",
+  "pinned_item",
+  "unpinned_item",
+  "group_join",
+  "group_leave",
+  "group_topic",
+  "group_purpose",
+  "group_name",
+  "group_archive",
+  "group_unarchive",
+]);
+
+function isSystemMessage(msg: any): boolean {
+  return msg.subtype && SYSTEM_SUBTYPES.has(msg.subtype);
+}
+
+function hasContent(msg: any): boolean {
+  return !!(
+    msg.text ||
+    (msg.files && msg.files.length > 0) ||
+    (msg.attachments && msg.attachments.length > 0) ||
+    (msg.blocks && msg.blocks.length > 0)
+  );
+}
+
+function shouldIncludeMessage(msg: any): boolean {
+  if (!msg.ts) return false;
+  if (isSystemMessage(msg)) return false;
+  if (!hasContent(msg)) return false;
+  return true;
 }
 
 export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
@@ -39,38 +73,39 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
   private accessToken: string;
   private userCache: Map<string, SlackUser> = new Map();
   private conversationCache: SlackConversation[] | null = null;
+  private conversationCacheTimestamp = 0;
   private workspaceUrl?: string;
   private _logger = getLogger();
+
+  private static readonly CONVERSATION_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
   constructor(accessToken: string) {
     this.apiUrl = process.env.SLACK_API_ENDPOINT || "https://slack.com/api";
     this.accessToken = accessToken;
   }
 
-  /**
-   * Fetches all workspace users at once and caches them
-   * More efficient than fetching users one-by-one
-   * See: https://api.slack.com/methods/users.list
-   */
+  public invalidateCache(): void {
+    this.conversationCache = null;
+    this.conversationCacheTimestamp = 0;
+    this._logger.debug("[SlackDataSource] Cache invalidated");
+  }
+
+  private isCacheValid(): boolean {
+    if (!this.conversationCache) return false;
+    return Date.now() - this.conversationCacheTimestamp < ConnectorSlackDataSource.CONVERSATION_CACHE_TTL_MS;
+  }
+
   private async fetchAllUsers(): Promise<void> {
-    if (this.userCache.size > 0) {
-      return; // Already fetched
-    }
+    if (this.userCache.size > 0) return;
 
     let cursor: string | undefined;
 
     try {
       do {
-        const url = `${this.apiUrl}/users.list`;
-        const params = new URLSearchParams({
-          limit: "200", // Max limit per Slack API
-        });
+        const params = new URLSearchParams({ limit: "200" });
+        if (cursor) params.append("cursor", cursor);
 
-        if (cursor) {
-          params.append("cursor", cursor);
-        }
-
-        const result = await requestJson<SlackUsersListResponse>(`${url}?${params.toString()}`, {
+        const result = await requestJson<SlackUsersListResponse>(`${this.apiUrl}/users.list?${params.toString()}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${this.accessToken}`,
@@ -79,18 +114,15 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
         });
 
         if (!result.ok) {
-          console.warn("Failed to fetch users list:", result.error);
+          this._logger.warn("Failed to fetch users list", { error: result.error });
           break;
         }
 
         const response = result.value.data;
-        if (!response.ok || !response.members) {
-          break;
-        }
+        if (!response.ok || !response.members) break;
 
-        // Cache all users except deleted and bots
         for (const user of response.members) {
-          if (!user.deleted && !user.is_bot) {
+          if (!user.deleted) {
             this.userCache.set(user.id, user);
           }
         }
@@ -98,31 +130,21 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
         cursor = response.response_metadata?.next_cursor;
       } while (cursor);
 
-      console.log(`Cached ${this.userCache.size} workspace users`);
+      this._logger.debug(`Cached ${this.userCache.size} workspace users`);
     } catch (error: any) {
-      console.warn("Error fetching users list:", error.message);
+      this._logger.warn("Error fetching users list", { error: error.message });
     }
   }
 
-  /**
-   * Gets user from cache or returns null
-   */
   private _getUserFromCache(userId: string): SlackUser | null {
     return this.userCache.get(userId) || null;
   }
 
-  /**
-   * Gets workspace URL for building permalinks
-   * See: https://api.slack.com/methods/team.info
-   */
   private async _getWorkspaceUrl(): Promise<string> {
-    if (this.workspaceUrl) {
-      return this.workspaceUrl;
-    }
+    if (this.workspaceUrl) return this.workspaceUrl;
 
     try {
-      const url = `${this.apiUrl}/team.info`;
-      const result = await requestJson<{ ok: boolean; team?: { url?: string } }>(`${url}`, {
+      const result = await requestJson<{ ok: boolean; team?: { url?: string } }>(`${this.apiUrl}/team.info`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${this.accessToken}`,
@@ -135,27 +157,19 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
         return this.workspaceUrl;
       }
     } catch (error: any) {
-      console.warn("Error fetching workspace URL:", error.message);
+      this._logger.warn("Error fetching workspace URL", { error: error.message });
     }
 
-    return "https://slack.com"; // Fallback
+    return "https://slack.com";
   }
 
-  /**
-   * Builds a permalink to a Slack message
-   * Format: https://workspace.slack.com/archives/CHANNEL_ID/pTIMESTAMP
-   */
   private async _buildPermalink(channelId: string, ts: string): Promise<string> {
     const workspaceUrl = await this._getWorkspaceUrl();
-    const timestamp = ts.replace(".", "");
-    return `${workspaceUrl}/archives/${channelId}/p${timestamp}`;
+    return `${workspaceUrl}/archives/${channelId}/p${ts.replace(".", "")}`;
   }
 
-  /**
-   * Fetches all conversations (channels, DMs, group DMs) accessible to the app
-   */
   private async fetchConversations(): Promise<SlackConversation[]> {
-    if (this.conversationCache) {
+    if (this.isCacheValid() && this.conversationCache) {
       return this.conversationCache;
     }
 
@@ -164,243 +178,354 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
 
     try {
       do {
-        const url = `${this.apiUrl}/conversations.list`;
         const params = new URLSearchParams({
           exclude_archived: "true",
           types: "public_channel,private_channel,im,mpim",
           limit: "200",
         });
+        if (cursor) params.append("cursor", cursor);
 
-        if (cursor) {
-          params.append("cursor", cursor);
-        }
-
-        const result = await requestJson<SlackConversationsListResponse>(`${url}?${params.toString()}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/x-www-form-urlencoded",
+        const result = await requestJson<SlackConversationsListResponse>(
+          `${this.apiUrl}/conversations.list?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
           },
-        });
+        );
 
-        if (!result.ok) {
-          throw result.error;
-        }
+        if (!result.ok) throw result.error;
 
         const response = result.value.data;
         if (!response.ok) {
           throw new AItError("SLACK_API_ERROR", response.error || "Failed to fetch conversations");
         }
 
-        if (response.channels && Array.isArray(response.channels)) {
+        if (response.channels?.length) {
           allConversations.push(...response.channels);
         }
 
         cursor = response.response_metadata?.next_cursor;
       } while (cursor);
 
-      this.conversationCache = allConversations.sort((a, b) => a.id.localeCompare(b.id));
+      // Sort by latest activity
+      const convWithLatest: (SlackConversation & { latestTs?: number })[] = [];
+      for (const conv of allConversations) {
+        let latestTs = 0;
+        try {
+          const historyResult = await requestJson<SlackConversationsHistoryResponse>(
+            `${this.apiUrl}/conversations.history?channel=${conv.id}&limit=1&include_all_metadata=true`,
+            {
+              method: "GET",
+              headers: {
+                Authorization: `Bearer ${this.accessToken}`,
+                "Content-Type": "application/x-www-form-urlencoded",
+              },
+            },
+          );
+
+          if (historyResult.ok) {
+            const response = historyResult.value.data;
+            if (response.ok && response.messages?.[0]) {
+              latestTs = Number.parseFloat(response.messages[0].ts || "0");
+            }
+          }
+        } catch {
+          // Ignore errors for individual channels
+        }
+
+        convWithLatest.push({ ...conv, latestTs });
+      }
+
+      convWithLatest.sort((a, b) => (b.latestTs || 0) - (a.latestTs || 0));
+
+      this._logger.info(`[SlackDataSource] Found ${convWithLatest.length} conversations sorted by activity`);
+
+      this.conversationCache = convWithLatest.map(({ latestTs, ...c }) => c);
+      this.conversationCacheTimestamp = Date.now();
+
       return this.conversationCache;
     } catch (error: any) {
-      if (error instanceof AItError) {
-        throw error;
-      }
+      if (error instanceof AItError) throw error;
       throw new AItError("NETWORK", `Network error fetching conversations: ${error.message}`, undefined, error);
     }
   }
 
-  /**
-   * Enriches messages with user information and permalinks
-   */
   private async _enrichMessages(messages: SlackMessageExternal[]): Promise<SlackMessageExternal[]> {
-    const enrichedMessages: SlackMessageExternal[] = [];
+    const enriched: SlackMessageExternal[] = [];
 
     for (const message of messages) {
-      if (!message.channel) {
-        console.warn("Skipping message without channel:", message.ts);
-        continue;
-      }
+      if (!message.channel) continue;
 
       let userName: string | null = null;
-
       if (message.user) {
         const userInfo = this._getUserFromCache(message.user);
         userName = userInfo?.profile?.real_name || userInfo?.real_name || userInfo?.name || null;
+      } else if (message.bot_id) {
+        const botInfo = this._getUserFromCache(message.bot_id);
+        userName = botInfo?.profile?.real_name || botInfo?.real_name || botInfo?.name || "Bot";
       }
 
-      // Build permalink
       const permalink = await this._buildPermalink(message.channel, message.ts);
-
-      enrichedMessages.push({
-        ...message,
-        userName,
-        permalink,
-      });
+      enriched.push({ ...message, userName, permalink });
     }
 
-    return enrichedMessages;
+    return enriched;
   }
 
-  /**
-   * Fetches message history for a specific conversation
-   */
-  /**
-   * Fetches message history for a specific conversation (single page)
-   */
+  private async fetchThreadReplies(channelId: string, threadTs: string): Promise<SlackMessageExternal[]> {
+    const allReplies: SlackMessageExternal[] = [];
+    let cursor: string | undefined;
+
+    try {
+      do {
+        const params = new URLSearchParams({ channel: channelId, ts: threadTs, limit: "15" });
+        if (cursor) params.append("cursor", cursor);
+
+        const result = await requestJson<SlackThreadRepliesResponse>(
+          `${this.apiUrl}/conversations.replies?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+          },
+        );
+
+        if (!result.ok || !result.value.data.ok) break;
+
+        const response = result.value.data;
+        if (response.messages?.length) {
+          const replies = response.messages.filter((msg) => msg.ts !== threadTs);
+          allReplies.push(...replies);
+        }
+
+        cursor = response.response_metadata?.next_cursor;
+      } while (cursor);
+
+      return allReplies;
+    } catch {
+      return [];
+    }
+  }
+
   private async fetchConversationHistoryPage(
     channelId: string,
     channelName: string,
     cursor?: string,
+    oldest?: string,
   ): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }> {
-    const oldest = Math.floor(Date.now() / 1000) - 90 * 24 * 60 * 60; // Last 90 days
-
     try {
-      const url = `${this.apiUrl}/conversations.history`;
       const params = new URLSearchParams({
         channel: channelId,
-        limit: "50", // Batch size
-        oldest: oldest.toString(),
+        limit: "15",
         include_all_metadata: "true",
       });
 
-      if (cursor) {
-        params.append("cursor", cursor);
-      }
+      if (cursor) params.append("cursor", cursor);
+      if (oldest && !cursor) params.append("oldest", oldest);
 
-      const result = await requestJson<SlackConversationsHistoryResponse>(`${url}?${params.toString()}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+      const result = await requestJson<SlackConversationsHistoryResponse>(
+        `${this.apiUrl}/conversations.history?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
         },
-      });
+      );
 
-      if (!result.ok) {
-        throw result.error;
-      }
+      if (!result.ok) throw result.error;
 
       const response = result.value.data;
       if (!response.ok) {
-        // Some channels might not be accessible, skip them gracefully
-        if (
-          response.error === "channel_not_found" ||
-          response.error === "not_authed" ||
-          response.error === "not_in_channel"
-        ) {
-          console.debug(`Skipping channel ${channelName} (${channelId}): ${response.error}`);
+        const skipErrors = ["channel_not_found", "not_authed", "not_in_channel", "missing_scope"];
+        if (skipErrors.includes(response.error || "")) {
+          this._logger.info(`Skipping ${channelName}: ${response.error}`);
           return { messages: [], nextCursor: undefined };
         }
         throw new AItError("SLACK_API_ERROR", response.error || "Failed to fetch conversation history");
       }
 
+      if (response.is_limited) {
+        this._logger.warn(`${channelName}: History limited by free plan (90 days max)`);
+      }
+
       let messages: SlackMessageExternal[] = [];
-      if (response.messages && Array.isArray(response.messages)) {
-        messages = response.messages
-          .filter((msg) => {
-            return msg.text && msg.ts && !msg.bot_id && !msg.subtype;
-          })
-          .map(
-            (msg): SlackMessageExternal => ({
-              ...msg,
+
+      if (response.messages?.length) {
+        messages = response.messages.filter(shouldIncludeMessage).map(
+          (msg): SlackMessageExternal => ({
+            ...msg,
+            channel: channelId,
+            channelName,
+            reply_count: msg.reply_count || 0,
+            files: msg.files || [],
+            attachments: msg.attachments || [],
+            reactions: msg.reactions || [],
+            pinned_to: msg.pinned_to || [],
+            __type: "message" as const,
+          }),
+        );
+      }
+
+      // Fetch thread replies
+      const threadParents = messages.filter(
+        (msg) => msg.thread_ts && msg.ts === msg.thread_ts && msg.reply_count && msg.reply_count > 0,
+      );
+
+      if (threadParents.length > 0) {
+        const replyPromises = threadParents.map(async (parent) => {
+          const rawReplies = await this.fetchThreadReplies(channelId, parent.thread_ts!);
+          return rawReplies.filter(shouldIncludeMessage).map(
+            (reply): SlackMessageExternal => ({
+              ...reply,
               channel: channelId,
-              channelName: channelName,
-              reply_count: msg.reply_count || 0,
-              files: msg.files || [],
-              attachments: msg.attachments || [],
-              reactions: msg.reactions || [],
-              pinned_to: msg.pinned_to || [],
+              channelName,
+              reply_count: reply.reply_count || 0,
+              files: reply.files || [],
+              attachments: reply.attachments || [],
+              reactions: reply.reactions || [],
+              pinned_to: reply.pinned_to || [],
               __type: "message" as const,
             }),
           );
+        });
+
+        const allReplies = await Promise.all(replyPromises);
+        for (const replyBatch of allReplies) {
+          messages.push(...replyBatch);
+        }
       }
 
-      const enrichedMessages = await this._enrichMessages(messages);
+      // Sort by timestamp descending
+      messages.sort((a, b) => Number.parseFloat(b.ts) - Number.parseFloat(a.ts));
 
-      return {
-        messages: enrichedMessages,
-        nextCursor:
-          response.has_more && response.response_metadata?.next_cursor
-            ? response.response_metadata.next_cursor
-            : undefined,
-      };
+      const enriched = await this._enrichMessages(messages);
+      const nextCursor = response.has_more ? response.response_metadata?.next_cursor : undefined;
+
+      this._logger.debug(`[SlackDataSource] ${channelName}: ${enriched.length} messages`);
+
+      return { messages: enriched, nextCursor };
     } catch (error: any) {
-      if (error instanceof AItError) {
-        throw error;
-      }
-      throw new AItError(
-        "NETWORK",
-        `Network error fetching history for ${channelName}: ${error.message}`,
-        undefined,
-        error,
-      );
+      if (error instanceof AItError) throw error;
+      throw new AItError("NETWORK", `Network error fetching ${channelName}: ${error.message}`, undefined, error);
     }
   }
 
-  /**
-   * Fetches all messages from all accessible conversations
-   */
-  /**
-   * Fetches messages with pagination across all conversations
-   */
   async fetchMessages(cursorStr?: string): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }> {
     try {
       await this.fetchAllUsers();
-      const conversations = await this.fetchConversations();
 
       let channelIndex = 0;
       let messageCursor: string | undefined;
+      let fetchMode: "recent" | "paginate" = "recent";
+      let oldestTimestamp: string | undefined;
 
       if (cursorStr) {
         try {
           const parsed = JSON.parse(cursorStr);
           channelIndex = parsed.channelIndex || 0;
           messageCursor = parsed.messageCursor;
+          fetchMode = parsed.fetchMode || "paginate";
+          oldestTimestamp = parsed.oldestTimestamp;
         } catch {
-          // Invalid cursor, start from beginning
-          this._logger.warn("Invalid cursor, starting from beginning");
+          this._logger.warn("Invalid cursor, starting fresh");
+          this.invalidateCache();
         }
+      } else {
+        this.invalidateCache();
+        oldestTimestamp = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000).toString();
+        fetchMode = "recent";
+        this._logger.info(
+          `[SlackDataSource] Fresh fetch since ${new Date(Number(oldestTimestamp) * 1000).toISOString()}`,
+        );
       }
 
-      while (channelIndex < conversations.length) {
-        const conversation = conversations[channelIndex];
+      const conversations = await this.fetchConversations();
+
+      if (channelIndex >= conversations.length) {
+        this.invalidateCache();
+        channelIndex = 0;
+        messageCursor = undefined;
+        oldestTimestamp = Math.floor((Date.now() - 7 * 24 * 60 * 60 * 1000) / 1000).toString();
+        fetchMode = "recent";
+      }
+
+      let batchMessages: SlackMessageExternal[] = [];
+      let currentChannelIndex = channelIndex;
+      let currentMessageCursor = messageCursor;
+
+      while (currentChannelIndex < conversations.length && batchMessages.length === 0) {
+        const conversation = conversations[currentChannelIndex];
         if (!conversation) {
-          channelIndex++;
+          currentChannelIndex++;
           continue;
         }
-        const channelName = conversation.name || conversation.id;
 
-        // Check if we should process this channel
-        if (conversation.is_im || conversation.is_mpim || conversation.is_member !== false) {
+        const channelName = conversation.name || conversation.id;
+        const isChannel = !conversation.is_im && !conversation.is_mpim;
+        const shouldProcess =
+          conversation.is_im ||
+          conversation.is_mpim ||
+          (isChannel && (!conversation.is_private || conversation.is_member !== false));
+
+        if (shouldProcess) {
+          const effectiveOldest = fetchMode === "recent" && !currentMessageCursor ? oldestTimestamp : undefined;
+
           const { messages, nextCursor } = await this.fetchConversationHistoryPage(
             conversation.id,
             channelName,
-            messageCursor,
+            currentMessageCursor,
+            effectiveOldest,
           );
 
-          if (messages.length > 0 || nextCursor) {
-            // We found messages or there are more messages in this channel
-            const newCursor = nextCursor
-              ? JSON.stringify({ channelIndex, messageCursor: nextCursor })
-              : JSON.stringify({ channelIndex: channelIndex + 1 }); // Move to next channel next time
+          batchMessages = messages;
+          currentMessageCursor = nextCursor;
 
-            // Sort by timestamp (most recent first) within the batch
-            const sortedMessages = messages.sort((a, b) => Number.parseFloat(b.ts) - Number.parseFloat(a.ts));
+          if (batchMessages.length > 0) {
+            let newCursor: string | undefined;
 
-            return {
-              messages: sortedMessages,
-              nextCursor: newCursor,
-            };
+            if (currentMessageCursor) {
+              newCursor = JSON.stringify({
+                channelIndex: currentChannelIndex,
+                messageCursor: currentMessageCursor,
+                fetchMode: "paginate",
+                oldestTimestamp,
+              });
+            } else if (currentChannelIndex + 1 < conversations.length) {
+              newCursor = JSON.stringify({
+                channelIndex: currentChannelIndex + 1,
+                fetchMode,
+                oldestTimestamp,
+              });
+            }
+
+            this._logger.info(`[SlackDataSource] Returning ${batchMessages.length} messages from ${channelName}`);
+            return { messages: batchMessages, nextCursor: newCursor };
           }
+
+          if (currentMessageCursor) continue;
         }
 
-        // Move to next channel immediately if current one is skipped or empty
-        channelIndex++;
-        messageCursor = undefined;
+        currentChannelIndex++;
+        currentMessageCursor = undefined;
       }
 
+      this._logger.debug("[SlackDataSource] No messages found, exhausted all channels");
       return { messages: [], nextCursor: undefined };
     } catch (error: any) {
       if (error instanceof AItError) {
+        if (error.code === "HTTP_429" || error.meta?.status === 429) {
+          const headers = (error.meta?.headers as Record<string, string>) || {};
+          const retryAfter = headers["retry-after"];
+          const resetTime = retryAfter ? Date.now() + Number.parseInt(retryAfter, 10) * 1000 : Date.now() + 60 * 1000;
+          throw new RateLimitError("slack", resetTime, "Slack rate limit exceeded");
+        }
         throw error;
       }
       throw new AItError("NETWORK", `Network error fetching messages: ${error.message}`, undefined, error);

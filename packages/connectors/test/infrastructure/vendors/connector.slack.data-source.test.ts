@@ -118,7 +118,8 @@ describe("ConnectorSlackDataSource", () => {
             "Content-Type": "application/x-www-form-urlencoded",
           },
         })
-        .reply(200, mockHistoryResponse);
+        .reply(200, mockHistoryResponse)
+        .persist();
 
       const result = await dataSource.fetchMessages();
 
@@ -214,20 +215,14 @@ describe("ConnectorSlackDataSource", () => {
         })
         .reply(200, mockConversationsPage2);
 
-      // History requests (will match in order for each channel)
+      // History requests - use persist() as fetchConversations also calls history for sorting
       mockClient
         .intercept({
           path: (path) => path.startsWith("/api/conversations.history"),
           method: "GET",
         })
-        .reply(200, mockHistoryResponse);
-
-      mockClient
-        .intercept({
-          path: (path) => path.startsWith("/api/conversations.history"),
-          method: "GET",
-        })
-        .reply(200, mockHistoryResponse);
+        .reply(200, mockHistoryResponse)
+        .persist();
 
       const result = await dataSource.fetchMessages();
 
@@ -323,13 +318,16 @@ describe("ConnectorSlackDataSource", () => {
           path: (path) => path.startsWith("/api/conversations.history"),
           method: "GET",
         })
-        .reply(200, mockHistoryResponse);
+        .reply(200, mockHistoryResponse)
+        .persist();
 
       const result = await dataSource.fetchMessages();
 
-      // Should only include the valid message
-      assert.equal(result.messages.length, 1);
-      assert.equal(result.messages[0]?.text, "Valid message");
+      // Should filter out system messages (channel_join) and empty messages
+      // Bot messages are NOT filtered by default since they may contain valuable content
+      assert.equal(result.messages.length, 2);
+      assert.ok(result.messages.some((m) => m.text === "Valid message"));
+      assert.ok(result.messages.some((m) => m.text === "Bot message"));
     });
 
     it("should handle authentication errors", async () => {
@@ -405,7 +403,8 @@ describe("ConnectorSlackDataSource", () => {
           path: (path) => path.startsWith("/api/conversations.history"),
           method: "GET",
         })
-        .reply(200, { ok: false, error: "channel_not_found" });
+        .reply(200, { ok: false, error: "channel_not_found" })
+        .persist();
 
       const result = await dataSource.fetchMessages();
 
@@ -432,10 +431,10 @@ describe("ConnectorSlackDataSource", () => {
             id: "channel-1",
             name: "general",
             is_archived: false,
-            is_private: false,
+            is_private: true, // Private channel - is_member check applies
             is_im: false,
             is_mpim: false,
-            is_member: false, // Bot is not a member
+            is_member: false, // Bot is not a member - should be skipped
           },
           {
             id: "channel-2",
@@ -491,7 +490,8 @@ describe("ConnectorSlackDataSource", () => {
           path: (path) => path.startsWith("/api/conversations.history"),
           method: "GET",
         })
-        .reply(200, mockHistoryResponse);
+        .reply(200, mockHistoryResponse)
+        .persist();
 
       const result = await dataSource.fetchMessages();
 
@@ -575,7 +575,8 @@ describe("ConnectorSlackDataSource", () => {
           path: (path) => path.startsWith("/api/conversations.history"),
           method: "GET",
         })
-        .reply(200, mockHistoryResponse);
+        .reply(200, mockHistoryResponse)
+        .persist();
 
       const result = await dataSource.fetchMessages();
 

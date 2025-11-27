@@ -1,8 +1,5 @@
-import { createReasoningStep, REASONING_TYPE, type ReasoningStep, type ReasoningType } from "../../types";
-
-/**
- * Service for extracting chain-of-thought reasoning from model responses
- */
+import { createReasoningStep } from "../../utils/metadata.utils";
+import { REASONING_TYPE, type ReasoningStep, type ReasoningType } from "../../types";
 
 export interface IReasoningExtractionService {
   extractReasoning(text: string): ReasoningStep[];
@@ -53,30 +50,22 @@ export class ReasoningExtractionService implements IReasoningExtractionService {
     [/(?:reflexion|revis|evalú|conclu)/i, REASONING_TYPE.REFLECTION],
   ]);
 
-  /**
-   * Detect if text contains reasoning patterns
-   */
   detectReasoningPatterns(text: string): boolean {
     return this.reasoningPatterns.some((pattern) => pattern.test(text));
   }
 
-  /**
-   * Extract reasoning steps from text
-   */
   extractReasoning(text: string): ReasoningStep[] {
     const steps: ReasoningStep[] = [];
 
-    // Split by common step indicators
     const sections = this.splitIntoSections(text);
 
     sections.forEach((section, index) => {
       const trimmed = section.trim();
-      if (trimmed.length < 10) return; // Skip very short sections
+      if (trimmed.length < 10) return;
 
       const reasoningType = this.detectReasoningType(trimmed);
       const step = createReasoningStep(trimmed, reasoningType, index);
 
-      // Add confidence based on pattern matching
       step.confidence = this.calculateConfidence(trimmed);
 
       steps.push(step);
@@ -85,11 +74,7 @@ export class ReasoningExtractionService implements IReasoningExtractionService {
     return steps;
   }
 
-  /**
-   * Split text into reasoning sections
-   */
   private splitIntoSections(text: string): string[] {
-    // Split by common step markers (multi-language)
     const stepMarkers = [
       // English markers
       /\n(?:Step \d+:|Phase \d+:|\d+\.|First,|Second,|Third,|Finally,|Then,|Next,)/gi,
@@ -117,12 +102,10 @@ export class ReasoningExtractionService implements IReasoningExtractionService {
       sections = newSections;
     }
 
-    // If no clear sections, try splitting by paragraphs
     if (sections.length === 1 && text.includes("\n\n")) {
       sections = text.split("\n\n").filter((s) => s.trim().length > 0);
     }
 
-    // If still no sections, try splitting by single newlines with reasoning indicators
     if (sections.length === 1) {
       const lines = text.split("\n");
       if (lines.length > 2) {
@@ -158,9 +141,6 @@ export class ReasoningExtractionService implements IReasoningExtractionService {
     return sections.length > 1 ? sections : [text];
   }
 
-  /**
-   * Detect the type of reasoning step
-   */
   private detectReasoningType(text: string): ReasoningType {
     for (const [pattern, type] of this.reasoningMarkers) {
       if (pattern.test(text)) {
@@ -170,9 +150,6 @@ export class ReasoningExtractionService implements IReasoningExtractionService {
     return REASONING_TYPE.ANALYSIS;
   }
 
-  /**
-   * Calculate confidence score for reasoning step
-   */
   private calculateConfidence(text: string): number {
     let score = 0.5; // Base confidence
 

@@ -6,29 +6,37 @@ export class ETLSlackMessageDescriptor implements IETLEmbeddingDescriptor<SlackM
   public getEmbeddingText(message: SlackMessageDataTarget): string {
     const parts: string[] = [];
 
+    // Message identity
+    parts.push("Slack message");
+
+    // Add user context if available
+    if (message.userName) {
+      const sanitizedUser = TextSanitizer.sanitize(message.userName);
+      parts.push(`from ${sanitizedUser}`);
+    }
+
     // Channel name provides context
     if (message.channelName) {
       const sanitizedChannel = TextSanitizer.sanitize(message.channelName);
-      parts.push(`Channel: ${sanitizedChannel}`);
+      parts.push(`in #${sanitizedChannel}`);
     }
 
     // Message text is the main content
     if (message.text) {
       const sanitizedText = TextSanitizer.sanitize(message.text);
-      // Limit text length to avoid overwhelming the embedding
       const textPreview = sanitizedText.length > 500 ? `${sanitizedText.slice(0, 500)}...` : sanitizedText;
-      parts.push(textPreview);
-    }
-
-    // Add user context if available
-    if (message.userName) {
-      const sanitizedUser = TextSanitizer.sanitize(message.userName);
-      parts.push(`by ${sanitizedUser}`);
+      parts.push(`"${textPreview}"`);
     }
 
     // Add thread context if message is threaded
     if (message.threadTs) {
-      parts.push("thread reply");
+      parts.push("(thread reply)");
+    }
+
+    // Add timestamp if available - ts is the Slack timestamp
+    if (message.ts) {
+      const date = new Date(Number(message.ts.split(".")[0]) * 1000);
+      parts.push(`posted ${date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`);
     }
 
     return parts.join(", ");

@@ -20,42 +20,21 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
     const seconds = Math.floor((track.durationMs % 60000) / 1000);
     const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
-    let temporalContext = "";
-    if (track.addedAt) {
-      const now = new Date();
-      const addedDate = new Date(track.addedAt);
-      const daysDiff = Math.floor((now.getTime() - addedDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff < 7) {
-        temporalContext = "recently added";
-      } else if (daysDiff < 30) {
-        temporalContext = `added ${Math.floor(daysDiff / 7)} weeks ago`;
-      } else if (daysDiff < 365) {
-        temporalContext = `discovered ${Math.floor(daysDiff / 30)} months ago`;
-      } else {
-        temporalContext = `added ${Math.floor(daysDiff / 365)} years ago`;
-      }
-    }
-
     const parts = [
-      temporalContext ? `I ${temporalContext}` : "I listen to",
-      `"${track.name}" by ${primaryArtist}`,
-      durationStr ? `a ${durationStr} ${albumType || "track"}` : null,
-      albumName
-        ? `from the ${releaseDate ? (releaseDate as string).split("-")[0] : ""} ${albumType || "album"} "${albumName}"`
-        : null,
-      releaseDate
-        ? `released on ${new Date(releaseDate as string).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
-        : null,
-      track.explicit ? "This explicit track" : "This track",
-      track.popularity && track.popularity > 70 ? "is widely appreciated and popular" : null,
-      track.popularity && track.popularity < 30 ? "is a niche find with unique appeal" : null,
-      track.popularity && track.popularity >= 30 && track.popularity <= 70
-        ? `has moderate popularity (${track.popularity}/100)`
+      `Saved track: "${track.name}" by ${primaryArtist}`,
+      durationStr ? `(${durationStr})` : null,
+      albumName ? `from "${albumName}"` : null,
+      releaseDate ? `released ${(releaseDate as string).split("-")[0]}` : null,
+      albumType && albumType !== "album" ? albumType : null,
+      track.explicit ? "explicit" : null,
+      track.popularity && track.popularity > 70 ? "popular" : null,
+      track.popularity && track.popularity < 30 ? "underground" : null,
+      track.addedAt
+        ? `added ${new Date(track.addedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
         : null,
     ].filter(Boolean);
 
-    return parts.join(" ");
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
@@ -69,23 +48,22 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
 
 export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<SpotifyArtistDataTarget> {
   public getEmbeddingText(artist: SpotifyArtistDataTarget): string {
-    // Add popularity context
-    let popularityContext = "";
     const popularity = artist.popularity ?? 0;
+    let popularityLabel = "";
     if (popularity > 80) {
-      popularityContext = "a globally renowned artist";
+      popularityLabel = "globally renowned";
     } else if (popularity > 60) {
-      popularityContext = "a well-known artist";
+      popularityLabel = "well-known";
     } else if (popularity > 40) {
-      popularityContext = "an emerging artist";
+      popularityLabel = "emerging";
     } else if (popularity > 0) {
-      popularityContext = "an underground artist";
+      popularityLabel = "underground";
     }
 
     const parts = [
-      `I follow ${artist.name}`,
-      popularityContext ? popularityContext : null,
-      artist.genres && artist.genres.length > 0 ? `creating ${artist.genres.slice(0, 3).join(", ")} music` : null,
+      `Followed artist: ${artist.name}`,
+      popularityLabel ? popularityLabel : null,
+      artist.genres && artist.genres.length > 0 ? `genres: ${artist.genres.slice(0, 3).join(", ")}` : null,
     ].filter(Boolean);
 
     return parts.join(", ");
@@ -113,21 +91,17 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
       }
     }
 
-    // Add ownership and sharing context
-    const ownershipText = playlist.collaborative
-      ? "I collaborate on the playlist"
-      : playlist.public
-        ? "I curate the public playlist"
-        : "I maintain the private playlist";
+    const visibilityLabel = playlist.collaborative ? "collaborative" : playlist.public ? "public" : "private";
 
     const parts = [
-      `${ownershipText} "${playlist.name}"`,
+      `Playlist: "${playlist.name}"`,
+      visibilityLabel,
+      playlist.owner ? `by ${playlist.owner}` : null,
       playlist.description ? `${playlist.description}` : null,
-      trackCount > 0 ? `containing ${trackCount} carefully selected tracks` : null,
+      trackCount > 0 ? `${trackCount} tracks` : null,
       playlist.followers && playlist.followers > 0
-        ? `followed by ${playlist.followers} listener${playlist.followers === 1 ? "" : "s"}`
+        ? `${playlist.followers} follower${playlist.followers === 1 ? "" : "s"}`
         : null,
-      playlist.owner ? `created by ${playlist.owner}` : null,
     ].filter(Boolean);
 
     return parts.join(", ");
@@ -144,30 +118,16 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
 
 export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> {
   public getEmbeddingText(album: SpotifyAlbumDataTarget): string {
-    // Add album type context (album, single, compilation)
-    let albumTypeText = "album";
-    if (album.albumType === "single") {
-      albumTypeText = "single";
-    } else if (album.albumType === "compilation") {
-      albumTypeText = "compilation";
-    }
-
-    // Add popularity context if available
-    let popularityContext = "";
-    if (album.popularity && album.popularity > 70) {
-      popularityContext = "widely acclaimed";
-    } else if (album.popularity && album.popularity < 30) {
-      popularityContext = "a deep cut";
-    }
+    const albumType = album.albumType || "album";
 
     const parts = [
-      `I have the ${albumTypeText} "${album.name}"`,
+      `Saved ${albumType}: "${album.name}"`,
       album.artists && album.artists.length > 0 ? `by ${album.artists.slice(0, 2).join(" & ")}` : null,
-      album.releaseDate ? `released in ${album.releaseDate.split("-")[0]}` : null,
-      popularityContext ? popularityContext : null,
-      album.totalTracks ? `featuring ${album.totalTracks} tracks` : null,
-      album.genres && album.genres.length > 0 ? `exploring ${album.genres.slice(0, 2).join(", ")}` : null,
-      album.label ? `on ${album.label}` : null,
+      album.releaseDate ? `(${album.releaseDate.split("-")[0]})` : null,
+      album.totalTracks ? `${album.totalTracks} tracks` : null,
+      album.genres && album.genres.length > 0 ? `genres: ${album.genres.slice(0, 2).join(", ")}` : null,
+      album.label ? `label: ${album.label}` : null,
+      album.popularity && album.popularity > 70 ? "popular" : null,
     ].filter(Boolean);
 
     return parts.join(", ");
@@ -185,57 +145,37 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
 export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescriptor<SpotifyRecentlyPlayedDataTarget> {
   public getEmbeddingText(item: SpotifyRecentlyPlayedDataTarget): string {
     const playedDate = new Date(item.playedAt);
-    const now = new Date();
-    const minutesAgo = Math.floor((now.getTime() - playedDate.getTime()) / (1000 * 60));
-
-    let temporalContext = "";
-    if (minutesAgo < 5) {
-      temporalContext = "just now";
-    } else if (minutesAgo < 60) {
-      temporalContext = `${minutesAgo} minutes ago`;
-    } else if (minutesAgo < 1440) {
-      // Less than a day
-      const hoursAgo = Math.floor(minutesAgo / 60);
-      temporalContext = `${hoursAgo} hour${hoursAgo > 1 ? "s" : ""} ago`;
-    } else {
-      const daysAgo = Math.floor(minutesAgo / 1440);
-      temporalContext = `${daysAgo} day${daysAgo > 1 ? "s" : ""} ago`;
-    }
+    const dateStr = playedDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    const timeStr = playedDate.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
 
     const minutes = Math.floor(item.durationMs / 60000);
     const seconds = Math.floor((item.durationMs % 60000) / 1000);
     const durationStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
-    // CRITICAL: Extract listening context (playlist, album, artist radio, etc.)
+    // Extract listening context
     let contextInfo = "";
     if (item.context && typeof item.context === "object") {
-      const ctx = item.context as { type?: string; uri?: string };
-      const contextType = ctx.type;
-      const contextUri = ctx.uri;
-
-      if (contextType === "playlist" && contextUri) {
-        contextInfo = "from a playlist";
-      } else if (contextType === "album") {
-        contextInfo = "from the album";
-      } else if (contextType === "artist") {
-        contextInfo = "from artist radio";
-      } else if (contextType === "collection") {
-        contextInfo = "from my liked songs";
-      }
+      const ctx = item.context as { type?: string };
+      if (ctx.type === "playlist") contextInfo = "via playlist";
+      else if (ctx.type === "album") contextInfo = "via album";
+      else if (ctx.type === "artist") contextInfo = "via artist radio";
+      else if (ctx.type === "collection") contextInfo = "from liked songs";
     }
 
     const parts = [
-      `I played ${temporalContext}`,
-      `"${item.trackName}" by ${item.artist}`,
-      contextInfo ? contextInfo : null,
-      item.album ? `${item.album}` : null,
+      `Played: "${item.trackName}" by ${item.artist}`,
+      `on ${dateStr} at ${timeStr}`,
+      item.album ? `from "${item.album}"` : null,
       durationStr ? `(${durationStr})` : null,
+      contextInfo ? contextInfo : null,
       item.explicit ? "explicit" : null,
-      item.popularity && item.popularity > 70 ? "highly popular" : null,
-      item.popularity && item.popularity < 30 ? "niche discovery" : null,
     ].filter(Boolean);
 
-    return parts.join(" ");
+    return parts.join(", ");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyRecentlyPlayedDataTarget): U {

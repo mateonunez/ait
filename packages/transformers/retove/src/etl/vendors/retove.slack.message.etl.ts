@@ -39,10 +39,6 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(message);
   }
 
-  protected getIdBaseOffset(): number {
-    return 8_000_000_000_000;
-  }
-
   protected getLatestTimestamp(data: unknown[]): Date {
     const messages = data as SlackMessageDataTarget[];
     if (messages.length === 0) return new Date();
@@ -50,6 +46,18 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
       const messageDate = message.updatedAt ? new Date(message.updatedAt) : new Date(0);
       return messageDate > max ? messageDate : max;
     }, new Date(0));
+  }
+
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.channelId", field_schema: "keyword" as const },
+      { field_name: "metadata.userId", field_schema: "keyword" as const },
+      { field_name: "metadata.timestamp", field_schema: "datetime" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "message";
   }
 }
 

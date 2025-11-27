@@ -44,7 +44,7 @@ export const SlackETLs = {
   message: "RetoveSlackMessageETL",
 };
 
-const LIMIT = 10_000;
+const LIMIT = 100_000;
 
 export async function runSpotifyTrackETL(
   qdrantClient: qdrant.QdrantClient,

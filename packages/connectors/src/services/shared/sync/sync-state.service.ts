@@ -30,6 +30,29 @@ export class SyncStateService implements ISyncStateService {
     }
   }
 
+  async clearState(connectorName: string, entityType: string): Promise<void> {
+    try {
+      const key = this.getKey(connectorName, entityType);
+      await this.redis.del(key);
+      this.logger.info("Cleared sync state", { connectorName, entityType });
+    } catch (error) {
+      this.logger.error("Failed to clear sync state", { connectorName, entityType, error });
+    }
+  }
+
+  async clearCursor(connectorName: string, entityType: string): Promise<void> {
+    try {
+      const state = await this.getState(connectorName, entityType);
+      if (state?.cursor) {
+        state.cursor = undefined;
+        await this.saveState(state);
+        this.logger.info("Cleared sync cursor", { connectorName, entityType });
+      }
+    } catch (error) {
+      this.logger.error("Failed to clear sync cursor", { connectorName, entityType, error });
+    }
+  }
+
   async saveState(state: ISyncState): Promise<void> {
     try {
       const key = this.getKey(state.connectorName, state.entityType);

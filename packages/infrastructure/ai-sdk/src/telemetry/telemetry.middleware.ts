@@ -166,6 +166,42 @@ export function recordSpan(
   provider.endSpan(createdSpanId, output);
 }
 
+/**
+ * Create a span at the start of execution and return a function to end it
+ * This ensures proper timing tracking in Langfuse
+ */
+export function createSpanWithTiming(
+  name: string,
+  type: SpanType,
+  traceContext: TraceContext,
+  input?: SpanInput,
+  metadata?: SpanMetadata,
+): ((output?: SpanOutput) => void) | null {
+  const provider = getLangfuseProvider();
+
+  if (!provider || !provider.isEnabled() || !traceContext) {
+    return null;
+  }
+
+  const spanId = randomUUID();
+  const createdSpanId = provider.createSpan(name, spanId, traceContext, type, metadata);
+
+  if (!createdSpanId) {
+    return null;
+  }
+
+  if (input) {
+    provider.updateSpan(createdSpanId, input);
+  }
+
+  return (output?: SpanOutput) => {
+    if (output) {
+      provider.updateSpan(createdSpanId, undefined, output);
+    }
+    provider.endSpan(createdSpanId, output);
+  };
+}
+
 export function shouldEnableTelemetry(options?: TelemetryOptions): boolean {
   if (options?.enableTelemetry !== true) {
     return false;

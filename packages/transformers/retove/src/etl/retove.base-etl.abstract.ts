@@ -1,11 +1,23 @@
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import { EmbeddingsService, getEmbeddingModelConfig, type IEmbeddingsService, getCollectionsNames } from "@ait/ai-sdk";
+import {
+  EmbeddingsService,
+  getEmbeddingModelConfig,
+  type IEmbeddingsService,
+  getCollectionsNames,
+  OPTIMAL_CHUNK_SIZE,
+  OPTIMAL_CHUNK_OVERLAP,
+  getSparseVectorService,
+  type ISparseVectorService,
+  type SparseVector,
+} from "@ait/ai-sdk";
 import { SyncStateService, type ISyncStateService } from "@ait/connectors";
+import { createHash } from "node:crypto";
 
 export interface BaseVectorPoint {
-  id: number;
+  id: string;
   vector: number[];
+  sparseVector?: SparseVector;
   payload: Record<string, unknown>;
 }
 
@@ -19,12 +31,14 @@ const embeddingModelConfig = getEmbeddingModelConfig();
 
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
-  private readonly _batchSize = 1000;
+  private readonly _batchSize = 100;
   private readonly _vectorSize = embeddingModelConfig.vectorSize;
-  protected readonly _transformConcurrency: number = 10;
-  protected readonly _batchUpsertConcurrency: number = 5;
+  protected readonly _transformConcurrency: number = 5;
+  protected readonly _batchUpsertConcurrency: number = 3;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
   protected readonly _syncStateService: ISyncStateService = new SyncStateService();
+  protected readonly _sparseVectorService: ISparseVectorService = getSparseVectorService();
+  protected readonly _enableHybridSearch: boolean = true;
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -39,8 +53,10 @@ export abstract class RetoveBaseETLAbstract {
       embeddingModelConfig.name,
       embeddingModelConfig.vectorSize,
       {
+        // Use optimal chunk size from central config (single source of truth)
+        chunkSize: OPTIMAL_CHUNK_SIZE,
+        chunkOverlap: OPTIMAL_CHUNK_OVERLAP,
         concurrencyLimit: 2,
-        chunkSize: 128,
         weightChunks: true,
       },
     ),
@@ -61,8 +77,8 @@ export abstract class RetoveBaseETLAbstract {
       console.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
 
-      const syncState = await this._syncStateService.getState(this._collectionName, "etl");
-      const lastProcessedTimestamp = syncState?.lastProcessedTimestamp;
+      // Get validated timestamp - checks actual vectors in collection vs sync state
+      const lastProcessedTimestamp = await this._getValidatedLastTimestamp();
 
       if (lastProcessedTimestamp) {
         console.info(`Processing records updated after: ${lastProcessedTimestamp.toISOString()}`);
@@ -71,8 +87,15 @@ export abstract class RetoveBaseETLAbstract {
       }
 
       const data = await this.extract(limit, lastProcessedTimestamp);
+      console.info(`Extracted ${data.length} records from source`);
+
+      if (data.length === 0) {
+        console.info("No records to process");
+        return;
+      }
+
       const transformedData = await this.transform(data);
-      await this.load(transformedData);
+      console.info(`Transformed ${transformedData.length} vector points`);
 
       if (data.length > 0) {
         const latestTimestamp = this.getLatestTimestamp(data);
@@ -87,6 +110,119 @@ export abstract class RetoveBaseETLAbstract {
     }
   }
 
+  /**
+   * Get validated last processed timestamp by checking:
+   * 1. Sync state from database
+   * 2. Actual vectors in collection (reality check)
+   *
+   * If sync state exists but collection is empty/has no matching vectors,
+   * reset sync state to process all records.
+   */
+  private async _getValidatedLastTimestamp(): Promise<Date | undefined> {
+    const entityType = this._getEntityType();
+    const syncState = await this._syncStateService.getState(this._collectionName, "etl");
+    const syncTimestamp = syncState?.lastProcessedTimestamp;
+
+    // Check actual collection state
+    const collectionInfo = await this._getCollectionVectorCount(entityType);
+
+    // If collection has no vectors for this entity type, reset sync state
+    if (collectionInfo.count === 0) {
+      if (syncTimestamp) {
+        console.warn(
+          `Sync state exists (${syncTimestamp.toISOString()}) but collection has no vectors for type '${entityType}'. Resetting to process all records.`,
+        );
+        await this._syncStateService.clearState(this._collectionName, "etl");
+      }
+      return undefined;
+    }
+
+    // If sync state exists, validate against actual latest vector timestamp
+    if (syncTimestamp && collectionInfo.latestTimestamp) {
+      const actualLatest = new Date(collectionInfo.latestTimestamp);
+
+      // If sync state is significantly newer than actual vectors, something is wrong
+      // Use the actual latest timestamp from vectors instead
+      if (syncTimestamp > actualLatest) {
+        console.warn(
+          `Sync state (${syncTimestamp.toISOString()}) is newer than latest vector (${actualLatest.toISOString()}). Using actual vector timestamp.`,
+        );
+        return actualLatest;
+      }
+    }
+
+    return syncTimestamp;
+  }
+
+  /**
+   * Get count and latest timestamp of vectors in collection for this entity type.
+   */
+  private async _getCollectionVectorCount(
+    entityType: string,
+  ): Promise<{ count: number; latestTimestamp: string | null }> {
+    try {
+      // Count vectors of this entity type
+      const countResult = await this._qdrantClient.count(this._collectionName, {
+        filter: {
+          must: [
+            {
+              key: "metadata.__type",
+              match: { value: entityType },
+            },
+          ],
+        },
+        exact: true,
+      });
+
+      if (countResult.count === 0) {
+        return { count: 0, latestTimestamp: null };
+      }
+
+      // Get the latest indexed timestamp by scrolling with sort
+      const scrollResult = await this._qdrantClient.scroll(this._collectionName, {
+        filter: {
+          must: [
+            {
+              key: "metadata.__type",
+              match: { value: entityType },
+            },
+          ],
+        },
+        limit: 1,
+        with_payload: true,
+        order_by: {
+          key: "metadata.__indexed_at",
+          direction: "desc",
+        },
+      });
+
+      const latestPoint = scrollResult.points[0];
+      const latestTimestamp =
+        (latestPoint?.payload as Record<string, unknown>)?.metadata &&
+        typeof (latestPoint?.payload as Record<string, unknown>).metadata === "object"
+          ? ((latestPoint?.payload as Record<string, unknown>).metadata as Record<string, unknown>).__indexed_at
+          : null;
+
+      return {
+        count: countResult.count,
+        latestTimestamp: latestTimestamp as string | null,
+      };
+    } catch (error) {
+      console.warn(`Failed to get collection vector count: ${error}`);
+      return { count: 0, latestTimestamp: null };
+    }
+  }
+
+  /**
+   * Get the entity type for this ETL (e.g., "repository", "pull_request", "track").
+   * Override in subclasses if needed.
+   */
+  protected _getEntityType(): string {
+    // Default implementation tries to infer from a sample payload
+    // Subclasses should override for accuracy
+    return "unknown";
+  }
+
   protected async ensureCollectionExists(): Promise<void> {
     const response = await this.retry(() => this._qdrantClient.getCollections());
     const collectionExists = response.collections.some((collection) => collection.name === this._collectionName);
@@ -96,7 +232,6 @@ export abstract class RetoveBaseETLAbstract {
     }
 
     console.info(`Creating collection: ${this._collectionName}`);
-    // Remove 'init_from' to avoid attempting to initialize from a non-existent collection.
     await this.retry(() =>
       this._qdrantClient.createCollection(this._collectionName, {
         vectors: {
@@ -135,85 +270,70 @@ export abstract class RetoveBaseETLAbstract {
       }),
     );
 
-    await this.retry(() =>
-      this._qdrantClient.createPayloadIndex(this._collectionName, {
-        field_name: "metadata.__type",
-        field_schema: "keyword",
-      }),
-    );
-
-    await this.retry(() =>
-      this._qdrantClient.createPayloadIndex(this._collectionName, {
-        field_name: "metadata.timestamp",
-        field_schema: "datetime",
-      }),
-    );
+    // Create core indexes
+    await this._createPayloadIndexes();
   }
 
+  /**
+   * Create payload indexes for efficient filtering.
+   * Override in subclasses to add entity-specific indexes.
+   */
+  protected async _createPayloadIndexes(): Promise<void> {
+    // Core indexes for all collections
+    const coreIndexes: Array<{
+      field_name: string;
+      field_schema: "keyword" | "datetime" | "integer" | "float" | "bool" | "text";
+    }> = [
+      { field_name: "metadata.__type", field_schema: "keyword" },
+      { field_name: "metadata.id", field_schema: "keyword" },
+      { field_name: "metadata.__indexed_at", field_schema: "datetime" },
+    ];
+
+    // Add collection-specific indexes
+    const collectionIndexes = this._getCollectionSpecificIndexes();
+
+    const allIndexes = [...coreIndexes, ...collectionIndexes];
+
+    for (const index of allIndexes) {
+      try {
+        await this.retry(() =>
+          this._qdrantClient.createPayloadIndex(this._collectionName, {
+            field_name: index.field_name,
+            field_schema: index.field_schema,
+          }),
+        );
+        console.debug(`Created index: ${index.field_name} (${index.field_schema})`);
+      } catch (error) {
+        // Index may already exist
+        console.debug(`Index ${index.field_name} may already exist: ${error}`);
+      }
+    }
+  }
+
+  /**
+   * Override in subclasses to provide collection-specific indexes.
+   */
+  protected _getCollectionSpecificIndexes(): Array<{
+    field_name: string;
+    field_schema: "keyword" | "datetime" | "integer" | "float" | "bool" | "text";
+  }> {
+    return [];
+  }
+
+  /**
+   * Transform entities to vector points.
+   * Uses streaming batch processing to avoid memory issues.
+   */
   protected async transform<T>(data: T[]): Promise<BaseVectorPoint[]> {
-    const points: BaseVectorPoint[] = [];
-    const BATCH_SIZE = 50;
+    const allPoints: BaseVectorPoint[] = [];
     const concurrency = this._transformConcurrency;
-    const loadTasks: Promise<void>[] = [];
 
     for (let i = 0; i < data.length; i += concurrency) {
       const chunk = data.slice(i, i + concurrency);
       const results = await Promise.all(
         chunk.map(async (item, index) => {
           try {
-            const text = this.getTextForEmbedding(item as Record<string, unknown>);
-            const correlationId = `retove-${this._collectionName}-${i + index + 1}`;
-            // Split text into smaller chunks that respect the model's context limit
-            // mxbai-embed-large has a 512 token limit, so we use 128 chars to be very safe
-            // (128 chars ≈ 25-32 tokens, well below the 512 token limit)
-            const textChunks = this._splitTextIntoChunks(text, 128);
-            const chunkVectors = await Promise.all(
-              textChunks.map(async (textChunk, chunkIndex) => {
-                const vector = await this._embeddingsService.generateEmbeddings(textChunk, {
-                  correlationId: `${correlationId}-chunk-${chunkIndex}`,
-                });
-                if (vector.length !== this._vectorSize) {
-                  throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
-                }
-                return { vector, text: textChunk, chunkIndex };
-              }),
-            );
-
-            const payloadObj = {
-              ...this.getPayload(item as Record<string, unknown>),
-              originalText: text,
-              chunks: textChunks,
-              timestamp: new Date().toISOString(),
-              source: this._collectionName,
-              version: "1.0",
-            } as ReturnType<typeof this.getPayload>;
-
-            const baseOffset = this.getIdBaseOffset();
-            return chunkVectors.map((chunkVector) => {
-              const chunkFormatted = chunkVector.text.replace(/{/g, "{{").replace(/}/g, "}}");
-              const entityId = String((item as any).id || i + index);
-
-              return {
-                id: baseOffset + this._generateStableId(entityId, chunkVector.chunkIndex),
-                vector: chunkVector.vector,
-                payload: {
-                  content: chunkFormatted,
-                  chunk_index: chunkVector.chunkIndex,
-                  total_chunks: textChunks.length,
-                  metadata: {
-                    ...payloadObj,
-                    __source: "retove",
-                    __type: payloadObj.__type,
-                    __collection: this._collectionName,
-                    __chunk_info: {
-                      index: chunkVector.chunkIndex,
-                      total: textChunks.length,
-                      correlation_id: correlationId,
-                    },
-                  },
-                },
-              };
-            });
+            return await this._transformSingleEntity(item as Record<string, unknown>, i + index);
           } catch (error) {
             console.error(`Error processing item ${i + index}:`, error);
             return null;
@@ -221,81 +341,121 @@ export abstract class RetoveBaseETLAbstract {
         }),
       );
 
-      for (const result of results) {
-        if (result) {
-          points.push(...result);
-        }
+      // Collect successful results
+      const successfulPoints = results.filter((r): r is BaseVectorPoint => r !== null);
+      allPoints.push(...successfulPoints);
+
+      // Stream load in batches to avoid memory buildup
+      if (allPoints.length >= this._batchSize) {
+        const batchToLoad = allPoints.splice(0, this._batchSize);
+        await this.load(batchToLoad);
+        console.debug(`Loaded batch of ${batchToLoad.length} points, ${data.length - i - concurrency} remaining`);
       }
 
-      while (points.length >= BATCH_SIZE) {
-        const batch = points.splice(0, BATCH_SIZE);
-        loadTasks.push(this.load(batch));
-      }
-
+      // Yield to event loop
       await new Promise((resolve) => setImmediate(resolve));
     }
 
-    if (points.length > 0) {
-      loadTasks.push(this.load(points));
+    // Load remaining points
+    if (allPoints.length > 0) {
+      await this.load(allPoints);
+      console.debug(`Loaded final batch of ${allPoints.length} points`);
     }
 
-    await Promise.all(loadTasks);
-    if (global.gc) {
-      console.debug("Running garbage collection");
-      global.gc();
-    }
-
-    return points;
+    return allPoints;
   }
 
-  private _splitTextIntoChunks(text: string, maxChunkSize: number): string[] {
-    const entities = text.split(/(?=\{\"id\")/g);
-    const chunks: string[] = [];
+  /**
+   * Transform a single entity to a vector point.
+   * Embeddings service handles chunking internally.
+   * Generates both dense and sparse vectors for hybrid search.
+   */
+  private async _transformSingleEntity(item: Record<string, unknown>, index: number): Promise<BaseVectorPoint> {
+    const text = this.getTextForEmbedding(item);
+    const entityId = String(item.id || `entity-${index}`);
+    const correlationId = `retove-${this._collectionName}-${entityId}`;
 
-    let currentChunk: string[] = [];
-    let currentLength = 0;
+    // Generate dense embedding - chunking is handled by EmbeddingsService
+    const vector = await this._embeddingsService.generateEmbeddings(text, {
+      correlationId,
+    });
 
-    for (const entity of entities) {
-      if (entity.length > maxChunkSize) {
-        if (currentChunk.length > 0) {
-          chunks.push(currentChunk.join(""));
-          currentChunk = [];
-          currentLength = 0;
-        }
-
-        for (let i = 0; i < entity.length; i += maxChunkSize) {
-          chunks.push(entity.slice(i, i + maxChunkSize));
-        }
-        continue;
-      }
-
-      if (currentLength + entity.length > maxChunkSize && currentChunk.length > 0) {
-        chunks.push(currentChunk.join(""));
-        currentChunk = [];
-        currentLength = 0;
-      }
-      currentChunk.push(entity);
-      currentLength += entity.length;
+    if (vector.length !== this._vectorSize) {
+      throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
     }
 
-    if (currentChunk.length > 0) {
-      chunks.push(currentChunk.join(""));
+    // Generate sparse vector for hybrid search
+    let sparseVector: SparseVector | undefined;
+    if (this._enableHybridSearch) {
+      sparseVector = this._sparseVectorService.generateSparseVector(text);
     }
 
-    return chunks;
+    const payloadObj = this.getPayload(item);
+
+    // Generate deterministic UUID for this entity
+    const pointId = this._generateDeterministicId(this._collectionName, entityId);
+
+    return {
+      id: pointId,
+      vector,
+      sparseVector,
+      payload: {
+        content: text,
+        metadata: {
+          ...payloadObj,
+          id: entityId,
+          __source: "retove",
+          __type: payloadObj.__type,
+          __collection: this._collectionName,
+          __indexed_at: new Date().toISOString(),
+        },
+      },
+    };
   }
 
-  protected async load(data: unknown[]): Promise<void> {
-    const points = data as BaseVectorPoint[];
+  /**
+   * Generate a deterministic UUID v5-style ID based on namespace and entity ID.
+   * This ensures the same entity always gets the same ID (for upserts).
+   */
+  private _generateDeterministicId(collection: string, entityId: string): string {
+    const input = `${collection}:${entityId}`;
+    const hash = createHash("sha256").update(input).digest("hex");
+    // Format as UUID-like string for Qdrant compatibility
+    return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+  }
+
+  protected async load(data: BaseVectorPoint[]): Promise<void> {
+    if (data.length === 0) return;
+
     const tasks: Array<() => Promise<void>> = [];
-    for (let i = 0; i < points.length; i += this._batchSize) {
-      const batch = points.slice(i, i + this._batchSize);
+    for (let i = 0; i < data.length; i += this._batchSize) {
+      const batch = data.slice(i, i + this._batchSize);
       tasks.push(async () => {
-        const upsertPoints = batch.map((point) => ({
-          id: point.id,
-          vector: point.vector,
-          payload: point.payload,
-        }));
+        const upsertPoints = batch.map((point) => {
+          const basePoint: {
+            id: string;
+            vector: number[] | Record<string, number[] | { indices: number[]; values: number[] }>;
+            payload: Record<string, unknown>;
+          } = {
+            id: point.id,
+            vector: point.vector,
+            payload: point.payload,
+          };
+
+          // Add sparse vector for hybrid search if available
+          if (point.sparseVector && point.sparseVector.indices.length > 0) {
+            basePoint.vector = {
+              "": point.vector, // Default dense vector
+              text_embedding: {
+                indices: point.sparseVector.indices,
+                values: point.sparseVector.values,
+              },
+            };
+          }
+
+          return basePoint;
+        });
+
         await this.retry(async () => {
           await this._qdrantClient.upsert(this._collectionName, {
             wait: true,
@@ -328,14 +488,14 @@ export abstract class RetoveBaseETLAbstract {
       },
       with_payload: true,
       with_vectors: false,
-      score_threshold: 0.7,
+      score_threshold: 0.5,
     };
 
     const result = await this._qdrantClient.search(this._collectionName, searchParams);
 
     return result.map((hit) => ({
-      id: hit.id as number,
-      vector: hit.vector || [],
+      id: String(hit.id),
+      vector: [],
       payload: {
         ...hit.payload,
         _score: hit.score,
@@ -352,7 +512,7 @@ export abstract class RetoveBaseETLAbstract {
     let queryVector = this.getCachedQuery(queryText);
     if (!queryVector) {
       queryVector = await this._embeddingsService.generateEmbeddings(queryText, {
-        correlationId: `search-${new Date().toISOString()}`,
+        correlationId: `search-${Date.now()}`,
       });
       this.cacheQuery(queryText, queryVector);
     }
@@ -360,18 +520,6 @@ export abstract class RetoveBaseETLAbstract {
       throw new Error(`Invalid query vector size: ${queryVector.length}. Expected: ${this._vectorSize}`);
     }
     return this.search(queryVector, searchLimit, filter);
-  }
-
-  private _generateStableId(entityId: string, chunkIndex: number): number {
-    const input = `${entityId}-chunk-${chunkIndex}`;
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash;
-    }
-
-    return Math.abs(hash);
   }
 
   protected getCachedQuery(queryText: string): number[] | undefined {
@@ -400,7 +548,4 @@ export abstract class RetoveBaseETLAbstract {
   protected abstract getTextForEmbedding(item: Record<string, unknown>): string;
   protected abstract getPayload(item: Record<string, unknown>): Record<string, unknown>;
   protected abstract getLatestTimestamp(data: unknown[]): Date;
-  protected getIdBaseOffset(): number {
-    return 0;
-  }
 }

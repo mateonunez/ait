@@ -38,3 +38,27 @@ export async function apiPost<T>(url: string, body: unknown): Promise<ApiRespons
   }
   return { ok: true, data: result.value.data as unknown as T };
 }
+
+export async function apiPatch<T>(url: string, body: unknown): Promise<ApiResponse<T>> {
+  const result = await requestJson<T>(url, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!result.ok) {
+    const err = result.error as AItError;
+    return { ok: false, error: `${err.code}: ${err.message}` };
+  }
+  return { ok: true, data: result.value.data as unknown as T };
+}
+
+export async function apiDelete(url: string): Promise<ApiResponse<void>> {
+  const result = await requestJson<void>(url, {
+    method: "DELETE",
+  });
+  if (!result.ok) {
+    const err = result.error as AItError;
+    return { ok: false, error: `${err.code}: ${err.message}` };
+  }
+  return { ok: true };
+}

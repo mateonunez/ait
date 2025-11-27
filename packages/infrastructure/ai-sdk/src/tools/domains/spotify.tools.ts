@@ -1,8 +1,7 @@
 import { z } from "zod";
-import { createTool } from "../../types/tools";
+import { createTool } from "../../utils/tool.utils";
 import type { SpotifyServiceInterface } from "../../interfaces/spotify.service.interface";
 
-// Spotify Schemas
 export const spotifySearchSchema = z.object({
   query: z.string().describe("The search query for Spotify content"),
   type: z
@@ -19,7 +18,6 @@ export const spotifyRecentlyPlayedSchema = z.object({
 
 export const spotifyCurrentlyPlayingSchema = z.object({});
 
-// Spotify Result Types
 export interface SpotifySearchResult {
   type: string;
   name?: string;
@@ -28,14 +26,13 @@ export interface SpotifySearchResult {
   content: string;
 }
 
-// Cleaned track data for LLM (excludes raw JSON blobs from the full entity)
 export interface SpotifyCurrentlyPlayingResult {
   is_playing: boolean;
   track: {
     id: string;
     name: string;
-    artist: string; // Joined by mapper from artists array
-    album: string | null; // Extracted by mapper from album object
+    artist: string;
+    album: string | null;
     durationMs: number;
     explicit: boolean;
     popularity: number | null;

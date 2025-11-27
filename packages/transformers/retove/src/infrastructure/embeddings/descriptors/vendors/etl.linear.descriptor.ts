@@ -4,41 +4,34 @@ import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 
 export class ETLLinearIssueDescriptor implements IETLEmbeddingDescriptor<LinearIssueDataTarget> {
   public getEmbeddingText(issue: LinearIssueDataTarget): string {
-    const statusText =
-      issue.state === "Todo"
-        ? "need to work on"
-        : issue.state === "In Progress"
-          ? "currently working on"
-          : issue.state === "Done"
-            ? "completed"
-            : "tracking";
-
     const priorityLabels: Record<number, string> = {
       0: "urgent",
-      1: "high priority",
-      2: "medium priority",
-      3: "low priority",
-      4: "no priority",
+      1: "high",
+      2: "medium",
+      3: "low",
+      4: "none",
     };
     const priorityText =
       issue.priority !== null && issue.priority !== undefined
-        ? priorityLabels[issue.priority] || `priority ${issue.priority}`
+        ? priorityLabels[issue.priority] || `P${issue.priority}`
         : null;
 
-    // CRITICAL: Sanitize description to prevent JSON encoding errors
-    const sanitizedDescription = issue.description ? TextSanitizer.sanitize(issue.description) : null;
-
-    // Sanitize title as well for safety
+    // Sanitize fields
     const sanitizedTitle = TextSanitizer.sanitize(issue.title);
+    const sanitizedDescription = issue.description ? TextSanitizer.sanitize(issue.description, 300) : null;
 
     const parts = [
-      `I ${statusText}: ${sanitizedTitle}`,
-      issue.teamName ? `in ${issue.teamName}` : null,
-      priorityText,
+      `Issue: "${sanitizedTitle}"`,
+      issue.state ? `status: ${issue.state}` : null,
+      priorityText ? `priority: ${priorityText}` : null,
+      issue.teamName ? `team: ${issue.teamName}` : null,
       issue.assigneeName ? `assigned to ${issue.assigneeName}` : null,
       issue.projectName ? `project: ${issue.projectName}` : null,
       sanitizedDescription ? `${sanitizedDescription}` : null,
       issue.labels && issue.labels.length > 0 ? `labels: ${issue.labels.join(", ")}` : null,
+      issue.createdAt
+        ? `created ${new Date(issue.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
+        : null,
     ].filter(Boolean);
 
     return parts.join(", ");

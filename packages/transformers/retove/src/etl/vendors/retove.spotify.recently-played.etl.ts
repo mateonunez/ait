@@ -20,6 +20,19 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
+  protected override _getCollectionSpecificIndexes() {
+    return [
+      { field_name: "metadata.playedAt", field_schema: "datetime" as const },
+      { field_name: "metadata.artist", field_schema: "keyword" as const },
+      { field_name: "metadata.trackName", field_schema: "keyword" as const },
+      { field_name: "metadata.album", field_schema: "keyword" as const },
+    ];
+  }
+
+  protected override _getEntityType(): string {
+    return "recently_played";
+  }
+
   protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyRecentlyPlayedDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyRecentlyPlayed) as any;
@@ -36,10 +49,6 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
 
   protected getPayload(item: SpotifyRecentlyPlayedDataTarget): RetoveSpotifyRecentlyPlayedVectorPoint["payload"] {
     return this._descriptor.getEmbeddingPayload(item);
-  }
-
-  protected getIdBaseOffset(): number {
-    return 5_000_000_000_000; // Unique offset for recently played
   }
 
   protected getLatestTimestamp(data: unknown[]): Date {

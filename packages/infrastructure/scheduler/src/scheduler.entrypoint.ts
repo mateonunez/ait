@@ -118,7 +118,7 @@ const SCHEDULED_JOBS: JobConfig[] = [
 ].filter((job) => job.enabled !== false);
 
 class SchedulerEntrypoint {
-  private scheduler: Scheduler;
+  public scheduler: Scheduler;
 
   constructor(redisConfig: IRedisConfig, concurrency?: number) {
     this.scheduler = new Scheduler({
@@ -185,6 +185,8 @@ async function main() {
 
     const concurrency = Number.parseInt(process.env.ETL_CONCURRENCY || "2", 10);
     const schedulerEntrypoint = new SchedulerEntrypoint(redisConfig, concurrency);
+
+    schedulerETLTaskManager.setScheduler(schedulerEntrypoint.scheduler);
 
     console.info(`⚙️  Scheduler configuration:
       - Environment: ${process.env.NODE_ENV || "development"}

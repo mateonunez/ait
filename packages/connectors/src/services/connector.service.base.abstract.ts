@@ -72,9 +72,10 @@ export abstract class ConnectorServiceBase<
   protected async fetchEntities<K extends keyof TEntityMap, E>(
     entityType: K,
     shouldConnect = false,
+    forceRefresh = true,
   ): Promise<TEntityMap[K][]> {
     const entities: TEntityMap[K][] = [];
-    for await (const batch of this.fetchEntitiesPaginated(entityType, shouldConnect)) {
+    for await (const batch of this.fetchEntitiesPaginated(entityType, shouldConnect, forceRefresh)) {
       entities.push(...batch);
     }
     return entities;
@@ -83,6 +84,7 @@ export abstract class ConnectorServiceBase<
   public async *fetchEntitiesPaginated<K extends keyof TEntityMap, E>(
     entityType: K,
     shouldConnect = false,
+    forceRefresh = false,
   ): AsyncGenerator<TEntityMap[K][], void, unknown> {
     const config = this.entityConfigs.get(entityType) as EntityConfig<TEntityMap, K, E>;
     if (!config) {
@@ -98,7 +100,18 @@ export abstract class ConnectorServiceBase<
     const connectorName = this.constructor.name;
     const syncState = await this._syncStateService.getState(connectorName, String(entityType));
 
-    let cursor = syncState?.cursor;
+    // When forceRefresh is true, ignore stored cursor to fetch fresh data
+    // This is the default for user-initiated fetches (e.g., from routes)
+    // Background ETL jobs should pass forceRefresh=false to resume from stored cursor
+    let cursor = forceRefresh ? undefined : syncState?.cursor;
+
+    this._logger.info(`[ConnectorService] fetchEntitiesPaginated for ${String(entityType)}`, {
+      forceRefresh,
+      storedCursor: syncState?.cursor ? "present" : "none",
+      usingCursor: cursor ? "yes" : "no (fresh fetch)",
+      connectorName,
+    });
+
     let hasMore = true;
     const checksums = syncState?.checksums || {};
     const newChecksums: Record<string, string> = {};
@@ -114,6 +127,10 @@ export abstract class ConnectorServiceBase<
       return;
     }
 
+    let totalFetched = 0;
+    let totalSkipped = 0;
+    let totalYielded = 0;
+
     while (hasMore) {
       if (!config.paginatedFetcher) break;
 
@@ -122,17 +139,23 @@ export abstract class ConnectorServiceBase<
       cursor = result.nextCursor;
       hasMore = !!cursor;
 
+      totalFetched += entities.length;
+      this._logger.debug(`[ConnectorService] Fetched ${entities.length} entities, hasMore: ${hasMore}`);
+
       if (config.schema && entities.length > 0) {
         entities = this.validateEntities(entities, config.schema, String(entityType));
       }
 
       const changedEntities: TEntityMap[K][] = [];
       for (const entity of entities) {
-        if (config.checksumEnabled) {
+        // When forceRefresh is enabled, skip checksum deduplication to return all entities
+        // This ensures fresh data is returned to the user
+        if (config.checksumEnabled && !forceRefresh) {
           const id = (entity as any).id || (entity as any).uuid;
           if (id) {
             const hash = this.calculateChecksum(entity);
             if (checksums[id] === hash) {
+              totalSkipped++;
               continue;
             }
             newChecksums[id] = hash;
@@ -142,23 +165,35 @@ export abstract class ConnectorServiceBase<
       }
 
       if (changedEntities.length > 0) {
+        totalYielded += changedEntities.length;
         yield changedEntities;
       }
 
-      if (config.checksumEnabled) {
-        await this._syncStateService.updateChecksums(connectorName, String(entityType), newChecksums);
-      }
+      // Only update checksums and save cursor when NOT doing a force refresh
+      // This preserves the ability for ETL jobs to resume from stored state
+      if (!forceRefresh) {
+        if (config.checksumEnabled && Object.keys(newChecksums).length > 0) {
+          await this._syncStateService.updateChecksums(connectorName, String(entityType), newChecksums);
+        }
 
-      if (cursor) {
-        await this._syncStateService.saveState({
-          connectorName,
-          entityType: String(entityType),
-          lastSyncTime: new Date(),
-          cursor,
-          checksums: { ...checksums, ...newChecksums },
-        });
+        if (cursor) {
+          await this._syncStateService.saveState({
+            connectorName,
+            entityType: String(entityType),
+            lastSyncTime: new Date(),
+            cursor,
+            checksums: { ...checksums, ...newChecksums },
+          });
+        }
       }
     }
+
+    this._logger.info(`[ConnectorService] Completed fetching ${String(entityType)}`, {
+      totalFetched,
+      totalSkipped,
+      totalYielded,
+      forceRefresh,
+    });
   }
 
   private async fetchEntitiesLegacy<K extends keyof TEntityMap, E>(
