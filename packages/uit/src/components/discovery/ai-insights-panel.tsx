@@ -16,6 +16,7 @@ import {
 import { useInsights } from "@/contexts/insights.context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/styles/utils";
 import type { InsightCorrelation, InsightAnomaly, InsightRecommendation } from "@ait/ai-sdk";
@@ -37,116 +38,20 @@ export function AiInsightsPanel({ timeRange, onHide }: AiInsightsPanelProps) {
 
   // Loading state
   if (isLoading) {
-    return (
-      <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/5 via-background to-background backdrop-blur-sm">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative p-6 space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute inset-0 bg-violet-500/20 rounded-xl blur-xl animate-pulse" />
-              <div className="relative p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
-                <Brain className="h-6 w-6 text-violet-400 animate-pulse" />
-              </div>
-            </div>
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-72" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-40 rounded-xl" />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingState />;
   }
 
   // Error state
   if (error) {
-    return (
-      <div className="relative overflow-hidden rounded-2xl border border-red-500/20 bg-gradient-to-br from-red-500/5 via-background to-background">
-        <div className="p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-              <AlertCircle className="h-6 w-6 text-red-400" />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-semibold text-lg">Failed to Load Insights</h4>
-              <p className="text-sm text-muted-foreground">{error}</p>
-            </div>
-            <Button onClick={refreshInsights} variant="outline" size="sm" className="gap-2">
-              <RefreshCw className="h-4 w-4" />
-              Retry
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <ErrorState error={error} onRetry={refreshInsights} />;
   }
 
   // No insights yet
   if (!insights) {
-    return (
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-muted/30 backdrop-blur-sm">
-        <div className="p-8 text-center">
-          <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4">
-            <Sparkles className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h4 className="font-semibold text-lg mb-2">Loading Insights</h4>
-          <p className="text-sm text-muted-foreground">Analyzing your activity patterns...</p>
-        </div>
-      </div>
-    );
+    return <EmptyState />;
   }
 
   const { summary, correlations, anomalies, recommendations, meta } = insights;
-
-  // Get sentiment styling
-  const getSentimentStyles = (sentiment: "positive" | "neutral" | "negative") => {
-    switch (sentiment) {
-      case "positive":
-        return {
-          border: "border-emerald-500/30",
-          bg: "from-emerald-500/10 via-background to-background",
-          glow: "from-emerald-500/20",
-        };
-      case "negative":
-        return {
-          border: "border-red-500/30",
-          bg: "from-red-500/10 via-background to-background",
-          glow: "from-red-500/20",
-        };
-      default:
-        return {
-          border: "border-violet-500/30",
-          bg: "from-violet-500/10 via-background to-background",
-          glow: "from-violet-500/20",
-        };
-    }
-  };
-
-  // Get time range label
-  const getTimeRangeLabel = () => {
-    switch (timeRange) {
-      case "week":
-        return "Your Week in Review";
-      case "month":
-        return "Your Month in Review";
-      case "year":
-        return "Your Year in Review";
-      default:
-        return "Your Activity Review";
-    }
-  };
-
-  const styles = getSentimentStyles(summary?.sentiment || "neutral");
 
   return (
     <AnimatePresence mode="wait">
@@ -156,33 +61,29 @@ export function AiInsightsPanel({ timeRange, onHide }: AiInsightsPanelProps) {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -20, scale: 0.98 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className={cn(
-          "relative overflow-hidden rounded-2xl border backdrop-blur-sm",
-          styles.border,
-          `bg-gradient-to-br ${styles.bg}`,
-        )}
+        className="relative overflow-hidden rounded-2xl border backdrop-blur-sm"
       >
         {/* Background effects */}
         <div className="absolute inset-0 pointer-events-none">
           <div
             className={cn(
               "absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl opacity-50",
-              `bg-gradient-to-bl ${styles.glow} to-transparent`,
+              "bg-gradient-to-bl from-violet-500/20 to-transparent",
             )}
           />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl" />
         </div>
 
-        <div className="relative">
-          {/* Header */}
-          <div className="px-6 pt-6 pb-4">
+        <Card className="border-0 overflow-hidden">
+          <CardHeader className="px-6 pt-6 pb-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4" role="banner">
                 <motion.div
-                  className="relative"
+                  className="relative shrink-0"
                   initial={{ rotate: -10 }}
                   animate={{ rotate: 0 }}
                   transition={{ duration: 0.5 }}
+                  aria-hidden="true"
                 >
                   <div className="absolute inset-0 bg-violet-500/20 rounded-xl blur-xl" />
                   <div className="relative p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/30">
@@ -190,174 +91,305 @@ export function AiInsightsPanel({ timeRange, onHide }: AiInsightsPanelProps) {
                   </div>
                 </motion.div>
                 <div>
-                  <h3 className="font-bold text-xl flex items-center gap-2">
-                    {getTimeRangeLabel()}
-                    <Sparkles className="h-4 w-4 text-violet-400" />
-                  </h3>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    {getTimeRangeLabel(timeRange)}
+                    <Sparkles className="h-4 w-4 text-violet-400" aria-hidden="true" />
+                  </CardTitle>
                   <p className="text-sm text-muted-foreground">AI-generated insights from your activity</p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" role="toolbar">
                 {meta && (
                   <Badge variant="secondary" className="text-xs bg-background/50 backdrop-blur-sm">
-                    <Zap className="h-3 w-3 mr-1 text-yellow-500" />
+                    <Zap className="h-3 w-3 mr-1 text-yellow-500" aria-hidden="true" />
                     {meta.cacheHit ? "Cached" : `${meta.generationTimeMs}ms`}
                   </Badge>
                 )}
                 {onHide && (
-                  <Button variant="ghost" size="icon" onClick={onHide} className="h-8 w-8 rounded-lg">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onHide}
+                    className="h-8 w-8 rounded-lg"
+                    aria-label="Hide insights panel"
+                  >
                     <ChevronUp className="h-4 w-4" />
                   </Button>
                 )}
               </div>
             </div>
-          </div>
+          </CardHeader>
 
-          <div className="px-6 pb-6 space-y-6">
+          <CardContent className="px-6 pb-6 space-y-6">
             {/* AI Summary - Hero Section */}
-            {summary && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="relative overflow-hidden rounded-xl bg-background/50 backdrop-blur-sm border border-border/50 p-5"
-              >
-                <div className="flex items-start gap-4">
-                  <motion.span
-                    className="text-5xl"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
-                  >
-                    {summary.emoji}
-                  </motion.span>
-                  <div className="flex-1 space-y-3">
-                    <div>
-                      <h3 className="font-bold text-xl mb-1">{summary.title}</h3>
-                      <p className="text-muted-foreground leading-relaxed">{summary.description}</p>
-                    </div>
-
-                    {/* Highlights */}
-                    {summary.highlights && summary.highlights.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {summary.highlights.map((highlight, idx) => (
-                          <motion.div
-                            key={highlight}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.3 + idx * 0.05 }}
-                          >
-                            <Badge
-                              variant="secondary"
-                              className="text-xs bg-violet-500/10 text-violet-400 border-violet-500/20"
-                            >
-                              {highlight}
-                            </Badge>
-                          </motion.div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-            )}
+            {summary && <SummarySection summary={summary} />}
 
             {/* Insights Grid */}
             {(correlations.length > 0 || anomalies.length > 0 || recommendations.length > 0) && (
               <div className="space-y-6">
                 {/* Recommendations Section */}
-                {recommendations.length > 0 && (
-                  <InsightSection
-                    icon={Lightbulb}
-                    title="Suggestions"
-                    count={recommendations.length}
-                    iconColor="text-amber-500"
-                    bgColor="bg-amber-500/10"
-                    borderColor="border-amber-500/20"
-                    delay={0.2}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                      {recommendations.map((rec, idx) => (
-                        <InsightCard
-                          key={`rec-${rec.category}-${rec.action}-${idx}`}
-                          delay={0.25 + idx * 0.05}
-                          accentColor="amber"
-                        >
-                          <RecommendationInsight recommendation={rec} />
-                        </InsightCard>
-                      ))}
-                    </div>
-                  </InsightSection>
-                )}
+                {recommendations.length > 0 && <RecommendationsSection recommendations={recommendations} />}
 
                 {/* Correlations Section */}
-                {correlations.length > 0 && (
-                  <InsightSection
-                    icon={TrendingUp}
-                    title="Patterns Detected"
-                    count={correlations.length}
-                    iconColor="text-blue-500"
-                    bgColor="bg-blue-500/10"
-                    borderColor="border-blue-500/20"
-                    delay={0.3}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                      {correlations.map((corr, idx) => (
-                        <InsightCard
-                          key={`corr-${corr.integrations.join("-")}-${corr.strength}-${idx}`}
-                          delay={0.35 + idx * 0.05}
-                          accentColor="blue"
-                        >
-                          <CorrelationInsight correlation={corr} />
-                        </InsightCard>
-                      ))}
-                    </div>
-                  </InsightSection>
-                )}
+                {correlations.length > 0 && <CorrelationsSection correlations={correlations} />}
 
                 {/* Anomalies Section */}
-                {anomalies.length > 0 && (
-                  <InsightSection
-                    icon={AlertTriangle}
-                    title="Activity Alerts"
-                    count={anomalies.length}
-                    iconColor="text-orange-500"
-                    bgColor="bg-orange-500/10"
-                    borderColor="border-orange-500/20"
-                    delay={0.4}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                      {anomalies.map((anom, idx) => (
-                        <InsightCard
-                          key={`anom-${anom.integration}-${anom.metric}-${idx}`}
-                          delay={0.45 + idx * 0.05}
-                          accentColor="orange"
-                        >
-                          <AnomalyInsight anomaly={anom} />
-                        </InsightCard>
-                      ))}
-                    </div>
-                  </InsightSection>
-                )}
+                {anomalies.length > 0 && <AnomaliesSection anomalies={anomalies} />}
               </div>
             )}
 
             {/* Empty state */}
             {!summary && correlations.length === 0 && anomalies.length === 0 && recommendations.length === 0 && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
-                <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4">
-                  <Target className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <h4 className="font-semibold text-lg mb-2">Not Enough Data</h4>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  Keep using your integrations to unlock AI-powered insights and personalized recommendations!
-                </p>
-              </motion.div>
+              <EmptyInsightsState />
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function getTimeRangeLabel(timeRange: "week" | "month" | "year"): string {
+  switch (timeRange) {
+    case "week":
+      return "Your Week in Review";
+    case "month":
+      return "Your Month in Review";
+    case "year":
+      return "Your Year in Review";
+    default:
+      return "Your Activity Review";
+  }
+}
+
+function LoadingState() {
+  return (
+    <Card className="relative overflow-hidden border-violet-500/20 bg-gradient-to-br from-violet-500/5 via-background to-background backdrop-blur-sm">
+      <CardContent className="p-6 space-y-6">
+        <div className="flex items-center gap-3" aria-label="Loading AI insights">
+          <div className="relative shrink-0">
+            <div className="absolute inset-0 bg-violet-500/20 rounded-xl blur-xl animate-pulse" />
+            <div className="relative p-3 rounded-xl bg-violet-500/10 border border-violet-500/20">
+              <Brain className="h-6 w-6 text-violet-400 animate-pulse" />
+            </div>
+          </div>
+          <div className="space-y-2 flex-1">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-72" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-40 rounded-xl" />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface ErrorStateProps {
+  error: string;
+  onRetry: () => void;
+}
+
+function ErrorState({ error, onRetry }: ErrorStateProps) {
+  return (
+    <Card className="border-red-500/20 bg-gradient-to-br from-red-500/5 via-background to-background">
+      <CardContent className="p-6">
+        <div className="flex items-center gap-4" role="alert">
+          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 shrink-0">
+            <AlertCircle className="h-6 w-6 text-red-400" aria-hidden="true" />
+          </div>
+          <div className="flex-1">
+            <CardTitle className="text-lg">Failed to Load Insights</CardTitle>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+          <Button onClick={onRetry} variant="outline" size="sm" className="gap-2 shrink-0">
+            <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            Retry
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function EmptyState() {
+  return (
+    <Card className="border-border/50 bg-muted/30 backdrop-blur-sm">
+      <CardContent className="p-8 text-center">
+        <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4 mx-auto" aria-hidden="true">
+          <Sparkles className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <CardTitle className="mb-2">Loading Insights</CardTitle>
+        <p className="text-sm text-muted-foreground">Analyzing your activity patterns...</p>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface SummarySectionProps {
+  summary: {
+    emoji: string;
+    title: string;
+    description: string;
+    highlights?: string[];
+  };
+}
+
+function SummarySection({ summary }: SummarySectionProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.1 }}
+      className="relative overflow-hidden rounded-xl bg-background/50 backdrop-blur-sm border border-border/50"
+    >
+      <CardContent className="p-5">
+        <div className="flex items-start gap-4" aria-labelledby="summary-title">
+          <motion.span
+            className="text-5xl shrink-0 mt-1"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
+            aria-hidden="true"
+          >
+            {summary.emoji}
+          </motion.span>
+          <div className="flex-1 space-y-3">
+            <div>
+              <h3 id="summary-title" className="font-bold text-xl mb-1">
+                {summary.title}
+              </h3>
+              <p className="text-muted-foreground leading-relaxed">{summary.description}</p>
+            </div>
+
+            {/* Highlights */}
+            {summary.highlights && summary.highlights.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {summary.highlights.map((highlight, idx) => (
+                  <motion.div
+                    key={highlight}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + idx * 0.05 }}
+                  >
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-violet-500/10 text-violet-400 border-violet-500/20"
+                    >
+                      {highlight}
+                    </Badge>
+                  </motion.div>
+                ))}
+              </div>
             )}
           </div>
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </CardContent>
+    </motion.div>
+  );
+}
+
+interface RecommendationsSectionProps {
+  recommendations: InsightRecommendation[];
+}
+
+function RecommendationsSection({ recommendations }: RecommendationsSectionProps) {
+  return (
+    <InsightSection
+      icon={Lightbulb}
+      title="Suggestions"
+      count={recommendations.length}
+      iconColor="text-amber-500"
+      bgColor="bg-amber-500/10"
+      borderColor="border-amber-500/20"
+      delay={0.2}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {recommendations.map((rec, idx) => (
+          <InsightCard key={`rec-${rec.category}-${rec.action}-${idx}`} delay={0.25 + idx * 0.05} accentColor="amber">
+            <RecommendationInsight recommendation={rec} />
+          </InsightCard>
+        ))}
+      </div>
+    </InsightSection>
+  );
+}
+
+interface CorrelationsSectionProps {
+  correlations: InsightCorrelation[];
+}
+
+function CorrelationsSection({ correlations }: CorrelationsSectionProps) {
+  return (
+    <InsightSection
+      icon={TrendingUp}
+      title="Patterns Detected"
+      count={correlations.length}
+      iconColor="text-blue-500"
+      bgColor="bg-blue-500/10"
+      borderColor="border-blue-500/20"
+      delay={0.3}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {correlations.map((corr, idx) => (
+          <InsightCard
+            key={`corr-${corr.integrations.join("-")}-${corr.strength}-${idx}`}
+            delay={0.35 + idx * 0.05}
+            accentColor="blue"
+          >
+            <CorrelationInsight correlation={corr} />
+          </InsightCard>
+        ))}
+      </div>
+    </InsightSection>
+  );
+}
+
+interface AnomaliesSectionProps {
+  anomalies: InsightAnomaly[];
+}
+
+function AnomaliesSection({ anomalies }: AnomaliesSectionProps) {
+  return (
+    <InsightSection
+      icon={AlertTriangle}
+      title="Activity Alerts"
+      count={anomalies.length}
+      iconColor="text-orange-500"
+      bgColor="bg-orange-500/10"
+      borderColor="border-orange-500/20"
+      delay={0.4}
+    >
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        {anomalies.map((anom, idx) => (
+          <InsightCard
+            key={`anom-${anom.integration}-${anom.metric}-${idx}`}
+            delay={0.45 + idx * 0.05}
+            accentColor="orange"
+          >
+            <AnomalyInsight anomaly={anom} />
+          </InsightCard>
+        ))}
+      </div>
+    </InsightSection>
+  );
+}
+
+function EmptyInsightsState() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12">
+      <div className="inline-flex p-4 rounded-2xl bg-muted/50 mb-4 mx-auto" aria-hidden="true">
+        <Target className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <CardTitle className="mb-2">Not Enough Data</CardTitle>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+        Keep using your integrations to unlock AI-powered insights and personalized recommendations!
+      </p>
+    </motion.div>
   );
 }
 
@@ -391,12 +423,15 @@ function InsightSection({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
       className="space-y-3"
+      aria-labelledby={`section-${title.toLowerCase()}`}
     >
       <div className="flex items-center gap-3">
-        <div className={cn("p-2 rounded-lg", bgColor, borderColor, "border")}>
-          <Icon className={cn("h-4 w-4", iconColor)} />
+        <div className={cn("p-2 rounded-lg shrink-0", bgColor, borderColor, "border")}>
+          <Icon className={cn("h-4 w-4", iconColor)} aria-hidden="true" />
         </div>
-        <h4 className="font-semibold">{title}</h4>
+        <h4 id={`section-${title.toLowerCase()}`} className="font-semibold">
+          {title}
+        </h4>
         <Badge variant="secondary" className="text-xs">
           {count}
         </Badge>
@@ -434,7 +469,9 @@ function InsightCard({ delay, accentColor, children }: InsightCardProps) {
         accentColors[accentColor],
       )}
     >
-      {children}
+      <Card className="border-0 bg-transparent shadow-none p-0 h-full">
+        <CardContent className="p-0">{children}</CardContent>
+      </Card>
     </motion.div>
   );
 }
@@ -477,7 +514,7 @@ function AnomalyInsight({ anomaly }: { anomaly: InsightAnomaly }) {
       case "medium":
         return "bg-orange-500/10 text-orange-400 border-orange-500/20";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-muted text-muted-foreground border-border";
     }
   };
 
@@ -485,7 +522,9 @@ function AnomalyInsight({ anomaly }: { anomaly: InsightAnomaly }) {
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">{anomaly.description}</p>
       <div className="flex flex-wrap gap-2">
-        <Badge className={cn("text-xs capitalize", getSeverityStyles(anomaly.severity))}>{anomaly.severity}</Badge>
+        <Badge className={cn("text-xs capitalize border", getSeverityStyles(anomaly.severity))}>
+          {anomaly.severity}
+        </Badge>
         <Badge variant="outline" className="text-xs capitalize">
           {anomaly.integration}
         </Badge>
@@ -493,11 +532,20 @@ function AnomalyInsight({ anomaly }: { anomaly: InsightAnomaly }) {
       {anomaly.historical && (
         <div className="flex items-center gap-3 text-xs text-muted-foreground pt-1 border-t border-border/50">
           <span>
-            Avg: <span className="font-semibold text-foreground">{anomaly.historical.mean.toFixed(1)}</span>
+            Avg:{" "}
+            <span
+              className="font-semibold text-foreground"
+              aria-label={`${anomaly.historical.mean.toFixed(1)} average`}
+            >
+              {anomaly.historical.mean.toFixed(1)}
+            </span>
           </span>
-          <ArrowRight className="h-3 w-3" />
+          <ArrowRight className="h-3 w-3" aria-hidden="true" />
           <span>
-            Now: <span className="font-semibold text-foreground">{anomaly.historical.current}</span>
+            Now:{" "}
+            <span className="font-semibold text-foreground" aria-label={`Current value ${anomaly.historical.current}`}>
+              {anomaly.historical.current}
+            </span>
           </span>
         </div>
       )}
@@ -520,7 +568,9 @@ function RecommendationInsight({ recommendation }: { recommendation: InsightReco
   return (
     <div className="space-y-3">
       <div className="flex items-start gap-2">
-        <span className={cn("text-lg p-1 rounded-lg", priorityStyles.bg)}>{priorityStyles.emoji}</span>
+        <span className={cn("text-lg p-1 rounded-lg shrink-0", priorityStyles.bg)} aria-hidden="true">
+          {priorityStyles.emoji}
+        </span>
         <p className="font-semibold text-foreground flex-1 leading-tight">{recommendation.action}</p>
       </div>
       <p className="text-sm text-muted-foreground">{recommendation.reason}</p>

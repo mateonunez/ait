@@ -1,19 +1,15 @@
-import {
-  Hash,
-  MessageSquare,
-  Reply,
-  File,
-  Image,
-  Pin,
-  FileText,
-  Video,
-  Music,
-  Archive,
-  ExternalLink,
-} from "lucide-react";
-import { Card } from "../ui/card";
+import { Hash, MessageSquare, Reply, File, Image, Pin, FileText, Video, Music, Archive } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+} from "./connector-card-base";
 import type { SlackMessageEntity as SlackMessage, SlackFile, SlackReaction } from "@ait/core";
 
 interface MessageCardProps {
@@ -57,10 +53,8 @@ function getUserColor(name: string | null): string {
  * Format timestamp in Slack style (e.g., "2:45 PM" or "Yesterday")
  */
 function formatSlackTime(date: Date | string): string {
-  // Handle both Date objects and ISO strings
   const dateObj = typeof date === "string" ? new Date(date) : date;
 
-  // Check if date is valid
   if (Number.isNaN(dateObj.getTime())) {
     return "Invalid date";
   }
@@ -70,7 +64,6 @@ function formatSlackTime(date: Date | string): string {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 
   if (days === 0) {
-    // Today - show time
     return dateObj.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   }
   if (days === 1) {
@@ -130,53 +123,40 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
     return file.thumb_360 || file.thumb_480 || file.thumb_160 || file.thumb_80 || file.thumb_64;
   };
 
-  const handleClick = () => {
-    onClick?.();
-  };
-
   const messageUrl = message.permalink;
 
-  const handleExternalLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (messageUrl) {
-      window.open(messageUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        className,
-      )}
-      onClick={handleClick}
-    >
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+    <ConnectorCardBase service="slack" onClick={onClick} externalUrl={messageUrl!} className={className}>
+      <ConnectorCardContent>
         {/* Header with Avatar and Title */}
-        <div className="flex items-start gap-2 sm:gap-3">
-          <div
+        <ConnectorCardHeader>
+          <motion.div
             className={cn(
-              "h-8 w-8 sm:h-10 sm:w-10 rounded-md flex items-center justify-center text-white text-xs sm:text-sm font-semibold shadow-sm ring-2 ring-border/50 group-hover:ring-purple-500/20 transition-all flex-shrink-0",
+              "h-9 w-9 sm:h-11 sm:w-11 rounded-md flex items-center justify-center text-white text-xs sm:text-sm font-semibold shadow-sm ring-2 ring-border/50 group-hover:ring-purple-500/40 transition-all duration-300 shrink-0",
               userColor,
             )}
+            whileHover={{ scale: 1.05, rotate: 2 }}
+            whileTap={{ scale: 0.95 }}
           >
             {initials}
-          </div>
+          </motion.div>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pr-6">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                <ConnectorCardTitle service="slack" className="line-clamp-1">
                   {userName}
-                </h3>
+                </ConnectorCardTitle>
                 <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                   <span className="text-xs text-muted-foreground">{formatSlackTime(message.createdAt)}</span>
                   {message.edited && <span className="text-xs text-muted-foreground/50 italic">(edited)</span>}
                   {message.pinnedTo && message.pinnedTo.length > 0 && (
-                    <div className="flex items-center gap-0.5 text-xs text-yellow-600 dark:text-yellow-500">
+                    <motion.div
+                      className="flex items-center gap-0.5 text-xs text-amber-600 dark:text-amber-500"
+                      whileHover={{ scale: 1.1 }}
+                    >
                       <Pin className="h-3 w-3" />
-                    </div>
+                    </motion.div>
                   )}
                   {isThread && (
                     <div className="flex items-center gap-1 text-xs text-purple-500 dark:text-purple-400">
@@ -186,19 +166,9 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                   )}
                 </div>
               </div>
-              {messageUrl && (
-                <button
-                  type="button"
-                  onClick={handleExternalLinkClick}
-                  className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
-                  aria-label="Open message in new tab"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </button>
-              )}
             </div>
           </div>
-        </div>
+        </ConnectorCardHeader>
 
         {/* Message Text */}
         {message.text && (
@@ -211,7 +181,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
         {message.attachments && message.attachments.length > 0 && (
           <div className="space-y-1.5 sm:space-y-2">
             {message.attachments.map((attachment, idx) => (
-              <div
+              <motion.div
                 key={
                   attachment.id
                     ? `attachment-${attachment.id}`
@@ -219,6 +189,9 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                 }
                 className="rounded-md border border-border/40 bg-muted/20 p-2 sm:p-3 text-xs hover:bg-muted/30 transition-colors"
                 style={attachment.color ? { borderLeftColor: attachment.color, borderLeftWidth: "4px" } : undefined}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 + idx * 0.05 }}
               >
                 {attachment.title && (
                   <div className="font-semibold mb-1">
@@ -254,7 +227,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                     ))}
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
@@ -265,18 +238,21 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
             {files.map((file: SlackFile) => {
               const isImage = isImageFile(file);
               const thumbnailUrl = getThumbnailUrl(file);
-              console.log({ isImage, thumbnailUrl });
               const FileIcon = getFileIcon(file.mimetype);
 
               // Image files: render as gallery item
               if (isImage && thumbnailUrl) {
                 return (
-                  <a
+                  <motion.a
                     key={file.id}
                     href={file.permalink || file.url_private}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block group relative rounded-lg overflow-hidden border border-border/40 bg-muted/20 hover:border-border transition-all hover:shadow-md"
+                    onClick={(e) => e.stopPropagation()}
+                    whileHover={{ scale: 1.01 }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
                   >
                     <img
                       src={thumbnailUrl}
@@ -290,21 +266,22 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                         {file.size && <span className="ml-2">{formatFileSize(file.size)}</span>}
                       </div>
                     </div>
-                    <div className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
-                      Click to view full size
-                    </div>
-                  </a>
+                  </motion.a>
                 );
               }
 
               // Other files: render as list item
               return (
-                <a
+                <motion.a
                   key={file.id}
                   href={file.permalink || file.url_private}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted/50 border border-transparent hover:border-border/40"
+                  onClick={(e) => e.stopPropagation()}
+                  whileHover={{ scale: 1.02, x: 4 }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
                 >
                   <div className="p-1.5 rounded bg-muted/50">
                     <FileIcon className="h-4 w-4" />
@@ -318,7 +295,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                   {file.size && (
                     <span className="text-xs text-muted-foreground flex-shrink-0">{formatFileSize(file.size)}</span>
                   )}
-                </a>
+                </motion.a>
               );
             })}
           </div>
@@ -328,24 +305,28 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
         {message.reactions && message.reactions.length > 0 && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5">
             {message.reactions.map((reaction: SlackReaction) => (
-              <button
+              <motion.button
                 key={reaction.name}
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-muted/30 hover:bg-muted/60 text-xs border border-border/30 hover:border-border/60 transition-all cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
               >
                 <span className="text-sm">{reaction.name}</span>
                 <span className="text-muted-foreground font-medium">{reaction.count}</span>
-              </button>
+              </motion.button>
             ))}
           </div>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <ConnectorCardFooter>
+          <ConnectorCardFooterBadges>
             <div className="flex items-center gap-1 sm:gap-1.5 text-xs text-muted-foreground">
               {isDM ? (
                 <MessageSquare className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -357,15 +338,15 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
             {isThread && (
               <Badge
                 variant="secondary"
-                className="text-xs font-normal bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                className="text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400"
               >
                 Thread
               </Badge>
             )}
-          </div>
+          </ConnectorCardFooterBadges>
           <span className="text-xs text-muted-foreground whitespace-nowrap">{formatSlackTime(message.createdAt)}</span>
-        </div>
-      </div>
-    </Card>
+        </ConnectorCardFooter>
+      </ConnectorCardContent>
+    </ConnectorCardBase>
   );
 }

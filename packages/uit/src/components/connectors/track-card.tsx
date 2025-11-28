@@ -1,8 +1,21 @@
-import { Music, Clock, TrendingUp, Play, Disc3 } from "lucide-react";
-import { Card } from "../ui/card";
+import { Clock, TrendingUp, Disc3 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardTitle,
+  ConnectorCardStats,
+  ConnectorCardStatItem,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+  ConnectorCardTimestamp,
+  ConnectorCardMedia,
+  ConnectorCardMediaOverlay,
+  ConnectorCardPlayButton,
+} from "./connector-card-base";
 import type { SpotifyTrackEntity as SpotifyTrack } from "@ait/core";
 
 interface TrackCardProps {
@@ -12,12 +25,6 @@ interface TrackCardProps {
 }
 
 export function TrackCard({ track, onClick, className }: TrackCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    }
-  };
-
   const formatDuration = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
@@ -27,76 +34,109 @@ export function TrackCard({ track, onClick, className }: TrackCardProps) {
   const albumImage = (track.albumData?.images as any)?.[1]?.url || (track.albumData?.images as any)?.[0]?.url;
 
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        className,
-      )}
-      onClick={handleClick}
-    >
+    <ConnectorCardBase service="spotify" onClick={onClick} className={className} showExternalLink={false}>
       <div className="flex flex-col h-full">
         {/* Album Art */}
-        {albumImage ? (
-          <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-green-500/10 to-green-600/5">
-            <img src={albumImage} alt={track.album || track.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            {track.previewUrl && (
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                  <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="relative aspect-square bg-gradient-to-br from-green-500/10 to-green-600/5 flex items-center justify-center">
-            <Disc3 className="h-16 w-16 text-muted-foreground/20" />
-          </div>
-        )}
+        <ConnectorCardMedia service="spotify" className="bg-gradient-to-br from-green-500/10 to-emerald-600/5">
+          {albumImage ? (
+            <>
+              <motion.img
+                src={albumImage}
+                alt={track.album || track.name}
+                className="w-full h-full object-cover"
+                initial={{ scale: 1.1, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              />
+              <ConnectorCardMediaOverlay />
+              {track.previewUrl && <ConnectorCardPlayButton service="spotify" />}
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Disc3 className="h-16 w-16 text-muted-foreground/20 animate-spin-slow" />
+            </div>
+          )}
+        </ConnectorCardMedia>
 
         {/* Content */}
-        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 flex-1 flex flex-col">
-          <div className="flex-1 space-y-1.5 sm:space-y-2">
-            <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+        <ConnectorCardContent className="flex-1 flex flex-col">
+          <div className="flex-1 space-y-1.5">
+            <ConnectorCardTitle service="spotify" className="line-clamp-2">
               {track.name}
-            </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{track.artist}</p>
-            {track.album && <p className="text-xs text-muted-foreground/70 line-clamp-1">{track.album}</p>}
+            </ConnectorCardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 font-medium">{track.artist}</p>
+            {track.album && <p className="text-xs text-muted-foreground/60 line-clamp-1 italic">{track.album}</p>}
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
-            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="font-medium tabular-nums">{formatDuration(track.durationMs)}</span>
-            </div>
+          <ConnectorCardStats className="mt-auto pt-2">
+            <ConnectorCardStatItem icon={<Clock className="h-3.5 w-3.5" />}>
+              {formatDuration(track.durationMs)}
+            </ConnectorCardStatItem>
             {track.popularity !== null && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                <span className="font-medium tabular-nums">{track.popularity}%</span>
-              </div>
+              <ConnectorCardStatItem icon={<TrendingUp className="h-3.5 w-3.5 text-green-500" />}>
+                <PopularityBar value={track.popularity} />
+              </ConnectorCardStatItem>
             )}
-          </div>
+          </ConnectorCardStats>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 sm:gap-2">
+          <ConnectorCardFooter>
+            <ConnectorCardFooterBadges>
               {track.explicit && (
-                <Badge variant="secondary" className="text-xs font-normal h-4 sm:h-5">
+                <Badge
+                  variant="secondary"
+                  className="text-xs font-bold h-5 px-1.5 bg-neutral-800 text-neutral-100 dark:bg-neutral-200 dark:text-neutral-900"
+                >
                   E
                 </Badge>
               )}
-              <Music className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-600 dark:text-green-400" />
-            </div>
-            {track.createdAt && (
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                Added {formatRelativeTime(track.addedAt)}
-              </span>
+              <SpotifyLogo />
+            </ConnectorCardFooterBadges>
+            {track.addedAt && (
+              <ConnectorCardTimestamp>Added {formatRelativeTime(track.addedAt)}</ConnectorCardTimestamp>
             )}
-          </div>
-        </div>
+          </ConnectorCardFooter>
+        </ConnectorCardContent>
       </div>
-    </Card>
+    </ConnectorCardBase>
+  );
+}
+
+/**
+ * Visual popularity bar
+ */
+function PopularityBar({ value }: { value: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      <div className="flex gap-px">
+        {[...Array(5)].map((_, i) => (
+          <motion.div
+            // biome-ignore lint/suspicious/noArrayIndexKey: it's the key
+            key={`popularity-bar-${i}`}
+            className={cn(
+              "w-1 h-2.5 rounded-sm",
+              i < Math.round(value / 20) ? "bg-green-500 dark:bg-green-400" : "bg-muted-foreground/20",
+            )}
+            initial={{ scaleY: 0 }}
+            animate={{ scaleY: 1 }}
+            transition={{ delay: 0.1 + i * 0.05 }}
+          />
+        ))}
+      </div>
+      <span className="text-[10px] tabular-nums opacity-70">{value}%</span>
+    </div>
+  );
+}
+
+/**
+ * Spotify logo badge
+ */
+function SpotifyLogo() {
+  return (
+    // biome-ignore lint/a11y/noSvgWithoutTitle: it's the logo
+    <svg className="h-4 w-4 text-green-500" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+    </svg>
   );
 }

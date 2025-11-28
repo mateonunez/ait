@@ -1,8 +1,20 @@
-import { Calendar, Clock, MapPin, Users, ExternalLink, Video, Repeat } from "lucide-react";
-import { Card } from "../ui/card";
+import { Calendar, Clock, MapPin, Users, Video, Repeat, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
+  ConnectorCardDescription,
+  ConnectorCardStats,
+  ConnectorCardStatItem,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+  ConnectorCardTimestamp,
+} from "./connector-card-base";
 import type { GoogleCalendarEventEntity as GoogleCalendarEvent } from "@ait/core";
 
 function normalizeEventDate(date: Date): Date {
@@ -28,54 +40,38 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onClick, className }: EventCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (event.htmlUrl) {
-      window.open(event.htmlUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleExternalLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (event.htmlUrl) {
-      window.open(event.htmlUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleMeetingLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (event.hangoutLink) {
-      window.open(event.hangoutLink, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const getStatusColor = () => {
+  const getStatusConfig = () => {
     const status = event.status?.toLowerCase();
     if (status === "confirmed") {
-      return "text-green-600 dark:text-green-400";
+      return {
+        icon: CheckCircle2,
+        color: "text-emerald-600 dark:text-emerald-400",
+        bg: "bg-emerald-500/10",
+        border: "border-emerald-500/30",
+      };
     }
     if (status === "tentative") {
-      return "text-yellow-600 dark:text-yellow-400";
+      return {
+        icon: AlertCircle,
+        color: "text-amber-600 dark:text-amber-400",
+        bg: "bg-amber-500/10",
+        border: "border-amber-500/30",
+      };
     }
     if (status === "cancelled") {
-      return "text-red-600 dark:text-red-400";
+      return {
+        icon: XCircle,
+        color: "text-rose-600 dark:text-rose-400",
+        bg: "bg-rose-500/10",
+        border: "border-rose-500/30",
+      };
     }
-    return "text-muted-foreground";
-  };
-
-  const getStatusBadgeColor = () => {
-    const status = event.status?.toLowerCase();
-    if (status === "confirmed") {
-      return "bg-green-500/10 text-green-600 dark:text-green-400 border-green-600/20";
-    }
-    if (status === "tentative") {
-      return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-600/20";
-    }
-    if (status === "cancelled") {
-      return "bg-red-500/10 text-red-600 dark:text-red-400 border-red-600/20";
-    }
-    return "bg-muted";
+    return {
+      icon: Calendar,
+      color: "text-muted-foreground",
+      bg: "bg-muted",
+      border: "border-border",
+    };
   };
 
   const formatEventTime = () => {
@@ -101,9 +97,8 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
   };
 
   const formatEventDate = () => {
-    const normalized = getNormalizedStartTime();
-    if (!normalized) return "";
-
+    if (!event.startTime) return "";
+    const normalized = normalizeEventDate(new Date(event.startTime));
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -124,8 +119,7 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
 
   const getNormalizedStartTime = () => {
     if (!event.startTime) return null;
-    const startTime = new Date(event.startTime);
-    return normalizeEventDate(startTime);
+    return normalizeEventDate(new Date(event.startTime));
   };
 
   const isUpcoming = () => {
@@ -141,106 +135,98 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
     return normalized < new Date();
   };
 
+  const statusConfig = getStatusConfig();
+  const StatusIcon = statusConfig.icon;
+
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        isPast() && "opacity-60",
-        className,
-      )}
-      onClick={handleClick}
+    <ConnectorCardBase
+      service="google"
+      onClick={onClick}
+      externalUrl={event.htmlUrl}
+      className={cn(className, isPast() && "opacity-60")}
     >
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+      <ConnectorCardContent>
         {/* Header with Calendar Icon */}
-        <div className="flex items-start gap-2 sm:gap-3">
-          <div className={cn("shrink-0 pt-0.5", getStatusColor())}>
-            <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+        <ConnectorCardHeader>
+          <div className={cn("shrink-0 pt-0.5", statusConfig.color)}>
+            <StatusIcon className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                {event.title || "Untitled Event"}
-              </h3>
-              <button
-                type="button"
-                onClick={handleExternalLinkClick}
-                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:text-foreground focus:outline-none"
-                aria-label="Open event in Google Calendar"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">{formatEventDate()}</p>
+          <div className="flex-1 min-w-0 pr-6">
+            <ConnectorCardTitle service="google" className="line-clamp-2">
+              {event.title || "Untitled Event"}
+            </ConnectorCardTitle>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">{formatEventDate()}</p>
           </div>
-        </div>
+        </ConnectorCardHeader>
 
         {/* Description */}
         {event.description && (
-          <p className="text-xs sm:text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">
-            {event.description}
-          </p>
+          <ConnectorCardDescription className="line-clamp-2">{event.description}</ConnectorCardDescription>
         )}
 
         {/* Time and Location */}
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-xs text-muted-foreground">
-          <div className="flex items-center gap-1 sm:gap-1.5">
-            <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span>{formatEventTime()}</span>
-          </div>
+        <ConnectorCardStats>
+          <ConnectorCardStatItem icon={<Clock className="h-3.5 w-3.5" />}>{formatEventTime()}</ConnectorCardStatItem>
           {event.location && (
-            <div className="flex items-center gap-1 sm:gap-1.5 max-w-[150px]">
-              <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+            <ConnectorCardStatItem icon={<MapPin className="h-3.5 w-3.5 shrink-0" />} className="max-w-[150px]">
               <span className="truncate">{event.location}</span>
-            </div>
+            </ConnectorCardStatItem>
           )}
           {event.attendeesCount > 0 && (
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span>
-                {event.attendeesCount} attendee{event.attendeesCount > 1 ? "s" : ""}
-              </span>
-            </div>
+            <ConnectorCardStatItem icon={<Users className="h-3.5 w-3.5" />}>
+              {event.attendeesCount} attendee{event.attendeesCount > 1 ? "s" : ""}
+            </ConnectorCardStatItem>
           )}
-        </div>
+        </ConnectorCardStats>
 
         {/* Meeting Link */}
         {event.hangoutLink && (
-          <button
-            type="button"
-            onClick={handleMeetingLinkClick}
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          <motion.a
+            href={event.hangoutLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="inline-flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <Video className="h-3 w-3" />
             Join meeting
-          </button>
+          </motion.a>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <Badge variant="outline" className={cn("text-xs font-normal capitalize", getStatusBadgeColor())}>
+        <ConnectorCardFooter>
+          <ConnectorCardFooterBadges>
+            <Badge
+              variant="outline"
+              className={cn("text-xs font-medium capitalize", statusConfig.bg, statusConfig.color, statusConfig.border)}
+            >
               {event.status}
             </Badge>
             {event.recurringEventId && (
-              <Badge variant="outline" className="text-xs font-normal">
+              <Badge
+                variant="outline"
+                className="text-xs font-medium bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20"
+              >
                 <Repeat className="h-3 w-3 mr-1" />
                 Recurring
               </Badge>
             )}
             {event.isAllDay && (
-              <Badge variant="secondary" className="text-xs font-normal">
+              <Badge
+                variant="secondary"
+                className="text-xs font-medium bg-neutral-500/10 text-neutral-600 dark:text-neutral-400"
+              >
                 All day
               </Badge>
             )}
-          </div>
+          </ConnectorCardFooterBadges>
           {isUpcoming() && getNormalizedStartTime() && (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatRelativeTime(getNormalizedStartTime()!)}
-            </span>
+            <ConnectorCardTimestamp>{formatRelativeTime(getNormalizedStartTime()!)}</ConnectorCardTimestamp>
           )}
-        </div>
-      </div>
-    </Card>
+        </ConnectorCardFooter>
+      </ConnectorCardContent>
+    </ConnectorCardBase>
   );
 }

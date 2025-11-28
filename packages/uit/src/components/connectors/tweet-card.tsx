@@ -3,7 +3,6 @@ import {
   Repeat2,
   MessageCircle,
   Quote,
-  ExternalLink,
   User,
   Image as ImageIcon,
   Video,
@@ -12,12 +11,22 @@ import {
   MessageSquare,
   Play,
 } from "lucide-react";
-import { Card } from "../ui/card";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Progress } from "../ui/progress";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
+  ConnectorCardStats,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+  ConnectorCardTimestamp,
+} from "./connector-card-base";
 import type { XTweetEntity as XTweet, XMediaEntity, XPollEntity } from "@ait/core";
 
 interface TweetCardProps {
@@ -28,21 +37,6 @@ interface TweetCardProps {
 
 export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
   const tweetUrl = tweet.authorUsername ? `https://twitter.com/${tweet.authorUsername}/status/${tweet.id}` : undefined;
-
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (tweetUrl) {
-      window.open(tweetUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleExternalLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (tweetUrl) {
-      window.open(tweetUrl, "_blank", "noopener,noreferrer");
-    }
-  };
 
   const totalEngagement =
     (tweet.likeCount ?? 0) + (tweet.retweetCount ?? 0) + (tweet.replyCount ?? 0) + (tweet.quoteCount ?? 0);
@@ -70,33 +64,26 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
   const location = tweet.placeData as any;
 
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        className,
-      )}
-      onClick={handleClick}
-    >
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+    <ConnectorCardBase service="x" onClick={onClick} externalUrl={tweetUrl} className={className}>
+      <ConnectorCardContent>
         {/* Header with Author Avatar */}
-        <div className="flex items-start gap-2 sm:gap-3">
-          <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-border/50 group-hover:ring-blue-500/20 transition-all flex-shrink-0">
+        <ConnectorCardHeader>
+          <Avatar className="h-9 w-9 sm:h-11 sm:w-11 ring-2 ring-border/50 group-hover:ring-sky-500/40 transition-all duration-300 shrink-0">
             <AvatarImage
               src={`https://unavatar.io/twitter/${tweet.authorUsername}`}
               alt={tweet.authorName || tweet.authorUsername || "User"}
             />
-            <AvatarFallback className="bg-blue-500/10 text-blue-600 dark:text-blue-400">
+            <AvatarFallback className="bg-sky-500/10 text-sky-600 dark:text-sky-400">
               <User className="h-4 w-4 sm:h-5 sm:w-5" />
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pr-6">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                <ConnectorCardTitle service="x" className="line-clamp-1">
                   {tweet.authorName || tweet.authorUsername || "Unknown"}
-                </h3>
+                </ConnectorCardTitle>
                 <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
                   {tweet.authorUsername && (
                     <span className="text-xs text-muted-foreground">@{tweet.authorUsername}</span>
@@ -109,41 +96,37 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
                   )}
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleExternalLinkClick}
-                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
-                aria-label="Open tweet in new tab"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </button>
             </div>
           </div>
-        </div>
+        </ConnectorCardHeader>
 
         {/* Tweet Content */}
-        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed line-clamp-4 transition-colors">
+        <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed line-clamp-4 transition-colors whitespace-pre-wrap break-words">
           {tweet.text}
         </p>
 
         {/* Media Attachments */}
         {hasMedia && (
-          <div
+          <motion.div
             className={cn(
               "grid gap-2 rounded-lg overflow-hidden",
               mediaCount === 1 && "grid-cols-1",
               mediaCount === 2 && "grid-cols-2",
               mediaCount >= 3 && "grid-cols-2",
             )}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.1 }}
           >
             {tweet.mediaAttachments?.slice(0, 4).map((media, idx) => (
-              <div
+              <motion.div
                 key={media.media_key}
                 className={cn(
                   "relative aspect-video rounded-md overflow-hidden bg-muted border border-border/50",
                   "flex items-center justify-center group/media",
                   mediaCount === 3 && idx === 0 && "col-span-2",
                 )}
+                whileHover={{ scale: 1.02 }}
               >
                 {media.url || media.preview_image_url ? (
                   <>
@@ -164,19 +147,24 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
                     <span className="text-xs capitalize">{media.type}</span>
                   </div>
                 )}
-              </div>
+              </motion.div>
             ))}
             {mediaCount > 4 && (
               <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded-md">
                 +{mediaCount - 4} more
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Poll Display */}
         {hasPoll && poll && (
-          <div className="space-y-2 p-2 sm:p-3 rounded-lg bg-muted/50 border border-border/50">
+          <motion.div
+            className="space-y-2 p-2 sm:p-3 rounded-lg bg-muted/50 border border-border/50"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
             <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-muted-foreground mb-1.5 sm:mb-2">
               <BarChart3 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="font-medium">
@@ -185,10 +173,16 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
               <span>•</span>
               <span className="capitalize">{poll.voting_status}</span>
             </div>
-            {poll.options?.slice(0, 4).map((option) => {
+            {poll.options?.slice(0, 4).map((option, idx) => {
               const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
               return (
-                <div key={option.label} className="space-y-1">
+                <motion.div
+                  key={option.label}
+                  className="space-y-1"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 + idx * 0.05 }}
+                >
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-medium text-foreground line-clamp-1">{option.label}</span>
                     <span className="text-muted-foreground tabular-nums">
@@ -196,10 +190,10 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
                     </span>
                   </div>
                   <Progress value={percentage} className="h-1.5" />
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
 
         {/* Location Badge */}
@@ -212,58 +206,67 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
 
         {/* Engagement Stats */}
         {totalEngagement > 0 && (
-          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
+          <ConnectorCardStats>
             {tweet.likeCount != null && tweet.likeCount > 0 && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-pink-600 dark:hover:text-pink-400 transition-colors">
-                <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <motion.div
+                className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-pink-600 dark:hover:text-pink-400 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Heart className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.likeCount.toLocaleString()}</span>
-              </div>
+              </motion.div>
             )}
             {tweet.retweetCount != null && tweet.retweetCount > 0 && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-green-600 dark:hover:text-green-400 transition-colors">
-                <Repeat2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <motion.div
+                className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Repeat2 className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.retweetCount.toLocaleString()}</span>
-              </div>
+              </motion.div>
             )}
             {tweet.replyCount != null && tweet.replyCount > 0 && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                <MessageCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <motion.div
+                className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.replyCount.toLocaleString()}</span>
-              </div>
+              </motion.div>
             )}
             {tweet.quoteCount != null && tweet.quoteCount > 0 && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground transition-colors">
-                <Quote className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+              <motion.div
+                className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground transition-colors cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Quote className="h-3.5 w-3.5" />
                 <span className="font-medium tabular-nums">{tweet.quoteCount.toLocaleString()}</span>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </ConnectorCardStats>
         )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+        <ConnectorCardFooter>
+          <ConnectorCardFooterBadges>
             {tweet.lang && (
-              <Badge variant="outline" className="text-xs font-normal uppercase">
+              <Badge variant="outline" className="text-xs font-medium uppercase">
                 {tweet.lang}
               </Badge>
             )}
             {isThread && (
-              <Badge
-                variant="secondary"
-                className="text-xs font-normal bg-blue-500/10 text-blue-600 dark:text-blue-400"
-              >
+              <Badge variant="secondary" className="text-xs font-medium bg-sky-500/10 text-sky-600 dark:text-sky-400">
                 Thread
               </Badge>
             )}
-          </div>
-          {tweet.createdAt && (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatRelativeTime(tweet.createdAt)}
-            </span>
-          )}
-        </div>
-      </div>
-    </Card>
+          </ConnectorCardFooterBadges>
+          {tweet.createdAt && <ConnectorCardTimestamp>{formatRelativeTime(tweet.createdAt)}</ConnectorCardTimestamp>}
+        </ConnectorCardFooter>
+      </ConnectorCardContent>
+    </ConnectorCardBase>
   );
 }
