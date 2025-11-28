@@ -4,6 +4,63 @@ import { contentAlgorithmService } from "@/services/content-algorithm.service";
 import type { IntegrationEntity, HomeSection as HomeSectionType } from "@/types/integrations.types";
 import { getEntityMetadata, type EntityType } from "@ait/core";
 
+const DAYS_MS = 24 * 60 * 60 * 1000;
+const MAX_FUTURE_DAYS = 30; // Only show calendar events within 30 days
+const MAX_PAST_DAYS = 7; // Show events from the past week
+
+function isCalendarEventRelevant(entity: IntegrationEntity): boolean {
+  const entityAny = entity as any;
+  if (entityAny.__type !== "event") return true;
+
+  if (!entityAny.startTime) return false;
+
+  const startTime = new Date(entityAny.startTime);
+  const now = new Date();
+
+  // Normalize recurring events to current/next year
+  let normalizedStart = startTime;
+  const yearsDiff = Math.abs(startTime.getFullYear() - now.getFullYear());
+  if (yearsDiff > 1) {
+    normalizedStart = new Date(startTime);
+    normalizedStart.setFullYear(now.getFullYear());
+    if (normalizedStart < now) {
+      normalizedStart.setFullYear(now.getFullYear() + 1);
+    }
+  }
+
+  const diffMs = normalizedStart.getTime() - now.getTime();
+  const diffDays = diffMs / DAYS_MS;
+
+  // Only include events within the relevant window
+  return diffDays >= -MAX_PAST_DAYS && diffDays <= MAX_FUTURE_DAYS;
+}
+
+function deduplicateRecurringEvents(items: IntegrationEntity[]): IntegrationEntity[] {
+  const seenRecurring = new Set<string>();
+  const seenTitles = new Set<string>();
+
+  return items.filter((item) => {
+    const entityAny = item as any;
+    if (entityAny.__type !== "event") return true;
+
+    // Dedupe by recurringEventId (same recurring series)
+    if (entityAny.recurringEventId) {
+      if (seenRecurring.has(entityAny.recurringEventId)) return false;
+      seenRecurring.add(entityAny.recurringEventId);
+      return true;
+    }
+
+    // Also dedupe by title for events without recurringEventId but same name
+    const title = entityAny.title?.toLowerCase().trim();
+    if (title) {
+      if (seenTitles.has(title)) return false;
+      seenTitles.add(title);
+    }
+
+    return true;
+  });
+}
+
 function getEntityTimestamp(entity: IntegrationEntity): Date | null {
   const entityAny = entity as any;
 
@@ -15,9 +72,7 @@ function getEntityTimestamp(entity: IntegrationEntity): Date | null {
   if (entityAny.playedAt) return new Date(entityAny.playedAt);
   if (entityAny.authorDate) return new Date(entityAny.authorDate);
   if (entityAny.committerDate) return new Date(entityAny.committerDate);
-  // Google Calendar event timestamps
   if (entityAny.startTime) return new Date(entityAny.startTime);
-  if (entityAny.endTime) return new Date(entityAny.endTime);
 
   return null;
 }
@@ -91,21 +146,50 @@ export function useHomepageData({ sections }: UseHomepageDataOptions): UseHomepa
               }
             }
 
-            const sortedByDate = allRecentItems
+            // Filter, dedupe recurring events, then sort by date
+            const relevantItems = deduplicateRecurringEvents(
+              allRecentItems.filter((item) => isCalendarEventRelevant(item)),
+            );
+
+            const sortedByDate = relevantItems
               .map((item) => ({
                 item,
                 timestamp: getEntityTimestamp(item),
+                entityType: (item as any).__type as string,
               }))
               .filter(({ timestamp }) => timestamp !== null)
               .sort((a, b) => {
                 const timeA = a.timestamp!.getTime();
                 const timeB = b.timestamp!.getTime();
                 return timeB - timeA;
-              })
-              .map(({ item }) => item)
-              .slice(0, 10);
+              });
 
-            newSectionsData.set("recent", sortedByDate);
+            // Apply diversity: limit max items per entity type to ensure mixed content
+            const maxPerType = 3;
+            const typeCounts = new Map<string, number>();
+            const diverseItems: IntegrationEntity[] = [];
+
+            for (const { item, entityType } of sortedByDate) {
+              const count = typeCounts.get(entityType) || 0;
+              if (count < maxPerType) {
+                diverseItems.push(item);
+                typeCounts.set(entityType, count + 1);
+              }
+              // Stop when we have enough items
+              if (diverseItems.length >= 10) break;
+            }
+
+            // If we don't have 10 items yet, fill with remaining items
+            if (diverseItems.length < 10) {
+              for (const { item } of sortedByDate) {
+                if (!diverseItems.includes(item)) {
+                  diverseItems.push(item);
+                  if (diverseItems.length >= 10) break;
+                }
+              }
+            }
+
+            newSectionsData.set("recent", diverseItems);
           } else {
             const sectionItems: IntegrationEntity[] = [];
 
