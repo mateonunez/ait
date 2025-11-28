@@ -59,7 +59,7 @@ export class ModelInfoService implements IModelInfoService {
     return {
       temperature: 1,
       topP: 0.9,
-      topK: 40,
+      topK: 10,
       repetitionPenalty: 1.1,
     };
   }

@@ -62,4 +62,14 @@ export class SuggestionService {
   }
 }
 
-export const suggestionService = new SuggestionService();
+/**
+ * Singleton instance of the SuggestionService
+ */
+let _suggestionService: SuggestionService | null = null;
+
+export function getSuggestionService(): SuggestionService {
+  if (!_suggestionService) {
+    _suggestionService = new SuggestionService();
+  }
+  return _suggestionService;
+}
