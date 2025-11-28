@@ -47,6 +47,7 @@ export interface HomeSection {
   id: string;
   title: string;
   entityTypes: EntityType[];
+  variant?: "scroll" | "grid" | "bento";
 }
 
 export interface ContentAlgorithmResult {

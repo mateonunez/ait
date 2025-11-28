@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/styles/utils";
 import { AIT_SERVICES } from "@/utils/items.const";
 import {
@@ -52,36 +53,39 @@ export function IntegrationsList() {
         {enabledIntegrations.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold">Available Integrations</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
-              {enabledIntegrations.map((integration) => {
-                const IconComponent = INTEGRATION_ICONS[integration.id] || Code2;
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2 sm:gap-3 py-2">
+                {enabledIntegrations.map((integration) => {
+                  const IconComponent = INTEGRATION_ICONS[integration.id] || Code2;
 
-                return (
-                  <button
-                    key={integration.id}
-                    type="button"
-                    onClick={() => handleIntegrationClick(integration.route)}
-                    className={cn(
-                      "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
-                      "aspect-square",
-                      "border border-transparent hover:border-white/20",
-                      "transition-all duration-200 hover:scale-105 hover:shadow-xl",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
-                    )}
-                    style={{
-                      backgroundColor: integration.color,
-                    }}
-                  >
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 bg-white/10 backdrop-blur-sm">
-                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                    </div>
-                    <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center">
-                      {integration.title}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={integration.id}
+                      type="button"
+                      onClick={() => handleIntegrationClick(integration.route)}
+                      className={cn(
+                        "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
+                        "w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] shrink-0",
+                        "border border-transparent hover:border-white/20",
+                        "transition-all duration-200 hover:scale-105 hover:shadow-xl",
+                        "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+                      )}
+                      style={{
+                        backgroundColor: integration.color,
+                      }}
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 bg-white/10 backdrop-blur-sm">
+                        <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center whitespace-normal">
+                        {integration.title}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         )}
 
@@ -89,41 +93,44 @@ export function IntegrationsList() {
         {disabledIntegrations.length > 0 && (
           <div className="space-y-3">
             <h3 className="text-lg font-semibold text-muted-foreground">Coming Soon</h3>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-3">
-              {disabledIntegrations.map((integration) => {
-                const IconComponent = INTEGRATION_ICONS[integration.id] || Code2;
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex gap-2 sm:gap-3 py-2">
+                {disabledIntegrations.map((integration) => {
+                  const IconComponent = INTEGRATION_ICONS[integration.id] || Code2;
 
-                return (
-                  <div
-                    key={integration.id}
-                    className={cn(
-                      "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
-                      "aspect-square",
-                      "border border-transparent opacity-60",
-                      "cursor-not-allowed",
-                    )}
-                    style={{
-                      backgroundColor: integration.color,
-                    }}
-                  >
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-white/10 backdrop-blur-sm">
-                      <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                  return (
+                    <div
+                      key={integration.id}
+                      className={cn(
+                        "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
+                        "w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] shrink-0",
+                        "border border-transparent opacity-60",
+                        "cursor-not-allowed",
+                      )}
+                      style={{
+                        backgroundColor: integration.color,
+                      }}
+                    >
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-white/10 backdrop-blur-sm">
+                        <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                      </div>
+                      <div className="flex flex-col items-center justify-center gap-1">
+                        <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center whitespace-normal">
+                          {integration.title}
+                        </p>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] sm:text-xs px-1.5 py-0.5 bg-white/20 text-white border-white/30"
+                        >
+                          Soon
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex flex-col items-center justify-center gap-1">
-                      <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center">
-                        {integration.title}
-                      </p>
-                      <Badge
-                        variant="secondary"
-                        className="text-[10px] sm:text-xs px-1.5 py-0.5 bg-white/20 text-white border-white/30"
-                      >
-                        Soon
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+              <ScrollBar orientation="horizontal" />
+            </ScrollArea>
           </div>
         )}
       </div>

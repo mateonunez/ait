@@ -1,8 +1,19 @@
-import { ExternalLink, User, GitCommit } from "lucide-react";
-import { Card } from "../ui/card";
+import { User, GitCommit, FileCode, CheckCircle2 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { formatRelativeTime } from "@/utils/date.utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
+  ConnectorCardDescription,
+  ConnectorCardStats,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+  ConnectorCardTimestamp,
+} from "./connector-card-base";
 import type { GitHubCommitEntity as GitHubCommit } from "@ait/core";
 
 interface CommitCardProps {
@@ -12,132 +23,112 @@ interface CommitCardProps {
 }
 
 export function CommitCard({ commit, onClick, className }: CommitCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (commit.htmlUrl) {
-      window.open(commit.htmlUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleExternalLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (commit.htmlUrl) {
-      window.open(commit.htmlUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
   const shortSha = commit.sha.substring(0, 7);
   const authorAvatar = commit.authorData?.avatar_url as string | undefined;
   const authorLogin = commit.authorData?.login as string | undefined;
   const fileCount = commit.filesData?.length || 0;
 
   return (
-    <Card
-      className={`group relative overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border ${className || ""}`}
-      onClick={handleClick}
-    >
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+    <ConnectorCardBase service="github" onClick={onClick} externalUrl={commit.htmlUrl} className={className}>
+      <ConnectorCardContent>
         {/* Header with Avatar and Commit Message */}
-        <div className="flex items-start gap-2 sm:gap-3">
-          {authorAvatar && (
-            <Avatar className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-border/50 group-hover:ring-blue-500/20 transition-all flex-shrink-0">
-              <AvatarImage src={authorAvatar} alt={authorLogin || "Author"} />
-              <AvatarFallback>
-                <User className="h-4 w-4 sm:h-5 sm:w-5" />
-              </AvatarFallback>
-            </Avatar>
-          )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                  {commit.message}
-                </h3>
-                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <GitCommit className="h-3 w-3" />
-                    <span className="font-mono">{shortSha}</span>
-                  </div>
-                  {commit.repositoryFullName && (
-                    <>
-                      <span className="text-xs text-muted-foreground">•</span>
-                      <span className="text-xs text-muted-foreground truncate">{commit.repositoryFullName}</span>
-                    </>
-                  )}
-                </div>
+        <ConnectorCardHeader>
+          <Avatar className="h-9 w-9 sm:h-11 sm:w-11 ring-2 ring-border/50 group-hover:ring-blue-500/40 transition-all duration-300 shrink-0">
+            <AvatarImage src={authorAvatar} alt={authorLogin || "Author"} />
+            <AvatarFallback className="bg-slate-800 text-slate-200">
+              <User className="h-4 w-4 sm:h-5 sm:w-5" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0 pr-6">
+            <ConnectorCardTitle service="github" className="line-clamp-2">
+              {commit.message}
+            </ConnectorCardTitle>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <GitCommit className="h-3 w-3" />
+                <code className="font-mono text-xs bg-muted/50 px-1.5 py-0.5 rounded">{shortSha}</code>
               </div>
-              <button
-                type="button"
-                onClick={handleExternalLinkClick}
-                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 hover:text-foreground focus:outline-none"
-                aria-label="Open commit in new tab"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </button>
+              {commit.repositoryFullName && (
+                <>
+                  <span className="text-muted-foreground/40">•</span>
+                  <span className="text-xs text-muted-foreground truncate max-w-[150px] font-mono opacity-70">
+                    {commit.repositoryFullName}
+                  </span>
+                </>
+              )}
             </div>
           </div>
-        </div>
+        </ConnectorCardHeader>
 
         {/* Commit Body */}
         {commit.messageBody && (
-          <p className="text-xs sm:text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">
+          <ConnectorCardDescription className="line-clamp-2 font-mono text-xs">
             {commit.messageBody}
-          </p>
+          </ConnectorCardDescription>
         )}
 
         {/* Stats */}
         {(commit.additions > 0 || commit.deletions > 0 || fileCount > 0) && (
-          <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono flex-wrap">
+          <ConnectorCardStats className="font-mono">
             {commit.additions > 0 && (
-              <span className="text-green-600 dark:text-green-400 font-medium">+{commit.additions}</span>
+              <motion.span
+                className="text-emerald-600 dark:text-emerald-400 font-semibold"
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                +{commit.additions.toLocaleString()}
+              </motion.span>
             )}
             {commit.deletions > 0 && (
-              <span className="text-red-600 dark:text-red-400 font-medium">-{commit.deletions}</span>
+              <motion.span
+                className="text-rose-600 dark:text-rose-400 font-semibold"
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 }}
+              >
+                -{commit.deletions.toLocaleString()}
+              </motion.span>
             )}
             {fileCount > 0 && (
-              <span className="text-muted-foreground">
-                {fileCount} {fileCount === 1 ? "file" : "files"}
-              </span>
+              <div className="flex items-center gap-1 text-muted-foreground ml-auto">
+                <FileCode className="h-3 w-3" />
+                <span>
+                  {fileCount} {fileCount === 1 ? "file" : "files"}
+                </span>
+              </div>
             )}
-            {commit.total > 0 && (
-              <span className="text-muted-foreground">
-                {commit.total} {commit.total === 1 ? "change" : "changes"}
-              </span>
-            )}
-          </div>
+          </ConnectorCardStats>
         )}
 
         {/* Author Info */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          {commit.authorName && (
-            <span>
-              {commit.authorName}
-              {commit.authorEmail && <span className="ml-1">({commit.authorEmail})</span>}
-            </span>
-          )}
-        </div>
+        {commit.authorName && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-medium">{commit.authorName}</span>
+            {commit.authorEmail && <span className="opacity-60 truncate">({commit.authorEmail})</span>}
+          </div>
+        )}
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            {commit.verification?.verified! && (
-              <Badge variant="outline" className="text-xs font-normal text-green-600 dark:text-green-400">
+        <ConnectorCardFooter>
+          <ConnectorCardFooterBadges>
+            {commit.verification?.verified === true && (
+              <Badge
+                variant="outline"
+                className="text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+              >
+                <CheckCircle2 className="h-3 w-3 mr-1" />
                 Verified
               </Badge>
             )}
-          </div>
-          {commit.committerDate ? (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatRelativeTime(commit.committerDate)}
-            </span>
-          ) : commit.authorDate ? (
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatRelativeTime(commit.authorDate)}
-            </span>
-          ) : null}
-        </div>
-      </div>
-    </Card>
+          </ConnectorCardFooterBadges>
+          {(commit.committerDate || commit.authorDate) && (
+            <ConnectorCardTimestamp>
+              {formatRelativeTime(commit.committerDate || commit.authorDate!)}
+            </ConnectorCardTimestamp>
+          )}
+        </ConnectorCardFooter>
+      </ConnectorCardContent>
+    </ConnectorCardBase>
   );
 }

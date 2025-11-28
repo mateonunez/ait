@@ -1,8 +1,20 @@
-import { Clock, Play, TrendingUp, Disc3 } from "lucide-react";
-import { Card } from "../ui/card";
+import { Clock, TrendingUp, Disc3 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
-import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardTitle,
+  ConnectorCardStats,
+  ConnectorCardStatItem,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+  ConnectorCardTimestamp,
+  ConnectorCardMedia,
+  ConnectorCardMediaOverlay,
+  ConnectorCardPlayButton,
+} from "./connector-card-base";
 import type { SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed } from "@ait/core";
 
 interface RecentlyPlayedCardProps {
@@ -12,12 +24,6 @@ interface RecentlyPlayedCardProps {
 }
 
 export function RecentlyPlayedCard({ recentlyPlayed, onClick, className }: RecentlyPlayedCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    }
-  };
-
   const formatDuration = (ms: number) => {
     const minutes = Math.floor(ms / 60000);
     const seconds = Math.floor((ms % 60000) / 1000);
@@ -28,76 +34,68 @@ export function RecentlyPlayedCard({ recentlyPlayed, onClick, className }: Recen
     (recentlyPlayed.albumData?.images as any)?.[1]?.url || (recentlyPlayed.albumData?.images as any)?.[0]?.url;
 
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        className,
-      )}
-      onClick={handleClick}
-    >
+    <ConnectorCardBase service="spotify" onClick={onClick} className={className} showExternalLink={false}>
       <div className="flex flex-col h-full">
         {/* Album Art */}
-        {albumImage ? (
-          <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-purple-500/10 to-purple-600/5">
-            <img
-              src={albumImage}
-              alt={recentlyPlayed.album || recentlyPlayed.trackName}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-purple-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
-              </div>
+        <ConnectorCardMedia service="spotify" className="bg-gradient-to-br from-purple-500/10 to-violet-600/5">
+          {albumImage ? (
+            <>
+              <motion.img
+                src={albumImage}
+                alt={recentlyPlayed.album || recentlyPlayed.trackName}
+                className="w-full h-full object-cover"
+                initial={{ scale: 1.1, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              />
+              <ConnectorCardMediaOverlay />
+              <ConnectorCardPlayButton service="spotify" />
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Disc3 className="h-16 w-16 text-muted-foreground/20" />
             </div>
-          </div>
-        ) : (
-          <div className="relative aspect-square bg-gradient-to-br from-purple-500/10 to-purple-600/5 flex items-center justify-center">
-            <Disc3 className="h-16 w-16 text-muted-foreground/20" />
-          </div>
-        )}
+          )}
+        </ConnectorCardMedia>
 
         {/* Content */}
-        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 flex-1 flex flex-col">
-          <div className="flex-1 space-y-1.5 sm:space-y-2">
-            <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+        <ConnectorCardContent className="flex-1 flex flex-col">
+          <div className="flex-1 space-y-1.5">
+            <ConnectorCardTitle service="spotify" className="line-clamp-2">
               {recentlyPlayed.trackName}
-            </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{recentlyPlayed.artist}</p>
+            </ConnectorCardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 font-medium">{recentlyPlayed.artist}</p>
             {recentlyPlayed.album && (
-              <p className="text-xs text-muted-foreground/70 line-clamp-1">{recentlyPlayed.album}</p>
+              <p className="text-xs text-muted-foreground/60 line-clamp-1 italic">{recentlyPlayed.album}</p>
             )}
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
-            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-              <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="font-medium tabular-nums">{formatDuration(recentlyPlayed.durationMs)}</span>
-            </div>
+          <ConnectorCardStats className="mt-auto pt-2">
+            <ConnectorCardStatItem icon={<Clock className="h-3.5 w-3.5" />}>
+              {formatDuration(recentlyPlayed.durationMs)}
+            </ConnectorCardStatItem>
             {recentlyPlayed.popularity !== null && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                <span className="font-medium tabular-nums">{recentlyPlayed.popularity}%</span>
-              </div>
+              <ConnectorCardStatItem icon={<TrendingUp className="h-3.5 w-3.5 text-purple-500" />}>
+                {recentlyPlayed.popularity}%
+              </ConnectorCardStatItem>
             )}
-          </div>
+          </ConnectorCardStats>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-            <Badge
-              variant="outline"
-              className="text-xs font-normal text-purple-600 dark:text-purple-400 border-purple-600/20"
-            >
-              Recently Played
-            </Badge>
-            <span className="text-xs text-muted-foreground whitespace-nowrap">
-              Played {formatRelativeTime(recentlyPlayed.playedAt)}
-            </span>
-          </div>
-        </div>
+          <ConnectorCardFooter>
+            <ConnectorCardFooterBadges>
+              <Badge
+                variant="outline"
+                className="text-xs font-medium bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20"
+              >
+                Recently Played
+              </Badge>
+            </ConnectorCardFooterBadges>
+            <ConnectorCardTimestamp>Played {formatRelativeTime(recentlyPlayed.playedAt)}</ConnectorCardTimestamp>
+          </ConnectorCardFooter>
+        </ConnectorCardContent>
       </div>
-    </Card>
+    </ConnectorCardBase>
   );
 }

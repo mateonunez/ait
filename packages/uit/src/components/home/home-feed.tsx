@@ -38,7 +38,7 @@ export function HomeFeed({ isLoading, sections, sectionsData, totalItems }: Home
         const items = sectionsData.get(section.id) || [];
         if (items.length === 0) return null;
 
-        return <HomeSection key={section.id} title={section.title} items={items} />;
+        return <HomeSection key={section.id} title={section.title} items={items} variant={section.variant} />;
       })}
 
       {totalItems === 0 && (

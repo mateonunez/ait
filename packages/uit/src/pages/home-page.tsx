@@ -36,41 +36,49 @@ const HOME_SECTIONS: HomeSectionType[] = [
       "repository",
       "event",
     ],
+    variant: "bento",
   },
   {
     id: "music",
     title: "Your Music",
     entityTypes: ["track", "playlist", "album", "recently_played"],
+    variant: "scroll",
   },
   {
     id: "code",
     title: "Code & Projects",
     entityTypes: ["commit", "pull_request", "repository"],
+    variant: "scroll",
   },
   {
     id: "tweets",
     title: "From Twitter",
     entityTypes: ["tweet"],
+    variant: "grid",
   },
   {
     id: "workspace",
     title: "Your Workspace",
     entityTypes: ["page"],
+    variant: "grid",
   },
   {
     id: "team",
     title: "Team Updates",
     entityTypes: ["message"],
+    variant: "grid",
   },
   {
     id: "tasks",
     title: "Tasks & Issues",
     entityTypes: ["issue"],
+    variant: "grid",
   },
   {
     id: "schedule",
     title: "Your Schedule",
     entityTypes: ["event"],
+    variant: "scroll",
   },
 ];
 
@@ -134,6 +142,10 @@ export default function HomePage() {
               <DiscoveryStats />
             </div>
 
+            <div className="container mx-auto max-w-7xl my-8">
+              <IntegrationsList />
+            </div>
+
             <div className={cn("flex-1 overflow-y-auto custom-scrollbar", !isOpen && "pb-24 sm:pb-28")}>
               <HomeFeed
                 isLoading={isLoading}
@@ -141,10 +153,6 @@ export default function HomePage() {
                 sectionsData={sectionsData}
                 totalItems={totalItems}
               />
-
-              <div className="container mx-auto max-w-7xl my-8">
-                <IntegrationsList />
-              </div>
 
               <div className="container mx-auto max-w-7xl my-8">
                 <GoalTrackerWidget />

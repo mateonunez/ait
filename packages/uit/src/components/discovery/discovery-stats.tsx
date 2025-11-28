@@ -7,8 +7,6 @@ import {
   GitCommit,
   Twitter,
   Sparkles,
-  ChevronDown,
-  ChevronUp,
   CheckSquare,
   FileText,
   TrendingUp,
@@ -16,14 +14,17 @@ import {
   Minus,
   Activity,
   Zap,
-  Calendar,
   Youtube,
 } from "lucide-react";
 import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/styles/utils";
 import { InsightsProvider, useInsights } from "@/contexts/insights.context";
 import { AiInsightsPanel } from "./ai-insights-panel";
@@ -157,7 +158,7 @@ const INTEGRATIONS_META: Record<
     glowColor: "shadow-[#787774]/20",
   },
   google: {
-    icon: Calendar,
+    icon: Activity,
     label: "Google",
     color: "#4285F4",
     bgGradient: "from-[#4285F4]/20 via-[#4285F4]/5 to-transparent",
@@ -291,15 +292,22 @@ function DiscoveryStatsContent() {
     return (
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-10 w-64" />
+          <div className="space-y-1">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+          <Skeleton className="h-10 w-32" />
         </div>
         <Skeleton className="h-24 w-full rounded-2xl" />
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="h-[200px] rounded-2xl" />
-          ))}
-        </div>
+        <ScrollArea className="w-full whitespace-nowrap">
+          <div className="flex gap-4 py-2">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Skeleton key={i} className="h-[220px] w-[280px] sm:w-[300px] shrink-0 rounded-2xl" />
+            ))}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+        <Skeleton className="h-12 w-full rounded-2xl" />
       </div>
     );
   }
@@ -316,29 +324,24 @@ function DiscoveryStatsContent() {
           <p className="text-sm text-muted-foreground">Track your digital footprint across all integrations</p>
         </div>
 
-        {/* Time Range Pills */}
-        <div className="flex items-center gap-1 p-1 rounded-xl bg-muted/50 backdrop-blur-sm border border-border/50">
+        {/* Time Range ToggleGroup */}
+        <ToggleGroup
+          type="single"
+          value={timeRange}
+          onValueChange={(value) => setTimeRange(value as "week" | "month" | "year")}
+          className="gap-1"
+        >
           {(["week", "month", "year"] as const).map((range) => (
-            <button
+            <ToggleGroupItem
               key={range}
-              type="button"
-              onClick={() => setTimeRange(range)}
-              className={cn(
-                "relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300",
-                timeRange === range ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-              )}
+              value={range}
+              className="data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm"
+              aria-label={`Select ${range} view`}
             >
-              {timeRange === range && (
-                <motion.div
-                  layoutId="timeRangePill"
-                  className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border/50"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                />
-              )}
-              <span className="relative z-10 capitalize">{range}</span>
-            </button>
+              <span className="capitalize">{range}</span>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       {/* AI Review CTA */}
@@ -348,14 +351,14 @@ function DiscoveryStatsContent() {
         className={cn(
           "relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-300",
           showReview
-            ? "bg-linear-to-br from-violet-500/10 via-background to-background border-violet-500/30"
-            : "bg-linear-to-br from-primary/5 via-background to-background border-border/50 hover:border-violet-500/30",
+            ? "bg-gradient-to-br from-violet-500/10 via-background to-background border-violet-500/30"
+            : "bg-gradient-to-br from-primary/5 via-background to-background border-border/50 hover:border-violet-500/30",
         )}
       >
         {/* Animated background pattern */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-linear-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl -translate-x-1/2 translate-y-1/2" />
         </div>
 
         <div className="relative p-4 sm:p-6">
@@ -366,8 +369,8 @@ function DiscoveryStatsContent() {
                 animate={{ rotate: showReview ? 180 : 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="absolute inset-0 bg-linear-to-br from-violet-500/30 to-blue-500/30 rounded-xl blur-xl" />
-                <div className="relative p-3 rounded-xl bg-linear-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/30">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/30 to-blue-500/30 rounded-xl blur-xl" />
+                <div className="relative p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/30">
                   <Sparkles className="h-6 w-6 text-violet-400" />
                 </div>
               </motion.div>
@@ -407,10 +410,11 @@ function DiscoveryStatsContent() {
               )}
               size="lg"
               disabled={insightsLoading}
+              aria-expanded={showReview}
+              aria-controls="ai-insights-panel"
             >
               <Sparkles className="h-4 w-4" />
               {showReview ? "Hide Review" : "Show Review"}
-              {showReview ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -420,6 +424,7 @@ function DiscoveryStatsContent() {
       <AnimatePresence>
         {showReview && (
           <motion.div
+            id="ai-insights-panel"
             initial={{ opacity: 0, height: 0, marginTop: 0 }}
             animate={{ opacity: 1, height: "auto", marginTop: 24 }}
             exit={{ opacity: 0, height: 0, marginTop: 0 }}
@@ -430,12 +435,21 @@ function DiscoveryStatsContent() {
         )}
       </AnimatePresence>
 
-      {/* Activity Stats Grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
-        {statItems.map((item, index) => (
-          <StatCard key={item.id} item={item} index={index} chartConfig={chartConfig} timeRange={timeRange} />
-        ))}
-      </div>
+      {/* Activity Stats - Horizontal Scroll */}
+      <Card className="overflow-hidden">
+        <CardContent className="p-0">
+          <ScrollArea className="w-full whitespace-nowrap">
+            <div className="flex gap-4 sm:gap-6 py-4 px-4 sm:px-6">
+              {statItems.map((item, index) => (
+                <div key={item.id} className="w-[280px] sm:w-[300px] shrink-0">
+                  <StatCard item={item} index={index} chartConfig={chartConfig} timeRange={timeRange} />
+                </div>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
       {/* Summary Bar */}
       {statItems.length > 0 && (
@@ -456,12 +470,12 @@ function DiscoveryStatsContent() {
               })()}
             </span>
           </div>
-          <div className="h-4 w-px bg-border" />
+          <Separator orientation="vertical" className="h-4 shrink-0" decorative />
           <div className="flex items-center gap-2 text-sm">
             <span className="text-muted-foreground">Active Integrations:</span>
             <span className="font-bold text-foreground">{statItems.filter((item) => item.total > 0).length}</span>
           </div>
-          <div className="h-4 w-px bg-border hidden sm:block" />
+          <Separator orientation="vertical" className="h-4 shrink-0 hidden sm:block" decorative />
           <div className="hidden items-center gap-2 text-sm sm:flex">
             <span className="text-muted-foreground">Most Active:</span>
             <span className="font-bold text-foreground">{statItems[0]?.label || "None"}</span>
@@ -475,8 +489,6 @@ function DiscoveryStatsContent() {
 function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = item.icon;
-
-  console.log({ item });
 
   const TrendIcon = item.trend.direction === "up" ? TrendingUp : item.trend.direction === "down" ? TrendingDown : Minus;
   const trendColorClass =
@@ -494,36 +506,42 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border transition-all duration-500",
-        "bg-linear-to-br",
+        "group relative overflow-hidden rounded-2xl border transition-all duration-500 h-full",
+        "bg-gradient-to-br",
         item.bgGradient,
         item.borderColor,
         isHovered && `shadow-lg ${item.glowColor}`,
       )}
+      aria-labelledby={`stat-${item.id}-title`}
     >
       {/* Animated glow effect */}
       <motion.div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
         style={{
           background: `radial-gradient(circle at 50% 50%, ${item.color}15 0%, transparent 70%)`,
         }}
       />
 
       {/* Top accent line */}
-      <div className="absolute top-0 left-0 right-0 h-1 opacity-80" style={{ backgroundColor: item.color }} />
+      <div
+        className="absolute top-0 left-0 right-0 h-1 opacity-80"
+        style={{ backgroundColor: item.color }}
+        aria-hidden="true"
+      />
 
-      <div className="relative p-4 flex flex-col h-full min-h-[200px]">
+      <div className="relative p-4 sm:p-5 flex flex-col h-full min-h-[220px]">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <motion.div
             className={cn(
-              "p-2.5 rounded-xl transition-all duration-300",
+              "p-2.5 rounded-xl transition-all duration-300 shrink-0",
               "bg-background/80 backdrop-blur-sm border border-border/50",
             )}
             whileHover={{ scale: 1.05 }}
             style={{
               boxShadow: isHovered ? `0 0 20px ${item.color}30` : "none",
             }}
+            aria-hidden="true"
           >
             <Icon className="w-5 h-5" style={{ color: item.color }} />
           </motion.div>
@@ -537,8 +555,9 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
                 "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium",
                 "bg-background/80 backdrop-blur-sm border border-border/50",
               )}
+              aria-label={`${item.trend.direction === "up" ? "Up" : "Down"} ${item.trend.value}% trend`}
             >
-              <TrendIcon className={cn("h-3 w-3", trendColorClass)} />
+              <TrendIcon className={cn("h-3 w-3", trendColorClass)} aria-hidden="true" />
               <span className={trendColorClass}>{item.trend.value}%</span>
             </motion.div>
           )}
@@ -551,12 +570,14 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
             key={item.total}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
+            id={`stat-${item.id}-title`}
           >
-            <span>{item.totalDisplay}</span>
+            <span aria-label={`${item.totalDisplay} ${item.label} activity`}>{item.totalDisplay}</span>
             {item.isLimitReached && (
               <span
                 className="text-xs font-normal text-muted-foreground"
                 title="May be higher - limited to 1000 per request"
+                aria-label="Limit reached"
               >
                 (limit)
               </span>
@@ -566,25 +587,29 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
         </div>
 
         {/* Mini Stats */}
-        <div className="flex items-center gap-3 mb-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 mb-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <span className="opacity-70">Avg:</span>
-            <span className="font-semibold text-foreground">{item.average}/day</span>
+            <span className="font-semibold text-foreground" aria-label={`${item.average} average per day`}>
+              {item.average}/day
+            </span>
           </div>
           {item.peakDay && (
             <>
-              <div className="w-px h-3 bg-border" />
+              <Separator orientation="vertical" className="h-3 shrink-0" decorative />
               <div className="flex items-center gap-1">
                 <span className="opacity-70">Peak:</span>
-                <span className="font-semibold text-foreground">{item.peakDay}</span>
+                <span className="font-semibold text-foreground" aria-label={`Peak on ${item.peakDay}`}>
+                  {item.peakDay}
+                </span>
               </div>
             </>
           )}
         </div>
 
         {/* Chart */}
-        <div className="flex-1 min-h-[60px] mt-auto">
-          <ChartContainer config={chartConfig} className="w-full h-full">
+        <div className="flex-1 min-h-[80px] mt-auto">
+          <ChartContainer config={chartConfig} className="h-full w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={item.data} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                 <defs>
@@ -632,7 +657,7 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
-              className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-background via-background/95 to-transparent"
+              className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background via-background/95 to-transparent pointer-events-none"
             >
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">This {timeRange}</span>

@@ -1,8 +1,21 @@
-import { Disc, Music, Calendar, TrendingUp, Play } from "lucide-react";
-import { Card } from "../ui/card";
+import { Disc, Music, TrendingUp } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardTitle,
+  ConnectorCardStats,
+  ConnectorCardStatItem,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+  ConnectorCardTimestamp,
+  ConnectorCardMedia,
+  ConnectorCardMediaOverlay,
+  ConnectorCardPlayButton,
+} from "./connector-card-base";
 import type { SpotifyAlbumEntity as SpotifyAlbum } from "@ait/core";
 
 interface AlbumCardProps {
@@ -12,86 +25,93 @@ interface AlbumCardProps {
 }
 
 export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    }
-  };
-
   const artistsList = album.artists?.join(", ") || "Unknown Artist";
   const albumImage = album.images?.[1]?.url || album.images?.[0]?.url;
 
+  const getAlbumTypeColor = () => {
+    switch (album.albumType?.toLowerCase()) {
+      case "album":
+        return "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20";
+      case "single":
+        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
+      case "compilation":
+        return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20";
+      default:
+        return "bg-muted";
+    }
+  };
+
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        className,
-      )}
-      onClick={handleClick}
-    >
+    <ConnectorCardBase service="spotify" onClick={onClick} className={className} showExternalLink={false}>
       <div className="flex flex-col h-full">
         {/* Album Artwork */}
-        {albumImage ? (
-          <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-orange-500/10 to-orange-600/5">
-            <img src={albumImage} alt={album.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-orange-500 flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
-              </div>
+        <ConnectorCardMedia service="spotify" className="bg-gradient-to-br from-amber-500/10 to-orange-600/5">
+          {albumImage ? (
+            <>
+              <motion.img
+                src={albumImage}
+                alt={album.name}
+                className="w-full h-full object-cover"
+                initial={{ scale: 1.1, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4 }}
+              />
+              <ConnectorCardMediaOverlay />
+              <ConnectorCardPlayButton service="spotify" />
+            </>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Disc className="h-16 w-16 text-muted-foreground/20" />
             </div>
-          </div>
-        ) : (
-          <div className="relative aspect-square bg-gradient-to-br from-orange-500/10 to-orange-600/5 flex items-center justify-center">
-            <Disc className="h-16 w-16 text-muted-foreground/20" />
-          </div>
-        )}
+          )}
+
+          {/* Release year badge */}
+          {album.releaseDate && (
+            <motion.div
+              className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-xs font-medium px-2 py-1 rounded-md"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              {album.releaseDate.slice(0, 4)}
+            </motion.div>
+          )}
+        </ConnectorCardMedia>
 
         {/* Content */}
-        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3 flex-1 flex flex-col">
-          <div className="flex-1 space-y-1.5 sm:space-y-2">
-            <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
+        <ConnectorCardContent className="flex-1 flex flex-col">
+          <div className="flex-1 space-y-1.5">
+            <ConnectorCardTitle service="spotify" className="line-clamp-2">
               {album.name}
-            </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{artistsList}</p>
+            </ConnectorCardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1 font-medium">{artistsList}</p>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-2 sm:gap-3 text-xs flex-wrap">
-            <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-              <Music className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="font-medium tabular-nums">
-                {album.tracks.length} {album.tracks.length === 1 ? "track" : "tracks"}
-              </span>
-            </div>
-            {album.releaseDate && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-                <Calendar className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                <span className="font-medium">{album.releaseDate.slice(0, 4)}</span>
-              </div>
-            )}
+          <ConnectorCardStats className="mt-auto pt-2">
+            <ConnectorCardStatItem icon={<Music className="h-3.5 w-3.5" />}>
+              {album.tracks.length} {album.tracks.length === 1 ? "track" : "tracks"}
+            </ConnectorCardStatItem>
             {album.popularity !== null && (
-              <div className="flex items-center gap-1 sm:gap-1.5 text-muted-foreground">
-                <TrendingUp className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                <span className="font-medium tabular-nums">{album.popularity}%</span>
-              </div>
+              <ConnectorCardStatItem icon={<TrendingUp className="h-3.5 w-3.5 text-green-500" />}>
+                {album.popularity}%
+              </ConnectorCardStatItem>
             )}
-          </div>
+          </ConnectorCardStats>
 
           {/* Footer */}
-          <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-            <Badge variant="outline" className="text-xs font-normal capitalize">
-              {album.albumType}
-            </Badge>
+          <ConnectorCardFooter>
+            <ConnectorCardFooterBadges>
+              <Badge variant="outline" className={cn("text-xs font-medium capitalize", getAlbumTypeColor())}>
+                {album.albumType}
+              </Badge>
+            </ConnectorCardFooterBadges>
             {album.createdAt && (
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                Added {formatRelativeTime(album.createdAt)}
-              </span>
+              <ConnectorCardTimestamp>Added {formatRelativeTime(album.createdAt)}</ConnectorCardTimestamp>
             )}
-          </div>
-        </div>
+          </ConnectorCardFooter>
+        </ConnectorCardContent>
       </div>
-    </Card>
+    </ConnectorCardBase>
   );
 }

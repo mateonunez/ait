@@ -1,8 +1,16 @@
-import { Youtube, ExternalLink, Video } from "lucide-react";
-import { Card } from "../ui/card";
+import { Youtube, Video } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
-import { cn } from "@/styles/utils";
+import {
+  ConnectorCardBase,
+  ConnectorCardContent,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
+  ConnectorCardDescription,
+  ConnectorCardFooter,
+  ConnectorCardFooterBadges,
+} from "./connector-card-base";
 import type { GoogleYouTubeSubscriptionEntity } from "@ait/core";
 
 interface SubscriptionCardProps {
@@ -12,89 +20,83 @@ interface SubscriptionCardProps {
 }
 
 export function GoogleYouTubeSubscriptionCard({ subscription, onClick, className }: SubscriptionCardProps) {
-  const handleClick = () => {
-    if (onClick) {
-      onClick();
-    } else if (subscription.resourceChannelId) {
-      window.open(`https://www.youtube.com/channel/${subscription.resourceChannelId}`, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const handleExternalLinkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (subscription.resourceChannelId) {
-      window.open(`https://www.youtube.com/channel/${subscription.resourceChannelId}`, "_blank", "noopener,noreferrer");
-    }
-  };
+  const channelUrl = subscription.resourceChannelId
+    ? `https://www.youtube.com/channel/${subscription.resourceChannelId}`
+    : undefined;
 
   return (
-    <Card
-      className={cn(
-        "group relative overflow-hidden cursor-pointer transition-all duration-300",
-        "hover:shadow-xl hover:shadow-black/5 hover:-translate-y-1 border-border/50 hover:border-border",
-        className,
-      )}
-      onClick={handleClick}
-    >
-      <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+    <ConnectorCardBase service="youtube" onClick={onClick} externalUrl={channelUrl} className={className}>
+      <ConnectorCardContent>
         {/* Header with YouTube Icon */}
-        <div className="flex items-start gap-2 sm:gap-3">
-          <div className="shrink-0 pt-0.5 text-red-600 dark:text-red-500">
-            <Youtube className="h-4 w-4 sm:h-5 sm:w-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-sm sm:text-base leading-tight line-clamp-2 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
-                {subscription.title || "Untitled Channel"}
-              </h3>
-              <button
-                type="button"
-                onClick={handleExternalLinkClick}
-                className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 hover:text-foreground focus:outline-none"
-                aria-label="Open channel in YouTube"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
+        <ConnectorCardHeader>
+          <motion.div
+            className="shrink-0 pt-0.5 text-red-600 dark:text-red-500"
+            whileHover={{ scale: 1.1, rotate: -5 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Youtube className="h-5 w-5 sm:h-6 sm:w-6" />
+          </motion.div>
+          <div className="flex-1 min-w-0 pr-6">
+            <ConnectorCardTitle service="youtube" className="line-clamp-2">
+              {subscription.title || "Untitled Channel"}
+            </ConnectorCardTitle>
+            <p className="text-xs text-muted-foreground mt-1 font-medium">
               Subscribed {formatRelativeTime(new Date(subscription.publishedAt))}
             </p>
           </div>
-        </div>
+        </ConnectorCardHeader>
 
         {/* Thumbnail and Description */}
         <div className="flex gap-3">
           {subscription.thumbnailUrl && (
-            <div className="shrink-0">
+            <motion.div
+              className="shrink-0"
+              whileHover={{ scale: 1.05 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.1 }}
+            >
               <img
                 src={subscription.thumbnailUrl}
                 alt={subscription.title}
-                className="w-12 h-12 rounded-full object-cover border border-border"
+                className="w-12 h-12 rounded-full object-cover border-2 border-border/50 ring-2 ring-red-500/20 group-hover:ring-red-500/40 transition-all"
               />
-            </div>
+            </motion.div>
           )}
           {subscription.description && (
-            <p className="text-xs sm:text-sm text-muted-foreground/90 line-clamp-2 leading-relaxed">
+            <ConnectorCardDescription className="line-clamp-2 flex-1">
               {subscription.description}
-            </p>
+            </ConnectorCardDescription>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-2 sm:pt-3 border-t border-border/40 flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <Badge variant="outline" className="text-xs font-normal">
+        <ConnectorCardFooter>
+          <ConnectorCardFooterBadges>
+            <Badge
+              variant="outline"
+              className="text-xs font-medium bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30"
+            >
               <Video className="h-3 w-3 mr-1" />
               {subscription.totalItemCount} videos
             </Badge>
             {subscription.newItemCount > 0 && (
-              <Badge variant="secondary" className="text-xs font-normal">
-                {subscription.newItemCount} new
-              </Badge>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Badge
+                  variant="secondary"
+                  className="text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                >
+                  {subscription.newItemCount} new
+                </Badge>
+              </motion.div>
             )}
-          </div>
-        </div>
-      </div>
-    </Card>
+          </ConnectorCardFooterBadges>
+        </ConnectorCardFooter>
+      </ConnectorCardContent>
+    </ConnectorCardBase>
   );
 }
