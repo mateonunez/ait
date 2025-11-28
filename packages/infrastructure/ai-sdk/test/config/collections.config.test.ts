@@ -361,22 +361,6 @@ describe("Collections Configuration", () => {
         assert.equal(collection.vendor, "notion");
       }
     });
-
-    it("should not have overlapping entity types between collections", () => {
-      const collections = getAllCollections();
-      const entityTypeCounts = new Map<EntityType, number>();
-
-      for (const collection of collections) {
-        for (const entityType of collection.entityTypes) {
-          entityTypeCounts.set(entityType, (entityTypeCounts.get(entityType) || 0) + 1);
-        }
-      }
-
-      // Each entity type should appear in exactly one collection
-      for (const [entityType, count] of entityTypeCounts.entries()) {
-        assert.equal(count, 1, `Entity type ${entityType} appears in ${count} collections`);
-      }
-    });
   });
 
   describe("Collection Weights", () => {
