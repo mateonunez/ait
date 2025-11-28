@@ -7,3 +7,4 @@ export * from "./schemas/connector.spotify.schema";
 export * from "./schemas/connector.x.schema";
 export * from "./schemas/connector.notion.schema";
 export * from "./schemas/connector.slack.schema";
+export * from "./schemas/connector.google-calendar.schema";

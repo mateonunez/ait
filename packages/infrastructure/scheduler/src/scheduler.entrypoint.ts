@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import { Scheduler } from "./scheduler.service";
 import type { IRedisConfig } from "@ait/redis";
-import { GitHubETLs, SpotifyETLs, LinearETLs, XETLs, NotionETLs, SlackETLs } from "@ait/retove";
+import { GitHubETLs, SpotifyETLs, LinearETLs, XETLs, NotionETLs, SlackETLs, GoogleCalendarETLs } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
 import { closePostgresConnection } from "@ait/postgres";
 
@@ -113,6 +113,13 @@ const SCHEDULED_JOBS: JobConfig[] = [
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
     priority: 3,
+    enabled: true,
+  },
+  {
+    name: GoogleCalendarETLs.event,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.mediumPriorityCron,
+    priority: 2,
     enabled: true,
   },
 ].filter((job) => job.enabled !== false);

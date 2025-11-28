@@ -1,7 +1,15 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { EntityType, IntegrationVendor, PaginationParams, PaginatedResponse } from "@ait/core";
 import type { CachedEntityData, CachedIntegrationData, IntegrationEntity } from "@/types/integrations.types";
-import { spotifyService, githubService, xService, linearService, notionService, slackService } from "@/services";
+import {
+  spotifyService,
+  githubService,
+  xService,
+  linearService,
+  notionService,
+  slackService,
+  googleService,
+} from "@/services";
 
 interface IntegrationsContextValue {
   cache: CachedIntegrationData;
@@ -117,6 +125,19 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
             }
             break;
           }
+          case "google": {
+            switch (entityType) {
+              case "event":
+                response = await googleService.fetchEvents(params);
+                break;
+              case "calendar":
+                response = await googleService.fetchCalendars(params);
+                break;
+              default:
+                throw new Error(`Unknown Google entity type: ${entityType}`);
+            }
+            break;
+          }
           default:
             throw new Error(`Unknown vendor: ${vendor}`);
         }
@@ -174,6 +195,9 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
           break;
         case "slack":
           await slackService.refresh();
+          break;
+        case "google":
+          await googleService.refresh();
           break;
       }
 

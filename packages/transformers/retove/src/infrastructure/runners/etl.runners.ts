@@ -12,6 +12,7 @@ import { RetoveSpotifyPlaylistETL } from "../../etl/vendors/retove.spotify.playl
 import { RetoveSpotifyAlbumETL } from "../../etl/vendors/retove.spotify.album.etl";
 import { RetoveNotionPageETL } from "../../etl/vendors/retove.notion.page.etl";
 import { RetoveSlackMessageETL } from "../../etl/vendors/retove.slack.message.etl";
+import { RetoveGoogleCalendarEventETL } from "../../etl/vendors/retove.google-calendar.event.etl";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export const SpotifyETLs = {
@@ -42,6 +43,10 @@ export const NotionETLs = {
 
 export const SlackETLs = {
   message: "RetoveSlackMessageETL",
+};
+
+export const GoogleCalendarETLs = {
+  event: "RetoveGoogleCalendarEventETL",
 };
 
 const LIMIT = 100_000;
@@ -165,4 +170,16 @@ export async function runSlackETL(qdrantClient: qdrant.QdrantClient, pgClient: R
   console.log(`🔍 Running RetoveSlackMessageETL → ${collection} with limit of ${LIMIT}...`);
   await slackETL.run(LIMIT);
   console.log(`✅ RetoveSlackMessageETL → ${collection} completed successfully!`);
+}
+
+export async function runGoogleCalendarEventETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const collection = getCollectionNameByVendor("google");
+  const googleCalendarETL = new RetoveGoogleCalendarEventETL(pgClient, qdrantClient);
+
+  console.log(`🔍 Running RetoveGoogleCalendarEventETL → ${collection} with limit of ${LIMIT}...`);
+  await googleCalendarETL.run(LIMIT);
+  console.log(`✅ RetoveGoogleCalendarEventETL → ${collection} completed successfully!`);
 }

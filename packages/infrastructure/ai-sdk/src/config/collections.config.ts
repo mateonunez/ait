@@ -65,6 +65,15 @@ const SLACK_COLLECTION: CollectionConfig = {
   enabled: true,
 };
 
+const GOOGLE_COLLECTION: CollectionConfig = {
+  vendor: "google",
+  name: "ait_google_collection",
+  description: "Google Suite (Calendar, Drive, etc.)",
+  entityTypes: ["event", "calendar"],
+  defaultWeight: 1.0,
+  enabled: true,
+};
+
 const GENERAL_COLLECTION: CollectionConfig = {
   vendor: "general",
   name: "ait_general_collection",
@@ -81,6 +90,7 @@ export const COLLECTIONS_REGISTRY: Record<CollectionVendor, CollectionConfig> = 
   x: X_COLLECTION,
   notion: NOTION_COLLECTION,
   slack: SLACK_COLLECTION,
+  google: GOOGLE_COLLECTION,
   general: GENERAL_COLLECTION,
 };
 

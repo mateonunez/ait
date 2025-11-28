@@ -46,6 +46,15 @@ export const AIT_SERVICES: Item[] = [
     route: "/integrations/linear",
   },
   {
+    id: "google",
+    title: "Google",
+    description: "Calendar events and schedule",
+    color: "#4285F4",
+    size: "md",
+    disabled: false,
+    route: "/integrations/google",
+  },
+  {
     id: "discord",
     title: "Discord",
     description: "Server activity",

@@ -15,6 +15,9 @@ function getEntityTimestamp(entity: IntegrationEntity): Date | null {
   if (entityAny.playedAt) return new Date(entityAny.playedAt);
   if (entityAny.authorDate) return new Date(entityAny.authorDate);
   if (entityAny.committerDate) return new Date(entityAny.committerDate);
+  // Google Calendar event timestamps
+  if (entityAny.startTime) return new Date(entityAny.startTime);
+  if (entityAny.endTime) return new Date(entityAny.endTime);
 
   return null;
 }

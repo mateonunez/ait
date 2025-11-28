@@ -10,6 +10,7 @@ import spotifyRoutes from "./routes/gateway.spotify.routes";
 import xRoutes from "./routes/gateway.x.routes";
 import notionRoutes from "./routes/gateway.notion.routes";
 import slackRoutes from "./routes/gateway.slack.routes";
+import googleRoutes from "./routes/gateway.google.routes";
 import observabilityRoutes from "./routes/gateway.observability.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
 import discoveryRoutes from "./routes/gateway.discovery.routes";
@@ -30,6 +31,7 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(xRoutes, { prefix: "/api/x" });
   server.register(notionRoutes, { prefix: "/api/notion" });
   server.register(slackRoutes, { prefix: "/api/slack" });
+  server.register(googleRoutes, { prefix: "/api/google" });
   server.register(observabilityRoutes, { prefix: "/api/observability" });
   server.register(feedbackRoutes, { prefix: "/api/feedback" });
   server.register(discoveryRoutes, { prefix: "/api/discovery" });

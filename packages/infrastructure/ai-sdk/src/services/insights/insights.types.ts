@@ -145,7 +145,8 @@ export type GoalType =
   | "commits" // Alias for "commit" (backward compatibility)
   | "tasks" // Alias for "issue" (backward compatibility)
   | "documents" // Alias for "page" (backward compatibility)
-  | "messages"; // Alias for "message" (backward compatibility)
+  | "messages" // Alias for "message" (backward compatibility)
+  | "meetings"; // Alias for "event" (backward compatibility)
 
 export type GoalPeriod = "daily" | "weekly" | "monthly";
 
@@ -178,13 +179,16 @@ export const CreateGoalSchema = z.object({
     "tweet",
     "page",
     "message",
+    "event",
+    "calendar",
     // Backward compatibility aliases
     "songs", // -> "recently_played"
     "tweets", // -> "tweet"
     "commits", // -> "commit"
     "tasks", // -> "issue"
     "documents", // -> "page"
-    "messages", // message
+    "messages", // -> message
+    "meetings", // -> event
   ]),
   target: z.number().min(1),
   period: z.enum(["daily", "weekly", "monthly"]),
@@ -225,6 +229,7 @@ export interface ActivityData extends Record<string, IntegrationActivity | undef
   github?: IntegrationActivity;
   linear?: IntegrationActivity;
   notion?: IntegrationActivity;
+  google?: IntegrationActivity;
 }
 
 /**

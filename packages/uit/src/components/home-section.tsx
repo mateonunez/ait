@@ -15,6 +15,8 @@ import { IssueCard } from "@/components/connectors/issue-card";
 import { TweetCard } from "@/components/connectors/tweet-card";
 import { PageCard } from "@/components/connectors/page-card";
 import { MessageCard } from "@/components/connectors/message-card";
+import { EventCard } from "@/components/connectors/event-card";
+import { CalendarCard } from "@/components/connectors/calendar-card";
 import type {
   SpotifyTrackEntity,
   SpotifyArtistEntity,
@@ -28,6 +30,8 @@ import type {
   XTweetEntity,
   NotionPageEntity,
   SlackMessageEntity,
+  GoogleCalendarEventEntity,
+  GoogleCalendarCalendarEntity,
 } from "@ait/core";
 
 interface HomeSectionProps {
@@ -48,6 +52,7 @@ function getIntegrationRoute(entityType: string): string | null {
     linear: "/integrations/linear",
     notion: "/integrations/notion",
     slack: "/integrations/slack",
+    google: "/integrations/google",
   };
 
   return routeMap[metadata.vendor] || null;
@@ -81,6 +86,10 @@ function renderCard(item: IntegrationEntity, onClick?: () => void) {
       return <PageCard page={item as NotionPageEntity} onClick={onClick} />;
     case "message":
       return <MessageCard message={item as SlackMessageEntity} onClick={onClick} />;
+    case "event":
+      return <EventCard event={item as GoogleCalendarEventEntity} onClick={onClick} />;
+    case "calendar":
+      return <CalendarCard calendar={item as GoogleCalendarCalendarEntity} onClick={onClick} />;
     default:
       return null;
   }

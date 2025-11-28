@@ -23,6 +23,7 @@ import { XTweetFormatter } from "./formatters/x.formatter";
 import { NotionPageFormatter } from "./formatters/notion.formatter";
 import { SlackMessageFormatter } from "./formatters/slack.formatter";
 import { LinearIssueFormatter } from "./formatters/linear.formatter";
+import { GoogleCalendarEventFormatter, GoogleCalendarCalendarFormatter } from "./formatters/google-calendar.formatter";
 import { formatMetadataToXml, formatDocumentToXml } from "../../utils/xml.utils";
 
 const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
@@ -38,6 +39,8 @@ const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
   issue: LinearIssueFormatter,
   page: NotionPageFormatter,
   message: SlackMessageFormatter,
+  event: GoogleCalendarEventFormatter,
+  calendar: GoogleCalendarCalendarFormatter,
 };
 
 export class ContextBuilder {

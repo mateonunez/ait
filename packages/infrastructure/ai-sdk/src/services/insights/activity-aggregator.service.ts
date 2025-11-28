@@ -5,18 +5,10 @@ import { getIntegrationRegistryService, type ConnectorType } from "./integration
 
 const logger = getLogger();
 
-/**
- * Interface for connector service factory to avoid circular dependency
- * This matches the signature of ConnectorServiceFactory from @ait/connectors
- * Placed here to avoid circular dependencies
- */
 export interface IConnectorServiceFactory {
   getService<T = any>(connectorType: ConnectorType): T;
 }
 
-/**
- * Service that aggregates activity data from all available connectors dynamically
- */
 export class ActivityAggregatorService {
   private registry = getIntegrationRegistryService();
   private connectorServiceFactory: IConnectorServiceFactory;
@@ -25,20 +17,10 @@ export class ActivityAggregatorService {
     this.connectorServiceFactory = connectorServiceFactory;
   }
 
-  /**
-   * Fetch activity data for all available integrations
-   * Uses caching to avoid hitting connectors on every request
-   */
   async fetchActivityData(range: "week" | "month" | "year"): Promise<ActivityData> {
     const days = range === "week" ? 7 : range === "month" ? 30 : 365;
-
-    // Generate cache key based on range and current date (hourly cache)
-    // This ensures we cache for reasonable periods while still getting fresh data
-    const cacheKey = this.getCacheKey(range);
-
-    // Check cache first
+    const cacheKey = this._getCacheKey(range);
     const cacheService = getCacheService();
-    // Handle both sync and async cache providers
     const cachedResult = cacheService.get<ActivityData>(cacheKey);
     const cached = cachedResult instanceof Promise ? await cachedResult : cachedResult;
     if (cached) {
@@ -47,28 +29,34 @@ export class ActivityAggregatorService {
     }
 
     logger.info("Fetching fresh activity data", { range, days });
+
     const connectorTypes = this.registry.getAvailableConnectorTypes();
-
-    // Build activity data object
     const activityData: ActivityData = {};
-
-    // Fetch data from all connectors sequentially for better error handling
     for (const connectorType of connectorTypes) {
       try {
-        const result = await this.fetchIntegrationActivity(connectorType, days);
+        const result = await this._fetchIntegrationActivity(connectorType, days);
         if (result.activity) {
           activityData[connectorType] = result.activity;
           logger.info(`Successfully fetched ${connectorType} activity`, {
             total: result.activity.total,
             dailyEntries: result.activity.daily.length,
           });
+        } else {
+          activityData[connectorType] = {
+            total: 0,
+            daily: this._generateEmptyDateRange(days),
+          };
         }
       } catch (error: any) {
         logger.error(`Failed to fetch activity for ${connectorType}`, {
           error: error.message,
           stack: error.stack,
         });
-        // Continue with other connectors
+
+        activityData[connectorType] = {
+          total: 0,
+          daily: this._generateEmptyDateRange(days),
+        };
       }
     }
 
@@ -78,7 +66,6 @@ export class ActivityAggregatorService {
       totals,
     });
 
-    // Cache the result for 5 minutes (300 seconds) - short enough to be fresh, long enough to reduce load
     const setResult = cacheService.set(cacheKey, activityData, 300 * 1000);
     if (setResult instanceof Promise) {
       await setResult;
@@ -88,21 +75,14 @@ export class ActivityAggregatorService {
     return activityData;
   }
 
-  /**
-   * Generate cache key based on range and current hour
-   * This ensures we cache for reasonable periods while still getting fresh data
-   */
-  private getCacheKey(range: "week" | "month" | "year"): string {
+  private _getCacheKey(range: "week" | "month" | "year"): string {
     const now = new Date();
     // Cache key includes date and hour, so cache refreshes hourly
     const dateHour = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${now.getHours()}`;
     return `activity:${range}:${dateHour}`;
   }
 
-  /**
-   * Fetch activity data for a specific integration
-   */
-  private async fetchIntegrationActivity(
+  private async _fetchIntegrationActivity(
     connectorType: ConnectorType,
     days: number,
   ): Promise<{ connectorType: ConnectorType; activity: IntegrationActivity }> {
@@ -131,7 +111,7 @@ export class ActivityAggregatorService {
         dateField: metadata.dateField,
       });
 
-      const daily = this.groupByDay(entities, connectorType, days);
+      const daily = this._groupByDay(entities, connectorType, days);
       const dailyTotal = daily.reduce((sum, day) => sum + day.count, 0);
       const total = apiTotal !== null ? apiTotal : Math.max(dailyTotal, entities.length);
 
@@ -161,24 +141,20 @@ export class ActivityAggregatorService {
         connectorType,
         activity: {
           total: 0,
-          daily: this.generateEmptyDateRange(days),
+          daily: this._generateEmptyDateRange(days),
         },
       };
     }
   }
 
-  /**
-   * Group entities by day based on their date field
-   */
-  private groupByDay(
+  private _groupByDay(
     entities: any[],
     connectorType: ConnectorType,
     days: number,
   ): Array<{ date: string; count: number }> {
     const grouped = new Map<string, number>();
-    const dateRange = this.generateDateRange(days);
+    const dateRange = this._generateDateRange(days);
 
-    // Initialize all dates with 0
     for (const date of dateRange) {
       grouped.set(date, 0);
     }
@@ -186,7 +162,6 @@ export class ActivityAggregatorService {
     let validDatesCount = 0;
     let invalidDatesCount = 0;
 
-    // Group entities by date
     for (const entity of entities) {
       const date = this.registry.extractDate(entity, connectorType);
       if (date) {
@@ -195,12 +170,10 @@ export class ActivityAggregatorService {
           grouped.set(dateKey, (grouped.get(dateKey) || 0) + 1);
           validDatesCount++;
         } else {
-          // Entity date is outside the range, but we still count it for debugging
           invalidDatesCount++;
         }
       } else {
         invalidDatesCount++;
-        // Log first few failures for debugging
         if (invalidDatesCount <= 3) {
           const metadata = this.registry.getMetadata(connectorType);
           logger.debug(`Failed to extract date for ${connectorType} entity`, {
@@ -227,10 +200,7 @@ export class ActivityAggregatorService {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
-  /**
-   * Generate date range for the specified number of days
-   */
-  private generateDateRange(days: number): string[] {
+  private _generateDateRange(days: number): string[] {
     const dates: string[] = [];
     const today = new Date();
 
@@ -243,17 +213,10 @@ export class ActivityAggregatorService {
     return dates;
   }
 
-  /**
-   * Generate empty date range with zero counts
-   */
-  private generateEmptyDateRange(days: number): Array<{ date: string; count: number }> {
-    return this.generateDateRange(days).map((date) => ({ date, count: 0 }));
+  private _generateEmptyDateRange(days: number): Array<{ date: string; count: number }> {
+    return this._generateDateRange(days).map((date) => ({ date, count: 0 }));
   }
 }
-
-// Note: This service requires connectorServiceFactory to be injected
-// Use createActivityAggregatorService() in gateway routes instead of getActivityAggregatorService()
-// to avoid circular dependencies
 
 export function createActivityAggregatorService(
   connectorServiceFactory: IConnectorServiceFactory,

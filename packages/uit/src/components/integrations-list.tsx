@@ -13,6 +13,7 @@ import {
   Cloud,
   CreditCard,
   Twitter,
+  Calendar,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -23,6 +24,7 @@ const INTEGRATION_ICONS: Record<string, React.ComponentType<{ className?: string
   linear: Zap,
   notion: FileText,
   slack: MessageSquare,
+  google: Calendar,
   discord: MessageSquare,
   youtube: Video,
   vercel: Cloud,
