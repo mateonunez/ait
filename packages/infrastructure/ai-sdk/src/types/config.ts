@@ -13,7 +13,7 @@ export interface GenerationModelConfig {
   temperature?: number;
   /** Nucleus sampling top-p (0-1, default: 0.9) */
   topP?: number;
-  /** Top-k sampling (default: 40) */
+  /** Top-k sampling (default: 10) */
   topK?: number;
   /** Frequency penalty (0-2, default: undefined) */
   frequencyPenalty?: number;

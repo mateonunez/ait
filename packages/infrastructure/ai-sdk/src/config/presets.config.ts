@@ -15,7 +15,7 @@ const BASIC_PRESET: PresetConfig = {
     model: GenerationModels.GEMMA_3,
     temperature: 0.7,
     topP: 0.9,
-    topK: 40,
+    topK: 10,
   },
   embeddings: {
     model: EmbeddingModels.MXBAI_EMBED_LARGE,
@@ -36,7 +36,7 @@ const BASIC_PRESET: PresetConfig = {
     multipleQueryPlannerConfig: {
       maxDocs: 20,
       queriesCount: 3,
-      concurrency: 2,
+      concurrency: 4,
     },
     conversationConfig: {
       maxRecentMessages: 5,
@@ -76,7 +76,7 @@ const RAG_OPTIMIZED_PRESET: PresetConfig = {
     model: GenerationModels.GPT_OSS_20B,
     temperature: 0.7,
     topP: 0.9,
-    topK: 40,
+    topK: 10,
   },
   embeddings: {
     model: EmbeddingModels.MXBAI_EMBED_LARGE,
@@ -137,7 +137,7 @@ const TOOL_FOCUSED_PRESET: PresetConfig = {
     model: GenerationModels.GPT_OSS_20B,
     temperature: 0.5,
     topP: 0.85,
-    topK: 30,
+    topK: 10,
   },
   embeddings: {
     model: EmbeddingModels.MXBAI_EMBED_LARGE,
@@ -198,7 +198,7 @@ const CONVERSATIONAL_PRESET: PresetConfig = {
     model: GenerationModels.QWEN3,
     temperature: 0.8,
     topP: 0.92,
-    topK: 45,
+    topK: 10,
   },
   embeddings: {
     model: EmbeddingModels.MXBAI_EMBED_LARGE,
@@ -259,7 +259,7 @@ const PRODUCTION_PRESET: PresetConfig = {
     model: GenerationModels.GPT_OSS_20B_CLOUD,
     temperature: 0.7,
     topP: 0.9,
-    topK: 40,
+    topK: 10,
   },
   embeddings: {
     model: EmbeddingModels.MXBAI_EMBED_LARGE,

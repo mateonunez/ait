@@ -43,69 +43,49 @@ export interface ModelSpec {
 
 export type ModelType = "generation" | "embedding";
 
+const DEFAULT_CONFIG = {
+  vectorSize: 4096,
+  contextWindow: 128000,
+  description: "Custom generation model",
+  supportsTools: true,
+  temperature: 0.7,
+  topP: 0.9,
+  topK: 10,
+};
+
 export const GENERATION_MODELS: Record<GenerationModelName, Omit<ModelSpec, "name">> = {
   [GenerationModels.GPT_OSS_20B]: {
-    vectorSize: 4096,
-    contextWindow: 128000,
+    ...DEFAULT_CONFIG,
     description: "OpenAI's open-weight 20B model for powerful reasoning and agentic tasks",
-    supportsTools: true,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
   [GenerationModels.GPT_OSS_20B_CLOUD]: {
-    vectorSize: 4096,
-    contextWindow: 128000,
+    ...DEFAULT_CONFIG,
     description: "OpenAI's open-weight 20B model for powerful reasoning and agentic tasks",
-    supportsTools: true,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
   [GenerationModels.QWEN3]: {
-    vectorSize: 4096,
+    ...DEFAULT_CONFIG,
     contextWindow: 32768,
     description: "Qwen3 model for general-purpose text generation",
-    supportsTools: true,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
   [GenerationModels.DEEPSEEK_R1]: {
-    vectorSize: 4096,
+    ...DEFAULT_CONFIG,
     contextWindow: 32768,
     description: "DeepSeek R1 model for reasoning tasks",
-    supportsTools: true,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
   [GenerationModels.GEMMA_3]: {
-    vectorSize: 4096,
+    ...DEFAULT_CONFIG,
     contextWindow: 32768,
     description: "Gemma 3 model for general-purpose text generation",
-    supportsTools: false,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
   [GenerationModels.GRANITE_4]: {
-    vectorSize: 4096,
+    ...DEFAULT_CONFIG,
     contextWindow: 32768,
     description: "Granite 4 model for general-purpose text generation",
-    supportsTools: true,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
   [GenerationModels.KIMI_K2_THINKING_CLOUD]: {
-    vectorSize: 4096,
+    ...DEFAULT_CONFIG,
     contextWindow: 128000,
     description: "Kimi K2 Thinking model for advanced reasoning and complex problem-solving",
-    supportsTools: true,
-    temperature: 0.7,
-    topP: 0.9,
-    topK: 40,
   },
 };
 

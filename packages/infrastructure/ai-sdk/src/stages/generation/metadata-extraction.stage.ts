@@ -2,9 +2,9 @@ import type { IPipelineStage, PipelineContext } from "../../services/rag/pipelin
 import type { MetadataExtractionInput, MetadataExtractionOutput } from "../../types/stages";
 import { getReasoningExtractionService } from "../../services/metadata/reasoning-extraction.service";
 import { getTaskBreakdownService } from "../../services/metadata/task-breakdown.service";
-import { getSuggestionsService } from "../../services/metadata/suggestions.service";
 import { getModelInfoService } from "../../services/metadata/model-info.service";
 import { getAItClient } from "../../client/ai-sdk.client";
+import { getSuggestionService } from "../../services/generation/suggestion.service";
 
 export class MetadataExtractionStage implements IPipelineStage<MetadataExtractionInput, MetadataExtractionOutput> {
   readonly name = "metadata-extraction";
@@ -16,12 +16,15 @@ export class MetadataExtractionStage implements IPipelineStage<MetadataExtractio
   async execute(input: MetadataExtractionInput, context: PipelineContext): Promise<MetadataExtractionOutput> {
     const reasoningService = getReasoningExtractionService();
     const taskService = getTaskBreakdownService();
-    const suggestionsService = getSuggestionsService();
+    const suggestionsService = getSuggestionService();
     const modelInfoService = getModelInfoService();
 
     const reasoning = reasoningService.extractReasoning(input.fullResponse);
     const tasks = taskService.isComplexQuery(input.prompt) ? taskService.breakdownQuery(input.prompt) : [];
-    const suggestions = suggestionsService.generateSuggestions(input.prompt, input.fullResponse, input.messages);
+    const suggestions = await suggestionsService.generateSuggestions({
+      context: input.prompt,
+      history: input.fullResponse,
+    });
 
     const client = getAItClient();
     const modelInfo = modelInfoService.getModelInfo(client.generationModelConfig.name);

@@ -3,6 +3,7 @@ import type { ChatMessage } from "./chat";
 import type { CollectionRouterResult } from "./collections";
 import type { QueryIntent } from "../services/routing/query-intent.service";
 import type { TraceContext } from "./telemetry";
+import type { Suggestion } from "../services/generation/suggestion.service";
 
 export interface QueryAnalysisInput {
   query: string;
@@ -133,6 +134,6 @@ export interface MetadataExtractionInput {
 export interface MetadataExtractionOutput extends MetadataExtractionInput {
   reasoning: unknown[];
   tasks: unknown[];
-  suggestions: unknown[];
+  suggestions: Suggestion[];
   modelInfo?: unknown;
 }
