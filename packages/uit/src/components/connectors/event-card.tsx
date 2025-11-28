@@ -5,6 +5,22 @@ import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
 import type { GoogleCalendarEventEntity as GoogleCalendarEvent } from "@ait/core";
 
+function normalizeEventDate(date: Date): Date {
+  const now = new Date();
+  const yearsDiff = Math.abs(date.getFullYear() - now.getFullYear());
+
+  if (yearsDiff <= 1) return date;
+
+  const normalized = new Date(date);
+  normalized.setFullYear(now.getFullYear());
+
+  if (normalized < now) {
+    normalized.setFullYear(now.getFullYear() + 1);
+  }
+
+  return normalized;
+}
+
 interface EventCardProps {
   event: GoogleCalendarEvent;
   onClick?: () => void;
@@ -85,36 +101,44 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
   };
 
   const formatEventDate = () => {
-    if (!event.startTime) return "";
+    const normalized = getNormalizedStartTime();
+    if (!normalized) return "";
 
-    const start = new Date(event.startTime);
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    if (start.toDateString() === today.toDateString()) {
+    if (normalized.toDateString() === today.toDateString()) {
       return "Today";
     }
-    if (start.toDateString() === tomorrow.toDateString()) {
+    if (normalized.toDateString() === tomorrow.toDateString()) {
       return "Tomorrow";
     }
 
-    return start.toLocaleDateString("en-US", {
+    return normalized.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
     });
   };
 
+  const getNormalizedStartTime = () => {
+    if (!event.startTime) return null;
+    const startTime = new Date(event.startTime);
+    return normalizeEventDate(startTime);
+  };
+
   const isUpcoming = () => {
-    if (!event.startTime) return false;
-    return new Date(event.startTime) > new Date();
+    const normalized = getNormalizedStartTime();
+    if (!normalized) return false;
+    return normalized > new Date();
   };
 
   const isPast = () => {
     if (!event.endTime && !event.startTime) return false;
     const endOrStart = event.endTime ? new Date(event.endTime) : new Date(event.startTime!);
-    return endOrStart < new Date();
+    const normalized = normalizeEventDate(endOrStart);
+    return normalized < new Date();
   };
 
   return (
@@ -210,9 +234,9 @@ export function EventCard({ event, onClick, className }: EventCardProps) {
               </Badge>
             )}
           </div>
-          {isUpcoming() && event.startTime && (
+          {isUpcoming() && getNormalizedStartTime() && (
             <span className="text-xs text-muted-foreground whitespace-nowrap">
-              {formatRelativeTime(event.startTime)}
+              {formatRelativeTime(getNormalizedStartTime()!)}
             </span>
           )}
         </div>
