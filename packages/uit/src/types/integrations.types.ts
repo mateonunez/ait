@@ -13,6 +13,8 @@ import type {
   XTweetEntity,
   NotionPageEntity,
   SlackMessageEntity,
+  GoogleCalendarEventEntity,
+  GoogleCalendarCalendarEntity,
 } from "@ait/core";
 
 export type IntegrationEntity =
@@ -27,7 +29,9 @@ export type IntegrationEntity =
   | LinearIssueEntity
   | XTweetEntity
   | NotionPageEntity
-  | SlackMessageEntity;
+  | SlackMessageEntity
+  | GoogleCalendarEventEntity
+  | GoogleCalendarCalendarEntity;
 
 export interface CachedEntityData {
   data: IntegrationEntity[];

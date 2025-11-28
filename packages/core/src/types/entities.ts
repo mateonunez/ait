@@ -10,7 +10,9 @@ export type EntityType =
   | "issue"
   | "tweet"
   | "page"
-  | "message";
+  | "message"
+  | "event"
+  | "calendar";
 
 export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "track",
@@ -25,4 +27,6 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "issue",
   "page",
   "message",
+  "event",
+  "calendar",
 ] as const;

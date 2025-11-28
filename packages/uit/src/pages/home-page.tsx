@@ -25,7 +25,17 @@ const HOME_SECTIONS: HomeSectionType[] = [
   {
     id: "recent",
     title: "Recent Activity",
-    entityTypes: ["commit", "tweet", "issue", "message", "recently_played", "pull_request", "page", "repository"],
+    entityTypes: [
+      "commit",
+      "tweet",
+      "issue",
+      "message",
+      "recently_played",
+      "pull_request",
+      "page",
+      "repository",
+      "event",
+    ],
   },
   {
     id: "music",
@@ -56,6 +66,11 @@ const HOME_SECTIONS: HomeSectionType[] = [
     id: "tasks",
     title: "Tasks & Issues",
     entityTypes: ["issue"],
+  },
+  {
+    id: "schedule",
+    title: "Your Schedule",
+    entityTypes: ["event"],
   },
 ];
 

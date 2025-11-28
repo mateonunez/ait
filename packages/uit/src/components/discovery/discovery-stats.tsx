@@ -16,6 +16,7 @@ import {
   Minus,
   Activity,
   Zap,
+  Calendar,
 } from "lucide-react";
 import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,6 +47,7 @@ const getChartConfig = (integrationKeys: string[]): ChartConfig => {
     github: "#F97316",
     linear: "#5E6AD2",
     notion: "#787774",
+    google: "#4285F4",
   };
 
   const labels: Record<string, string> = {
@@ -55,6 +57,7 @@ const getChartConfig = (integrationKeys: string[]): ChartConfig => {
     github: "GitHub",
     linear: "Linear",
     notion: "Notion",
+    google: "Google",
   };
 
   const config: ChartConfig = {};
@@ -126,6 +129,14 @@ const INTEGRATIONS_META: Record<
     bgGradient: "from-[#787774]/20 via-[#787774]/5 to-transparent",
     borderColor: "border-[#787774]/30",
     glowColor: "shadow-[#787774]/20",
+  },
+  google: {
+    icon: Calendar,
+    label: "Google",
+    color: "#4285F4",
+    bgGradient: "from-[#4285F4]/20 via-[#4285F4]/5 to-transparent",
+    borderColor: "border-[#4285F4]/30",
+    glowColor: "shadow-[#4285F4]/20",
   },
 };
 
@@ -305,26 +316,26 @@ function DiscoveryStatsContent() {
         className={cn(
           "relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-300",
           showReview
-            ? "bg-gradient-to-br from-violet-500/10 via-background to-background border-violet-500/30"
-            : "bg-gradient-to-br from-primary/5 via-background to-background border-border/50 hover:border-violet-500/30",
+            ? "bg-linear-to-br from-violet-500/10 via-background to-background border-violet-500/30"
+            : "bg-linear-to-br from-primary/5 via-background to-background border-border/50 hover:border-violet-500/30",
         )}
       >
         {/* Animated background pattern */}
         <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-violet-500/20 to-transparent rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-linear-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl transform -translate-x-1/2 translate-y-1/2" />
         </div>
 
         <div className="relative p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4 flex-1">
               <motion.div
-                className="relative flex-shrink-0"
+                className="relative shrink-0"
                 animate={{ rotate: showReview ? 180 : 0 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/30 to-blue-500/30 rounded-xl blur-xl" />
-                <div className="relative p-3 rounded-xl bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/30">
+                <div className="absolute inset-0 bg-linear-to-br from-violet-500/30 to-blue-500/30 rounded-xl blur-xl" />
+                <div className="relative p-3 rounded-xl bg-linear-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/30">
                   <Sparkles className="h-6 w-6 text-violet-400" />
                 </div>
               </motion.div>
@@ -357,7 +368,7 @@ function DiscoveryStatsContent() {
             <Button
               onClick={() => setShowReview(!showReview)}
               className={cn(
-                "gap-2 rounded-xl transition-all duration-300 flex-shrink-0",
+                "gap-2 rounded-xl transition-all duration-300 shrink-0",
                 showReview
                   ? "bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 border border-violet-500/30"
                   : "bg-violet-500 hover:bg-violet-600 text-white shadow-lg shadow-violet-500/25",
@@ -419,7 +430,7 @@ function DiscoveryStatsContent() {
             <span className="font-bold text-foreground">{statItems.filter((item) => item.total > 0).length}</span>
           </div>
           <div className="h-4 w-px bg-border hidden sm:block" />
-          <div className="flex items-center gap-2 text-sm hidden sm:flex">
+          <div className="hidden items-center gap-2 text-sm sm:flex">
             <span className="text-muted-foreground">Most Active:</span>
             <span className="font-bold text-foreground">{statItems[0]?.label || "None"}</span>
           </div>
@@ -473,7 +484,7 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "group relative overflow-hidden rounded-2xl border transition-all duration-500",
-        "bg-gradient-to-br",
+        "bg-linear-to-br",
         item.bgGradient,
         item.borderColor,
         isHovered && `shadow-lg ${item.glowColor}`,
@@ -610,7 +621,7 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
-              className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background via-background/95 to-transparent"
+              className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-background via-background/95 to-transparent"
             >
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">This {timeRange}</span>

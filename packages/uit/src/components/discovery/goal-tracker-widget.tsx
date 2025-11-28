@@ -19,6 +19,7 @@ const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string; icon: string; c
   { value: "tweets", label: "Tweets", icon: "🐦", color: "#1DA1F2" },
   { value: "tasks", label: "Tasks", icon: "✅", color: "#5E6AD2" },
   { value: "documents", label: "Documents", icon: "📝", color: "#787774" },
+  { value: "meetings", label: "Meetings", icon: "📅", color: "#4285F4" },
 ];
 
 const PERIOD_OPTIONS: Array<{ value: GoalPeriod; label: string; icon: typeof Calendar }> = [
@@ -41,7 +42,7 @@ export function GoalTrackerWidget() {
   // Loading state
   if (isLoadingGoals && goals.length === 0) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 via-background to-background backdrop-blur-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-linear-to-br from-primary/5 via-background to-background backdrop-blur-sm">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -66,11 +67,11 @@ export function GoalTrackerWidget() {
   // Empty state
   if (goals.length === 0) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-dashed border-border/50 bg-gradient-to-br from-violet-500/5 via-background to-background">
+      <div className="relative overflow-hidden rounded-2xl border border-dashed border-border/50 bg-linear-to-br from-violet-500/5 via-background to-background">
         {/* Background decoration */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-violet-500/10 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-linear-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl" />
         </div>
 
         <div className="relative p-8 sm:p-12">
@@ -82,7 +83,7 @@ export function GoalTrackerWidget() {
               className="relative"
             >
               <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl animate-pulse" />
-              <div className="relative p-5 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-2xl border border-violet-500/30">
+              <div className="relative p-5 bg-linear-to-br from-violet-500/20 to-blue-500/20 rounded-2xl border border-violet-500/30">
                 <Target className="h-10 w-10 text-violet-400" />
               </div>
             </motion.div>
@@ -129,10 +130,10 @@ export function GoalTrackerWidget() {
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 via-background to-background backdrop-blur-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-linear-to-br from-primary/5 via-background to-background backdrop-blur-sm">
         {/* Background decoration */}
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-emerald-500/5 to-transparent rounded-full blur-3xl" />
         </div>
 
         <div className="relative">
@@ -142,7 +143,7 @@ export function GoalTrackerWidget() {
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-lg" />
-                  <div className="relative p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
+                  <div className="relative p-3 rounded-xl bg-linear-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
                     <Target className="h-6 w-6 text-emerald-400" />
                   </div>
                 </div>
@@ -270,7 +271,7 @@ function GoalCard({ goal, index, onEdit, onDelete }: GoalCardProps) {
       onMouseLeave={() => setIsHovered(false)}
       className={cn(
         "group relative overflow-hidden rounded-xl border transition-all duration-300",
-        "bg-gradient-to-br from-card/80 to-card/50 backdrop-blur-sm",
+        "bg-linear-to-br from-card/80 to-card/50 backdrop-blur-sm",
         isCompleted
           ? "border-emerald-500/40 shadow-lg shadow-emerald-500/10"
           : "border-border/50 hover:border-primary/30 hover:shadow-lg",
@@ -397,7 +398,7 @@ function GoalCard({ goal, index, onEdit, onDelete }: GoalCardProps) {
           {/* Progress Bar */}
           <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary/50">
             <motion.div
-              className={cn("h-full rounded-full", isCompleted && "bg-gradient-to-r from-emerald-500 to-teal-400")}
+              className={cn("h-full rounded-full", isCompleted && "bg-linear-to-r from-emerald-500 to-teal-400")}
               style={{
                 backgroundColor: !isCompleted ? goalColor : undefined,
                 boxShadow: `0 0 10px ${isCompleted ? "#10B981" : goalColor}50`,
@@ -410,7 +411,7 @@ function GoalCard({ goal, index, onEdit, onDelete }: GoalCardProps) {
             {/* Animated shine effect */}
             {goal.progress > 0 && goal.progress < 100 && (
               <motion.div
-                className="absolute inset-y-0 w-20 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                className="absolute inset-y-0 w-20 bg-linear-to-r from-transparent via-white/20 to-transparent"
                 animate={{ x: ["-100%", "400%"] }}
                 transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
               />
@@ -482,9 +483,9 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden">
         {/* Header with gradient */}
-        <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-emerald-500/10 via-background to-background">
+        <div className="relative px-6 pt-6 pb-4 bg-linear-to-br from-emerald-500/10 via-background to-background">
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-500/20 to-transparent rounded-full blur-2xl" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-linear-to-bl from-emerald-500/20 to-transparent rounded-full blur-2xl" />
           </div>
           <DialogHeader className="relative">
             <div className="flex items-center gap-3 mb-2">

@@ -1,7 +1,7 @@
 import type { EntityType } from "./entities";
 import { VALID_ENTITY_TYPES } from "./entities";
 
-export type IntegrationVendor = "spotify" | "github" | "linear" | "x" | "notion" | "slack";
+export type IntegrationVendor = "spotify" | "github" | "linear" | "x" | "notion" | "slack" | "google";
 
 export interface EntityMetadata {
   label: string;
@@ -119,6 +119,24 @@ export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
     vendor: "slack",
     description: "Slack messages (timestamps: createdAt, updatedAt)",
     timestampFields: ["createdAt", "updatedAt"],
+  },
+
+  // Google entities (Calendar, Drive, etc.)
+  event: {
+    label: "Event",
+    labelPlural: "Events",
+    keywords: ["calendar", "event", "meeting", "schedule", "appointment", "google calendar", "invite"],
+    vendor: "google",
+    description: "Google Calendar events and meetings (timestamps: startTime, endTime, createdAt)",
+    timestampFields: ["startTime", "endTime", "createdAt"],
+  },
+  calendar: {
+    label: "Calendar",
+    labelPlural: "Calendars",
+    keywords: ["calendar", "google calendar", "schedule", "agenda"],
+    vendor: "google",
+    description: "Google Calendar calendars (timestamps: createdAt)",
+    timestampFields: ["createdAt"],
   },
 } as const;
 

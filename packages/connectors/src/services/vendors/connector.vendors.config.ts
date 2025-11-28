@@ -11,12 +11,17 @@ import {
 import { connectorXTweetMapper } from "../../domain/mappers/vendors/connector.x.mapper";
 import { connectorNotionPageMapper } from "../../domain/mappers/vendors/connector.notion.mapper";
 import { connectorSlackMessageMapper } from "../../domain/mappers/vendors/connector.slack.mapper";
+import {
+  connectorGoogleCalendarEventMapper,
+  connectorGoogleCalendarCalendarMapper,
+} from "../../domain/mappers/vendors/connector.google.mapper";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
 import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import type { ConnectorNotion } from "../../infrastructure/vendors/notion/connector.notion";
 import type { ConnectorSlack } from "../../infrastructure/vendors/slack/connector.slack";
+import type { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type {
   GitHubRepositoryEntity,
   GitHubRepositoryExternal,
@@ -42,6 +47,10 @@ import type {
   NotionPageExternal,
   SlackMessageEntity,
   SlackMessageExternal,
+  GoogleCalendarEventEntity,
+  GoogleCalendarEventExternal,
+  GoogleCalendarCalendarEntity,
+  GoogleCalendarCalendarExternal,
 } from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
@@ -112,6 +121,16 @@ export enum SLACK_ENTITY_TYPES_ENUM {
 
 export interface SlackServiceEntityMap {
   [SLACK_ENTITY_TYPES_ENUM.MESSAGE]: SlackMessageEntity;
+}
+
+export enum GOOGLE_ENTITY_TYPES_ENUM {
+  EVENT = "event",
+  CALENDAR = "calendar",
+}
+
+export interface GoogleServiceEntityMap {
+  [GOOGLE_ENTITY_TYPES_ENUM.EVENT]: GoogleCalendarEventEntity;
+  [GOOGLE_ENTITY_TYPES_ENUM.CALENDAR]: GoogleCalendarCalendarEntity;
 }
 
 const githubEntityConfigs = {
@@ -282,6 +301,30 @@ const slackEntityConfigs = {
   } satisfies EntityConfig<ConnectorSlack, SlackMessageExternal, SlackMessageEntity>,
 } as const;
 
+const googleEntityConfigs = {
+  [GOOGLE_ENTITY_TYPES_ENUM.EVENT]: {
+    fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchEvents().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorGoogle, cursor?: string) => {
+      const response = await connector.dataSource.fetchEvents(cursor);
+      return {
+        data: response.items,
+        nextCursor: response.nextCursor,
+      };
+    },
+    mapper: (event: GoogleCalendarEventExternal) => connectorGoogleCalendarEventMapper.externalToDomain(event),
+    cacheTtl: 300,
+    checksumEnabled: true,
+    batchSize: 50,
+  } satisfies EntityConfig<ConnectorGoogle, GoogleCalendarEventExternal, GoogleCalendarEventEntity>,
+
+  [GOOGLE_ENTITY_TYPES_ENUM.CALENDAR]: {
+    fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchCalendars(),
+    mapper: (calendar: GoogleCalendarCalendarExternal) =>
+      connectorGoogleCalendarCalendarMapper.externalToDomain(calendar),
+    cacheTtl: 3600,
+  } satisfies EntityConfig<ConnectorGoogle, GoogleCalendarCalendarExternal, GoogleCalendarCalendarEntity>,
+} as const;
+
 export const connectorEntityConfigs = {
   github: githubEntityConfigs,
   linear: linearEntityConfigs,
@@ -289,6 +332,7 @@ export const connectorEntityConfigs = {
   x: xEntityConfigs,
   notion: notionEntityConfigs,
   slack: slackEntityConfigs,
+  google: googleEntityConfigs,
 } as const;
 
 export type ConnectorType = keyof typeof connectorEntityConfigs;

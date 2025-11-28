@@ -15,8 +15,10 @@ import {
   XETLs,
   NotionETLs,
   SlackETLs,
+  GoogleCalendarETLs,
   runNotionETL,
   runSlackETL,
+  runGoogleCalendarEventETL,
 } from "@ait/retove";
 import { RateLimitError } from "@ait/core";
 import type { Scheduler } from "../scheduler.service";
@@ -30,6 +32,7 @@ import {
   ConnectorXService,
   ConnectorNotionService,
   ConnectorSlackService,
+  ConnectorGoogleService,
 } from "@ait/connectors";
 import {
   GITHUB_ENTITY_TYPES_ENUM,
@@ -37,7 +40,8 @@ import {
   NOTION_ENTITY_TYPES_ENUM,
   SLACK_ENTITY_TYPES_ENUM,
   SPOTIFY_ENTITY_TYPES_ENUM,
-} from "@ait/connectors/dist/src/services/vendors/connector.vendors.config";
+  GOOGLE_ENTITY_TYPES_ENUM,
+} from "@ait/connectors";
 
 export interface ISchedulerETLTaskManager {
   registerTasks(): void;
@@ -51,6 +55,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
   private readonly _xService: ConnectorXService;
   private readonly _notionService: ConnectorNotionService;
   private readonly _slackService: ConnectorSlackService;
+  private readonly _googleService: ConnectorGoogleService;
   private _scheduler?: Scheduler;
 
   constructor() {
@@ -60,6 +65,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
     this._xService = new ConnectorXService();
     this._notionService = new ConnectorNotionService();
     this._slackService = new ConnectorSlackService();
+    this._googleService = new ConnectorGoogleService();
   }
 
   public setScheduler(scheduler: Scheduler): void {
@@ -508,6 +514,50 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         console.info(`[${SlackETLs.message}] Running ETL to Qdrant...`);
         await runSlackETL(qdrant, postgres);
         console.info(`[${SlackETLs.message}] Completed`);
+      });
+    });
+
+    // Register Google Calendar Event ETL
+    schedulerRegistry.register(GoogleCalendarETLs.event, async (data) => {
+      console.info(`[${GoogleCalendarETLs.event}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        console.info(`[${GoogleCalendarETLs.event}] Fetching events from Google Calendar API (incremental)...`);
+        let totalFetched = 0;
+
+        try {
+          for await (const batch of this._googleService.fetchEntitiesPaginated(
+            GOOGLE_ENTITY_TYPES_ENUM.EVENT,
+            true, // shouldConnect
+          )) {
+            totalFetched += batch.length;
+            console.info(
+              `[${GoogleCalendarETLs.event}] Processing batch of ${batch.length} events. First: ${
+                batch[0].title || "untitled"
+              }`,
+            );
+            await this._googleService.connector.store.save(batch);
+          }
+          console.info(`[${GoogleCalendarETLs.event}] Fetched ${totalFetched} events (changed only)`);
+        } catch (error: any) {
+          if (error instanceof RateLimitError && this._scheduler) {
+            const delay = Math.max(0, error.resetTime - Date.now());
+            console.warn(`[${GoogleCalendarETLs.event}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            await this._scheduler.addJob(GoogleCalendarETLs.event, data as Record<string, unknown>, {
+              delay,
+              priority: 2,
+            });
+            return;
+          }
+          console.error(
+            `[${GoogleCalendarETLs.event}] Error fetching events (likely rate limit). Proceeding to ETL...`,
+            error,
+          );
+        }
+
+        console.info(`[${GoogleCalendarETLs.event}] Running ETL to Qdrant...`);
+        await runGoogleCalendarEventETL(qdrant, postgres);
+        console.info(`[${GoogleCalendarETLs.event}] Completed`);
       });
     });
   }

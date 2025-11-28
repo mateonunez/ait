@@ -7,6 +7,7 @@ import XPage from "./pages/integrations/x-page";
 import LinearPage from "./pages/integrations/linear-page";
 import NotionPage from "./pages/integrations/notion-page";
 import SlackPage from "./pages/integrations/slack-page";
+import GooglePage from "./pages/integrations/google-page";
 import StatsPage from "./pages/stats-page";
 import { AIChatDialog } from "./components/ai-chat-dialog";
 import { useChatDialog } from "./contexts/chat.context";
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/integrations/linear" component={LinearPage} />
         <Route path="/integrations/notion" component={NotionPage} />
         <Route path="/integrations/slack" component={SlackPage} />
+        <Route path="/integrations/google" component={GooglePage} />
         <Route path="/stats" component={StatsPage} />
         <Route>
           <div className="min-h-dvh flex items-center justify-center">
