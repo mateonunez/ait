@@ -119,25 +119,27 @@ export class ActivityAggregatorService {
         throw new Error(`Method ${fetchMethodName} not found on ${connectorType} service`);
       }
 
-      // Fetch paginated data - IMPORTANT: call method directly on service to preserve `this` binding
-      const response = await (service as any)[fetchMethodName]({ limit: 1000, page: 1 });
+      const response = await service[fetchMethodName]({ limit: 10000, page: 1 });
       const entities = response?.data || [];
+
+      const apiTotal = response?.total ?? response?.totalCount ?? response?.total_count ?? null;
 
       logger.debug(`Fetched ${entities.length} entities for ${connectorType}`, {
         connectorType,
         entityCount: entities.length,
+        apiTotal,
         dateField: metadata.dateField,
       });
 
-      // Group by day
       const daily = this.groupByDay(entities, connectorType, days);
-
-      // Calculate total - count entities that fall within the date range
-      const total = daily.reduce((sum, day) => sum + day.count, 0);
+      const dailyTotal = daily.reduce((sum, day) => sum + day.count, 0);
+      const total = apiTotal !== null ? apiTotal : Math.max(dailyTotal, entities.length);
 
       logger.debug(`Activity calculated for ${connectorType}`, {
         connectorType,
         total,
+        dailyTotal,
+        apiTotal,
         dailyEntries: daily.length,
         entitiesWithValidDates: daily.reduce((sum, d) => sum + (d.count > 0 ? 1 : 0), 0),
       });
@@ -154,7 +156,7 @@ export class ActivityAggregatorService {
         error: error.message,
         stack: error.stack,
       });
-      // Return empty activity on error
+
       return {
         connectorType,
         activity: {

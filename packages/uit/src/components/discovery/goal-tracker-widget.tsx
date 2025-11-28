@@ -1,31 +1,30 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Target, Plus, Edit2, Trash2, Flame } from "lucide-react";
+import { Target, Plus, Edit2, Trash2, Flame, Trophy, TrendingUp, Zap, Calendar, ChevronRight } from "lucide-react";
 import { useInsights } from "@/contexts/insights.context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import type { GoalData, GoalType, GoalPeriod, CreateGoalRequest } from "@ait/ai-sdk";
 import { cn } from "@/styles/utils";
 
-const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string; icon: string }> = [
-  { value: "commits", label: "Commits", icon: "💻" },
-  { value: "songs", label: "Songs", icon: "🎵" },
-  { value: "messages", label: "Messages", icon: "💬" },
-  { value: "tweets", label: "Tweets", icon: "🐦" },
-  { value: "tasks", label: "Tasks", icon: "✅" },
-  { value: "documents", label: "Documents", icon: "📝" },
+const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string; icon: string; color: string }> = [
+  { value: "commits", label: "Commits", icon: "💻", color: "#F97316" },
+  { value: "songs", label: "Songs", icon: "🎵", color: "#1DB954" },
+  { value: "messages", label: "Messages", icon: "💬", color: "#E01E5A" },
+  { value: "tweets", label: "Tweets", icon: "🐦", color: "#1DA1F2" },
+  { value: "tasks", label: "Tasks", icon: "✅", color: "#5E6AD2" },
+  { value: "documents", label: "Documents", icon: "📝", color: "#787774" },
 ];
 
-const PERIOD_OPTIONS: Array<{ value: GoalPeriod; label: string }> = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "monthly", label: "Monthly" },
+const PERIOD_OPTIONS: Array<{ value: GoalPeriod; label: string; icon: typeof Calendar }> = [
+  { value: "daily", label: "Daily", icon: Calendar },
+  { value: "weekly", label: "Weekly", icon: Calendar },
+  { value: "monthly", label: "Monthly", icon: Calendar },
 ];
 
 export function GoalTrackerWidget() {
@@ -33,110 +32,194 @@ export function GoalTrackerWidget() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<GoalData | null>(null);
 
+  // Calculate stats
+  const completedGoals = goals.filter((g) => g.progress >= 100).length;
+  const totalStreak = goals.reduce((sum, g) => sum + g.streak, 0);
+  const avgProgress =
+    goals.length > 0 ? Math.round(goals.reduce((sum, g) => sum + Math.min(100, g.progress), 0) / goals.length) : 0;
+
   // Loading state
   if (isLoadingGoals && goals.length === 0) {
     return (
-      <Card>
-        <CardHeader>
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 via-background to-background backdrop-blur-sm">
+        <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              <CardTitle>Your Goals</CardTitle>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-12 w-12 rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-48" />
+              </div>
             </div>
-            <Skeleton className="h-9 w-20" />
+            <Skeleton className="h-10 w-28" />
           </div>
-        </CardHeader>
-        <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-40 rounded-lg" />
+              <Skeleton key={i} className="h-44 rounded-xl" />
             ))}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   // Empty state
   if (goals.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
-              <CardTitle>Your Goals</CardTitle>
-            </div>
-            <Button onClick={() => setIsCreateModalOpen(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Goal
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
-            <div className="p-4 bg-primary/5 rounded-full ring-1 ring-primary/10">
-              <Target className="h-8 w-8 text-primary/40" />
-            </div>
-            <div className="space-y-2 max-w-sm">
-              <h3 className="font-semibold text-lg">No goals set yet</h3>
-              <p className="text-muted-foreground text-sm">
-                Set targets for your activities to track your progress and stay motivated.
+      <div className="relative overflow-hidden rounded-2xl border border-dashed border-border/50 bg-gradient-to-br from-violet-500/5 via-background to-background">
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative p-8 sm:p-12">
+          <div className="flex flex-col items-center justify-center text-center space-y-6 max-w-md mx-auto">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+              className="relative"
+            >
+              <div className="absolute inset-0 bg-violet-500/20 rounded-2xl blur-xl animate-pulse" />
+              <div className="relative p-5 bg-gradient-to-br from-violet-500/20 to-blue-500/20 rounded-2xl border border-violet-500/30">
+                <Target className="h-10 w-10 text-violet-400" />
+              </div>
+            </motion.div>
+
+            <div className="space-y-2">
+              <h3 className="font-bold text-xl">Set Your First Goal</h3>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Track your daily, weekly, or monthly progress. Set targets for commits, songs, messages, and more!
               </p>
             </div>
-            <Button onClick={() => setIsCreateModalOpen(true)} variant="outline" className="mt-2">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Your First Goal
-            </Button>
+
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="gap-2 bg-violet-500 hover:bg-violet-600 text-white shadow-lg shadow-violet-500/25"
+                size="lg"
+              >
+                <Plus className="h-5 w-5" />
+                Create Your First Goal
+              </Button>
+            </motion.div>
+
+            {/* Suggested goals */}
+            <div className="flex flex-wrap justify-center gap-2 pt-4">
+              {GOAL_TYPE_OPTIONS.slice(0, 4).map((type) => (
+                <Badge
+                  key={type.value}
+                  variant="secondary"
+                  className="text-xs cursor-pointer hover:bg-violet-500/10 transition-colors"
+                  onClick={() => setIsCreateModalOpen(true)}
+                >
+                  <span className="mr-1">{type.icon}</span>
+                  {type.label}
+                </Badge>
+              ))}
+            </div>
           </div>
-        </CardContent>
+        </div>
 
         <GoalFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSubmit={createGoal} />
-      </Card>
+      </div>
     );
   }
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Target className="h-5 w-5 text-primary" />
-                </div>
-                <CardTitle className="text-xl">Your Goals</CardTitle>
-              </div>
-              <p className="text-sm text-muted-foreground pl-11">Track your progress and build consistency</p>
-            </div>
-            <Button
-              onClick={() => setIsCreateModalOpen(true)}
-              size="sm"
-              className="rounded-full px-4 shadow-sm hover:shadow-md transition-all"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Goal
-            </Button>
-          </div>
-        </CardHeader>
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-primary/5 via-background to-background backdrop-blur-sm">
+        {/* Background decoration */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-emerald-500/5 to-transparent rounded-full blur-3xl" />
+        </div>
 
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <AnimatePresence mode="popLayout">
-              {goals.map((goal, index) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  index={index}
-                  onEdit={() => setEditingGoal(goal)}
-                  onDelete={() => deleteGoal(goal.id)}
-                />
-              ))}
-            </AnimatePresence>
+        <div className="relative">
+          {/* Header */}
+          <div className="p-6 pb-4 border-b border-border/50">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-emerald-500/20 rounded-xl blur-lg" />
+                  <div className="relative p-3 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30">
+                    <Target className="h-6 w-6 text-emerald-400" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-xl flex items-center gap-2">
+                    Your Goals
+                    {completedGoals > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                      >
+                        <Trophy className="h-3 w-3 mr-1" />
+                        {completedGoals} completed
+                      </Badge>
+                    )}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">Track progress and build consistency</p>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => setIsCreateModalOpen(true)}
+                className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/25"
+              >
+                <Plus className="h-4 w-4" />
+                Add Goal
+              </Button>
+            </div>
+
+            {/* Quick Stats */}
+            {goals.length > 0 && (
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10">
+                    <TrendingUp className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <span className="text-muted-foreground">Avg Progress:</span>
+                  <span className="font-bold">{avgProgress}%</span>
+                </div>
+                {totalStreak > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="p-1.5 rounded-lg bg-orange-500/10">
+                      <Flame className="h-4 w-4 text-orange-400" />
+                    </div>
+                    <span className="text-muted-foreground">Total Streak:</span>
+                    <span className="font-bold">{totalStreak} days</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="p-1.5 rounded-lg bg-violet-500/10">
+                    <Zap className="h-4 w-4 text-violet-400" />
+                  </div>
+                  <span className="text-muted-foreground">Active Goals:</span>
+                  <span className="font-bold">{goals.length}</span>
+                </div>
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Goals Grid */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+              <AnimatePresence mode="popLayout">
+                {goals.map((goal, index) => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    index={index}
+                    onEdit={() => setEditingGoal(goal)}
+                    onDelete={() => deleteGoal(goal.id)}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Create Modal */}
       <GoalFormModal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} onSubmit={createGoal} />
@@ -169,134 +252,183 @@ interface GoalCardProps {
 }
 
 function GoalCard({ goal, index, onEdit, onDelete }: GoalCardProps) {
-  const [showActions, setShowActions] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const isCompleted = goal.progress >= 100;
 
-  const getGoalIcon = () => {
-    if (goal.icon) return goal.icon;
-    const typeOption = GOAL_TYPE_OPTIONS.find((opt) => opt.value === goal.type);
-    return typeOption?.icon || "🎯";
-  };
+  const typeOption = GOAL_TYPE_OPTIONS.find((opt) => opt.value === goal.type);
+  const goalColor = typeOption?.color || "#6B7280";
+  const goalIcon = goal.icon || typeOption?.icon || "🎯";
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ delay: index * 0.05 }}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.9, y: -10 }}
+      transition={{ delay: index * 0.05, duration: 0.3 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       className={cn(
-        "group relative overflow-hidden rounded-xl border p-5 transition-all duration-300",
-        "bg-gradient-to-br from-card/50 to-card/30 backdrop-blur-sm",
-        "hover:shadow-lg hover:border-primary/20 hover:from-card/60 hover:to-card/40",
-        isCompleted ? "border-green-500/30" : "border-border/50",
+        "group relative overflow-hidden rounded-xl border transition-all duration-300",
+        "bg-gradient-to-br from-card/80 to-card/50 backdrop-blur-sm",
+        isCompleted
+          ? "border-emerald-500/40 shadow-lg shadow-emerald-500/10"
+          : "border-border/50 hover:border-primary/30 hover:shadow-lg",
       )}
+      style={{
+        boxShadow: isHovered && !isCompleted ? `0 8px 30px ${goalColor}15` : undefined,
+      }}
     >
-      {/* Background Glow Effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      {/* Top accent */}
+      <div
+        className="absolute top-0 left-0 right-0 h-1 transition-opacity duration-300"
+        style={{
+          backgroundColor: isCompleted ? "#10B981" : goalColor,
+          opacity: isHovered || isCompleted ? 1 : 0.5,
+        }}
+      />
 
-      {/* Header Section */}
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
+      {/* Glow effect on hover */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 0%, ${goalColor}10 0%, transparent 60%)`,
+        }}
+      />
+
+      <div className="relative p-4 space-y-4">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <motion.div
+              className={cn(
+                "flex items-center justify-center w-11 h-11 rounded-xl text-xl",
+                "bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm",
+                isCompleted && "bg-emerald-500/10 border-emerald-500/30",
+              )}
+              whileHover={{ scale: 1.05 }}
+              style={{
+                boxShadow: isHovered ? `0 4px 20px ${goalColor}20` : undefined,
+              }}
+            >
+              {isCompleted ? (
+                <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", bounce: 0.5 }}>
+                  <Trophy className="h-5 w-5 text-emerald-500" />
+                </motion.div>
+              ) : (
+                goalIcon
+              )}
+            </motion.div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-semibold truncate">{goal.label || goal.type}</p>
+                {goal.streak > 0 && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/10 text-orange-500 border border-orange-500/20"
+                  >
+                    <Flame className="h-3 w-3" />
+                    {goal.streak}
+                  </motion.div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground capitalize flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {goal.period}
+              </p>
+            </div>
+          </div>
+
+          {/* Actions */}
           <div
             className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-xl text-xl shadow-sm transition-transform group-hover:scale-105",
-              "bg-background/80 backdrop-blur-md border border-border/50",
-              isCompleted && "bg-green-500/10 border-green-500/20 text-green-600",
+              "flex gap-1 transition-all duration-200",
+              isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2",
             )}
           >
-            {isCompleted ? (
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-lg hover:bg-background/80"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 rounded-lg hover:bg-red-500/10 hover:text-red-500"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="space-y-2">
+          <div className="flex items-end justify-between">
+            <div className="flex items-baseline gap-1.5">
+              <motion.span
+                key={goal.current}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-3xl font-bold tabular-nums tracking-tight"
               >
-                <title>Goal Completed</title>
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            ) : (
-              getGoalIcon()
-            )}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-semibold leading-none tracking-tight">{goal.label || goal.type}</p>
-              {goal.streak > 0 && (
-                <div
-                  className={cn(
-                    "flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider",
-                    "bg-orange-500/10 text-orange-600 border-orange-500/20",
-                    "dark:bg-orange-500/20 dark:text-orange-400",
-                  )}
-                >
-                  <Flame className="h-3 w-3 fill-orange-500" />
-                  {goal.streak}
-                </div>
-              )}
+                {goal.current}
+              </motion.span>
+              <span className="text-sm text-muted-foreground font-medium">/ {goal.target}</span>
             </div>
-            <p className="text-xs text-muted-foreground capitalize mt-1">{goal.period}</p>
+            <span
+              className={cn("text-sm font-bold", isCompleted ? "text-emerald-500" : "text-foreground")}
+              style={{ color: !isCompleted ? goalColor : undefined }}
+            >
+              {Math.min(100, Math.round(goal.progress))}%
+            </span>
           </div>
-        </div>
 
-        {/* Actions - Now static position but visible on hover */}
-        <div className={cn("flex gap-1 transition-opacity duration-200", showActions ? "opacity-100" : "opacity-0")}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full hover:bg-background/80"
-            onClick={(e) => {
-              e.stopPropagation();
-              onEdit();
-            }}
-          >
-            <Edit2 className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 rounded-full hover:bg-destructive/10 hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-      </div>
+          {/* Progress Bar */}
+          <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary/50">
+            <motion.div
+              className={cn("h-full rounded-full", isCompleted && "bg-gradient-to-r from-emerald-500 to-teal-400")}
+              style={{
+                backgroundColor: !isCompleted ? goalColor : undefined,
+                boxShadow: `0 0 10px ${isCompleted ? "#10B981" : goalColor}50`,
+              }}
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(100, goal.progress)}%` }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+            />
 
-      {/* Progress Section */}
-      <div className="space-y-2">
-        <div className="flex items-end justify-between">
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold tabular-nums tracking-tight">{goal.current}</span>
-            <span className="text-sm text-muted-foreground font-medium">/ {goal.target}</span>
-          </div>
-          <span className={cn("text-sm font-bold", isCompleted ? "text-green-500" : "text-primary")}>
-            {Math.min(100, Math.round(goal.progress))}%
-          </span>
-        </div>
-
-        <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-secondary/50">
-          <motion.div
-            className={cn(
-              "h-full rounded-full transition-all duration-500",
-              isCompleted
-                ? "bg-gradient-to-r from-green-500 to-emerald-400"
-                : "bg-gradient-to-r from-blue-500 to-violet-500",
+            {/* Animated shine effect */}
+            {goal.progress > 0 && goal.progress < 100 && (
+              <motion.div
+                className="absolute inset-y-0 w-20 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                animate={{ x: ["-100%", "400%"] }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              />
             )}
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(100, goal.progress)}%` }}
-            transition={{ duration: 1, ease: "easeOut" }}
-          />
+          </div>
         </div>
+
+        {/* Completion badge */}
+        {isCompleted && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center gap-2 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs font-medium text-emerald-500"
+          >
+            <Trophy className="h-3.5 w-3.5" />
+            Goal Achieved!
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );
@@ -324,6 +456,8 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedType = GOAL_TYPE_OPTIONS.find((t) => t.value === formData.type);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -332,7 +466,6 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
     try {
       await onSubmit(formData);
       onClose();
-      // Reset form
       setFormData({
         type: "commits",
         target: 10,
@@ -347,91 +480,147 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{isEditing ? "Edit Goal" : "Create New Goal"}</DialogTitle>
-          <DialogDescription>Set a target for your activity and track your progress over time.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-[450px] p-0 overflow-hidden">
+        {/* Header with gradient */}
+        <div className="relative px-6 pt-6 pb-4 bg-gradient-to-br from-emerald-500/10 via-background to-background">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-emerald-500/20 to-transparent rounded-full blur-2xl" />
+          </div>
+          <DialogHeader className="relative">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                <Target className="h-5 w-5 text-emerald-400" />
+              </div>
+              <DialogTitle className="text-xl">{isEditing ? "Edit Goal" : "Create New Goal"}</DialogTitle>
+            </div>
+            <DialogDescription>Set a target for your activity and track your progress over time.</DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Goal Type */}
+        <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
+          {/* Goal Type Selection */}
           <div className="space-y-2">
-            <Label htmlFor="type">Type</Label>
-            <Select
-              value={formData.type}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, type: value as GoalType }))}
-            >
-              <SelectTrigger id="type">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {GOAL_TYPE_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    <span className="flex items-center gap-2">
-                      <span>{option.icon}</span>
-                      <span>{option.label}</span>
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-sm font-medium">Goal Type</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {GOAL_TYPE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, type: option.value }))}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200",
+                    formData.type === option.value
+                      ? "border-emerald-500/50 bg-emerald-500/10"
+                      : "border-border/50 hover:border-border hover:bg-muted/50",
+                  )}
+                >
+                  <span className="text-xl">{option.icon}</span>
+                  <span className="text-xs font-medium">{option.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Target */}
-          <div className="space-y-2">
-            <Label htmlFor="target">Target</Label>
-            <Input
-              id="target"
-              type="number"
-              min="1"
-              value={formData.target}
-              onChange={(e) => setFormData((prev) => ({ ...prev, target: Number.parseInt(e.target.value, 10) }))}
-              required
-            />
+          {/* Target & Period Row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="target" className="text-sm font-medium">
+                Target
+              </Label>
+              <Input
+                id="target"
+                type="number"
+                min="1"
+                value={formData.target}
+                onChange={(e) => setFormData((prev) => ({ ...prev, target: Number.parseInt(e.target.value, 10) || 1 }))}
+                className="text-center text-lg font-semibold"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="period" className="text-sm font-medium">
+                Period
+              </Label>
+              <Select
+                value={formData.period}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, period: value as GoalPeriod }))}
+              >
+                <SelectTrigger id="period">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PERIOD_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Period */}
+          {/* Label */}
           <div className="space-y-2">
-            <Label htmlFor="period">Period</Label>
-            <Select
-              value={formData.period}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, period: value as GoalPeriod }))}
-            >
-              <SelectTrigger id="period">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PERIOD_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Optional Label */}
-          <div className="space-y-2">
-            <Label htmlFor="label">Label (Optional)</Label>
+            <Label htmlFor="label" className="text-sm font-medium">
+              Custom Label <span className="text-muted-foreground">(optional)</span>
+            </Label>
             <Input
               id="label"
               type="text"
-              placeholder="e.g., Morning Commits"
+              placeholder={`e.g., Morning ${selectedType?.label || "Activity"}`}
               value={formData.label || ""}
               onChange={(e) => setFormData((prev) => ({ ...prev, label: e.target.value || undefined }))}
             />
           </div>
 
+          {/* Preview */}
+          <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-background border border-border/50">
+                <span className="text-xl">{selectedType?.icon || "🎯"}</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">{formData.label || selectedType?.label || formData.type}</p>
+                <p className="text-xs text-muted-foreground">
+                  {formData.target} {selectedType?.label?.toLowerCase() || "items"} per {formData.period?.slice(0, -2)}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </div>
+
           {/* Error */}
-          {error && <p className="text-sm text-destructive">{error}</p>}
+          {error && (
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-500">{error}</div>
+          )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
+          <div className="flex justify-end gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : isEditing ? "Update Goal" : "Create Goal"}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="gap-2 bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
+              {isSubmitting ? (
+                <>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  >
+                    <Zap className="h-4 w-4" />
+                  </motion.div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  {isEditing ? "Update Goal" : "Create Goal"}
+                  <ChevronRight className="h-4 w-4" />
+                </>
+              )}
             </Button>
           </div>
         </form>
