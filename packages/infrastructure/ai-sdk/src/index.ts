@@ -61,7 +61,7 @@ export {
 export * from "./services/generation/query-rewriter.service";
 export {
   SuggestionService,
-  suggestionService,
+  getSuggestionService,
   type SuggestionContext,
   type Suggestion,
 } from "./services/generation/suggestion.service";

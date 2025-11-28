@@ -1,5 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { suggestionService, type SuggestionContext } from "@ait/ai-sdk";
+import { getSuggestionService, type SuggestionContext } from "@ait/ai-sdk";
+
+const suggestionService = getSuggestionService();
 
 export default async function suggestionsRoutes(fastify: FastifyInstance) {
   fastify.post("/", async (request: FastifyRequest<{ Body: SuggestionContext }>, reply: FastifyReply) => {
