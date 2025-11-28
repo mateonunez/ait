@@ -305,6 +305,66 @@ export class MultiCollectionProvider {
       return [];
     }
 
+    // First attempt: search with filters
+    let results = await this._executeSearchAcrossCollections<TMetadata>(
+      query,
+      filteredCollections,
+      limit,
+      scoreThreshold,
+      filter,
+      traceContext,
+    );
+
+    // Fallback: if no results and we have a time filter, retry without it
+    const totalDocuments = results.reduce((sum, r) => sum + r.documents.length, 0);
+    if (totalDocuments === 0 && filter?.timeRange) {
+      console.warn("No results with time filter, retrying without time constraints...", {
+        originalTimeRange: filter.timeRange,
+        query: query.slice(0, 50),
+      });
+
+      const filterWithoutTime = filter.types ? { types: filter.types } : undefined;
+      results = await this._executeSearchAcrossCollections<TMetadata>(
+        query,
+        filteredCollections,
+        limit,
+        scoreThreshold,
+        filterWithoutTime,
+        traceContext,
+      );
+    }
+
+    if (traceContext) {
+      recordSpan(
+        "multi-collection-search-with-score",
+        "search",
+        traceContext,
+        {
+          query: query.slice(0, 100),
+          collections: filteredCollections.map((c) => c.vendor),
+          originalCollections: collections.map((c) => c.vendor),
+        },
+        {
+          duration: Date.now() - startTime,
+          collectionsQueried: results.length,
+          totalDocuments: results.reduce((sum, r) => sum + r.documents.length, 0),
+          usedFallback: filteredCollections.length !== collections.length,
+          retriedWithoutTimeFilter: totalDocuments === 0 && filter?.timeRange !== undefined,
+        },
+      );
+    }
+
+    return results;
+  }
+
+  private async _executeSearchAcrossCollections<TMetadata extends BaseMetadata = BaseMetadata>(
+    query: string,
+    filteredCollections: CollectionWeight[],
+    limit: number,
+    scoreThreshold?: number,
+    filter?: { types?: string[]; timeRange?: { from?: string; to?: string } },
+    traceContext?: TraceContext,
+  ): Promise<Array<{ vendor: CollectionVendor; documents: Array<[Document<TMetadata>, number]> }>> {
     const searchPromises = filteredCollections.map(async (collectionWeight) => {
       try {
         const provider = this.getOrCreateProvider(collectionWeight.vendor);
@@ -387,28 +447,7 @@ export class MultiCollectionProvider {
       }
     });
 
-    const results = await Promise.all(searchPromises);
-
-    if (traceContext) {
-      recordSpan(
-        "multi-collection-search-with-score",
-        "search",
-        traceContext,
-        {
-          query: query.slice(0, 100),
-          collections: filteredCollections.map((c) => c.vendor),
-          originalCollections: collections.map((c) => c.vendor),
-        },
-        {
-          duration: Date.now() - startTime,
-          collectionsQueried: results.length,
-          totalDocuments: results.reduce((sum, r) => sum + r.documents.length, 0),
-          usedFallback: filteredCollections.length !== collections.length,
-        },
-      );
-    }
-
-    return results;
+    return await Promise.all(searchPromises);
   }
 
   invalidateCollectionCache(): void {
