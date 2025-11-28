@@ -726,9 +726,35 @@ const collectionContext = {
 };
 ```
 
+### 5.8 Update Collection Router Heuristics (CRITICAL!)
+
+In `src/services/routing/collection-router.service.ts`:
+
+Add the vendor to the `heuristics` array in `_buildHeuristicRouting()`:
+
+```typescript
+const heuristics: Array<{ vendor: CollectionVendor; keywords: readonly string[]; weight: number }> = [
+  { vendor: "spotify", keywords: getVendorKeywords("spotify"), weight: 1.0 },
+  { vendor: "github", keywords: getVendorKeywords("github"), weight: 1.0 },
+  { vendor: "linear", keywords: getVendorKeywords("linear"), weight: 1.0 },
+  { vendor: "x", keywords: getVendorKeywords("x"), weight: 1.0 },
+  { vendor: "notion", keywords: getVendorKeywords("notion"), weight: 1.0 },
+  { vendor: "slack", keywords: getVendorKeywords("slack"), weight: 1.0 },
+  { vendor: "{vendor}", keywords: getVendorKeywords("{vendor}"), weight: 1.0 }, // ADD THIS
+];
+```
+
+**Without this step, the RAG pipeline will NOT route queries to the new collection!**
+
 ---
 
 ## Phase 6: RetoVe ETL (`packages/transformers/retove`)
+
+The RetoVe (Retrieval-Transform-Vector-Embed) package handles the ETL pipeline that:
+1. **Extracts** data from PostgreSQL
+2. **Transforms** it into embedding text using descriptors
+3. **Generates** vector embeddings
+4. **Loads** vectors into Qdrant for semantic search
 
 ### 6.1 Create Embedding Descriptor
 
@@ -736,23 +762,75 @@ Create `src/infrastructure/embeddings/descriptors/vendors/etl.{vendor}.descripto
 
 ```typescript
 import type { {Vendor}{Entity}DataTarget } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../../etl.embedding.descriptor.interface";
+import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 
 export class ETL{Vendor}{Entity}Descriptor implements IETLEmbeddingDescriptor<{Vendor}{Entity}DataTarget> {
-  getEmbeddingText(data: {Vendor}{Entity}DataTarget): string {
+  public getEmbeddingText(entity: {Vendor}{Entity}DataTarget): string {
     const parts: string[] = [];
-    // Build descriptive text for embeddings
-    return parts.filter(Boolean).join(". ");
+
+    // Add entity identity
+    parts.push("{Entity type}");
+
+    // Add main identifying field (title, name, etc.)
+    if (entity.title) {
+      const sanitizedTitle = TextSanitizer.sanitize(entity.title);
+      parts.push(`"${sanitizedTitle}"`);
+    }
+
+    // Add temporal context if applicable
+    if (entity.{timestampField}) {
+      const date = new Date(entity.{timestampField});
+      const dateStr = date.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      parts.push(`on ${dateStr}`);
+    }
+
+    // Add description/body content
+    if (entity.description) {
+      const sanitizedDesc = TextSanitizer.sanitize(entity.description);
+      const descPreview = sanitizedDesc.length > 300
+        ? `${sanitizedDesc.slice(0, 300)}...`
+        : sanitizedDesc;
+      parts.push(`Description: ${descPreview}`);
+    }
+
+    // Add other relevant fields for semantic context
+    // e.g., status, category, tags, etc.
+
+    return parts.join(", ");
   }
 
-  getEmbeddingPayload(data: {Vendor}{Entity}DataTarget): Record<string, unknown> {
-    return {
-      id: data.id,
-      // ... sanitized fields for Qdrant
-      __type: "{entity_type}",
+  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: {Vendor}{Entity}DataTarget): U {
+    // Remove internal timestamps from payload
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
+
+    // Sanitize string fields for Qdrant storage
+    const sanitizedPayload = {
+      ...entityWithoutInternalTimestamps,
+      title: entityWithoutInternalTimestamps.title
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.title, 500)
+        : "",
+      description: entityWithoutInternalTimestamps.description
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.description, 2000)
+        : null,
     };
+
+    return {
+      __type: "{entity_type}",
+      ...sanitizedPayload,
+    } as unknown as U;
   }
 }
+
+// Export singleton for easy access
+export const {vendor}DescriptorsETL = {
+  {entity}: new ETL{Vendor}{Entity}Descriptor(),
+};
 ```
 
 ### 6.2 Create ETL Class
@@ -760,81 +838,155 @@ export class ETL{Vendor}{Entity}Descriptor implements IETLEmbeddingDescriptor<{V
 Create `src/etl/vendors/retove.{vendor}.{entity}.etl.ts`:
 
 ```typescript
-import type * as qdrant from "@qdrant/js-client-rest";
-import { eq, gt } from "drizzle-orm";
-import { getPostgresClient, {vendor}{Entities} } from "@ait/postgres";
-import type { {Vendor}{Entity}DataTarget } from "@ait/postgres";
-import { RetoveBaseETLAbstract } from "../retove.base.etl.abstract";
+import {
+  type getPostgresClient,
+  {vendor}{Entities},
+  type {Vendor}{Entity}DataTarget,
+  drizzleOrm,
+} from "@ait/postgres";
+import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
+import type { qdrant } from "@ait/qdrant";
+import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import type { IEmbeddingsService } from "@ait/ai-sdk";
+import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETL{Vendor}{Entity}Descriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.{vendor}.descriptor";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
-export class Retove{Vendor}{Entity}ETL extends RetoveBaseETLAbstract<{Vendor}{Entity}DataTarget> {
-  private _descriptor = new ETL{Vendor}{Entity}Descriptor();
+export class Retove{Vendor}{Entity}ETL extends RetoveBaseETLAbstract {
+  private readonly _descriptor: IETLEmbeddingDescriptor<{Vendor}{Entity}DataTarget> =
+    new ETL{Vendor}{Entity}Descriptor();
 
-  constructor(pgClient: ReturnType<typeof getPostgresClient>, qdrantClient: qdrant.QdrantClient) {
-    super(pgClient, qdrantClient, getCollectionNameByVendor("{vendor}"));
+  constructor(
+    pgClient: ReturnType<typeof getPostgresClient>,
+    qdrantClient: qdrant.QdrantClient,
+    retryOptions?: RetryOptions,
+    embeddingsService?: IEmbeddingsService,
+  ) {
+    super(pgClient, qdrantClient, getCollectionNameByVendor("{vendor}"), retryOptions, embeddingsService);
   }
 
-  async extract(limit: number, lastProcessedTimestamp?: Date): Promise<{Vendor}{Entity}DataTarget[]> {
-    const query = this._pgClient
-      .select()
-      .from({vendor}{Entities})
-      .limit(limit);
+  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<{Vendor}{Entity}DataTarget[]> {
+    return await this._pgClient.db.transaction(async (tx) => {
+      let query = tx.select().from({vendor}{Entities}) as any;
 
-    if (lastProcessedTimestamp) {
-      query.where(gt({vendor}{Entities}.updatedAt, lastProcessedTimestamp));
-    }
+      if (lastProcessedTimestamp) {
+        query = query.where(drizzleOrm.gt({vendor}{Entities}.updatedAt, lastProcessedTimestamp));
+      }
 
-    return query.orderBy({vendor}{Entities}.updatedAt);
+      return query.orderBy(drizzleOrm.asc({vendor}{Entities}.updatedAt)).limit(limit).execute();
+    });
   }
 
-  getTextForEmbedding(data: {Vendor}{Entity}DataTarget): string {
-    return this._descriptor.getEmbeddingText(data);
+  protected getTextForEmbedding(entity: {Vendor}{Entity}DataTarget): string {
+    return this._descriptor.getEmbeddingText(entity);
   }
 
-  getPayload(data: {Vendor}{Entity}DataTarget): Record<string, unknown> {
-    return this._descriptor.getEmbeddingPayload(data);
+  protected getPayload(entity: {Vendor}{Entity}DataTarget): Retove{Vendor}{Entity}VectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(entity);
   }
 
-  getLatestTimestamp(data: {Vendor}{Entity}DataTarget[]): Date | null {
-    if (data.length === 0) return null;
-    const timestamps = data.map(d => d.updatedAt).filter(Boolean) as Date[];
-    return timestamps.length > 0 ? new Date(Math.max(...timestamps.map(t => t.getTime()))) : null;
+  protected getLatestTimestamp(data: unknown[]): Date {
+    const entities = data as {Vendor}{Entity}DataTarget[];
+    if (entities.length === 0) return new Date();
+    return entities.reduce((max, entity) => {
+      const entityDate = entity.updatedAt ? new Date(entity.updatedAt) : new Date(0);
+      return entityDate > max ? entityDate : max;
+    }, new Date(0));
   }
 
-  protected _getCollectionSpecificIndexes(): qdrant.Schemas["CreateFieldIndex"][] {
+  protected override _getCollectionSpecificIndexes() {
     return [
-      // Add field indexes for filtering
+      // Add field indexes for Qdrant filtering
+      // Example: { field_name: "metadata.status", field_schema: "keyword" as const },
+      // Example: { field_name: "metadata.createdAt", field_schema: "datetime" as const },
+      // Example: { field_name: "metadata.isActive", field_schema: "bool" as const },
     ];
   }
 
-  protected _getEntityType(): string {
+  protected override _getEntityType(): string {
     return "{entity_type}";
   }
 }
+
+// Vector point type for type safety
+export interface Retove{Vendor}{Entity}VectorPoint extends BaseVectorPoint {
+  payload: {
+    __type: "{entity_type}";
+  } & Partial<{Vendor}{Entity}DataTarget>;
+}
+
+// Union type if multiple entity types
+export type Retove{Vendor}VectorPoint = Retove{Vendor}{Entity}VectorPoint;
 ```
 
-### 6.3 Export ETL Runner
+### 6.3 Update ETL Runners
 
 In `src/infrastructure/runners/etl.runners.ts`:
 
 ```typescript
+// Add import at top
 import { Retove{Vendor}{Entity}ETL } from "../../etl/vendors/retove.{vendor}.{entity}.etl";
 
+// Add ETL registry constant (with existing ones)
 export const {Vendor}ETLs = {
   {entity}: "Retove{Vendor}{Entity}ETL",
+  // Add more entity types as needed
 };
 
+// Add runner function (with existing ones)
 export async function run{Vendor}{Entity}ETL(
   qdrantClient: qdrant.QdrantClient,
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
   const collection = getCollectionNameByVendor("{vendor}");
-  const etl = new Retove{Vendor}{Entity}ETL(pgClient, qdrantClient);
-  console.log(`🔍 Running Retove{Vendor}{Entity}ETL → ${collection}...`);
-  await etl.run(LIMIT);
-  console.log(`✅ Retove{Vendor}{Entity}ETL completed!`);
+  const {vendor}ETL = new Retove{Vendor}{Entity}ETL(pgClient, qdrantClient);
+
+  console.log(`🔍 Running Retove{Vendor}{Entity}ETL → ${collection} with limit of ${LIMIT}...`);
+  await {vendor}ETL.run(LIMIT);
+  console.log(`✅ Retove{Vendor}{Entity}ETL → ${collection} completed successfully!`);
 }
+```
+
+### 6.4 Verify Index Exports
+
+The `src/index.ts` should export everything from runners:
+
+```typescript
+// This single export re-exports all ETLs and runner functions
+export * from "./infrastructure/runners/etl.runners";
+```
+
+This ensures the scheduler and other packages can import:
+- `{Vendor}ETLs` - The ETL name registry
+- `run{Vendor}{Entity}ETL` - The runner function
+
+### 6.5 ETL Descriptor Interface Reference
+
+For reference, your descriptor must implement `IETLEmbeddingDescriptor`:
+
+```typescript
+// From src/infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface.ts
+export interface IETLEmbeddingDescriptor<T> {
+  getEmbeddingText(data: T): string;
+  getEmbeddingPayload<U extends Record<string, unknown>>(data: T): U;
+}
+```
+
+### 6.6 Best Practices for Embedding Text
+
+When implementing `getEmbeddingText()`:
+
+1. **Lead with entity type** - "Calendar event", "GitHub commit", etc.
+2. **Include primary identifier** - Title, name, subject
+3. **Add temporal context** - Dates in human-readable format
+4. **Include key metadata** - Status, category, tags
+5. **Truncate long content** - Limit descriptions to ~300 chars
+6. **Use TextSanitizer** - Remove special characters, normalize whitespace
+7. **Join with commas** - Creates natural semantic flow
+
+Example output:
+```
+Calendar event, "Weekly Team Standup", on Monday, January 15, 2024 at 9:00 AM, (30m duration), at Conference Room A, with video call, with 5 attendees
 ```
 
 ---
@@ -1186,17 +1338,92 @@ Create `packages/connectors/test/domain/mappers/connector.{vendor}.mapper.test.t
 
 ## Checklist
 
-- [ ] **Core**: Entity types, metadata, exports
-- [ ] **Postgres**: Schema, migration, exports
-- [ ] **Connectors**: All infrastructure, domain, service files
-- [ ] **Gateway**: Routes, server registration, env example
-- [ ] **AI-SDK**: Collection, registry, formatter, context builder
-- [ ] **RetoVe**: Descriptor, ETL class, runner
-- [ ] **Scheduler**: Job, task handler
-- [ ] **UIT**: Service, context, items, icons, cards, page, routes
-- [ ] **Tests**: Data source, mapper tests
-- [ ] **Build**: `pnpm build` passes
-- [ ] **Lint**: `pnpm lint` passes
+### Core Package (`@ait/core`)
+- [ ] Create entity types in `src/types/integrations/{vendor}.ts`
+- [ ] Add entity types to `EntityType` in `src/types/entities.ts`
+- [ ] Add to `VALID_ENTITY_TYPES` array
+- [ ] Add vendor to `IntegrationVendor` in `src/types/entities.config.ts`
+- [ ] Add `ENTITY_METADATA` for each entity type
+- [ ] Export types from `src/index.ts`
+
+### Postgres Package (`@ait/postgres`)
+- [ ] Create schema in `src/schemas/connector.{vendor}.schema.ts`
+- [ ] Create SQL migration in `src/migrations/`
+- [ ] Export schema from `src/index.ts`
+
+### Connectors Package (`@ait/connectors`)
+- [ ] Add to `ConnectorType` in `src/types/infrastructure/connector.interface.ts`
+- [ ] Create data source interface
+- [ ] Create repository types
+- [ ] Create authenticator class
+- [ ] Create data source class
+- [ ] Create store class
+- [ ] Create main connector class
+- [ ] Create entity repository/repositories
+- [ ] Create main repository
+- [ ] Create mappers
+- [ ] Create service class
+- [ ] Update `connector.vendors.config.ts` with enum and configs
+- [ ] Update `connector.service.factory.ts`
+- [ ] Export from `src/index.ts`
+
+### Gateway Package (`@ait/gateway`)
+- [ ] Create routes in `src/routes/gateway.{vendor}.routes.ts`
+- [ ] Register routes in `src/gateway.server.ts`
+- [ ] Add env vars to `.env.example`
+
+### AI-SDK Package (`@ait/ai-sdk`)
+- [ ] Add collection config in `src/config/collections.config.ts`
+- [ ] Update `integration-registry.service.ts` with metadata
+- [ ] Add to `ActivityData` in `insights.types.ts`
+- [ ] Create formatter in `src/services/context/formatters/{vendor}.formatter.ts`
+- [ ] Export formatter from `src/services/context/formatters/index.ts`
+- [ ] Add to `entityFormatters` in `context.builder.ts`
+- [ ] Add to `collectionContext` in `collection-rerank.service.ts`
+- [ ] **CRITICAL**: Add to `heuristics` array in `collection-router.service.ts`
+
+### RetoVe Package (`@ait/retove`)
+- [ ] Create embedding descriptor in `src/infrastructure/embeddings/descriptors/vendors/etl.{vendor}.descriptor.ts`
+- [ ] Create ETL class in `src/etl/vendors/retove.{vendor}.{entity}.etl.ts`
+- [ ] Add import to `src/infrastructure/runners/etl.runners.ts`
+- [ ] Add `{Vendor}ETLs` constant to runners
+- [ ] Add `run{Vendor}{Entity}ETL` function to runners
+- [ ] Verify exports from `src/index.ts`
+
+### Scheduler Package (`@ait/scheduler`)
+- [ ] Import ETLs in `src/scheduler.entrypoint.ts`
+- [ ] Add job to `SCHEDULED_JOBS` array
+- [ ] Import service and enum in `src/task-manager/scheduler.etl.task-manager.ts`
+- [ ] Add service property and instantiation
+- [ ] Register task handler with `_register()`
+
+### UIT Package (`@ait/uit`)
+- [ ] Create UI service in `src/services/{vendor}.service.ts`
+- [ ] Export from `src/services/index.ts`
+- [ ] Add to `IntegrationEntity` in `src/types/integrations.types.ts`
+- [ ] Add vendor case in `src/contexts/integrations.context.tsx`
+- [ ] Add to `AIT_SERVICES` in `src/utils/items.const.ts`
+- [ ] Add icon to `INTEGRATION_ICONS` in `src/components/integrations-list.tsx`
+- [ ] Create entity card(s) in `src/components/connectors/{entity}-card.tsx`
+- [ ] Update `src/components/home-section.tsx` with route and card render
+- [ ] Add to `INTEGRATIONS_META` in `src/components/discovery/discovery-stats.tsx`
+- [ ] Create integration page in `src/pages/integrations/{vendor}-page.tsx`
+- [ ] Add to `HOME_SECTIONS` in `src/pages/home-page.tsx`
+- [ ] Add route in `src/App.tsx`
+- [ ] Update timestamp extraction in `src/hooks/useHomepageData.ts`
+
+### Tests
+- [ ] Create data source tests
+- [ ] Create mapper tests
+
+### Final Verification
+- [ ] `pnpm build` passes without errors
+- [ ] `pnpm lint` passes without errors
+- [ ] `pnpm typecheck` passes without errors
+- [ ] OAuth flow works end-to-end
+- [ ] Data appears in UI after authentication
+- [ ] Discovery stats show the integration
+- [ ] ETL job runs successfully
 
 ---
 

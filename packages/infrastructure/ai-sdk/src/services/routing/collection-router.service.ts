@@ -341,6 +341,7 @@ export class CollectionRouterService implements ICollectionRouterService {
       { vendor: "x", keywords: getVendorKeywords("x"), weight: 1.0 },
       { vendor: "notion", keywords: getVendorKeywords("notion"), weight: 1.0 },
       { vendor: "slack", keywords: getVendorKeywords("slack"), weight: 1.0 },
+      { vendor: "google", keywords: getVendorKeywords("google"), weight: 1.0 },
     ];
 
     const selectedCollections: CollectionWeight[] = [];
