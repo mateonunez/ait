@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 const INTEGRATION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   github: Github,
   spotify: Music,
-  "x-twitter": Twitter,
+  x: Twitter,
   linear: Zap,
   notion: FileText,
   slack: MessageSquare,

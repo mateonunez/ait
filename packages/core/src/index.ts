@@ -12,6 +12,8 @@ export * from "./types/integrations/x";
 export * from "./types/integrations/notion";
 export * from "./types/integrations/slack";
 export * from "./types/integrations/google-calendar";
+export * from "./types/integrations/google-youtube";
+export * from "./types/integrations/google";
 
 export * from "./types/pagination";
 export * from "./types/stats";

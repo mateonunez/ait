@@ -7,6 +7,6 @@ export interface IConnector<T, U, W> {
   store: W;
 }
 
-export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "slack" | "google";
+export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "slack" | "google" | "youtube";
 
 export type ConnectorServiceConstructor<T extends ConnectorServiceBase<any, any>> = new () => T;

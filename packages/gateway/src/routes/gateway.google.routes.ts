@@ -32,7 +32,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         client_id: process.env.GOOGLE_CLIENT_ID!,
         redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
         response_type: "code",
-        scope: "https://www.googleapis.com/auth/calendar.readonly",
+        scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/youtube.readonly",
         access_type: "online",
         prompt: "consent",
       });
@@ -65,9 +65,13 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const calendars = await googleService.fetchCalendars();
         await googleService.connector.store.save(calendars);
 
+        const subscriptions = await googleService.fetchSubscriptions();
+        await googleService.connector.store.save(subscriptions);
+
         reply.send({
           events,
           calendars,
+          subscriptions,
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
@@ -95,6 +99,17 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     } catch (err: any) {
       fastify.log.error({ err, route: "/calendars" }, "Failed to fetch calendars.");
       reply.status(500).send({ error: "Failed to fetch calendars." });
+    }
+  });
+
+  // Fetch subscriptions from API
+  fastify.get("/subscriptions", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const subscriptions = await googleService.fetchSubscriptions();
+      reply.send(subscriptions);
+    } catch (err: any) {
+      fastify.log.error({ err, route: "/subscriptions" }, "Failed to fetch subscriptions.");
+      reply.status(500).send({ error: "Failed to fetch subscriptions." });
     }
   });
 
@@ -131,6 +146,22 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.get(
+    "/data/subscriptions",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+
+        const result = await googleService.getSubscriptionsPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/subscriptions" }, "Failed to fetch subscriptions from DB.");
+        reply.status(500).send({ error: "Failed to fetch subscriptions from database." });
+      }
+    },
+  );
+
   // Refresh endpoint
   fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -140,12 +171,16 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       const calendars = await googleService.fetchCalendars();
       await googleService.connector.store.save(calendars);
 
+      const subscriptions = await googleService.fetchSubscriptions();
+      await googleService.connector.store.save(subscriptions);
+
       reply.send({
         success: true,
         message: "Google data refreshed successfully",
         counts: {
           events: events.length,
           calendars: calendars.length,
+          subscriptions: subscriptions.length,
         },
       });
     } catch (err: unknown) {

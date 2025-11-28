@@ -68,7 +68,8 @@ export const AIT_SERVICES: Item[] = [
     description: "Latest videos and analytics",
     color: "#FF0000",
     size: "full",
-    disabled: true,
+    disabled: false,
+    route: "/integrations/google",
   },
   {
     id: "notion",

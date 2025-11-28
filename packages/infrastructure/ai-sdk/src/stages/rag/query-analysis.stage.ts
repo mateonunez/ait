@@ -2,12 +2,23 @@ import type { IPipelineStage, PipelineContext } from "../../services/rag/pipelin
 import type { QueryAnalysisInput, QueryAnalysisOutput } from "../../types/stages";
 import type { QueryIntent } from "../../services/routing/query-intent.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
-import { getFastQueryAnalyzer, type FastQueryAnalysis } from "../../services/routing/fast-query-analyzer.service";
+import {
+  getFastQueryAnalyzer,
+  type FastQueryAnalysis,
+  type IFastQueryAnalyzerService,
+} from "../../services/routing/fast-query-analyzer.service";
+import { getQueryRewriter, type QueryRewriterService } from "../../services/generation/query-rewriter.service";
 
 export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, QueryAnalysisOutput> {
   readonly name = "query-analysis";
 
-  private readonly fastAnalyzer = getFastQueryAnalyzer();
+  private readonly fastAnalyzer: IFastQueryAnalyzerService;
+  private readonly queryRewriter: QueryRewriterService;
+
+  constructor(fastAnalyzer?: IFastQueryAnalyzerService, queryRewriter?: QueryRewriterService) {
+    this.fastAnalyzer = fastAnalyzer || getFastQueryAnalyzer();
+    this.queryRewriter = queryRewriter || getQueryRewriter();
+  }
 
   async execute(input: QueryAnalysisInput, context: PipelineContext): Promise<QueryAnalysisOutput> {
     const startTime = Date.now();
@@ -15,12 +26,32 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
       ? createSpanWithTiming(this.name, "rag", context.traceContext, { query: input.query.slice(0, 100) })
       : null;
 
-    const analysis = this.fastAnalyzer.analyze(input.query);
+    let queryToAnalyze = input.query;
+    let analysis = this.fastAnalyzer.analyze(queryToAnalyze);
+
+    // Check for pronouns that indicate context dependency
+    const hasPronouns = /\b(it|them|that|those|these|he|she|they|him|her)\b/i.test(queryToAnalyze);
+
+    // If query is ambiguous/broad or simple, and we have history, try to rewrite it
+    if (
+      input.messages &&
+      input.messages.length > 0 &&
+      (analysis.isBroadQuery || analysis.complexity === "simple" || analysis.entityTypes.length === 0 || hasPronouns)
+    ) {
+      const rewrittenQuery = await this.queryRewriter.rewriteQuery(input.query, input.messages);
+
+      if (rewrittenQuery !== queryToAnalyze) {
+        queryToAnalyze = rewrittenQuery;
+        // Re-analyze with the rewritten query
+        analysis = this.fastAnalyzer.analyze(queryToAnalyze);
+      }
+    }
+
     const intent = this._toQueryIntent(analysis);
     const shouldUseFastPath = this._determineFastPath(analysis);
 
     const output: QueryAnalysisOutput = {
-      query: input.query,
+      query: queryToAnalyze, // Return the potentially rewritten query
       intent,
       heuristics: {
         isTemporalQuery: analysis.isTemporalQuery,
@@ -50,6 +81,7 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
         shouldUseFastPath,
         duration,
         method: "heuristic",
+        originalQuery: input.query !== queryToAnalyze ? input.query : undefined,
       });
     }
 

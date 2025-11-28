@@ -1,6 +1,6 @@
 import type { EntityType, IntegrationVendor } from "@ait/core";
 
-export type CollectionVendor = IntegrationVendor | "general";
+export type CollectionVendor = IntegrationVendor | "google-calendar" | "youtube" | "general";
 
 export interface CollectionConfig {
   readonly vendor: CollectionVendor;
@@ -68,8 +68,8 @@ const SLACK_COLLECTION: CollectionConfig = {
 const GOOGLE_COLLECTION: CollectionConfig = {
   vendor: "google",
   name: "ait_google_collection",
-  description: "Google Suite (Calendar, Drive, etc.)",
-  entityTypes: ["event", "calendar"],
+  description: "Google Suite (Calendar, Drive, YouTube, etc.)",
+  entityTypes: ["event", "calendar", "subscription"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -91,6 +91,8 @@ export const COLLECTIONS_REGISTRY: Record<CollectionVendor, CollectionConfig> = 
   notion: NOTION_COLLECTION,
   slack: SLACK_COLLECTION,
   google: GOOGLE_COLLECTION,
+  "google-calendar": GOOGLE_COLLECTION,
+  youtube: GOOGLE_COLLECTION,
   general: GENERAL_COLLECTION,
 };
 

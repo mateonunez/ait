@@ -58,6 +58,14 @@ export {
   TextGenerationError,
 } from "./services/text-generation/text-generation.service";
 
+export * from "./services/generation/query-rewriter.service";
+export {
+  SuggestionService,
+  suggestionService,
+  type SuggestionContext,
+  type Suggestion,
+} from "./services/generation/suggestion.service";
+
 export { type IEmbeddingsService, EmbeddingsService } from "./services/embeddings/embeddings.service";
 
 export {

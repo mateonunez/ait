@@ -13,6 +13,7 @@ import { RetoveSpotifyAlbumETL } from "../../etl/vendors/retove.spotify.album.et
 import { RetoveNotionPageETL } from "../../etl/vendors/retove.notion.page.etl";
 import { RetoveSlackMessageETL } from "../../etl/vendors/retove.slack.message.etl";
 import { RetoveGoogleCalendarEventETL } from "../../etl/vendors/retove.google-calendar.event.etl";
+import { RetoveGoogleYouTubeSubscriptionETL } from "../../etl/vendors/retove.google-youtube.subscription.etl";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
 
 export const SpotifyETLs = {
@@ -182,4 +183,20 @@ export async function runGoogleCalendarEventETL(
   console.log(`🔍 Running RetoveGoogleCalendarEventETL → ${collection} with limit of ${LIMIT}...`);
   await googleCalendarETL.run(LIMIT);
   console.log(`✅ RetoveGoogleCalendarEventETL → ${collection} completed successfully!`);
+}
+
+export const GoogleYouTubeETLs = {
+  subscription: "RetoveGoogleYouTubeSubscriptionETL",
+};
+
+export async function runGoogleYouTubeSubscriptionETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const collection = getCollectionNameByVendor("google");
+  const googleYouTubeETL = new RetoveGoogleYouTubeSubscriptionETL(pgClient, qdrantClient);
+
+  console.log(`🔍 Running RetoveGoogleYouTubeSubscriptionETL → ${collection} with limit of ${LIMIT}...`);
+  await googleYouTubeETL.run(LIMIT);
+  console.log(`✅ RetoveGoogleYouTubeSubscriptionETL → ${collection} completed successfully!`);
 }

@@ -6,6 +6,7 @@ import type { TraceContext } from "./telemetry";
 
 export interface QueryAnalysisInput {
   query: string;
+  messages?: ChatMessage[];
   traceContext?: TraceContext;
 }
 

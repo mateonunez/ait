@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 import { Conversation, PromptInput, ModelSelector, Suggestions } from "./ai-elements";
 import { ContextWindowTracker } from "./context-window-tracker";
 import { useAItChat } from "@/hooks/useAItChat";
+import { useAiSuggestions } from "@/hooks/useAiSuggestions";
 import { cn } from "@/styles/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "./ui/button";
@@ -47,6 +48,10 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
   const [sidePanel, setSidePanel] = useState<SidePanel>(null);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [_modelsLoading, setModelsLoading] = useState(true);
+
+  const { suggestions: dynamicSuggestions, isLoading: isSuggestionsLoading } = useAiSuggestions({
+    enabled: open && messages.length === 0,
+  });
 
   useEffect(() => {
     setModelsLoading(true);
@@ -178,13 +183,18 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
                     <p className="text-xs text-muted-foreground mb-3 text-center">Try asking:</p>
                     <Suggestions
                       variant="simple"
-                      suggestions={[
-                        { id: "1", type: "question", text: "What are you listening to right now?" },
-                        { id: "2", type: "question", text: "Show me my recent GitHub activity" },
-                        { id: "3", type: "question", text: "What did I tweet about today?" },
-                        { id: "4", type: "question", text: "Summarize my day based on my activity" },
-                      ]}
+                      suggestions={
+                        dynamicSuggestions.length > 0
+                          ? dynamicSuggestions
+                          : [
+                              { id: "1", type: "question", text: "What are you listening to right now?" },
+                              { id: "2", type: "question", text: "Show me my recent GitHub activity" },
+                              { id: "3", type: "question", text: "What did I tweet about today?" },
+                              { id: "4", type: "question", text: "Summarize my day based on my activity" },
+                            ]
+                      }
                       onSuggestionClick={handleSuggestionClick}
+                      isLoading={isSuggestionsLoading}
                     />
                   </div>
                 </div>

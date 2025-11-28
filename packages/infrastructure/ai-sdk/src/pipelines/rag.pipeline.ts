@@ -58,7 +58,7 @@ export function createRAGPipeline(
     .addStage(new QueryAnalysisStage())
     .addStage(new SimpleRetrievalStage(multiCollectionProvider, config.maxDocs))
     .addStage(new CollectionRoutingStage(config.collectionRouting))
-    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider, cacheService))
+    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider /*cacheService*/))
     .addStage(new FusionStage())
     .addStage(new RerankingStage(config.reranking))
     .addStage(new ContextBuildingStage(config.contextBuilding))

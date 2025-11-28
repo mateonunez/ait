@@ -15,6 +15,7 @@ import observabilityRoutes from "./routes/gateway.observability.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
 import discoveryRoutes from "./routes/gateway.discovery.routes";
 import insightsRoutes from "./routes/gateway.insights.routes";
+import suggestionsRoutes from "./routes/gateway.suggestions.routes";
 
 const redisUrl = process.env.REDIS_URL;
 
@@ -36,6 +37,7 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(feedbackRoutes, { prefix: "/api/feedback" });
   server.register(discoveryRoutes, { prefix: "/api/discovery" });
   server.register(insightsRoutes, { prefix: "/api/insights" });
+  server.register(suggestionsRoutes, { prefix: "/api/suggestions" });
 
   try {
     await server.listen({ port, host: "0.0.0.0" });

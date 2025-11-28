@@ -13,6 +13,7 @@ import { NotionPageFormatter } from "./notion.formatter";
 import { SlackMessageFormatter } from "./slack.formatter";
 import { LinearIssueFormatter } from "./linear.formatter";
 import { GoogleCalendarEventFormatter, GoogleCalendarCalendarFormatter } from "./google-calendar.formatter";
+import { GoogleYouTubeSubscriptionFormatter } from "./google-youtube.formatter";
 
 export {
   SpotifyTrackFormatter,
@@ -27,6 +28,7 @@ export { SlackMessageFormatter } from "./slack.formatter";
 export { GitHubRepositoryFormatter, GitHubPullRequestFormatter, GitHubCommitFormatter } from "./github.formatter";
 export { LinearIssueFormatter } from "./linear.formatter";
 export { GoogleCalendarEventFormatter, GoogleCalendarCalendarFormatter } from "./google-calendar.formatter";
+export { GoogleYouTubeSubscriptionFormatter } from "./google-youtube.formatter";
 export type { EntityFormatter } from "./formatter.utils";
 export { safeString, safeNumber, safeArray, joinParts, extractArtistName, formatDate } from "./formatter.utils";
 
@@ -45,6 +47,7 @@ export const ENTITY_FORMATTERS: Record<EntityType, EntityFormatter<unknown>> = {
   message: SlackMessageFormatter,
   event: GoogleCalendarEventFormatter,
   calendar: GoogleCalendarCalendarFormatter,
+  subscription: GoogleYouTubeSubscriptionFormatter,
 };
 
 export const getFormatter = (type: EntityType): EntityFormatter<unknown> | undefined => {

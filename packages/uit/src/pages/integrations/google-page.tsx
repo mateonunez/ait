@@ -5,13 +5,19 @@ import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { EventCard } from "@/components/connectors/event-card";
 import { CalendarCard } from "@/components/connectors/calendar-card";
+import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
-import type { GoogleCalendarEventEntity, GoogleCalendarCalendarEntity } from "@ait/core";
-import { Calendar } from "lucide-react";
+import type {
+  GoogleCalendarEventEntity,
+  GoogleCalendarCalendarEntity,
+  GoogleYouTubeSubscriptionEntity,
+} from "@ait/core";
+import { Calendar, Youtube } from "lucide-react";
 
 const TABS = [
   { id: "events", label: "Events" },
   { id: "calendars", label: "Calendars" },
+  { id: "subscriptions", label: "Subscriptions" },
 ];
 
 export default function GooglePage() {
@@ -19,6 +25,7 @@ export default function GooglePage() {
   const [activeTab, setActiveTab] = useState("events");
   const [events, setEvents] = useState<GoogleCalendarEventEntity[]>([]);
   const [calendars, setCalendars] = useState<GoogleCalendarCalendarEntity[]>([]);
+  const [subscriptions, setSubscriptions] = useState<GoogleYouTubeSubscriptionEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,6 +43,10 @@ export default function GooglePage() {
         } else if (tab === "calendars") {
           const response = await fetchEntityData("google", "calendar", { page, limit: pageSize });
           setCalendars(response.data as GoogleCalendarCalendarEntity[]);
+          setTotalPages(response.pagination.totalPages);
+        } else if (tab === "subscriptions") {
+          const response = await fetchEntityData("google", "subscription", { page, limit: pageSize });
+          setSubscriptions(response.data as GoogleYouTubeSubscriptionEntity[]);
           setTotalPages(response.pagination.totalPages);
         }
       } catch (error) {
@@ -133,13 +144,39 @@ export default function GooglePage() {
       );
     }
 
+    if (activeTab === "subscriptions") {
+      return (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {subscriptions.map((subscription) => (
+              <GoogleYouTubeSubscriptionCard key={subscription.id} subscription={subscription} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center py-8">
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+            </div>
+          )}
+
+          {subscriptions.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Youtube className="w-12 h-12 text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground">No subscriptions found</p>
+              <p className="text-sm text-muted-foreground mt-2">Try refreshing or connecting your Google account</p>
+            </div>
+          )}
+        </>
+      );
+    }
+
     return null;
   };
 
   return (
     <IntegrationLayout
       title="Google"
-      description="Calendar events and schedule"
+      description="Calendar events, schedules, and YouTube subscriptions"
       color="#4285F4"
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing}
