@@ -72,4 +72,28 @@ describe("CollectionRouterService", () => {
     assert.ok(result.selectedCollections.some((c) => c.vendor === "spotify"));
     assert.ok(result.reasoning.includes("heuristic"));
   });
+
+  it("should normalize weights for multi-collection heuristic routing", async () => {
+    const service = new CollectionRouterService(
+      { enableLLMRouting: false }, // Force heuristic
+      mockDiscoveryService,
+      mockClient,
+    );
+
+    // Query matching both spotify and github keywords
+    const result = await service.routeCollections("check my github code and play spotify music");
+
+    assert.equal(result.selectedCollections.length, 2);
+
+    // Both should be capped at 0.8 (since there are 2 collections)
+    const spotify = result.selectedCollections.find((c) => c.vendor === "spotify");
+    const github = result.selectedCollections.find((c) => c.vendor === "github");
+
+    assert.ok(spotify);
+    assert.ok(github);
+
+    // Check that weights are normalized (should be <= 0.8)
+    assert.ok(spotify.weight <= 0.8);
+    assert.ok(github.weight <= 0.8);
+  });
 });

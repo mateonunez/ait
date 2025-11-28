@@ -113,7 +113,11 @@ export class ActivityAggregatorService {
 
       const daily = this._groupByDay(entities, connectorType, days);
       const dailyTotal = daily.reduce((sum, day) => sum + day.count, 0);
-      const total = apiTotal !== null ? apiTotal : Math.max(dailyTotal, entities.length);
+
+      // Use dailyTotal as the source of truth for activity in the requested range.
+      // apiTotal represents the total count in the DB/API, which might include historical data outside the range.
+      // entities.length represents the number of fetched items, which also might include out-of-range items.
+      const total = dailyTotal;
 
       logger.debug(`Activity calculated for ${connectorType}`, {
         connectorType,
@@ -180,7 +184,7 @@ export class ActivityAggregatorService {
             connectorType,
             dateField: metadata?.dateField,
             entityKeys: Object.keys(entity || {}),
-            fieldValue: entity?.[metadata?.dateField || ""],
+            fieldValue: entity?.[(metadata?.dateField as string) || ""],
           });
         }
       }

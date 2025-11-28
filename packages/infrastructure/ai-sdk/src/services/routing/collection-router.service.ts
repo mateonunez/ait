@@ -355,10 +355,10 @@ export class CollectionRouterService implements ICollectionRouterService {
       const matchCount = keywords.filter((kw) => lowerQuery.includes(kw)).length;
       if (matchCount > 0) {
         totalMatches += matchCount;
-        const adjustedWeight = Math.min(weight * (matchCount / keywords.length) + 0.5, 1.0);
+        const rawWeight = weight * (matchCount / keywords.length) + 0.5;
         selectedCollections.push({
           vendor,
-          weight: adjustedWeight,
+          weight: rawWeight,
           reasoning: `Keyword match (${matchCount} keywords)`,
         });
       }
@@ -393,18 +393,35 @@ export class CollectionRouterService implements ICollectionRouterService {
       return this.buildAllExistingCollectionsFallback("No keyword or intent matches", existing);
     }
 
-    selectedCollections.sort((a, b) => b.weight - a.weight);
+    // Normalize weights for multi-collection queries to prevent dominance
+    const normalizedCollections = this._normalizeWeightsForMultiCollection(selectedCollections);
+
+    normalizedCollections.sort((a, b) => b.weight - a.weight);
 
     // Calculate confidence based on match quality
     const confidence = Math.min(0.5 + totalMatches * 0.1, 0.9);
 
     return {
-      selectedCollections: selectedCollections.slice(0, 4),
+      selectedCollections: normalizedCollections.slice(0, 4),
       reasoning: buildFallbackRoutingReason(userQuery),
-      strategy: this.inferStrategy(selectedCollections.length),
+      strategy: this.inferStrategy(normalizedCollections.length),
       confidence,
       suggestedEntityTypes: queryIntent?.entityTypes ? this.validateEntityTypes(queryIntent.entityTypes) : undefined,
     };
+  }
+
+  private _normalizeWeightsForMultiCollection(collections: CollectionWeight[]): CollectionWeight[] {
+    if (collections.length <= 1) {
+      return collections.map((c) => ({ ...c, weight: Math.min(c.weight, 1.0) }));
+    }
+
+    const maxWeightRatio = 0.7;
+    const maxWeight = collections.length === 2 ? 0.8 : maxWeightRatio;
+
+    return collections.map((c) => ({
+      ...c,
+      weight: Math.min(c.weight, maxWeight),
+    }));
   }
 
   private buildAllExistingCollectionsFallback(

@@ -13,7 +13,7 @@ export interface IntegrationMetadata {
   connectorType: ConnectorType;
   displayName: string;
   primaryEntityType: string;
-  dateField: string; // Field name to extract date from entity
+  dateField: string | string[]; // Field name(s) to extract date from entity
   goalType?: string; // Goal type mapping (e.g., "commits", "songs", "messages")
   fetchMethod: string; // Method name on connector service to fetch entities
 }
@@ -27,7 +27,7 @@ export class IntegrationRegistryService {
       connectorType: "github",
       displayName: "GitHub",
       primaryEntityType: "commit",
-      dateField: "authorDate",
+      dateField: "committerDate",
       goalType: "commits",
       fetchMethod: "getCommitsPaginated",
     },
@@ -67,7 +67,7 @@ export class IntegrationRegistryService {
       connectorType: "slack",
       displayName: "Slack",
       primaryEntityType: "message",
-      dateField: "createdAt", // Use createdAt instead of ts for better compatibility
+      dateField: ["ts", "createdAt"], // Prefer ts (message time) over createdAt (DB time)
       goalType: "messages",
       fetchMethod: "getMessagesPaginated",
     },
@@ -112,48 +112,52 @@ export class IntegrationRegistryService {
       return null;
     }
 
-    const fieldValue = entity[metadata.dateField];
+    const fields = Array.isArray(metadata.dateField) ? metadata.dateField : [metadata.dateField];
 
-    // Handle null/undefined
-    if (fieldValue === null || fieldValue === undefined) {
-      return null;
-    }
+    for (const field of fields) {
+      const fieldValue = entity[field];
 
-    // Handle different date field formats
-    if (metadata.dateField === "ts") {
-      // Slack uses Unix timestamp as string (e.g., "1234567890.123456")
-      if (typeof fieldValue === "string") {
-        const timestamp = Number.parseFloat(fieldValue);
-        if (!Number.isNaN(timestamp) && timestamp > 0) {
-          // Handle both seconds and milliseconds
-          const ms = timestamp > 1e10 ? timestamp : timestamp * 1000;
+      // Handle null/undefined
+      if (fieldValue === null || fieldValue === undefined) {
+        continue;
+      }
+
+      // Handle different date field formats
+      if (field === "ts") {
+        // Slack uses Unix timestamp as string (e.g., "1234567890.123456")
+        if (typeof fieldValue === "string") {
+          const timestamp = Number.parseFloat(fieldValue);
+          if (!Number.isNaN(timestamp) && timestamp > 0) {
+            // Handle both seconds and milliseconds
+            const ms = timestamp > 1e10 ? timestamp : timestamp * 1000;
+            return new Date(ms);
+          }
+        } else if (typeof fieldValue === "number") {
+          // Handle numeric timestamp
+          const ms = fieldValue > 1e10 ? fieldValue : fieldValue * 1000;
           return new Date(ms);
         }
-      } else if (typeof fieldValue === "number") {
-        // Handle numeric timestamp
-        const ms = fieldValue > 1e10 ? fieldValue : fieldValue * 1000;
-        return new Date(ms);
+        continue;
       }
-      return null;
-    }
 
-    // Handle Date objects (direct or serialized)
-    if (fieldValue instanceof Date) {
-      return fieldValue;
-    }
-
-    // Handle string dates (ISO format or other)
-    if (typeof fieldValue === "string") {
-      // Try parsing as ISO date string
-      const date = new Date(fieldValue);
-      if (!Number.isNaN(date.getTime())) {
-        return date;
+      // Handle Date objects (direct or serialized)
+      if (fieldValue instanceof Date) {
+        return fieldValue;
       }
-    }
 
-    // Handle numeric timestamps (milliseconds)
-    if (typeof fieldValue === "number" && fieldValue > 0) {
-      return new Date(fieldValue);
+      // Handle string dates (ISO format or other)
+      if (typeof fieldValue === "string") {
+        // Try parsing as ISO date string
+        const date = new Date(fieldValue);
+        if (!Number.isNaN(date.getTime())) {
+          return date;
+        }
+      }
+
+      // Handle numeric timestamps (milliseconds)
+      if (typeof fieldValue === "number" && fieldValue > 0) {
+        return new Date(fieldValue);
+      }
     }
 
     return null;

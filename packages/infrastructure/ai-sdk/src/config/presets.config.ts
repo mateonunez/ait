@@ -275,6 +275,12 @@ const PRODUCTION_PRESET: PresetConfig = {
       minConfidenceThreshold: 0.4,
       temperature: 0.3,
     },
+    collectionDiversity: {
+      minDocsPerCollection: 3,
+      maxCollectionDominance: 0.5,
+      enforceMinRepresentation: true,
+      interleavingStrategy: "weighted",
+    },
   },
   textGeneration: {
     multipleQueryPlannerConfig: {
@@ -353,6 +359,10 @@ export function mergePresetWithOverrides(
       collectionRouting: {
         ...preset.rag.collectionRouting,
         ...(overrides.rag?.collectionRouting || {}),
+      },
+      collectionDiversity: {
+        ...(preset.rag.collectionDiversity || {}),
+        ...(overrides.rag?.collectionDiversity || {}),
       },
     },
     textGeneration: {

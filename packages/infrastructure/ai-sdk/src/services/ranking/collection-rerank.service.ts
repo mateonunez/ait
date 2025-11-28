@@ -4,6 +4,7 @@ import type { WeightedDocument } from "../../types/collections";
 import type { IRerankService } from "./rerank.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { CollectionDiversityService, type ICollectionDiversityService } from "./collection-diversity.service";
 
 export interface ICollectionRerankService {
   rerankByCollection<TMetadata extends BaseMetadata>(
@@ -17,10 +18,16 @@ export interface ICollectionRerankService {
 export class CollectionRerankService implements ICollectionRerankService {
   private readonly _reranker?: IRerankService;
   private readonly _useCollectionSpecificPrompts: boolean;
+  private readonly _diversityService: ICollectionDiversityService;
 
-  constructor(reranker?: IRerankService, config?: { useCollectionSpecificPrompts?: boolean }) {
+  constructor(
+    reranker?: IRerankService,
+    config?: { useCollectionSpecificPrompts?: boolean },
+    diversityService?: ICollectionDiversityService,
+  ) {
     this._reranker = reranker;
     this._useCollectionSpecificPrompts = config?.useCollectionSpecificPrompts ?? true;
+    this._diversityService = diversityService || new CollectionDiversityService();
   }
 
   async rerankByCollection<TMetadata extends BaseMetadata>(
@@ -150,9 +157,9 @@ export class CollectionRerankService implements ICollectionRerankService {
   ): WeightedDocument<TMetadata>[] {
     const allDocuments = groups.flat();
 
-    allDocuments.sort((a, b) => b.finalScore - a.finalScore);
+    const diversified = this._diversityService.applyDiversityConstraints(allDocuments, allDocuments.length);
 
-    return allDocuments;
+    return diversified;
   }
 
   private isSameDocument<TMetadata extends BaseMetadata>(
