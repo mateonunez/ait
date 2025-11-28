@@ -1,0 +1,1211 @@
+# Creating a New Integration in AIt
+
+This rule documents the complete process for adding a new integration to the AIt monorepo. Follow these steps in order to ensure all packages are properly updated.
+
+## Overview
+
+Adding a new integration touches multiple packages in the monorepo:
+
+| Package | Purpose |
+|---------|---------|
+| `@ait/core` | Entity types, metadata, and type exports |
+| `@ait/postgres` | Database schema and migrations |
+| `@ait/connectors` | OAuth, data source, repositories, mappers, service |
+| `@ait/gateway` | API routes |
+| `@ait/ai-sdk` | Collections, formatters, insights registry |
+| `@ait/retove` | ETL pipeline and embedding descriptors |
+| `@ait/scheduler` | Scheduled jobs and task handlers |
+| `@ait/uit` | UI components, pages, and services |
+
+---
+
+## Phase 1: Core Types (`packages/core`)
+
+### 1.1 Create Entity Types
+
+Create `src/types/integrations/{vendor}.ts`:
+
+```typescript
+// External types (from API)
+export interface {Vendor}{Entity}External {
+  id: string;
+  // ... API response fields
+  __type: "{entity_type}";
+}
+
+// Domain entity types
+export interface {Vendor}{Entity}Entity {
+  id: string;
+  // ... domain fields
+  __type: "{entity_type}";
+}
+
+// Schema types (for Drizzle)
+export interface {Vendor}{Entity}Schema {
+  // ... database column types
+}
+
+// Union types
+export type {Vendor}External = {Vendor}{Entity1}External | {Vendor}{Entity2}External;
+export type {Vendor}Entity = {Vendor}{Entity1}Entity | {Vendor}{Entity2}Entity;
+```
+
+### 1.2 Update Entity Types
+
+In `src/types/entities.ts`:
+
+```typescript
+export type EntityType =
+  // ... existing types
+  | "{entity_type1}"
+  | "{entity_type2}";
+
+export const VALID_ENTITY_TYPES: readonly EntityType[] = [
+  // ... existing types
+  "{entity_type1}",
+  "{entity_type2}",
+] as const;
+```
+
+### 1.3 Update Entity Config
+
+In `src/types/entities.config.ts`:
+
+```typescript
+export type IntegrationVendor = "..." | "{vendor}";
+
+export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
+  // ... existing metadata
+  {entity_type}: {
+    label: "{Entity}",
+    labelPlural: "{Entities}",
+    keywords: ["keyword1", "keyword2"],
+    vendor: "{vendor}",
+    description: "{Description} (timestamps: field1, field2)",
+    timestampFields: ["field1", "field2"],
+  },
+};
+```
+
+### 1.4 Export Types
+
+In `src/index.ts`:
+
+```typescript
+export * from "./types/integrations/{vendor}";
+```
+
+---
+
+## Phase 2: Database Schema (`packages/infrastructure/postgres`)
+
+### 2.1 Create Schema
+
+Create `src/schemas/connector.{vendor}.schema.ts`:
+
+```typescript
+import { pgTable, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+
+export const {vendor}{Entities} = pgTable("{vendor}_{entities}", {
+  id: text("id").primaryKey(),
+  // ... columns
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type {Vendor}{Entity}DataTarget = typeof {vendor}{Entities}.$inferSelect;
+export type {Vendor}{Entity}DataTargetInsert = typeof {vendor}{Entities}.$inferInsert;
+```
+
+### 2.2 Create Migration
+
+Create `src/migrations/{number}_add_{vendor}.sql`:
+
+```sql
+CREATE TABLE IF NOT EXISTS "{vendor}_{entities}" (
+  "id" TEXT PRIMARY KEY,
+  -- ... columns
+  "created_at" TIMESTAMP DEFAULT NOW(),
+  "updated_at" TIMESTAMP DEFAULT NOW()
+);
+```
+
+### 2.3 Export Schema
+
+In `src/index.ts`:
+
+```typescript
+export * from "./schemas/connector.{vendor}.schema";
+```
+
+---
+
+## Phase 3: Connectors (`packages/connectors`)
+
+### 3.1 Update Connector Interface
+
+In `src/types/infrastructure/connector.interface.ts`:
+
+```typescript
+export type ConnectorType = "..." | "{vendor}";
+```
+
+### 3.2 Create Data Source Interface
+
+Create `src/types/infrastructure/connector.{vendor}.data-source.interface.ts`:
+
+```typescript
+import type { {Vendor}{Entity}External } from "@ait/core";
+
+export interface {Vendor}PaginatedResponse<T> {
+  items: T[];
+  nextCursor?: string;
+}
+
+export interface IConnector{Vendor}DataSource {
+  fetch{Entities}(cursor?: string): Promise<{Vendor}PaginatedResponse<{Vendor}{Entity}External>>;
+}
+```
+
+### 3.3 Create Repository Types
+
+Create `src/types/domain/entities/vendors/connector.{vendor}.types.ts`:
+
+```typescript
+import type { {Vendor}{Entity}Entity, PaginatedResponse, PaginationParams } from "@ait/core";
+import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
+
+export interface IConnector{Vendor}{Entity}Repository {
+  save{Entity}(entity: Partial<{Vendor}{Entity}Entity>, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  save{Entities}(entities: Partial<{Vendor}{Entity}Entity>[]): Promise<void>;
+  get{Entity}(id: string): Promise<{Vendor}{Entity}Entity | null>;
+  fetch{Entities}(): Promise<{Vendor}{Entity}Entity[]>;
+  get{Entities}Paginated(params: PaginationParams): Promise<PaginatedResponse<{Vendor}{Entity}Entity>>;
+}
+
+export interface IConnector{Vendor}Repository extends IConnectorRepository {
+  {entity}: IConnector{Vendor}{Entity}Repository;
+}
+```
+
+### 3.4 Create Authenticator
+
+Create `src/infrastructure/vendors/{vendor}/connector.{vendor}.authenticator.ts`:
+
+```typescript
+import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
+
+export class Connector{Vendor}Authenticator extends ConnectorAuthenticatorAbstract {}
+```
+
+### 3.5 Create Data Source
+
+Create `src/infrastructure/vendors/{vendor}/connector.{vendor}.data-source.ts`:
+
+```typescript
+import type { {Vendor}{Entity}External } from "@ait/core";
+import type { IConnector{Vendor}DataSource, {Vendor}PaginatedResponse } from "../../../types/infrastructure/connector.{vendor}.data-source.interface";
+import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
+
+export class Connector{Vendor}DataSource implements IConnector{Vendor}DataSource {
+  private readonly apiUrl: string;
+  private accessToken: string;
+  private _logger = getLogger();
+
+  constructor(accessToken: string) {
+    this.apiUrl = process.env.{VENDOR}_API_ENDPOINT || "https://api.example.com";
+    this.accessToken = accessToken;
+  }
+
+  async fetch{Entities}(cursor?: string): Promise<{Vendor}PaginatedResponse<{Vendor}{Entity}External>> {
+    // Implementation
+  }
+
+  private async _fetchFrom{Vendor}<T>(endpoint: string): Promise<T> {
+    // Implementation with error handling
+  }
+}
+```
+
+### 3.6 Create Store
+
+Create `src/infrastructure/vendors/{vendor}/connector.{vendor}.store.ts`:
+
+```typescript
+import type { {Vendor}Entity } from "@ait/core";
+import { AItError } from "@ait/core";
+import type { IConnector{Vendor}Repository } from "../../../types/domain/entities/vendors/connector.{vendor}.types";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
+import { {VENDOR}_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+
+export class Connector{Vendor}Store implements IConnectorStore {
+  private _repository: IConnector{Vendor}Repository;
+
+  constructor(repository: IConnector{Vendor}Repository) {
+    this._repository = repository;
+  }
+
+  async save<T extends {Vendor}Entity>(data: T | T[]): Promise<void> {
+    const items = Array.isArray(data) ? data : [data];
+    for (const item of items) {
+      switch (item.__type) {
+        case {VENDOR}_ENTITY_TYPES_ENUM.{ENTITY}:
+          await this._repository.{entity}.save{Entity}(item as any, { incremental: false });
+          break;
+        default:
+          throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
+      }
+    }
+  }
+
+  async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
+    await this._repository.saveAuthenticationData(data);
+  }
+
+  async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
+    return this._repository.getAuthenticationData();
+  }
+}
+```
+
+### 3.7 Create Main Connector
+
+Create `src/infrastructure/vendors/{vendor}/connector.{vendor}.ts`:
+
+```typescript
+import { BaseConnectorAbstract } from "../../connector.base.abstract";
+import { Connector{Vendor}Authenticator } from "./connector.{vendor}.authenticator";
+import { Connector{Vendor}Repository } from "../../../domain/entities/vendors/{vendor}/connector.{vendor}.repository";
+import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { Connector{Vendor}DataSource } from "./connector.{vendor}.data-source";
+import { Connector{Vendor}Store } from "./connector.{vendor}.store";
+import type { IConnector{Vendor}Repository } from "../../../types/domain/entities/vendors/connector.{vendor}.types";
+
+export class Connector{Vendor} extends BaseConnectorAbstract<
+  Connector{Vendor}Authenticator,
+  Connector{Vendor}DataSource,
+  Connector{Vendor}Store,
+  IConnector{Vendor}Repository
+> {
+  constructor(oauth: IConnectorOAuth) {
+    const authenticator = new Connector{Vendor}Authenticator(oauth);
+    const repository = new Connector{Vendor}Repository();
+    const store = new Connector{Vendor}Store(repository);
+    super(authenticator, repository, store);
+  }
+
+  protected async getAuthenticatedData(): Promise<OAuthTokenDataTarget | null> {
+    return this._store.getAuthenticationData();
+  }
+
+  protected async authenticate(code: string): Promise<{ access_token: string }> {
+    return this._authenticator.authenticate(code);
+  }
+
+  protected async refreshToken(refreshToken: string): Promise<{ access_token: string }> {
+    return this._authenticator.refreshToken(refreshToken);
+  }
+
+  protected createDataSource(accessToken: string): Connector{Vendor}DataSource {
+    return new Connector{Vendor}DataSource(accessToken);
+  }
+
+  protected async saveAuthenticatedData(response: { access_token: string }): Promise<void> {
+    await this._store.saveAuthenticationData(response);
+  }
+
+  protected async clearAuthenticatedData(): Promise<void> {
+    await this._repository.clearAuthenticationData();
+  }
+}
+```
+
+### 3.8 Create Entity Repository
+
+Create `src/domain/entities/vendors/{vendor}/connector.{vendor}-{entity}.repository.ts`:
+
+```typescript
+import type { {Vendor}{Entity}Entity, PaginatedResponse, PaginationParams } from "@ait/core";
+import type { IConnector{Vendor}{Entity}Repository } from "../../../../types/domain/entities/vendors/connector.{vendor}.types";
+import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
+import { getPostgresClient, {vendor}{Entities} } from "@ait/postgres";
+import { eq, desc, sql } from "drizzle-orm";
+import { connector{Vendor}{Entity}Mapper } from "../../../mappers/vendors/connector.{vendor}.mapper";
+
+export class Connector{Vendor}{Entity}Repository implements IConnector{Vendor}{Entity}Repository {
+  // Implementation
+}
+```
+
+### 3.9 Create Main Repository
+
+Create `src/domain/entities/vendors/{vendor}/connector.{vendor}.repository.ts`:
+
+```typescript
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
+import { getOAuthData, saveOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
+import type { IConnector{Vendor}Repository } from "../../../../types/domain/entities/vendors/connector.{vendor}.types";
+import { Connector{Vendor}{Entity}Repository } from "./connector.{vendor}-{entity}.repository";
+
+export class Connector{Vendor}Repository implements IConnector{Vendor}Repository {
+  private _{entity}Repository: Connector{Vendor}{Entity}Repository;
+
+  constructor() {
+    this._{entity}Repository = new Connector{Vendor}{Entity}Repository();
+  }
+
+  public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
+    await saveOAuthData(data, "{vendor}");
+  }
+
+  public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
+    return getOAuthData("{vendor}");
+  }
+
+  public async clearAuthenticationData(): Promise<void> {
+    await clearOAuthData("{vendor}");
+  }
+
+  get {entity}(): Connector{Vendor}{Entity}Repository {
+    return this._{entity}Repository;
+  }
+}
+```
+
+### 3.10 Create Mappers
+
+Create `src/domain/mappers/vendors/connector.{vendor}.mapper.ts`:
+
+```typescript
+import type { {Vendor}{Entity}External, {Vendor}{Entity}Entity } from "@ait/core";
+import type { {Vendor}{Entity}DataTarget, {Vendor}{Entity}DataTargetInsert } from "@ait/postgres";
+
+class Connector{Vendor}{Entity}Mapper {
+  externalToDomain(external: {Vendor}{Entity}External): {Vendor}{Entity}Entity {
+    return {
+      id: external.id,
+      // ... map fields
+      __type: "{entity_type}",
+    };
+  }
+
+  domainToDataTarget(domain: Partial<{Vendor}{Entity}Entity>): {Vendor}{Entity}DataTargetInsert {
+    return {
+      id: domain.id!,
+      // ... map fields
+    };
+  }
+
+  dataTargetToDomain(target: {Vendor}{Entity}DataTarget): {Vendor}{Entity}Entity {
+    return {
+      id: target.id,
+      // ... map fields
+      __type: "{entity_type}",
+    };
+  }
+}
+
+export const connector{Vendor}{Entity}Mapper = new Connector{Vendor}{Entity}Mapper();
+```
+
+### 3.11 Create Service
+
+Create `src/services/vendors/connector.{vendor}.service.ts`:
+
+```typescript
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { Connector{Vendor} } from "../../infrastructure/vendors/{vendor}/connector.{vendor}";
+import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
+import type { {Vendor}{Entity}Entity, {Vendor}{Entity}External, PaginatedResponse, PaginationParams } from "@ait/core";
+import { connectorEntityConfigs, {VENDOR}_ENTITY_TYPES_ENUM, type {Vendor}ServiceEntityMap } from "./connector.vendors.config";
+
+export interface IConnector{Vendor}Service extends ConnectorServiceBase<Connector{Vendor}, {Vendor}ServiceEntityMap> {
+  fetch{Entities}(): Promise<{Vendor}{Entity}Entity[]>;
+  get{Entities}Paginated(params: PaginationParams): Promise<PaginatedResponse<{Vendor}{Entity}Entity>>;
+}
+
+export class Connector{Vendor}Service
+  extends ConnectorServiceBase<Connector{Vendor}, {Vendor}ServiceEntityMap>
+  implements IConnector{Vendor}Service
+{
+  constructor() {
+    super(getConnectorConfig("{vendor}"));
+    
+    const entityConfig = connectorEntityConfigs.{vendor}[{VENDOR}_ENTITY_TYPES_ENUM.{ENTITY}];
+    if (entityConfig.paginatedFetcher) {
+      this.registerPaginatedEntityConfig(/* ... */);
+    }
+  }
+
+  protected createConnector(oauth: ConnectorOAuth): Connector{Vendor} {
+    return new Connector{Vendor}(oauth);
+  }
+
+  async fetch{Entities}(): Promise<{Vendor}{Entity}Entity[]> {
+    return this.fetchEntities({VENDOR}_ENTITY_TYPES_ENUM.{ENTITY}, true);
+  }
+
+  async get{Entities}Paginated(params: PaginationParams): Promise<PaginatedResponse<{Vendor}{Entity}Entity>> {
+    return this.connector.repository.{entity}.get{Entities}Paginated(params);
+  }
+}
+```
+
+### 3.12 Update Vendors Config
+
+In `src/services/vendors/connector.vendors.config.ts`:
+
+```typescript
+export enum {VENDOR}_ENTITY_TYPES_ENUM {
+  {ENTITY} = "{entity_type}",
+}
+
+export interface {Vendor}ServiceEntityMap {
+  [{VENDOR}_ENTITY_TYPES_ENUM.{ENTITY}]: {Vendor}{Entity}Entity;
+}
+
+const {vendor}EntityConfigs = {
+  [{VENDOR}_ENTITY_TYPES_ENUM.{ENTITY}]: {
+    fetcher: (connector: Connector{Vendor}) => connector.dataSource.fetch{Entities}().then(res => res.items),
+    paginatedFetcher: async (connector: Connector{Vendor}, cursor?: string) => {
+      const response = await connector.dataSource.fetch{Entities}(cursor);
+      return { data: response.items, nextCursor: response.nextCursor };
+    },
+    mapper: (entity: {Vendor}{Entity}External) => connector{Vendor}{Entity}Mapper.externalToDomain(entity),
+    cacheTtl: 300,
+    checksumEnabled: true,
+    batchSize: 50,
+  },
+} as const;
+
+export const connectorEntityConfigs = {
+  // ... existing
+  {vendor}: {vendor}EntityConfigs,
+} as const;
+```
+
+### 3.13 Update Service Factory
+
+In `src/services/connector.service.factory.ts`:
+
+```typescript
+import { Connector{Vendor}Service } from "./vendors/connector.{vendor}.service";
+
+export const connectorServices = {
+  // ... existing
+  {vendor}: Connector{Vendor}Service,
+};
+```
+
+### 3.14 Update Exports
+
+In `src/index.ts`:
+
+```typescript
+export * from "./services/vendors/connector.{vendor}.service";
+export type * from "./types/domain/entities/vendors/connector.{vendor}.types";
+
+export {
+  // ... existing
+  {VENDOR}_ENTITY_TYPES_ENUM,
+} from "./services/vendors/connector.vendors.config";
+```
+
+---
+
+## Phase 4: Gateway (`packages/gateway`)
+
+### 4.1 Create Routes
+
+Create `src/routes/gateway.{vendor}.routes.ts`:
+
+```typescript
+import { type Connector{Vendor}Service, connectorServiceFactory } from "@ait/connectors";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+
+declare module "fastify" {
+  interface FastifyInstance {
+    {vendor}Service: Connector{Vendor}Service;
+  }
+}
+
+const connectorType = "{vendor}";
+
+export default async function {vendor}Routes(fastify: FastifyInstance) {
+  if (!fastify.{vendor}Service) {
+    fastify.decorate("{vendor}Service", connectorServiceFactory.getService<Connector{Vendor}Service>(connectorType));
+  }
+
+  const {vendor}Service = fastify.{vendor}Service;
+
+  // OAuth initiation
+  fastify.get("/auth", async (_request, reply) => {
+    const params = new URLSearchParams({
+      client_id: process.env.{VENDOR}_CLIENT_ID!,
+      redirect_uri: process.env.{VENDOR}_REDIRECT_URI!,
+      response_type: "code",
+      scope: "{required_scopes}",
+    });
+    const authUrl = `${process.env.{VENDOR}_AUTH_URL}?${params}`;
+    reply.redirect(authUrl);
+  });
+
+  // OAuth callback
+  fastify.get("/auth/callback", async (request, reply) => {
+    const { code } = request.query as { code: string };
+    await {vendor}Service.connector.connect(code);
+    const data = await {vendor}Service.fetch{Entities}();
+    await {vendor}Service.connector.store.save(data);
+    reply.send({ data });
+  });
+
+  // Fetch from API
+  fastify.get("/{entities}", async (_request, reply) => {
+    const data = await {vendor}Service.fetch{Entities}();
+    reply.send(data);
+  });
+
+  // Paginated from DB
+  fastify.get("/data/{entities}", async (request, reply) => {
+    const { page = "1", limit = "50" } = request.query as any;
+    const result = await {vendor}Service.get{Entities}Paginated({
+      page: parseInt(page),
+      limit: parseInt(limit),
+    });
+    reply.send(result);
+  });
+
+  // Refresh
+  fastify.post("/refresh", async (_request, reply) => {
+    const data = await {vendor}Service.fetch{Entities}();
+    await {vendor}Service.connector.store.save(data);
+    reply.send({ success: true, count: data.length });
+  });
+}
+```
+
+### 4.2 Register Routes
+
+In `src/gateway.server.ts`:
+
+```typescript
+import {vendor}Routes from "./routes/gateway.{vendor}.routes";
+
+server.register({vendor}Routes, { prefix: "/api/{vendor}" });
+```
+
+### 4.3 Update .env.example
+
+```env
+{VENDOR}_CLIENT_ID=your_{vendor}_client_id
+{VENDOR}_CLIENT_SECRET=your_{vendor}_client_secret
+{VENDOR}_ENDPOINT=https://api.example.com/oauth/token
+{VENDOR}_AUTH_URL=https://example.com/oauth/authorize
+{VENDOR}_REDIRECT_URI=http://localhost:3000/api/{vendor}/auth/callback
+```
+
+---
+
+## Phase 5: AI-SDK (`packages/infrastructure/ai-sdk`)
+
+### 5.1 Add Collection Config
+
+In `src/config/collections.config.ts`:
+
+```typescript
+const {VENDOR}_COLLECTION: CollectionConfig = {
+  vendor: "{vendor}",
+  name: "ait_{vendor}_collection",
+  description: "{Vendor} data description",
+  entityTypes: ["{entity_type}"],
+  defaultWeight: 1.0,
+  enabled: true,
+};
+
+export const COLLECTIONS_REGISTRY = {
+  // ... existing
+  {vendor}: {VENDOR}_COLLECTION,
+};
+```
+
+### 5.2 Update Integration Registry
+
+In `src/services/insights/integration-registry.service.ts`:
+
+```typescript
+export type ConnectorType = "..." | "{vendor}";
+
+private static readonly INTEGRATION_METADATA = {
+  // ... existing
+  {vendor}: {
+    connectorType: "{vendor}",
+    displayName: "{Vendor}",
+    primaryEntityType: "{entity_type}",
+    dateField: "{timestamp_field}",
+    goalType: "{entities}",
+    fetchMethod: "get{Entities}Paginated",
+  },
+};
+
+// In getActivityLabel
+{vendor}: "{activity description}",
+
+// In getUnitLabel
+{vendor}: "{entities}",
+```
+
+### 5.3 Update Insights Types
+
+In `src/services/insights/insights.types.ts`:
+
+```typescript
+export interface ActivityData extends Record<string, IntegrationActivity | undefined> {
+  // ... existing
+  {vendor}?: IntegrationActivity;
+}
+```
+
+### 5.4 Create Formatter
+
+Create `src/services/context/formatters/{vendor}.formatter.ts`:
+
+```typescript
+import type { {Vendor}{Entity}Entity } from "@ait/core";
+import type { EntityFormatter } from "./formatter.utils";
+import { safeString, joinParts, formatDate } from "./formatter.utils";
+
+export const {Vendor}{Entity}Formatter: EntityFormatter<{Vendor}{Entity}Entity> = {
+  format: (entity) => {
+    const parts: string[] = [];
+    parts.push(`{Entity}: ${safeString(entity.title)}`);
+    // ... more fields
+    return joinParts(parts);
+  },
+};
+```
+
+### 5.5 Export Formatter
+
+In `src/services/context/formatters/index.ts`:
+
+```typescript
+export { {Vendor}{Entity}Formatter } from "./{vendor}.formatter";
+
+export const ENTITY_FORMATTERS = {
+  // ... existing
+  {entity_type}: {Vendor}{Entity}Formatter,
+};
+```
+
+### 5.6 Update Context Builder
+
+In `src/services/context/context.builder.ts`:
+
+```typescript
+import { {Vendor}{Entity}Formatter } from "./formatters/{vendor}.formatter";
+
+const entityFormatters = {
+  // ... existing
+  {entity_type}: {Vendor}{Entity}Formatter,
+};
+```
+
+### 5.7 Update Collection Rerank
+
+In `src/services/ranking/collection-rerank.service.ts`:
+
+```typescript
+const collectionContext = {
+  // ... existing
+  {vendor}: "{vendor} description",
+};
+```
+
+---
+
+## Phase 6: RetoVe ETL (`packages/transformers/retove`)
+
+### 6.1 Create Embedding Descriptor
+
+Create `src/infrastructure/embeddings/descriptors/vendors/etl.{vendor}.descriptor.ts`:
+
+```typescript
+import type { {Vendor}{Entity}DataTarget } from "@ait/postgres";
+import type { IETLEmbeddingDescriptor } from "../../etl.embedding.descriptor.interface";
+
+export class ETL{Vendor}{Entity}Descriptor implements IETLEmbeddingDescriptor<{Vendor}{Entity}DataTarget> {
+  getEmbeddingText(data: {Vendor}{Entity}DataTarget): string {
+    const parts: string[] = [];
+    // Build descriptive text for embeddings
+    return parts.filter(Boolean).join(". ");
+  }
+
+  getEmbeddingPayload(data: {Vendor}{Entity}DataTarget): Record<string, unknown> {
+    return {
+      id: data.id,
+      // ... sanitized fields for Qdrant
+      __type: "{entity_type}",
+    };
+  }
+}
+```
+
+### 6.2 Create ETL Class
+
+Create `src/etl/vendors/retove.{vendor}.{entity}.etl.ts`:
+
+```typescript
+import type * as qdrant from "@qdrant/js-client-rest";
+import { eq, gt } from "drizzle-orm";
+import { getPostgresClient, {vendor}{Entities} } from "@ait/postgres";
+import type { {Vendor}{Entity}DataTarget } from "@ait/postgres";
+import { RetoveBaseETLAbstract } from "../retove.base.etl.abstract";
+import { ETL{Vendor}{Entity}Descriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.{vendor}.descriptor";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
+
+export class Retove{Vendor}{Entity}ETL extends RetoveBaseETLAbstract<{Vendor}{Entity}DataTarget> {
+  private _descriptor = new ETL{Vendor}{Entity}Descriptor();
+
+  constructor(pgClient: ReturnType<typeof getPostgresClient>, qdrantClient: qdrant.QdrantClient) {
+    super(pgClient, qdrantClient, getCollectionNameByVendor("{vendor}"));
+  }
+
+  async extract(limit: number, lastProcessedTimestamp?: Date): Promise<{Vendor}{Entity}DataTarget[]> {
+    const query = this._pgClient
+      .select()
+      .from({vendor}{Entities})
+      .limit(limit);
+
+    if (lastProcessedTimestamp) {
+      query.where(gt({vendor}{Entities}.updatedAt, lastProcessedTimestamp));
+    }
+
+    return query.orderBy({vendor}{Entities}.updatedAt);
+  }
+
+  getTextForEmbedding(data: {Vendor}{Entity}DataTarget): string {
+    return this._descriptor.getEmbeddingText(data);
+  }
+
+  getPayload(data: {Vendor}{Entity}DataTarget): Record<string, unknown> {
+    return this._descriptor.getEmbeddingPayload(data);
+  }
+
+  getLatestTimestamp(data: {Vendor}{Entity}DataTarget[]): Date | null {
+    if (data.length === 0) return null;
+    const timestamps = data.map(d => d.updatedAt).filter(Boolean) as Date[];
+    return timestamps.length > 0 ? new Date(Math.max(...timestamps.map(t => t.getTime()))) : null;
+  }
+
+  protected _getCollectionSpecificIndexes(): qdrant.Schemas["CreateFieldIndex"][] {
+    return [
+      // Add field indexes for filtering
+    ];
+  }
+
+  protected _getEntityType(): string {
+    return "{entity_type}";
+  }
+}
+```
+
+### 6.3 Export ETL Runner
+
+In `src/infrastructure/runners/etl.runners.ts`:
+
+```typescript
+import { Retove{Vendor}{Entity}ETL } from "../../etl/vendors/retove.{vendor}.{entity}.etl";
+
+export const {Vendor}ETLs = {
+  {entity}: "Retove{Vendor}{Entity}ETL",
+};
+
+export async function run{Vendor}{Entity}ETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const collection = getCollectionNameByVendor("{vendor}");
+  const etl = new Retove{Vendor}{Entity}ETL(pgClient, qdrantClient);
+  console.log(`🔍 Running Retove{Vendor}{Entity}ETL → ${collection}...`);
+  await etl.run(LIMIT);
+  console.log(`✅ Retove{Vendor}{Entity}ETL completed!`);
+}
+```
+
+---
+
+## Phase 7: Scheduler (`packages/infrastructure/scheduler`)
+
+### 7.1 Add Scheduled Job
+
+In `src/scheduler.entrypoint.ts`:
+
+```typescript
+import { {Vendor}ETLs } from "@ait/retove";
+
+const SCHEDULED_JOBS = [
+  // ... existing
+  {
+    name: {Vendor}ETLs.{entity},
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.mediumPriorityCron,
+    priority: 3,
+    enabled: true,
+  },
+];
+```
+
+### 7.2 Add Task Handler
+
+In `src/task-manager/scheduler.etl.task-manager.ts`:
+
+```typescript
+import { Connector{Vendor}Service, {VENDOR}_ENTITY_TYPES_ENUM } from "@ait/connectors";
+import { {Vendor}ETLs, run{Vendor}{Entity}ETL } from "@ait/retove";
+
+// In constructor
+private readonly _{vendor}Service: Connector{Vendor}Service;
+this._{vendor}Service = new Connector{Vendor}Service();
+
+// Register task
+this._register({Vendor}ETLs.{entity}, async () => {
+  let totalFetched = 0;
+  try {
+    for await (const batch of this._{vendor}Service.fetchEntitiesPaginated(
+      {VENDOR}_ENTITY_TYPES_ENUM.{ENTITY},
+      true,
+    )) {
+      totalFetched += batch.length;
+      await this._{vendor}Service.connector.store.save(batch);
+    }
+  } catch (error: any) {
+    if (error instanceof RateLimitError && this._scheduler) {
+      // Handle rate limit
+    }
+  }
+  await run{Vendor}{Entity}ETL(this._qdrantClient, this._pgClient);
+});
+```
+
+---
+
+## Phase 8: UI (`packages/uit`)
+
+### 8.1 Create UI Service
+
+Create `src/services/{vendor}.service.ts`:
+
+```typescript
+import { requestJson } from "@ait/core";
+import type { PaginationParams, PaginatedResponse, RefreshResponse, {Vendor}{Entity}Entity } from "@ait/core";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";
+
+export class {Vendor}Service {
+  private baseUrl = `${BASE_URL}/api/{vendor}`;
+
+  async fetch{Entities}(params?: PaginationParams): Promise<PaginatedResponse<{Vendor}{Entity}Entity>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+    const url = `${this.baseUrl}/data/{entities}${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const result = await requestJson<PaginatedResponse<{Vendor}{Entity}Entity>>(url);
+
+    if (!result.ok) throw result.error;
+    return result.value.data;
+  }
+
+  async refresh() {
+    const result = await requestJson<RefreshResponse>(`${this.baseUrl}/refresh`, { method: "POST" });
+    if (!result.ok) throw result.error;
+    return result.value.data;
+  }
+}
+
+export const {vendor}Service = new {Vendor}Service();
+```
+
+### 8.2 Export Service
+
+In `src/services/index.ts`:
+
+```typescript
+export * from "./{vendor}.service";
+```
+
+### 8.3 Update Integration Types
+
+In `src/types/integrations.types.ts`:
+
+```typescript
+import type { {Vendor}{Entity}Entity } from "@ait/core";
+
+export type IntegrationEntity =
+  | // ... existing
+  | {Vendor}{Entity}Entity;
+```
+
+### 8.4 Update Integrations Context
+
+In `src/contexts/integrations.context.tsx`:
+
+```typescript
+import { {vendor}Service } from "@/services";
+
+// In fetchEntityData switch
+case "{vendor}": {
+  switch (entityType) {
+    case "{entity_type}":
+      response = await {vendor}Service.fetch{Entities}(params);
+      break;
+    default:
+      throw new Error(`Unknown {Vendor} entity type: ${entityType}`);
+  }
+  break;
+}
+
+// In refreshVendor switch
+case "{vendor}":
+  await {vendor}Service.refresh();
+  break;
+```
+
+### 8.5 Add Integration Item
+
+In `src/utils/items.const.ts`:
+
+```typescript
+{
+  id: "{vendor}",
+  title: "{Vendor}",
+  description: "{Description}",
+  color: "#{brand_color}",
+  size: "md",
+  disabled: false,
+  route: "/integrations/{vendor}",
+},
+```
+
+### 8.6 Add Integration Icon
+
+In `src/components/integrations-list.tsx`:
+
+```typescript
+import { {Icon} } from "lucide-react";
+
+const INTEGRATION_ICONS = {
+  // ... existing
+  {vendor}: {Icon},
+};
+```
+
+### 8.7 Create Entity Card
+
+Create `src/components/connectors/{entity}-card.tsx`:
+
+```typescript
+import type { {Vendor}{Entity}Entity } from "@ait/core";
+import { Card } from "../ui/card";
+import { cn } from "@/styles/utils";
+
+interface {Entity}CardProps {
+  {entity}: {Vendor}{Entity}Entity;
+  onClick?: () => void;
+  className?: string;
+}
+
+export function {Entity}Card({ {entity}, onClick, className }: {Entity}CardProps) {
+  return (
+    <Card
+      className={cn("cursor-pointer hover:shadow-lg transition-all", className)}
+      onClick={onClick}
+    >
+      {/* Card content */}
+    </Card>
+  );
+}
+```
+
+### 8.8 Update Home Section
+
+In `src/components/home-section.tsx`:
+
+```typescript
+import { {Entity}Card } from "@/components/connectors/{entity}-card";
+import type { {Vendor}{Entity}Entity } from "@ait/core";
+
+// In getIntegrationRoute
+{vendor}: "/integrations/{vendor}",
+
+// In renderCard switch
+case "{entity_type}":
+  return <{Entity}Card {entity}={item as {Vendor}{Entity}Entity} onClick={onClick} />;
+```
+
+### 8.9 Update Discovery Stats
+
+In `src/components/discovery/discovery-stats.tsx`:
+
+```typescript
+import { {Icon} } from "lucide-react";
+
+// In getChartConfig colors
+{vendor}: "#{brand_color}",
+
+// In getChartConfig labels
+{vendor}: "{Vendor}",
+
+// In INTEGRATIONS_META
+{vendor}: {
+  icon: {Icon},
+  label: "{Vendor}",
+  color: "#{brand_color}",
+  bgGradient: "from-[#{brand_color}]/20 via-[#{brand_color}]/5 to-transparent",
+  borderColor: "border-[#{brand_color}]/30",
+  glowColor: "shadow-[#{brand_color}]/20",
+},
+```
+
+### 8.10 Create Integration Page
+
+Create `src/pages/integrations/{vendor}-page.tsx`:
+
+```typescript
+import { useState, useEffect, useCallback } from "react";
+import { IntegrationLayout } from "@/components/integration-layout";
+import { Pagination } from "@/components/pagination";
+import { LoadingGrid } from "@/components/loading-grid";
+import { {Entity}Card } from "@/components/connectors/{entity}-card";
+import { useIntegrationsContext } from "@/contexts/integrations.context";
+import type { {Vendor}{Entity}Entity } from "@ait/core";
+
+export default function {Vendor}Page() {
+  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const [{entities}, set{Entities}] = useState<{Vendor}{Entity}Entity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const fetchData = useCallback(async (page: number) => {
+    setIsLoading(true);
+    try {
+      const response = await fetchEntityData("{vendor}", "{entity_type}", { page, limit: 50 });
+      set{Entities}(response.data as {Vendor}{Entity}Entity[]);
+      setTotalPages(response.pagination.totalPages);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchEntityData]);
+
+  useEffect(() => {
+    fetchData(currentPage);
+  }, [fetchData, currentPage]);
+
+  return (
+    <IntegrationLayout
+      title="{Vendor}"
+      description="{Description}"
+      color="#{brand_color}"
+      onRefresh={() => refreshVendor("{vendor}").then(() => fetchData(currentPage))}
+    >
+      {isLoading ? (
+        <LoadingGrid count={12} />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {{entities}.map(({entity}) => (
+            <{Entity}Card key={{entity}.id} {entity}={{entity}} />
+          ))}
+        </div>
+      )}
+      {totalPages > 1 && (
+        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      )}
+    </IntegrationLayout>
+  );
+}
+```
+
+### 8.11 Update Home Page Sections
+
+In `src/pages/home-page.tsx`:
+
+```typescript
+const HOME_SECTIONS = [
+  {
+    id: "recent",
+    title: "Recent Activity",
+    entityTypes: [/* ... existing */, "{entity_type}"],
+  },
+  // Add new section if needed
+  {
+    id: "{vendor}",
+    title: "Your {Vendor}",
+    entityTypes: ["{entity_type}"],
+  },
+];
+```
+
+### 8.12 Add Route
+
+In `src/App.tsx`:
+
+```typescript
+import {Vendor}Page from "./pages/integrations/{vendor}-page";
+
+<Route path="/integrations/{vendor}" component={{Vendor}Page} />
+```
+
+### 8.13 Update Timestamp Extraction
+
+In `src/hooks/useHomepageData.ts`:
+
+```typescript
+// In getEntityTimestamp
+if (entityAny.{timestampField}) return new Date(entityAny.{timestampField});
+```
+
+---
+
+## Phase 9: Testing
+
+### 9.1 Data Source Tests
+
+Create `packages/connectors/test/infrastructure/vendors/connector.{vendor}.data-source.test.ts`
+
+### 9.2 Mapper Tests
+
+Create `packages/connectors/test/domain/mappers/connector.{vendor}.mapper.test.ts`
+
+---
+
+## Checklist
+
+- [ ] **Core**: Entity types, metadata, exports
+- [ ] **Postgres**: Schema, migration, exports
+- [ ] **Connectors**: All infrastructure, domain, service files
+- [ ] **Gateway**: Routes, server registration, env example
+- [ ] **AI-SDK**: Collection, registry, formatter, context builder
+- [ ] **RetoVe**: Descriptor, ETL class, runner
+- [ ] **Scheduler**: Job, task handler
+- [ ] **UIT**: Service, context, items, icons, cards, page, routes
+- [ ] **Tests**: Data source, mapper tests
+- [ ] **Build**: `pnpm build` passes
+- [ ] **Lint**: `pnpm lint` passes
+
+---
+
+## Environment Variables Template
+
+```env
+{VENDOR}_CLIENT_ID=
+{VENDOR}_CLIENT_SECRET=
+{VENDOR}_ENDPOINT=
+{VENDOR}_AUTH_URL=
+{VENDOR}_REDIRECT_URI=http://localhost:3000/api/{vendor}/auth/callback
+```
