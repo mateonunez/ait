@@ -1,6 +1,7 @@
 import type {
   GoogleCalendarEventEntity,
   GoogleCalendarCalendarEntity,
+  GoogleYouTubeSubscriptionEntity,
   PaginatedResponse,
   PaginationParams,
 } from "@ait/core";
@@ -25,7 +26,19 @@ export interface IConnectorGoogleCalendarCalendarRepository {
   getCalendarsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarCalendarEntity>>;
 }
 
+export interface IConnectorGoogleYouTubeSubscriptionRepository {
+  saveSubscription(
+    subscription: Partial<GoogleYouTubeSubscriptionEntity>,
+    options?: IConnectorRepositorySaveOptions,
+  ): Promise<void>;
+  saveSubscriptions(subscriptions: Partial<GoogleYouTubeSubscriptionEntity>[]): Promise<void>;
+  getSubscription(id: string): Promise<GoogleYouTubeSubscriptionEntity | null>;
+  fetchSubscriptions(): Promise<GoogleYouTubeSubscriptionEntity[]>;
+  getSubscriptionsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>>;
+}
+
 export interface IConnectorGoogleRepository extends IConnectorRepository {
   event: IConnectorGoogleCalendarEventRepository;
   calendar: IConnectorGoogleCalendarCalendarRepository;
+  subscription: IConnectorGoogleYouTubeSubscriptionRepository;
 }

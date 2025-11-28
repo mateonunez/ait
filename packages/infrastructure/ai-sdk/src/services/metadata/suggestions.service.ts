@@ -9,6 +9,9 @@ export interface ISuggestionsService {
   generateSuggestions(query: string, response: string, context?: ChatMessage[]): SuggestionItem[];
 }
 
+/**
+ * @deprecated Use SuggestionService from ../generation/suggestion.service.ts instead
+ */
 export class SuggestionsService implements ISuggestionsService {
   private readonly topicPatterns: Map<RegExp, SuggestionItem[]> = new Map([
     // Code-related

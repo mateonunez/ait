@@ -26,12 +26,13 @@ export default defineConfig({
     react(),
     tailwindcss(),
     nodePolyfills({
-      include: ["path", "url"],
+      include: ["path", "url", "process"],
     }),
   ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@ait/ai-sdk": path.resolve(__dirname, "../infrastructure/ai-sdk/src/index.ts"),
     },
   },
   build: {

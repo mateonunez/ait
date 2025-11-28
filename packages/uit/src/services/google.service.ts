@@ -5,6 +5,7 @@ import type {
   RefreshResponse,
   GoogleCalendarEventEntity as GoogleCalendarEvent,
   GoogleCalendarCalendarEntity as GoogleCalendarCalendar,
+  GoogleYouTubeSubscriptionEntity as GoogleYouTubeSubscription,
 } from "@ait/core";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";
@@ -38,6 +39,21 @@ export class GoogleService {
 
     const url = `${this.baseUrl}/data/calendars${queryParams.toString() ? `?${queryParams}` : ""}`;
     const result = await requestJson<PaginatedResponse<GoogleCalendarCalendar>>(url);
+
+    if (!result.ok) {
+      throw result.error;
+    }
+
+    return result.value.data;
+  }
+
+  async fetchSubscriptions(params?: PaginationParams): Promise<PaginatedResponse<GoogleYouTubeSubscription>> {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append("page", params.page.toString());
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+
+    const url = `${this.baseUrl}/data/subscriptions${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const result = await requestJson<PaginatedResponse<GoogleYouTubeSubscription>>(url);
 
     if (!result.ok) {
       throw result.error;

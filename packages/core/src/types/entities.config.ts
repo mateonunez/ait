@@ -138,6 +138,14 @@ export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
     description: "Google Calendar calendars (timestamps: createdAt)",
     timestampFields: ["createdAt"],
   },
+  subscription: {
+    label: "Subscription",
+    labelPlural: "Subscriptions",
+    keywords: ["subscription", "youtube", "channel", "video", "subscribe", "following"],
+    vendor: "google",
+    description: "YouTube channel subscriptions (timestamps: publishedAt)",
+    timestampFields: ["publishedAt"],
+  },
 } as const;
 
 export function getEntityMetadata(entityType: EntityType): EntityMetadata {

@@ -17,6 +17,7 @@ export const connectorServices: Record<ConnectorType, ConnectorServiceConstructo
   notion: ConnectorNotionService,
   slack: ConnectorSlackService,
   google: ConnectorGoogleService,
+  youtube: ConnectorGoogleService,
 };
 
 export class ConnectorServiceFactory {

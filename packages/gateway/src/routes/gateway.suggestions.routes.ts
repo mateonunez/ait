@@ -1,0 +1,20 @@
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { suggestionService, type SuggestionContext } from "@ait/ai-sdk";
+
+export default async function suggestionsRoutes(fastify: FastifyInstance) {
+  fastify.post("/", async (request: FastifyRequest<{ Body: SuggestionContext }>, reply: FastifyReply) => {
+    try {
+      const { context, history } = request.body;
+
+      const suggestions = await suggestionService.generateSuggestions({
+        context,
+        history,
+      });
+
+      return reply.send(suggestions);
+    } catch (error) {
+      request.log.error(error, "Failed to generate suggestions");
+      return reply.status(500).send({ error: "Failed to generate suggestions" });
+    }
+  });
+}

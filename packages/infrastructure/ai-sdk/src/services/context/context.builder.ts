@@ -24,6 +24,7 @@ import { NotionPageFormatter } from "./formatters/notion.formatter";
 import { SlackMessageFormatter } from "./formatters/slack.formatter";
 import { LinearIssueFormatter } from "./formatters/linear.formatter";
 import { GoogleCalendarEventFormatter, GoogleCalendarCalendarFormatter } from "./formatters/google-calendar.formatter";
+import { GoogleYouTubeSubscriptionFormatter } from "./formatters/google-youtube.formatter";
 import { formatMetadataToXml, formatDocumentToXml } from "../../utils/xml.utils";
 
 const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
@@ -41,6 +42,7 @@ const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
   message: SlackMessageFormatter,
   event: GoogleCalendarEventFormatter,
   calendar: GoogleCalendarCalendarFormatter,
+  subscription: GoogleYouTubeSubscriptionFormatter,
 };
 
 export class ContextBuilder {

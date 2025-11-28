@@ -15,6 +15,7 @@ import type {
   SlackMessageEntity,
   GoogleCalendarEventEntity,
   GoogleCalendarCalendarEntity,
+  GoogleYouTubeSubscriptionEntity,
 } from "@ait/core";
 
 export type IntegrationEntity =
@@ -31,7 +32,8 @@ export type IntegrationEntity =
   | NotionPageEntity
   | SlackMessageEntity
   | GoogleCalendarEventEntity
-  | GoogleCalendarCalendarEntity;
+  | GoogleCalendarCalendarEntity
+  | GoogleYouTubeSubscriptionEntity;
 
 export interface CachedEntityData {
   data: IntegrationEntity[];

@@ -17,6 +17,7 @@ import { PageCard } from "@/components/connectors/page-card";
 import { MessageCard } from "@/components/connectors/message-card";
 import { EventCard } from "@/components/connectors/event-card";
 import { CalendarCard } from "@/components/connectors/calendar-card";
+import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import type {
   SpotifyTrackEntity,
   SpotifyArtistEntity,
@@ -32,6 +33,7 @@ import type {
   SlackMessageEntity,
   GoogleCalendarEventEntity,
   GoogleCalendarCalendarEntity,
+  GoogleYouTubeSubscriptionEntity,
 } from "@ait/core";
 
 interface HomeSectionProps {
@@ -90,6 +92,8 @@ function renderCard(item: IntegrationEntity, onClick?: () => void) {
       return <EventCard event={item as GoogleCalendarEventEntity} onClick={onClick} />;
     case "calendar":
       return <CalendarCard calendar={item as GoogleCalendarCalendarEntity} onClick={onClick} />;
+    case "subscription":
+      return <GoogleYouTubeSubscriptionCard subscription={item as GoogleYouTubeSubscriptionEntity} onClick={onClick} />;
     default:
       return null;
   }

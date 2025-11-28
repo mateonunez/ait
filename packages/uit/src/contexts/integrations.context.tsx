@@ -133,6 +133,9 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
               case "calendar":
                 response = await googleService.fetchCalendars(params);
                 break;
+              case "subscription":
+                response = await googleService.fetchSubscriptions(params);
+                break;
               default:
                 throw new Error(`Unknown Google entity type: ${entityType}`);
             }

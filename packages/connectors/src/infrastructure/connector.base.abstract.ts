@@ -28,6 +28,12 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
   }
 
   public async connect(code = AIT): Promise<void> {
+    if (code !== AIT) {
+      this._logger.info("[Connector] Code provided. Authenticating...");
+      await this._handleAuthentication(code);
+      return;
+    }
+
     const authenticatedData = await this.getAuthenticatedData();
 
     if (!authenticatedData) {

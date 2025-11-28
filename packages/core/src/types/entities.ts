@@ -12,7 +12,8 @@ export type EntityType =
   | "page"
   | "message"
   | "event"
-  | "calendar";
+  | "calendar"
+  | "subscription";
 
 export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "track",
@@ -29,4 +30,5 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "message",
   "event",
   "calendar",
+  "subscription",
 ] as const;

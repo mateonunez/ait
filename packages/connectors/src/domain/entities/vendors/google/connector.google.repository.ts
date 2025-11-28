@@ -1,9 +1,10 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
 import { getOAuthData, saveOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
-import type { IConnectorGoogleRepository } from "../../../../types/domain/entities/vendors/connector.google-calendar.types";
+import type { IConnectorGoogleRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
 import { ConnectorGoogleCalendarEventRepository } from "./connector.google-calendar-event.repository";
 import { ConnectorGoogleCalendarCalendarRepository } from "./connector.google-calendar-calendar.repository";
+import { ConnectorGoogleYouTubeSubscriptionRepository } from "./connector.google-youtube-subscription.repository";
 
 export class ConnectorGoogleRepository
   extends ConnectorGoogleCalendarEventRepository
@@ -11,11 +12,13 @@ export class ConnectorGoogleRepository
 {
   private _googleCalendarEventRepository: ConnectorGoogleCalendarEventRepository;
   private _googleCalendarCalendarRepository: ConnectorGoogleCalendarCalendarRepository;
+  private _googleYouTubeSubscriptionRepository: ConnectorGoogleYouTubeSubscriptionRepository;
 
   constructor() {
     super();
     this._googleCalendarEventRepository = new ConnectorGoogleCalendarEventRepository();
     this._googleCalendarCalendarRepository = new ConnectorGoogleCalendarCalendarRepository();
+    this._googleYouTubeSubscriptionRepository = new ConnectorGoogleYouTubeSubscriptionRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
@@ -44,5 +47,13 @@ export class ConnectorGoogleRepository
 
   set calendar(calendarRepository: ConnectorGoogleCalendarCalendarRepository) {
     this._googleCalendarCalendarRepository = calendarRepository;
+  }
+
+  get subscription(): ConnectorGoogleYouTubeSubscriptionRepository {
+    return this._googleYouTubeSubscriptionRepository;
+  }
+
+  set subscription(subscriptionRepository: ConnectorGoogleYouTubeSubscriptionRepository) {
+    this._googleYouTubeSubscriptionRepository = subscriptionRepository;
   }
 }

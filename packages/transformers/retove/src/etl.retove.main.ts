@@ -13,6 +13,7 @@ import {
   runGitHubCommitETL,
   runNotionETL,
   runSlackETL,
+  runGoogleYouTubeSubscriptionETL,
 } from "./infrastructure/runners/etl.runners";
 
 async function main() {
@@ -36,6 +37,7 @@ async function main() {
     await runLinearETL(qdrantClient, pgClient);
     await runNotionETL(qdrantClient, pgClient);
     await runSlackETL(qdrantClient, pgClient);
+    await runGoogleYouTubeSubscriptionETL(qdrantClient, pgClient);
 
     console.log("✅ ETL process completed successfully!");
   } catch (error) {
@@ -44,6 +46,7 @@ async function main() {
     console.log("🔒 Closing Postgres connection...");
     await closePostgresConnection();
     console.log("👋 ETL process finished.");
+    process.exit(0);
   }
 }
 

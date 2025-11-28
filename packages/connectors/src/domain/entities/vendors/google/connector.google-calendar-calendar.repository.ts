@@ -1,7 +1,7 @@
 import { AItError, type PaginatedResponse, type PaginationParams, type GoogleCalendarCalendarEntity } from "@ait/core";
 import { connectorGoogleCalendarCalendarMapper } from "../../../mappers/vendors/connector.google.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import type { IConnectorGoogleCalendarCalendarRepository } from "../../../../types/domain/entities/vendors/connector.google-calendar.types";
+import type { IConnectorGoogleCalendarCalendarRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
 import {
   getPostgresClient,
   googleCalendarCalendars,

@@ -14,6 +14,7 @@ export interface SendMessageOptions {
   messages: ChatMessage[];
   model?: string;
   enableMetadata?: boolean;
+  sessionId?: string;
   onText?: (text: string) => void;
   onMetadata?: (metadata: AggregatedMetadata) => void;
   onComplete?: (data: { finishReason: string; traceId: string }) => void;
@@ -105,14 +106,24 @@ async function processStreamEvents(
 }
 
 export async function sendMessage(options: SendMessageOptions): Promise<void> {
-  const { messages, model, enableMetadata = true, onText, onMetadata, onComplete, onError, signal } = options;
+  const {
+    messages,
+    model,
+    enableMetadata = true,
+    sessionId,
+    onText,
+    onMetadata,
+    onComplete,
+    onError,
+    signal,
+  } = options;
 
   const result = await requestStream(`${API_BASE_URL}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "X-User-Id": "anonymous",
-      "X-Session-Id": `session-${Date.now()}`,
+      "X-Session-Id": sessionId || `session-${Date.now()}`,
     },
     body: JSON.stringify({ messages, model, enableMetadata }),
     signal,

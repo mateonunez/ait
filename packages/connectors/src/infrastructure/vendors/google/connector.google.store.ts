@@ -1,6 +1,6 @@
-import type { GoogleCalendarEntity } from "@ait/core";
+import type { GoogleEntity } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google-calendar.types";
+import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
@@ -13,16 +13,19 @@ export class ConnectorGoogleStore implements IConnectorStore {
     this._ConnectorGoogleRepository = ConnectorGoogleRepository;
   }
 
-  async save<T extends GoogleCalendarEntity>(data: T | T[]): Promise<void> {
+  async save<T extends GoogleEntity>(data: T | T[]): Promise<void> {
     const items = this._resolveItems(data);
 
     for (const item of items) {
       switch (item.__type) {
         case GOOGLE_ENTITY_TYPES_ENUM.EVENT:
-          await this._ConnectorGoogleRepository.event.saveEvent(item as any, { incremental: false });
+          await this._ConnectorGoogleRepository.event.saveEvent(item, { incremental: false });
           break;
         case GOOGLE_ENTITY_TYPES_ENUM.CALENDAR:
-          await this._ConnectorGoogleRepository.calendar.saveCalendar(item as any, { incremental: false });
+          await this._ConnectorGoogleRepository.calendar.saveCalendar(item, { incremental: false });
+          break;
+        case GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION:
+          await this._ConnectorGoogleRepository.subscription.saveSubscription(item, { incremental: false });
           break;
         default:
           // @ts-ignore: Unreachable code error
@@ -39,7 +42,7 @@ export class ConnectorGoogleStore implements IConnectorStore {
     return this._ConnectorGoogleRepository.getAuthenticationData();
   }
 
-  private _resolveItems<T extends GoogleCalendarEntity>(data: T | T[]): T[] {
+  private _resolveItems<T extends GoogleEntity>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }
 }

@@ -145,6 +145,8 @@ export class CollectionRerankService implements ICollectionRerankService {
       notion: "notes, pages, and knowledge base content",
       slack: "team communication and channel updates",
       google: "google suite",
+      "google-calendar": "google calendar events and updates",
+      youtube: "youtube content",
       general: "general information",
     };
 

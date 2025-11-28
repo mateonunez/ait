@@ -38,6 +38,8 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
   const [error, setError] = useState<string | null>(null);
   const [currentMetadata, setCurrentMetadata] = useState<AggregatedMetadata | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
+  // Persist session ID for the duration of the hook
+  const [sessionId] = useState(() => `session-${Date.now()}`);
 
   const currentMessageIdRef = useRef<string | null>(null);
   const currentMessageContentRef = useRef<string>("");
@@ -83,6 +85,7 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
           })),
           model: selectedModel,
           enableMetadata,
+          sessionId,
           onText: (text) => {
             currentMessageContentRef.current += text;
             setMessages((prev) =>
@@ -115,7 +118,7 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
         setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
       }
     },
-    [messages, isLoading, selectedModel, enableMetadata, onError],
+    [messages, isLoading, selectedModel, enableMetadata, onError, sessionId],
   );
 
   const clearMessages = useCallback(() => {

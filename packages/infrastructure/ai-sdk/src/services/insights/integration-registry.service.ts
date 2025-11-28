@@ -2,7 +2,7 @@ import { getLogger } from "@ait/core";
 
 // Define ConnectorType locally to avoid dependency on @ait/connectors
 // This matches the type from @ait/connectors
-export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "slack" | "google";
+export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "slack" | "google" | "youtube";
 
 const logger = getLogger();
 
@@ -78,6 +78,14 @@ export class IntegrationRegistryService {
       dateField: "startTime",
       goalType: "events",
       fetchMethod: "getEventsPaginated",
+    },
+    youtube: {
+      connectorType: "youtube",
+      displayName: "YouTube",
+      primaryEntityType: "subscription",
+      dateField: "publishedAt",
+      goalType: "subscription",
+      fetchMethod: "getSubscriptionsPaginated",
     },
   };
 
@@ -191,6 +199,7 @@ export class IntegrationRegistryService {
       linear: "task management",
       notion: "documentation",
       google: "calendar events",
+      youtube: "video subscriptions",
     };
 
     return labels[connectorType] || connectorType;
@@ -208,6 +217,7 @@ export class IntegrationRegistryService {
       linear: "tasks",
       notion: "documents",
       google: "events",
+      youtube: "subscriptions",
     };
 
     return units[connectorType] || "items";

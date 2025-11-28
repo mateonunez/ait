@@ -15,6 +15,7 @@ import {
   connectorGoogleCalendarEventMapper,
   connectorGoogleCalendarCalendarMapper,
 } from "../../domain/mappers/vendors/connector.google.mapper";
+import { connectorGoogleYouTubeSubscriptionMapper } from "../../domain/mappers/vendors/connector.google-youtube.mapper";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
 import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
@@ -51,6 +52,8 @@ import type {
   GoogleCalendarEventExternal,
   GoogleCalendarCalendarEntity,
   GoogleCalendarCalendarExternal,
+  GoogleYouTubeSubscriptionEntity,
+  GoogleYouTubeSubscriptionExternal,
 } from "@ait/core";
 import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
@@ -126,11 +129,13 @@ export interface SlackServiceEntityMap {
 export enum GOOGLE_ENTITY_TYPES_ENUM {
   EVENT = "event",
   CALENDAR = "calendar",
+  SUBSCRIPTION = "subscription",
 }
 
 export interface GoogleServiceEntityMap {
   [GOOGLE_ENTITY_TYPES_ENUM.EVENT]: GoogleCalendarEventEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.CALENDAR]: GoogleCalendarCalendarEntity;
+  [GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION]: GoogleYouTubeSubscriptionEntity;
 }
 
 const githubEntityConfigs = {
@@ -323,6 +328,22 @@ const googleEntityConfigs = {
       connectorGoogleCalendarCalendarMapper.externalToDomain(calendar),
     cacheTtl: 3600,
   } satisfies EntityConfig<ConnectorGoogle, GoogleCalendarCalendarExternal, GoogleCalendarCalendarEntity>,
+
+  [GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION]: {
+    fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchSubscriptions().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorGoogle, cursor?: string) => {
+      const response = await connector.dataSource.fetchSubscriptions(cursor);
+      return {
+        data: response.items,
+        nextCursor: response.nextPageToken,
+      };
+    },
+    mapper: (subscription: GoogleYouTubeSubscriptionExternal) =>
+      connectorGoogleYouTubeSubscriptionMapper.externalToDomain(subscription),
+    cacheTtl: 3600,
+    checksumEnabled: true,
+    batchSize: 50,
+  } satisfies EntityConfig<ConnectorGoogle, GoogleYouTubeSubscriptionExternal, GoogleYouTubeSubscriptionEntity>,
 } as const;
 
 export const connectorEntityConfigs = {

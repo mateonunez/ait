@@ -19,6 +19,8 @@ import {
   runNotionETL,
   runSlackETL,
   runGoogleCalendarEventETL,
+  GoogleYouTubeETLs,
+  runGoogleYouTubeSubscriptionETL,
 } from "@ait/retove";
 import { RateLimitError } from "@ait/core";
 import type { Scheduler } from "../scheduler.service";
@@ -558,6 +560,50 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         console.info(`[${GoogleCalendarETLs.event}] Running ETL to Qdrant...`);
         await runGoogleCalendarEventETL(qdrant, postgres);
         console.info(`[${GoogleCalendarETLs.event}] Completed`);
+      });
+    });
+
+    // Register Google YouTube Subscription ETL
+    schedulerRegistry.register(GoogleYouTubeETLs.subscription, async (data) => {
+      console.info(`[${GoogleYouTubeETLs.subscription}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        console.info(`[${GoogleYouTubeETLs.subscription}] Fetching subscriptions from YouTube API (incremental)...`);
+        let totalFetched = 0;
+
+        try {
+          for await (const batch of this._googleService.fetchEntitiesPaginated(
+            GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION,
+            true, // shouldConnect
+          )) {
+            totalFetched += batch.length;
+            console.info(
+              `[${GoogleYouTubeETLs.subscription}] Processing batch of ${batch.length} subscriptions. First: ${
+                batch[0].title || "untitled"
+              }`,
+            );
+            await this._googleService.connector.store.save(batch);
+          }
+          console.info(`[${GoogleYouTubeETLs.subscription}] Fetched ${totalFetched} subscriptions (changed only)`);
+        } catch (error: any) {
+          if (error instanceof RateLimitError && this._scheduler) {
+            const delay = Math.max(0, error.resetTime - Date.now());
+            console.warn(`[${GoogleYouTubeETLs.subscription}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            await this._scheduler.addJob(GoogleYouTubeETLs.subscription, data as Record<string, unknown>, {
+              delay,
+              priority: 2,
+            });
+            return;
+          }
+          console.error(
+            `[${GoogleYouTubeETLs.subscription}] Error fetching subscriptions (likely rate limit). Proceeding to ETL...`,
+            error,
+          );
+        }
+
+        console.info(`[${GoogleYouTubeETLs.subscription}] Running ETL to Qdrant...`);
+        await runGoogleYouTubeSubscriptionETL(qdrant, postgres);
+        console.info(`[${GoogleYouTubeETLs.subscription}] Completed`);
       });
     });
   }

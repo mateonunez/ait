@@ -181,6 +181,7 @@ export const CreateGoalSchema = z.object({
     "message",
     "event",
     "calendar",
+    "subscription",
     // Backward compatibility aliases
     "songs", // -> "recently_played"
     "tweets", // -> "tweet"

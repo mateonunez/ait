@@ -56,7 +56,11 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
         .build();
 
       const ragResult = await ragPipeline.execute(
-        { query: input.currentPrompt, traceContext: context.traceContext },
+        {
+          query: input.currentPrompt,
+          messages: input.recentMessages,
+          traceContext: context.traceContext,
+        },
         { traceContext: context.traceContext },
       );
 

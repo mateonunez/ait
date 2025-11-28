@@ -17,6 +17,7 @@ import {
   Activity,
   Zap,
   Calendar,
+  Youtube,
 } from "lucide-react";
 import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,6 +39,29 @@ interface DiscoveryStatsData {
   totals: Record<string, number>;
 }
 
+interface StatCardProps {
+  item: {
+    id: string;
+    icon: typeof Music;
+    label: string;
+    color: string;
+    bgGradient: string;
+    borderColor: string;
+    glowColor: string;
+    total: number;
+    totalDisplay: string;
+    isLimitReached: boolean;
+    average: number;
+    trend: { value: number; direction: "up" | "down" | "neutral" };
+    peakDay: string | null;
+    data: DailyActivity[];
+    dataKey: string;
+  };
+  index: number;
+  chartConfig: ChartConfig;
+  timeRange: "week" | "month" | "year";
+}
+
 // Dynamic chart config - will be populated based on available integrations
 const getChartConfig = (integrationKeys: string[]): ChartConfig => {
   const colors: Record<string, string> = {
@@ -48,6 +72,7 @@ const getChartConfig = (integrationKeys: string[]): ChartConfig => {
     linear: "#5E6AD2",
     notion: "#787774",
     google: "#4285F4",
+    youtube: "#FF0000",
   };
 
   const labels: Record<string, string> = {
@@ -57,7 +82,8 @@ const getChartConfig = (integrationKeys: string[]): ChartConfig => {
     github: "GitHub",
     linear: "Linear",
     notion: "Notion",
-    google: "Google",
+    google: "Google Calendar",
+    youtube: "YouTube",
   };
 
   const config: ChartConfig = {};
@@ -138,6 +164,14 @@ const INTEGRATIONS_META: Record<
     borderColor: "border-[#4285F4]/30",
     glowColor: "shadow-[#4285F4]/20",
   },
+  youtube: {
+    icon: Youtube,
+    label: "YouTube",
+    color: "#FF0000",
+    bgGradient: "from-[#FF0000]/20 via-[#FF0000]/5 to-transparent",
+    borderColor: "border-[#FF0000]/30",
+    glowColor: "shadow-[#FF0000]/20",
+  },
 };
 
 function DiscoveryStatsContent() {
@@ -214,7 +248,6 @@ function DiscoveryStatsContent() {
     return count.toLocaleString();
   };
 
-  // Build stat items
   // biome-ignore lint/correctness/useExhaustiveDependencies: we need to memoize the stat items
   const statItems = useMemo(() => {
     if (!stats) return [];
@@ -233,7 +266,6 @@ function DiscoveryStatsContent() {
         const trend = calculateTrend(stats.data, key);
         const peakDay = getPeakDay(stats.data, key);
         const total = stats.totals[key] || 0;
-        // Check if this integration might have hit the 1000 limit
         const isLimitReached = total >= 1000;
         const average = stats.data.length > 0 ? Math.round(total / stats.data.length) : 0;
 
@@ -440,32 +472,11 @@ function DiscoveryStatsContent() {
   );
 }
 
-interface StatCardProps {
-  item: {
-    id: string;
-    icon: typeof Music;
-    label: string;
-    color: string;
-    bgGradient: string;
-    borderColor: string;
-    glowColor: string;
-    total: number;
-    totalDisplay: string;
-    isLimitReached: boolean;
-    average: number;
-    trend: { value: number; direction: "up" | "down" | "neutral" };
-    peakDay: string | null;
-    data: DailyActivity[];
-    dataKey: string;
-  };
-  index: number;
-  chartConfig: ChartConfig;
-  timeRange: "week" | "month" | "year";
-}
-
 function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const Icon = item.icon;
+
+  console.log({ item });
 
   const TrendIcon = item.trend.direction === "up" ? TrendingUp : item.trend.direction === "down" ? TrendingDown : Minus;
   const trendColorClass =
