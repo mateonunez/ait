@@ -67,6 +67,12 @@ Strategies:
 - "multi-collection": Cross-domain intent (e.g., "what was I doing yesterday?" -> spotify, github, x)
 - "all-collections": Broad/ambiguous queries
 
+IMPORTANT for multi-collection queries:
+- Distribute weights to ensure balanced representation across collections
+- No single collection should exceed 0.7 weight unless the query is clearly single-domain focused
+- When the query spans multiple domains (e.g., calendar events + playlists), aim for roughly equal weights (0.5-0.7 range)
+- Avoid over-prioritizing collections with larger datasets (e.g., Spotify) unless the query specifically focuses on that domain
+
 Return JSON:
 {
   "strategy": "single-collection" | "multi-collection" | "all-collections",

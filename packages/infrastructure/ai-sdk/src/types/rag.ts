@@ -65,6 +65,20 @@ export interface CollectionRoutingConfig {
 }
 
 /**
+ * Configuration for collection diversity in multi-collection queries
+ */
+export interface CollectionDiversityConfig {
+  /** Minimum number of documents to include from each collection (default: 3) */
+  minDocsPerCollection?: number;
+  /** Maximum percentage of results from a single collection (0-1, default: 0.5) */
+  maxCollectionDominance?: number;
+  /** Enforce minimum representation even if scores are low (default: true) */
+  enforceMinRepresentation?: boolean;
+  /** Interleaving strategy: 'round-robin', 'weighted', or 'score-based' (default: 'weighted') */
+  interleavingStrategy?: "round-robin" | "weighted" | "score-based";
+}
+
+/**
  * Top-level configuration for multi-query retrieval
  */
 export interface MultiQueryConfig {

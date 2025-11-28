@@ -1,5 +1,5 @@
 import type { ConversationConfig, ContextPreparationConfig, ToolExecutionConfig, RetryConfig } from "./text-generation";
-import type { MultiQueryConfig, CollectionRoutingConfig } from "./rag";
+import type { MultiQueryConfig, CollectionRoutingConfig, CollectionDiversityConfig } from "./rag";
 import type { GenerationModelName, EmbeddingModelName } from "../config/models.config";
 import type { TelemetryConfig } from "./telemetry";
 
@@ -41,6 +41,8 @@ export interface RAGConfig {
   maxDocs?: number;
   /** Collection routing configuration */
   collectionRouting?: CollectionRoutingConfig;
+  /** Collection diversity configuration */
+  collectionDiversity?: CollectionDiversityConfig;
 }
 
 /**
