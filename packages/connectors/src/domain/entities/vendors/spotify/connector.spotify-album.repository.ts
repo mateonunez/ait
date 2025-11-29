@@ -4,6 +4,9 @@ import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/e
 import type { IConnectorSpotifyAlbumRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyAlbums, type SpotifyAlbumDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRepository {
   private _pgClient = getPostgresClient();
@@ -49,7 +52,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save album:", { albumId: album.id, error });
+      logger.error("Failed to save album:", { albumId: album.id, error });
       throw new AItError(
         "SPOTIFY_SAVE_ALBUM",
         `Failed to save album ${album.id}: ${error.message}`,
@@ -69,18 +72,18 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
         await this.saveAlbum(album, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving albums:", error);
+      logger.error("Error saving albums:", { error });
       throw new AItError("SPOTIFY_SAVE_ALBUM_BULK", "Failed to save albums to repository");
     }
   }
 
   async getAlbum(id: string): Promise<SpotifyAlbumEntity | null> {
-    console.log("Getting album from Spotify repository", id);
+    logger.info("Getting album from Spotify repository", { id });
     return null;
   }
 
   async fetchAlbums(): Promise<SpotifyAlbumEntity[]> {
-    console.log("Getting albums from Spotify repository");
+    logger.info("Getting albums from Spotify repository");
     return [];
   }
 

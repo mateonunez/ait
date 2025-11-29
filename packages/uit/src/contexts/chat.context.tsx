@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { getLogger } from "@ait/core";
 import { generateUserId, getSessionId, clearSession } from "@/utils/user-tracking";
+
+const logger = getLogger();
 
 interface ChatContextType {
   isOpen: boolean;
@@ -28,7 +31,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     setUserId(uid);
     setSessionId(sid);
 
-    console.log("[AIt] User tracking initialized", { userId: uid, sessionId: sid });
+    logger.info("[AIt] User tracking initialized", { userId: uid, sessionId: sid });
   }, []);
 
   const openChat = () => setIsOpen(true);
@@ -43,7 +46,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     clearSession();
     const newSessionId = getSessionId();
     setSessionId(newSessionId);
-    console.log("[AIt] Session refreshed", { newSessionId });
+    logger.info("[AIt] Session refreshed", { newSessionId });
   };
 
   return (

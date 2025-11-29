@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
 import { Redis, type RedisOptions } from "ioredis";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 dotenv.config();
 
@@ -39,11 +42,11 @@ function buildRedisClient(config: IRedisConfig): Redis {
 
   if (config.logger) {
     client
-      .on("error", (err) => console.error("Redis Client Error:", err))
-      .on("connect", () => console.log("Redis Client Connected"))
-      .on("ready", () => console.log("Redis Client Ready"))
-      .on("close", () => console.log("Redis Client Connection Closed"))
-      .on("reconnecting", () => console.log("Redis Client Reconnecting..."));
+      .on("error", (err) => logger.error("Redis Client Error:", { error: err }))
+      .on("connect", () => logger.info("Redis Client Connected"))
+      .on("ready", () => logger.info("Redis Client Ready"))
+      .on("close", () => logger.info("Redis Client Connection Closed"))
+      .on("reconnecting", () => logger.info("Redis Client Reconnecting..."));
   }
 
   return client;
@@ -68,7 +71,7 @@ export function getRedisClient(): Redis {
     _instance = buildRedisClient(_config);
 
     _instance.on("error", (err) => {
-      console.error("Redis Client Error:", err);
+      logger.error("Redis Client Error:", { error: err });
     });
   }
   return _instance;
@@ -78,6 +81,6 @@ export async function closeRedisConnection(): Promise<void> {
   if (_instance) {
     await _instance.quit();
     _instance = null;
-    console.log("Redis connection closed");
+    logger.info("Redis connection closed");
   }
 }

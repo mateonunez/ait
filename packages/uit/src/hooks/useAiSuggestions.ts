@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import type { Suggestion } from "@ait/ai-sdk";
 import { fetchSuggestions } from "@/utils/api/suggestions.api";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export interface UseAiSuggestionsOptions {
   enabled?: boolean;
@@ -32,7 +35,7 @@ export function useAiSuggestions(options: UseAiSuggestionsOptions = {}) {
         }
       } catch (err) {
         if (mounted) {
-          console.error("Failed to fetch suggestions:", err);
+          logger.error("Failed to fetch suggestions:", { error: err });
           setError("Failed to load suggestions");
         }
       } finally {

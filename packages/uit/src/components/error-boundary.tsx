@@ -1,4 +1,7 @@
 import React, { type JSX } from "react";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean; message?: string };
@@ -16,7 +19,8 @@ class InnerErrorBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
     // In the future, we could forward this to a logger with correlation IDs
-    console.error("UI ErrorBoundary caught:", error, info);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error("UI ErrorBoundary caught:", { error: errorMessage, info });
   }
 
   render() {

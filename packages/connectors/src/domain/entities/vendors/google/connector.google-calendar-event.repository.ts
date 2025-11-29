@@ -1,8 +1,16 @@
-import { AItError, type PaginatedResponse, type PaginationParams, type GoogleCalendarEventEntity } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  type GoogleCalendarEventEntity,
+  getLogger,
+} from "@ait/core";
 import { connectorGoogleCalendarEventMapper } from "../../../mappers/vendors/connector.google.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarEventRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
 import { getPostgresClient, googleCalendarEvents, type GoogleCalendarEventDataTarget, drizzleOrm } from "@ait/postgres";
+
+const logger = getLogger();
 
 export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleCalendarEventRepository {
   private _pgClient = getPostgresClient();
@@ -69,7 +77,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save Google Calendar event:", { eventId: event.id, error });
+      logger.error("Failed to save Google Calendar event:", { eventId: event.id, error });
       throw new AItError(
         "GOOGLE_CALENDAR_SAVE_EVENT",
         `Failed to save event ${event.id}: ${error.message}`,
@@ -89,7 +97,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
         await this.saveEvent(event, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving events:", error);
+      logger.error("Error saving events:", { error });
       throw new AItError("GOOGLE_CALENDAR_SAVE_EVENT_BULK", "Failed to save events to repository");
     }
   }

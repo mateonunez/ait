@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { QueryAnalysisOutput, ContextBuildingInput } from "../../types/stages";
 import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
@@ -5,6 +6,8 @@ import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { getCollectionByEntityType } from "../../config/collections.config";
 import type { CollectionVendor } from "../../config/collections.config";
 import type { EntityType } from "@ait/core";
+
+const logger = getLogger();
 
 export class SimpleRetrievalStage implements IPipelineStage<QueryAnalysisOutput, ContextBuildingInput> {
   readonly name = "simple-retrieval";
@@ -32,7 +35,7 @@ export class SimpleRetrievalStage implements IPipelineStage<QueryAnalysisOutput,
         })
       : null;
 
-    console.info("Simple retrieval using direct search", {
+    logger.info("Simple retrieval using direct search", {
       vendor: selectedVendor,
       query: input.query.slice(0, 100),
       maxDocs: this.maxDocs,
@@ -47,7 +50,7 @@ export class SimpleRetrievalStage implements IPipelineStage<QueryAnalysisOutput,
 
     const documents = searchResult.results.flatMap((result) => result.documents);
 
-    console.info("Simple retrieval completed", {
+    logger.info("Simple retrieval completed", {
       vendor: selectedVendor,
       documentsFound: documents.length,
     });

@@ -1,5 +1,8 @@
 import dotenv from "dotenv";
 import { getPostgresClient, closePostgresConnection } from "./postgres.client";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 dotenv.config();
 
@@ -9,7 +12,7 @@ if (process.env.NODE_ENV === "test") {
 
 async function fixCollationVersion() {
   try {
-    console.log("🔧 Fixing database collation version...");
+    logger.info("🔧 Fixing database collation version...");
     const start = Date.now();
 
     const { queryClient } = getPostgresClient();
@@ -17,18 +20,18 @@ async function fixCollationVersion() {
     const dbUrl = process.env.POSTGRES_URL;
     const dbName = dbUrl?.split("/").pop()?.split("?")[0] || "ait";
 
-    console.log(`📊 Refreshing collation version for database: ${dbName}`);
+    logger.info(`📊 Refreshing collation version for database: ${dbName}`);
 
     const query = `ALTER DATABASE ${dbName} REFRESH COLLATION VERSION`;
     await queryClient.unsafe(query);
 
     const end = Date.now();
-    console.log(`✅ Collation version refreshed successfully in ${end - start}ms`);
+    logger.info(`✅ Collation version refreshed successfully in ${end - start}ms`);
 
     await closePostgresConnection();
     process.exit(0);
   } catch (error) {
-    console.error("❌ Failed to fix collation version:", error);
+    logger.error("❌ Failed to fix collation version:", { error });
     process.exit(1);
   }
 }

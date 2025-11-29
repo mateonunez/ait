@@ -1,5 +1,8 @@
+import { getLogger } from "@ait/core";
 import type { IPipelineStage, PipelineContext } from "./pipeline.types";
 import { recordSpan } from "../../../telemetry/telemetry.middleware";
+
+const logger = getLogger();
 
 export abstract class PipelineStageAbstract<TInput = unknown, TOutput = unknown>
   implements IPipelineStage<TInput, TOutput>
@@ -52,15 +55,15 @@ export abstract class PipelineStageAbstract<TInput = unknown, TOutput = unknown>
   }
 
   protected logInfo(message: string, data?: Record<string, unknown>): void {
-    console.info(`[Pipeline:${this.name}] ${message}`, data || {});
+    logger.info(`[Pipeline:${this.name}] ${message}`, data || {});
   }
 
   protected logWarn(message: string, data?: Record<string, unknown>): void {
-    console.warn(`[Pipeline:${this.name}] ${message}`, data || {});
+    logger.warn(`[Pipeline:${this.name}] ${message}`, data || {});
   }
 
   protected logError(message: string, error: Error, data?: Record<string, unknown>): void {
-    console.error(`[Pipeline:${this.name}] ${message}`, {
+    logger.error(`[Pipeline:${this.name}] ${message}`, {
       error: error.message,
       stack: error.stack,
       ...data,

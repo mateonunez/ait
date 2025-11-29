@@ -1,5 +1,8 @@
+import { getLogger } from "@ait/core";
 import { getCollectionConfig, getAllCollections, type CollectionVendor } from "../../config/collections.config";
 import type { CollectionWeight } from "../../types/collections";
+
+const logger = getLogger();
 
 export interface ICollectionDiscoveryService {
   getExistingCollectionNames(): Promise<Set<string>>;
@@ -40,7 +43,7 @@ export class CollectionDiscoveryService implements ICollectionDiscoveryService {
 
       return existingNames as Set<string>;
     } catch (error) {
-      console.warn("Failed to fetch existing collections from Qdrant", {
+      logger.warn("Failed to fetch existing collections from Qdrant", {
         error: error instanceof Error ? error.message : String(error),
       });
       return new Set();
@@ -76,7 +79,7 @@ export class CollectionDiscoveryService implements ICollectionDiscoveryService {
     }
 
     if (filteredOut.length > 0) {
-      console.warn("Filtered out non-existent collections", {
+      logger.warn("Filtered out non-existent collections", {
         filteredOut,
         remaining: filtered.map((c) => c.vendor),
       });
@@ -100,7 +103,7 @@ export class CollectionDiscoveryService implements ICollectionDiscoveryService {
       }
     }
 
-    console.info("Fallback to all existing collections", {
+    logger.info("Fallback to all existing collections", {
       collections: existing.map((c) => c.vendor),
       count: existing.length,
     });

@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import { z } from "zod";
 import type { CollectionVendor } from "../../config/collections.config";
 import { getCollectionConfig } from "../../config/collections.config";
@@ -9,6 +10,8 @@ import type { TraceContext } from "../../types/telemetry";
 import type { EntityType } from "@ait/core";
 import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
 import { buildQueryAdaptationPrompt } from "../prompts/routing.prompts";
+
+const logger = getLogger();
 
 const QueryAdaptationSchema = z.object({
   adaptedQuery: z.string().min(5).max(200),
@@ -52,7 +55,7 @@ export class MultiCollectionProvider {
       });
 
       this._providers.set(vendor, provider);
-      console.debug(`Created QdrantProvider for collection: ${collectionConfig.name}`);
+      logger.debug(`Created QdrantProvider for collection: ${collectionConfig.name}`);
     }
 
     return provider;
@@ -61,7 +64,7 @@ export class MultiCollectionProvider {
   private async _ensureCollectionsExist(collections: CollectionWeight[]): Promise<CollectionWeight[]> {
     let filteredCollections = await this._discoveryService.filterExistingCollections(collections);
     if (filteredCollections.length === 0) {
-      console.warn("No selected collections exist in Qdrant, falling back to all existing collections", {
+      logger.warn("No selected collections exist in Qdrant, falling back to all existing collections", {
         originalCollections: collections.map((c) => c.vendor),
       });
       filteredCollections = await this._discoveryService.getAllExistingCollections();
@@ -140,7 +143,7 @@ export class MultiCollectionProvider {
 
       return result;
     } catch (error) {
-      console.warn(`Failed to adapt query for collection ${vendor}, using original query`, {
+      logger.warn(`Failed to adapt query for collection ${vendor}, using original query`, {
         error: error instanceof Error ? error.message : String(error),
         vendor,
       });
@@ -151,13 +154,13 @@ export class MultiCollectionProvider {
   private _handleSearchError(vendor: CollectionVendor, error: unknown): void {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes("Not Found") || errorMessage.includes("not found")) {
-      console.warn(`Collection ${vendor} does not exist in Qdrant`, {
+      logger.warn(`Collection ${vendor} does not exist in Qdrant`, {
         collection: vendor,
         error: errorMessage,
       });
       this._discoveryService.invalidateCache();
     } else {
-      console.error(`Search failed for collection ${vendor}`, {
+      logger.error(`Search failed for collection ${vendor}`, {
         error: errorMessage,
       });
     }
@@ -177,7 +180,7 @@ export class MultiCollectionProvider {
     const filteredCollections = await this._ensureCollectionsExist(collections);
 
     if (filteredCollections.length === 0) {
-      console.warn("No collections exist in Qdrant", {
+      logger.warn("No collections exist in Qdrant", {
         query: query.slice(0, 100),
       });
       return {
@@ -200,14 +203,14 @@ export class MultiCollectionProvider {
         const queryWasAdapted = adaptedQuery !== query;
 
         if (queryWasAdapted) {
-          console.debug(`Using adapted query for collection ${collectionWeight.vendor}`, {
+          logger.debug(`Using adapted query for collection ${collectionWeight.vendor}`, {
             collection: collectionWeight.vendor,
             originalQuery: query.slice(0, 100),
             adaptedQuery: adaptedQuery.slice(0, 100),
           });
         }
 
-        console.debug(`Searching ${collectionWeight.vendor}`, {
+        logger.debug(`Searching ${collectionWeight.vendor}`, {
           weight: collectionWeight.weight,
           limit: collectionLimit,
         });
@@ -219,7 +222,7 @@ export class MultiCollectionProvider {
 
         const searchDuration = Date.now() - searchStartTime;
 
-        console.debug(`Search completed for ${collectionWeight.vendor}`, {
+        logger.debug(`Search completed for ${collectionWeight.vendor}`, {
           documentsFound: documents.length,
           duration: searchDuration,
         });
@@ -299,7 +302,7 @@ export class MultiCollectionProvider {
     const filteredCollections = await this._ensureCollectionsExist(collections);
 
     if (filteredCollections.length === 0) {
-      console.warn("No collections exist in Qdrant", {
+      logger.warn("No collections exist in Qdrant", {
         query: query.slice(0, 100),
       });
       return [];
@@ -318,7 +321,7 @@ export class MultiCollectionProvider {
     // Fallback: if no results and we have a time filter, retry without it
     const totalDocuments = results.reduce((sum, r) => sum + r.documents.length, 0);
     if (totalDocuments === 0 && filter?.timeRange) {
-      console.warn("No results with time filter, retrying without time constraints...", {
+      logger.warn("No results with time filter, retrying without time constraints...", {
         originalTimeRange: filter.timeRange,
         query: query.slice(0, 50),
       });
@@ -375,7 +378,7 @@ export class MultiCollectionProvider {
         const queryWasAdapted = adaptedQuery !== query;
 
         if (queryWasAdapted) {
-          console.debug(`Using adapted query for collection ${collectionWeight.vendor}`, {
+          logger.debug(`Using adapted query for collection ${collectionWeight.vendor}`, {
             collection: collectionWeight.vendor,
             originalQuery: query.slice(0, 100),
             adaptedQuery: adaptedQuery.slice(0, 100),
@@ -405,7 +408,7 @@ export class MultiCollectionProvider {
           filter.types.length > 0 &&
           (!effectiveFilter?.types || effectiveFilter.types.length === 0)
         ) {
-          console.debug(
+          logger.debug(
             `No matching entity types for collection ${collectionWeight.vendor}, searching without type filter`,
             {
               collection: collectionWeight.vendor,
@@ -414,7 +417,7 @@ export class MultiCollectionProvider {
             },
           );
         } else if (filter?.types && effectiveFilter?.types && filter.types.length !== effectiveFilter.types.length) {
-          console.debug(`Filtered types for collection ${collectionWeight.vendor}`, {
+          logger.debug(`Filtered types for collection ${collectionWeight.vendor}`, {
             collection: collectionWeight.vendor,
             requestedTypes: filter.types,
             filteredTypes: effectiveFilter.types,

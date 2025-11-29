@@ -4,6 +4,9 @@ import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/e
 import type { IConnectorSpotifyArtistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyArtists, type SpotifyArtistDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtistRepository {
   private _pgClient = getPostgresClient();
@@ -37,7 +40,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save artist:", { artistId: artist.id, error });
+      logger.error("Failed to save artist:", { artistId: artist.id, error });
       throw new AItError(
         "SPOTIFY_SAVE_ARTIST",
         `Failed to save artist ${artist.id}: ${error.message}`,
@@ -53,24 +56,24 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     }
 
     try {
-      console.debug("Saving artists to Spotify repository:", { artists });
+      logger.debug("Saving artists to Spotify repository:", { artists });
 
       for (const artist of artists) {
         await this.saveArtist(artist, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving artists:", error);
+      logger.error("Error saving artists:", { error });
       throw new AItError("SPOTIFY_SAVE_ARTIST_BULK", "Failed to save artists to repository");
     }
   }
 
   async getArtist(id: string): Promise<SpotifyArtistEntity | null> {
-    console.log("Getting artist from Spotify repository", id);
+    logger.info("Getting artist from Spotify repository", { id });
     return null;
   }
 
   async fetchArtists(): Promise<SpotifyArtistEntity[]> {
-    console.log("Getting artists from Spotify repository");
+    logger.info("Getting artists from Spotify repository");
     return [];
   }
 

@@ -5,6 +5,9 @@ import type { IRerankService } from "./rerank.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { CollectionDiversityService, type ICollectionDiversityService } from "./collection-diversity.service";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export interface ICollectionRerankService {
   rerankByCollection<TMetadata extends BaseMetadata>(
@@ -37,7 +40,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     traceContext?: TraceContext,
   ): Promise<WeightedDocument<TMetadata>[]> {
     if (documents.length === 0) {
-      console.warn("No documents to rerank");
+      logger.warn("No documents to rerank");
       return [];
     }
 
@@ -55,7 +58,7 @@ export class CollectionRerankService implements ICollectionRerankService {
       try {
         return await this.rerankCollectionGroup(vendor as CollectionVendor, collectionDocs, userQuery, traceContext);
       } catch (error) {
-        console.error(`Reranking failed for collection ${vendor}`, {
+        logger.error(`Reranking failed for collection ${vendor}`, {
           error: error instanceof Error ? error.message : String(error),
         });
         return collectionDocs;
@@ -101,7 +104,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     traceContext?: TraceContext,
   ): Promise<WeightedDocument<TMetadata>[]> {
     if (!this._reranker) {
-      console.debug(`No reranker available for ${vendor}, using original order`);
+      logger.debug(`No reranker available for ${vendor}, using original order`);
       return documents;
     }
 
@@ -129,7 +132,7 @@ export class CollectionRerankService implements ICollectionRerankService {
         } as WeightedDocument<TMetadata>;
       });
     } catch (error) {
-      console.warn(`Reranking failed for ${vendor}, using original order`, {
+      logger.warn(`Reranking failed for ${vendor}, using original order`, {
         error: error instanceof Error ? error.message : String(error),
       });
       return documents;

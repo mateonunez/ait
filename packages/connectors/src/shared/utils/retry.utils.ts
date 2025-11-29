@@ -1,3 +1,7 @@
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
+
 export interface RetryOptions {
   maxAttempts?: number;
   initialDelayMs?: number;
@@ -34,9 +38,7 @@ export async function retryWithBackoff<T>(fn: () => Promise<T>, options: RetryOp
       }
 
       // Log retry attempt
-      console.warn(
-        `[Retry] Attempt ${attempt}/${opts.maxAttempts} failed: ${error.message}. Retrying in ${delay}ms...`,
-      );
+      logger.warn(`[Retry] Attempt ${attempt}/${opts.maxAttempts} failed: ${error.message}. Retrying in ${delay}ms...`);
 
       // Wait before retrying
       await sleep(delay);

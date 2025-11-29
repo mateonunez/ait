@@ -1,5 +1,8 @@
+import { getLogger } from "@ait/core";
 import type { DiversityConfig } from "../../types/rag";
 import type { Document, BaseMetadata } from "../../types/documents";
+
+const logger = getLogger();
 
 export interface IDiversityService {
   applyMMR<TMetadata extends BaseMetadata>(selectedDocs: Document<TMetadata>[], maxDocs: number): Document<TMetadata>[];
@@ -57,7 +60,7 @@ export class DiversityService implements IDiversityService {
       }
     }
 
-    console.debug("MMR applied", { before: selectedDocs.length, after: result.length });
+    logger.debug("MMR applied", { before: selectedDocs.length, after: result.length });
 
     return result;
   }

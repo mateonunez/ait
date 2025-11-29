@@ -1,8 +1,11 @@
+import { getLogger } from "@ait/core";
 import type { ConversationConfig, ConversationContext } from "../../types/text-generation";
 import type { ChatMessage } from "../../types/chat";
 import { TokenEstimationService, type ITokenEstimationService } from "../metadata/token-estimation.service";
 import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import { buildSummarizationPrompt } from "../prompts/summarization.prompt";
+
+const logger = getLogger();
 
 export interface IConversationManagerService {
   processConversation(messages: ChatMessage[] | undefined, currentPrompt: string): Promise<ConversationContext>;
@@ -112,7 +115,7 @@ export class ConversationManagerService implements IConversationManagerService {
 
       return response.text.trim();
     } catch (error) {
-      console.warn("Failed to summarize conversation with LLM, falling back to simple concatenation", {
+      logger.warn("Failed to summarize conversation with LLM, falling back to simple concatenation", {
         error: error instanceof Error ? error.message : String(error),
       });
 

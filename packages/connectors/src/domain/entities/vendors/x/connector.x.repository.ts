@@ -1,4 +1,4 @@
-import { AItError, type XTweetEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { AItError, type XTweetEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { connectorXTweetMapper } from "../../../mappers/vendors/connector.x.mapper";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
 import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
@@ -15,6 +15,8 @@ import {
   drizzleOrm,
 } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+
+const logger = getLogger();
 
 export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
   private _pgClient = getPostgresClient();
@@ -55,7 +57,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save tweet:", { tweetId, error });
+      logger.error("Failed to save tweet:", { tweetId, error });
       throw new AItError("X_SAVE_TWEET", `Failed to save tweet ${tweetId}: ${error.message}`, { id: tweetId }, error);
     }
   }
@@ -69,12 +71,12 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
   }
 
   async getTweet(id: string): Promise<XTweetEntity | null> {
-    console.log("Getting tweet from X repository", id);
+    logger.debug("Getting tweet from X repository", { id });
     return null;
   }
 
   async fetchTweets(): Promise<XTweetEntity[]> {
-    console.log("Getting tweets from X repository");
+    logger.debug("Getting tweets from X repository");
     return [];
   }
 

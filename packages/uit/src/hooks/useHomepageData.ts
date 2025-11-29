@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo, useRef } from "react";
+import { getLogger, getEntityMetadata, type EntityType } from "@ait/core";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import { contentAlgorithmService } from "@/services/content-algorithm.service";
 import type { IntegrationEntity, HomeSection as HomeSectionType } from "@/types/integrations.types";
-import { getEntityMetadata, type EntityType } from "@ait/core";
+
+const logger = getLogger();
 
 const DAYS_MS = 24 * 60 * 60 * 1000;
 const MAX_FUTURE_DAYS = 30; // Only show calendar events within 30 days
@@ -131,7 +133,7 @@ export function useHomepageData({ sections }: UseHomepageDataOptions): UseHomepa
               fetchedData.set(entityType, response.data);
             }
           } catch (error) {
-            console.error(`Failed to fetch ${entityType}:`, error);
+            logger.error(`Failed to fetch ${entityType}:`, { error });
           }
         }
 
@@ -211,7 +213,7 @@ export function useHomepageData({ sections }: UseHomepageDataOptions): UseHomepa
         setSectionsData(newSectionsData);
         hasLoadedRef.current = true;
       } catch (error) {
-        console.error("Failed to load homepage data:", error);
+        logger.error("Failed to load homepage data:", { error });
       } finally {
         isLoadingRef.current = false;
         setIsLoading(false);

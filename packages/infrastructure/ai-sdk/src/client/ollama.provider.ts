@@ -1,4 +1,4 @@
-import { AItError } from "@ait/core";
+import { AItError, getLogger } from "@ait/core";
 import type { GenerationModel, EmbeddingsModel, ModelGenerateOptions, ModelStreamOptions } from "../types/models";
 import type {
   OllamaTool,
@@ -21,6 +21,8 @@ export type {
   OllamaEmbedRequest,
   OllamaConfig,
 };
+
+const logger = getLogger();
 
 export class OllamaProvider {
   private baseURL: string;
@@ -170,7 +172,7 @@ export class OllamaProvider {
                     yield data.response;
                   }
                 } catch (e) {
-                  console.warn("Failed to parse streaming line:", line);
+                  logger.warn("Failed to parse streaming line:", { line });
                 }
               }
             }

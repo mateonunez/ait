@@ -1,5 +1,8 @@
 import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import { buildSuggestionPrompt } from "../prompts/suggestion.prompt";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export interface SuggestionContext {
   context?: string;
@@ -42,7 +45,7 @@ export class SuggestionService {
             .map((line) => line.replace(/^\d+\.\s*/, "").replace(/^- \s*/, ""));
         }
       } catch (e) {
-        console.warn("Failed to parse suggestions JSON, falling back to raw text split", e);
+        logger.warn("Failed to parse suggestions JSON, falling back to raw text split", { error: e });
         suggestionsList = text.split("\n").filter((line) => line.trim().length > 0);
       }
 
@@ -52,7 +55,7 @@ export class SuggestionService {
         text: text.trim(),
       }));
     } catch (error) {
-      console.error("Failed to generate suggestions:", error);
+      logger.error("Failed to generate suggestions:", { error });
       return [
         { id: "fallback-1", type: "question", text: "What can you do?" },
         { id: "fallback-2", type: "question", text: "Show me my recent activity" },

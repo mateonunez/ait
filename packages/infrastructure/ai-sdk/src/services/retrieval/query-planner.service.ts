@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import { z } from "zod";
 import type { QueryPlannerConfig, QueryPlanResult } from "../../types/rag";
 import { getAItClient } from "../../client/ai-sdk.client";
@@ -7,6 +8,8 @@ import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middlewa
 import type { TraceContext } from "../../types/telemetry";
 import { buildQueryPlanningPrompt } from "../prompts/planning.prompts";
 import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
+
+const logger = getLogger();
 
 export interface IQueryPlannerService {
   planQueries(userQuery: string, traceContext?: TraceContext | null): Promise<QueryPlanResult>;
@@ -66,7 +69,7 @@ export class QueryPlannerService implements IQueryPlannerService {
         );
       }
     } catch (error) {
-      console.warn("Failed to analyze query intent, continuing without it", {
+      logger.warn("Failed to analyze query intent, continuing without it", {
         error: error instanceof Error ? error.message : String(error),
       });
     }
@@ -98,7 +101,7 @@ export class QueryPlannerService implements IQueryPlannerService {
       let fallbackApplied = false;
 
       if (cleaned.length < this._minQueryCount) {
-        console.warn("Query planner generated fewer queries than expected", {
+        logger.warn("Query planner generated fewer queries than expected", {
           expected: this._queriesCount,
           minRequired: this._minQueryCount,
           received: cleaned.length,
@@ -116,7 +119,7 @@ export class QueryPlannerService implements IQueryPlannerService {
       }
 
       if (cleaned.length === 0) {
-        console.warn("No valid queries after LLM generation, using heuristic fallback");
+        logger.warn("No valid queries after LLM generation, using heuristic fallback");
         return this._buildHeuristicPlan(userQuery);
       }
 
@@ -168,7 +171,7 @@ export class QueryPlannerService implements IQueryPlannerService {
         intent,
       };
     } catch (error) {
-      console.error("Query planning failed", {
+      logger.error("Query planning failed", {
         error: error instanceof Error ? error.message : String(error),
         userQuery: userQuery.slice(0, 100),
       });

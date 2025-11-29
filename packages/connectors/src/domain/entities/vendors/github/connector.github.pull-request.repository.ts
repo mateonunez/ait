@@ -1,9 +1,17 @@
-import { AItError, type GitHubPullRequestEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import {
+  AItError,
+  type GitHubPullRequestEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  getLogger,
+} from "@ait/core";
 import { getPostgresClient, githubPullRequests, drizzleOrm } from "@ait/postgres";
 import { connectorGithubPullRequestMapper } from "../../../mappers/vendors/connector.github.pull-request.mapper";
 import { randomUUID } from "node:crypto";
 import type { IConnectorGitHubPullRequestRepository } from "../../../../types/domain/entities/vendors/connector.github.pull-request.types";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
+
+const logger = getLogger();
 
 export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPullRequestRepository {
   private _pgClient = getPostgresClient();
@@ -66,7 +74,7 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save pull request:", { prId: pullRequestId, error });
+      logger.error("Failed to save pull request:", { prId: pullRequestId, error });
       throw new AItError(
         "GITHUB_SAVE_PULL_REQUEST",
         `Failed to save pull request ${pullRequestId}: ${error.message}`,
@@ -85,12 +93,12 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
   }
 
   async getPullRequest(id: string): Promise<GitHubPullRequestEntity | null> {
-    console.log("Getting pull request from GitHub repository", id);
+    logger.debug("Getting pull request from GitHub repository", { id });
     return null;
   }
 
   async fetchPullRequests(): Promise<GitHubPullRequestEntity[]> {
-    console.log("Getting pull requests from GitHub repository");
+    logger.debug("Getting pull requests from GitHub repository");
     return [];
   }
 

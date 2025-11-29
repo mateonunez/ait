@@ -154,7 +154,7 @@ class SchedulerEntrypoint {
   async scheduleJobs(): Promise<void> {
     const defaultCronExpression = "0 0 * * *"; // Daily at midnight
 
-    console.info("🧹 Cleaning up old scheduled jobs...");
+    logger.info("🧹 Cleaning up old scheduled jobs...");
     await this.scheduler.removeAllRepeatableJobs();
 
     for (const job of SCHEDULED_JOBS) {
@@ -166,30 +166,30 @@ class SchedulerEntrypoint {
       );
     }
 
-    console.info(`📅 Scheduled ${SCHEDULED_JOBS.length} jobs with priorities`);
+    logger.info(`📅 Scheduled ${SCHEDULED_JOBS.length} jobs with priorities`);
   }
 
   async runJobsManually(): Promise<void> {
-    console.info("🔧 Running jobs manually...");
+    logger.info("🔧 Running jobs manually...");
 
     const sortedJobs = [...SCHEDULED_JOBS].sort((a, b) => (a.priority || 99) - (b.priority || 99));
 
     for (const job of sortedJobs) {
-      console.info(`⏳ Starting ${job.name} (priority: ${job.priority || "default"})...`);
+      logger.info(`⏳ Starting ${job.name} (priority: ${job.priority || "default"})...`);
       await this.scheduler.addJob(job.name, job.options, { priority: job.priority });
     }
 
-    console.info("✅ All manual jobs queued");
+    logger.info("✅ All manual jobs queued");
   }
 
   async start(): Promise<void> {
     await this.scheduler.start();
-    console.info("🚀 ETL Scheduler started successfully");
+    logger.info("🚀 ETL Scheduler started successfully");
   }
 
   async stop(): Promise<void> {
     await this.scheduler.stop();
-    console.info("👋 ETL Scheduler stopped successfully");
+    logger.info("👋 ETL Scheduler stopped successfully");
   }
 }
 
@@ -211,7 +211,7 @@ async function main() {
 
     schedulerETLTaskManager.setScheduler(schedulerEntrypoint.scheduler);
 
-    console.info(`⚙️  Scheduler configuration:
+    logger.info(`⚙️  Scheduler configuration:
       - Environment: ${process.env.NODE_ENV || "development"}
       - Concurrency: ${concurrency}
       - Batch Size: ${scheduleConfig.batchSize}
@@ -225,7 +225,7 @@ async function main() {
     if (isManualRun) {
       await schedulerEntrypoint.runJobsManually();
 
-      console.info("🔒 Closing database connections...");
+      logger.info("🔒 Closing database connections...");
       await closePostgresConnection();
 
       process.exit(0);
@@ -237,10 +237,10 @@ async function main() {
 
     // Handle graceful shutdown
     const shutdown = async (signal: string) => {
-      console.info(`📥 Received ${signal}. Shutting down...`);
+      logger.info(`📥 Received ${signal}. Shutting down...`);
       await schedulerEntrypoint.stop();
 
-      console.info("🔒 Closing database connections...");
+      logger.info("🔒 Closing database connections...");
       await closePostgresConnection();
 
       process.exit(0);
@@ -249,7 +249,7 @@ async function main() {
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error) {
-    console.error("💥 Failed to start ETL Scheduler:", error);
+    logger.error("💥 Failed to start ETL Scheduler:", error);
     process.exit(1);
   }
 }

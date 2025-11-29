@@ -17,6 +17,7 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "@ait/core": "workspace:*",
     "@ait/ai-sdk": "workspace:*",
     "@ait/connectors": "workspace:*",
     "@ait/postgres": "workspace:*",

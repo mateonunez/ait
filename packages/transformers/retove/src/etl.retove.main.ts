@@ -1,5 +1,6 @@
 import { getQdrantClient } from "@ait/qdrant";
 import { getPostgresClient, closePostgresConnection } from "@ait/postgres";
+import { getLogger } from "@ait/core";
 import {
   runSpotifyTrackETL,
   runSpotifyArtistETL,
@@ -16,8 +17,10 @@ import {
   runGoogleYouTubeSubscriptionETL,
 } from "./infrastructure/runners/etl.runners";
 
+const logger = getLogger();
+
 async function main() {
-  console.log("🚀 Starting ETL process...");
+  logger.info("🚀 Starting ETL process...");
   try {
     const qdrantClient = getQdrantClient();
     const pgClient = getPostgresClient();
@@ -39,13 +42,13 @@ async function main() {
     await runSlackETL(qdrantClient, pgClient);
     await runGoogleYouTubeSubscriptionETL(qdrantClient, pgClient);
 
-    console.log("✅ ETL process completed successfully!");
+    logger.info("✅ ETL process completed successfully!");
   } catch (error) {
-    console.error("❌ ETL error:", error);
+    logger.error("❌ ETL error:", { error });
   } finally {
-    console.log("🔒 Closing Postgres connection...");
+    logger.info("🔒 Closing Postgres connection...");
     await closePostgresConnection();
-    console.log("👋 ETL process finished.");
+    logger.info("👋 ETL process finished.");
     process.exit(0);
   }
 }

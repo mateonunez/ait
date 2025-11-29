@@ -4,6 +4,9 @@ import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/e
 import type { IConnectorSlackMessageRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
 import { getPostgresClient, slackMessages, type SlackMessageDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRepository {
   private _pgClient = getPostgresClient();
@@ -42,7 +45,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save message:", { messageId, error });
+      logger.error("Failed to save message:", { messageId, error });
       throw new AItError(
         "SLACK_SAVE_MESSAGE",
         `Failed to save message ${messageId}: ${error.message}`,
@@ -58,24 +61,24 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     }
 
     try {
-      console.debug("Saving messages to Slack repository:", { count: messages.length });
+      logger.debug("Saving messages to Slack repository:", { count: messages.length });
 
       for (const message of messages) {
         await this.saveMessage(message, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving messages:", error);
+      logger.error("Error saving messages:", { error });
       throw new AItError("SLACK_SAVE_MESSAGE_BULK", "Failed to save messages to repository");
     }
   }
 
   async getMessage(id: string): Promise<SlackMessageEntity | null> {
-    console.log("Getting message from Slack repository", id);
+    logger.info("Getting message from Slack repository", { id });
     return null;
   }
 
   async fetchMessages(): Promise<SlackMessageEntity[]> {
-    console.log("Getting messages from Slack repository");
+    logger.info("Getting messages from Slack repository");
     return [];
   }
 

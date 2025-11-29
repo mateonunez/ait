@@ -1,5 +1,8 @@
+import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
+
+const logger = getLogger();
 
 export interface IHyDEService {
   generateHyDEEmbedding(query: string): Promise<number[]>;
@@ -27,7 +30,7 @@ export class HyDEService implements IHyDEService {
 
     const hydeVector = queryEmbedding.map((v, i) => (v + (hypoEmbedding[i] ?? 0)) / 2);
 
-    console.debug("HyDE embedding generated", {
+    logger.debug("HyDE embedding generated", {
       queryLength: query.length,
       hypoLength: hypotheticalAnswer.length,
       hypoPreview: hypotheticalAnswer.slice(0, 100),

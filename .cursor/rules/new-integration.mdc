@@ -941,9 +941,9 @@ export async function run{Vendor}{Entity}ETL(
   const collection = getCollectionNameByVendor("{vendor}");
   const {vendor}ETL = new Retove{Vendor}{Entity}ETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running Retove{Vendor}{Entity}ETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running Retove{Vendor}{Entity}ETL → ${collection} with limit of ${LIMIT}...`);
   await {vendor}ETL.run(LIMIT);
-  console.log(`✅ Retove{Vendor}{Entity}ETL → ${collection} completed successfully!`);
+  logger.info(`✅ Retove{Vendor}{Entity}ETL → ${collection} completed successfully!`);
 }
 ```
 

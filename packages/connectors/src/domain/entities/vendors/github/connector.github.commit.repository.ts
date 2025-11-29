@@ -1,8 +1,10 @@
-import { AItError, type GitHubCommitEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { AItError, type GitHubCommitEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { getPostgresClient, githubCommits, drizzleOrm } from "@ait/postgres";
 import { connectorGithubCommitMapper } from "../../../mappers/vendors/connector.github.commit.mapper";
 import type { IConnectorGitHubCommitRepository } from "../../../../types/domain/entities/vendors/connector.github.commit.types";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
+
+const logger = getLogger();
 
 export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRepository {
   private _pgClient = getPostgresClient();
@@ -52,7 +54,7 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save commit:", { sha: commit.sha, error });
+      logger.error("Failed to save commit:", { sha: commit.sha, error });
       throw new AItError(
         "GITHUB_SAVE_COMMIT",
         `Failed to save commit ${commit.sha}: ${error.message}`,
@@ -71,12 +73,12 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
   }
 
   async getCommit(sha: string): Promise<GitHubCommitEntity | null> {
-    console.log("Getting commit from GitHub repository", sha);
+    logger.debug("Getting commit from GitHub repository", { sha });
     return null;
   }
 
   async fetchCommits(): Promise<GitHubCommitEntity[]> {
-    console.log("Getting commits from GitHub repository");
+    logger.debug("Getting commits from GitHub repository");
     return [];
   }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLogger } from "@ait/core";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { IntegrationTabs } from "@/components/integration-tabs";
 import { Pagination } from "@/components/pagination";
@@ -12,6 +13,8 @@ import type {
   GitHubPullRequestEntity as GitHubPullRequest,
   GitHubCommitEntity as GitHubCommit,
 } from "@ait/core";
+
+const logger = getLogger();
 
 type TabId = "repositories" | "pull-requests" | "commits";
 
@@ -51,7 +54,7 @@ export default function GitHubPage() {
           setTotalCommits(response.pagination.total);
         }
       } catch (error) {
-        console.error("Failed to fetch GitHub data:", error);
+        logger.error("Failed to fetch GitHub data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +68,7 @@ export default function GitHubPage() {
       await refreshVendor("github");
       await fetchData(currentPage);
     } catch (error) {
-      console.error("Failed to refresh GitHub data:", error);
+      logger.error("Failed to refresh GitHub data:", { error });
     } finally {
       setIsRefreshing(false);
     }

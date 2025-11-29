@@ -1,4 +1,10 @@
-import { AItError, type PaginatedResponse, type PaginationParams, type GoogleCalendarCalendarEntity } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  type GoogleCalendarCalendarEntity,
+  getLogger,
+} from "@ait/core";
 import { connectorGoogleCalendarCalendarMapper } from "../../../mappers/vendors/connector.google.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarCalendarRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
@@ -8,6 +14,8 @@ import {
   type GoogleCalendarCalendarDataTarget,
   drizzleOrm,
 } from "@ait/postgres";
+
+const logger = getLogger();
 
 export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoogleCalendarCalendarRepository {
   private _pgClient = getPostgresClient();
@@ -53,7 +61,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save Google Calendar calendar:", { calendarId: calendar.id, error });
+      logger.error("Failed to save Google Calendar calendar:", { calendarId: calendar.id, error });
       throw new AItError(
         "GOOGLE_CALENDAR_SAVE_CALENDAR",
         `Failed to save calendar ${calendar.id}: ${error.message}`,
@@ -73,7 +81,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
         await this.saveCalendar(calendar, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving calendars:", error);
+      logger.error("Error saving calendars:", { error });
       throw new AItError("GOOGLE_CALENDAR_SAVE_CALENDAR_BULK", "Failed to save calendars to repository");
     }
   }

@@ -1,5 +1,11 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
-import type { EntityType, IntegrationVendor, PaginationParams, PaginatedResponse } from "@ait/core";
+import {
+  type EntityType,
+  type IntegrationVendor,
+  type PaginationParams,
+  type PaginatedResponse,
+  getLogger,
+} from "@ait/core";
 import type { CachedEntityData, CachedIntegrationData, IntegrationEntity } from "@/types/integrations.types";
 import {
   spotifyService,
@@ -10,6 +16,8 @@ import {
   slackService,
   googleService,
 } from "@/services";
+
+const logger = getLogger();
 
 interface IntegrationsContextValue {
   cache: CachedIntegrationData;
@@ -161,7 +169,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
 
         return response;
       } catch (error) {
-        console.error(`Failed to fetch ${vendor} ${entityType}:`, error);
+        logger.error(`Failed to fetch ${vendor} ${entityType}:`, { error });
         throw error;
       } finally {
         setIsLoading(false);
@@ -210,7 +218,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
         return newCache;
       });
     } catch (error) {
-      console.error(`Failed to refresh ${vendor}:`, error);
+      logger.error(`Failed to refresh ${vendor}:`, { error });
       throw error;
     } finally {
       setIsLoading(false);

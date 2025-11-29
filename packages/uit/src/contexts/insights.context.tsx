@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { InsightsData, GoalData, CreateGoalRequest, UpdateGoalRequest } from "@ait/ai-sdk";
+import { getLogger } from "@ait/core";
 import {
   fetchInsights,
   fetchGoals,
@@ -7,6 +8,8 @@ import {
   updateGoal as apiUpdateGoal,
   deleteGoal as apiDeleteGoal,
 } from "@/utils/insights-api.utils";
+
+const logger = getLogger();
 
 interface InsightsContextType {
   insights: InsightsData | null;
@@ -46,13 +49,13 @@ export function InsightsProvider({ children, initialTimeRange = "week" }: Insigh
     setError(null);
 
     try {
-      console.log(`[Insights] Fetching insights for ${timeRange}...`);
+      logger.info(`[Insights] Fetching insights for ${timeRange}...`);
       const data = await fetchInsights(timeRange);
       setInsights(data);
-      console.log("[Insights] Successfully fetched insights");
+      logger.info("[Insights] Successfully fetched insights");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch insights";
-      console.error("[Insights] Error:", errorMessage);
+      logger.error("[Insights] Error:", { error: errorMessage });
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -66,13 +69,13 @@ export function InsightsProvider({ children, initialTimeRange = "week" }: Insigh
     setIsLoadingGoals(true);
 
     try {
-      console.log("[Insights] Fetching goals...");
+      logger.info("[Insights] Fetching goals...");
       const data = await fetchGoals();
       setGoals(data);
-      console.log(`[Insights] Successfully fetched ${data.length} goals`);
+      logger.info(`[Insights] Successfully fetched ${data.length} goals`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch goals";
-      console.error("[Insights] Error fetching goals:", errorMessage);
+      logger.error("[Insights] Error fetching goals:", { error: errorMessage });
       // Don't set error state for goals, just log it
     } finally {
       setIsLoadingGoals(false);
@@ -84,13 +87,13 @@ export function InsightsProvider({ children, initialTimeRange = "week" }: Insigh
    */
   const createGoal = useCallback(async (goal: CreateGoalRequest) => {
     try {
-      console.log("[Insights] Creating goal:", goal);
+      logger.info("[Insights] Creating goal:", goal);
       const newGoal = await apiCreateGoal(goal);
       setGoals((prev) => [...prev, newGoal]);
-      console.log("[Insights] Goal created successfully");
+      logger.info("[Insights] Goal created successfully");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to create goal";
-      console.error("[Insights] Error creating goal:", errorMessage);
+      logger.error("[Insights] Error creating goal:", { error: errorMessage });
       throw err;
     }
   }, []);
@@ -100,13 +103,13 @@ export function InsightsProvider({ children, initialTimeRange = "week" }: Insigh
    */
   const updateGoal = useCallback(async (id: string, updates: UpdateGoalRequest) => {
     try {
-      console.log("[Insights] Updating goal:", id, updates);
+      logger.info("[Insights] Updating goal:", { id, updates });
       const updatedGoal = await apiUpdateGoal(id, updates);
       setGoals((prev) => prev.map((g) => (g.id === id ? updatedGoal : g)));
-      console.log("[Insights] Goal updated successfully");
+      logger.info("[Insights] Goal updated successfully");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update goal";
-      console.error("[Insights] Error updating goal:", errorMessage);
+      logger.error("[Insights] Error updating goal:", { error: errorMessage });
       throw err;
     }
   }, []);
@@ -116,13 +119,13 @@ export function InsightsProvider({ children, initialTimeRange = "week" }: Insigh
    */
   const deleteGoal = useCallback(async (id: string) => {
     try {
-      console.log("[Insights] Deleting goal:", id);
+      logger.info("[Insights] Deleting goal:", { id });
       await apiDeleteGoal(id);
       setGoals((prev) => prev.filter((g) => g.id !== id));
-      console.log("[Insights] Goal deleted successfully");
+      logger.info("[Insights] Goal deleted successfully");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to delete goal";
-      console.error("[Insights] Error deleting goal:", errorMessage);
+      logger.error("[Insights] Error deleting goal:", { error: errorMessage });
       throw err;
     }
   }, []);

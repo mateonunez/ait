@@ -4,6 +4,9 @@ import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/e
 import type { IConnectorSpotifyPlaylistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyPlaylists, type SpotifyPlaylistDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlaylistRepository {
   private _pgClient = getPostgresClient();
@@ -45,7 +48,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save playlist:", { playlistId: playlist.id, error });
+      logger.error("Failed to save playlist:", { playlistId: playlist.id, error });
       throw new AItError(
         "SPOTIFY_SAVE_PLAYLIST",
         `Failed to save playlist ${playlist.id}: ${error.message}`,
@@ -61,24 +64,24 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     }
 
     try {
-      console.debug("Saving playlists to Spotify repository:", { playlists });
+      logger.debug("Saving playlists to Spotify repository:", { playlists });
 
       for (const playlist of playlists) {
         await this.savePlaylist(playlist, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving playlists:", error);
+      logger.error("Error saving playlists:", { error });
       throw new AItError("SPOTIFY_SAVE_PLAYLIST_BULK", "Failed to save playlists to repository");
     }
   }
 
   async getPlaylist(id: string): Promise<SpotifyPlaylistEntity | null> {
-    console.log("Getting playlist from Spotify repository", id);
+    logger.info("Getting playlist from Spotify repository", { id });
     return null;
   }
 
   async fetchPlaylists(): Promise<SpotifyPlaylistEntity[]> {
-    console.log("Getting playlists from Spotify repository");
+    logger.info("Getting playlists from Spotify repository");
     return [];
   }
 

@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import type { MultiQueryConfig, QueryPlanResult, QueryResult } from "../../types/rag";
 import type { Document, BaseMetadata } from "../../types/documents";
 import type { QdrantProvider } from "../rag/qdrant.provider";
@@ -13,6 +14,8 @@ import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
 import type { CollectionWeight } from "../../types/collections";
 import type { IQueryHeuristicService } from "../routing/query-heuristic.service";
 import type { IQueryIntentService } from "../routing/query-intent.service";
+
+const logger = getLogger();
 
 export interface IMultiQueryRetrievalService {
   retrieve<TMetadata extends BaseMetadata = BaseMetadata>(
@@ -82,7 +85,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       intent: queryPlan.intent,
     });
 
-    console.debug("Multi-query retrieval initiated", {
+    logger.debug("Multi-query retrieval initiated", {
       queryCount: queryPlan.queries.length,
       tags: queryPlan.tags,
       typeFilter: typeFilterResult?.types,
@@ -114,7 +117,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     let uniqueCount = uniqueFromParallel.size;
 
     if (uniqueCount === 0 && typeFilterResult?.timeRange) {
-      console.warn("No results with time filter, retrying without time constraints...");
+      logger.warn("No results with time filter, retrying without time constraints...");
       const typeFilterWithoutTime = typeFilterResult.types ? { types: typeFilterResult.types } : undefined;
 
       parallelResults = await this._executeQueriesInParallel<TMetadata>(
@@ -147,24 +150,24 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
           results: hydeDocs.map((doc) => [doc as Document<TMetadata>, 1.0]),
         };
         allResults.push(hydeResults);
-        console.debug("HyDE embedding generated", {
+        logger.debug("HyDE embedding generated", {
           queryLength: userQuery.length,
           hypoLength: hydeDocs.reduce((acc, d) => acc + (d.pageContent?.length || 0), 0),
         });
       } catch (error) {
-        console.warn("HyDE generation failed, continuing without it", {
+        logger.warn("HyDE generation failed, continuing without it", {
           error: error instanceof Error ? error.message : String(error),
         });
       }
     } else {
-      console.debug("Skipping HyDE due to sufficient recall", {
+      logger.debug("Skipping HyDE due to sufficient recall", {
         uniqueCount,
         threshold: Math.floor(this._maxDocs * 0.6),
       });
     }
 
     if (allResults.length === 0) {
-      console.warn("No results retrieved");
+      logger.warn("No results retrieved");
       return [];
     }
 
@@ -174,11 +177,11 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     );
 
     if (ranked.length === 0) {
-      console.warn("No unique documents after fusion");
+      logger.warn("No unique documents after fusion");
       return [];
     }
 
-    console.debug("RRF completed", {
+    logger.debug("RRF completed", {
       totalHits: ranked.length,
       topScores: ranked.slice(0, 3).map((r: { finalScore: number }) => r.finalScore.toFixed(3)),
     });
@@ -201,7 +204,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       try {
         finalResults = await this._reranker.rerank(userQuery, baseResults, this._maxDocs);
       } catch (error) {
-        console.warn("Reranker unavailable, applying MMR fallback", {
+        logger.warn("Reranker unavailable, applying MMR fallback", {
           error: error instanceof Error ? error.message : String(error),
         });
         finalResults = this._diversity.applyMMR(baseResults, this._maxDocs);
@@ -210,7 +213,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       finalResults = this._diversity.applyMMR(finalResults, this._maxDocs);
     }
 
-    console.debug("Final results", {
+    logger.debug("Final results", {
       finalResults: finalResults.length,
       finalResultsPreview: finalResults.slice(0, 3).map((r: Document<TMetadata>) => r.pageContent.slice(0, 200)),
     });
@@ -291,7 +294,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
             break;
           }
         } catch (e) {
-          console.debug("Query variant failed", {
+          logger.debug("Query variant failed", {
             query: task.query,
             error: e instanceof Error ? e.message : String(e),
           });
@@ -319,7 +322,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     // Step 1: Plan queries (or skip generation if optimized)
     let queryPlan: QueryPlanResult;
     if (this._intentService && this._heuristicService) {
-      console.debug("Using optimized query planning (skipping generation)");
+      logger.debug("Using optimized query planning (skipping generation)");
       const intent = await this._intentService.analyzeIntent(userQuery);
       const tags = this._heuristicService.inferTags(userQuery);
 
@@ -341,7 +344,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       intent: queryPlan.intent,
     });
 
-    console.debug("Query plan generated for multi-collection search", {
+    logger.debug("Query plan generated for multi-collection search", {
       queryCount: queryPlan.queries.length,
       tags: queryPlan.tags,
       typeFilter: typeFilterResult?.types,
@@ -366,7 +369,7 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     }));
 
     if (collectionResults.length === 0 || collectionResults.every((r) => r.documents.length === 0)) {
-      console.warn("No results retrieved from any collection");
+      logger.warn("No results retrieved from any collection");
       return [];
     }
 

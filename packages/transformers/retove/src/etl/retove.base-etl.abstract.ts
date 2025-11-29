@@ -12,7 +12,10 @@ import {
   type SparseVector,
 } from "@ait/ai-sdk";
 import { SyncStateService, type ISyncStateService } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import { createHash } from "node:crypto";
+
+const logger = getLogger();
 
 export interface BaseVectorPoint {
   id: string;
@@ -74,38 +77,38 @@ export abstract class RetoveBaseETLAbstract {
 
   public async run(limit: number): Promise<void> {
     try {
-      console.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
+      logger.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
 
       // Get validated timestamp - checks actual vectors in collection vs sync state
       const lastProcessedTimestamp = await this._getValidatedLastTimestamp();
 
       if (lastProcessedTimestamp) {
-        console.info(`Processing records updated after: ${lastProcessedTimestamp.toISOString()}`);
+        logger.info(`Processing records updated after: ${lastProcessedTimestamp.toISOString()}`);
       } else {
-        console.info("No previous ETL run found, processing all records");
+        logger.info("No previous ETL run found, processing all records");
       }
 
       const data = await this.extract(limit, lastProcessedTimestamp);
-      console.info(`Extracted ${data.length} records from source`);
+      logger.info(`Extracted ${data.length} records from source`);
 
       if (data.length === 0) {
-        console.info("No records to process");
+        logger.info("No records to process");
         return;
       }
 
       const transformedData = await this.transform(data);
-      console.info(`Transformed ${transformedData.length} vector points`);
+      logger.info(`Transformed ${transformedData.length} vector points`);
 
       if (data.length > 0) {
         const latestTimestamp = this.getLatestTimestamp(data);
         await this._syncStateService.updateETLTimestamp(this._collectionName, "etl", latestTimestamp);
-        console.info(`Updated last processed timestamp to: ${latestTimestamp.toISOString()}`);
+        logger.info(`Updated last processed timestamp to: ${latestTimestamp.toISOString()}`);
       }
 
-      console.info(`✅ ETL process completed successfully for collection: ${this._collectionName}`);
+      logger.info(`✅ ETL process completed successfully for collection: ${this._collectionName}`);
     } catch (error) {
-      console.error(`ETL process failed for collection: ${this._collectionName}`, error);
+      logger.error(`ETL process failed for collection: ${this._collectionName}`, { error });
       throw error;
     }
   }
@@ -129,7 +132,7 @@ export abstract class RetoveBaseETLAbstract {
     // If collection has no vectors for this entity type, reset sync state
     if (collectionInfo.count === 0) {
       if (syncTimestamp) {
-        console.warn(
+        logger.warn(
           `Sync state exists (${syncTimestamp.toISOString()}) but collection has no vectors for type '${entityType}'. Resetting to process all records.`,
         );
         await this._syncStateService.clearState(this._collectionName, "etl");
@@ -144,7 +147,7 @@ export abstract class RetoveBaseETLAbstract {
       // If sync state is significantly newer than actual vectors, something is wrong
       // Use the actual latest timestamp from vectors instead
       if (syncTimestamp > actualLatest) {
-        console.warn(
+        logger.warn(
           `Sync state (${syncTimestamp.toISOString()}) is newer than latest vector (${actualLatest.toISOString()}). Using actual vector timestamp.`,
         );
         return actualLatest;
@@ -208,7 +211,7 @@ export abstract class RetoveBaseETLAbstract {
         latestTimestamp: latestTimestamp as string | null,
       };
     } catch (error) {
-      console.warn(`Failed to get collection vector count: ${error}`);
+      logger.warn(`Failed to get collection vector count: ${error}`, { error });
       return { count: 0, latestTimestamp: null };
     }
   }
@@ -227,11 +230,11 @@ export abstract class RetoveBaseETLAbstract {
     const response = await this.retry(() => this._qdrantClient.getCollections());
     const collectionExists = response.collections.some((collection) => collection.name === this._collectionName);
     if (collectionExists) {
-      console.debug(`Collection ${this._collectionName} already exists`);
+      logger.debug(`Collection ${this._collectionName} already exists`);
       return;
     }
 
-    console.info(`Creating collection: ${this._collectionName}`);
+    logger.info(`Creating collection: ${this._collectionName}`);
     await this.retry(() =>
       this._qdrantClient.createCollection(this._collectionName, {
         vectors: {
@@ -302,10 +305,10 @@ export abstract class RetoveBaseETLAbstract {
             field_schema: index.field_schema,
           }),
         );
-        console.debug(`Created index: ${index.field_name} (${index.field_schema})`);
+        logger.debug(`Created index: ${index.field_name} (${index.field_schema})`);
       } catch (error) {
         // Index may already exist
-        console.debug(`Index ${index.field_name} may already exist: ${error}`);
+        logger.debug(`Index ${index.field_name} may already exist: ${error}`, { error });
       }
     }
   }
@@ -335,7 +338,7 @@ export abstract class RetoveBaseETLAbstract {
           try {
             return await this._transformSingleEntity(item as Record<string, unknown>, i + index);
           } catch (error) {
-            console.error(`Error processing item ${i + index}:`, error);
+            logger.error(`Error processing item ${i + index}:`, { error });
             return null;
           }
         }),
@@ -349,7 +352,7 @@ export abstract class RetoveBaseETLAbstract {
       if (allPoints.length >= this._batchSize) {
         const batchToLoad = allPoints.splice(0, this._batchSize);
         await this.load(batchToLoad);
-        console.debug(`Loaded batch of ${batchToLoad.length} points, ${data.length - i - concurrency} remaining`);
+        logger.debug(`Loaded batch of ${batchToLoad.length} points, ${data.length - i - concurrency} remaining`);
       }
 
       // Yield to event loop
@@ -359,7 +362,7 @@ export abstract class RetoveBaseETLAbstract {
     // Load remaining points
     if (allPoints.length > 0) {
       await this.load(allPoints);
-      console.debug(`Loaded final batch of ${allPoints.length} points`);
+      logger.debug(`Loaded final batch of ${allPoints.length} points`);
     }
 
     return allPoints;
@@ -476,7 +479,7 @@ export abstract class RetoveBaseETLAbstract {
     searchLimit: number,
     filter?: Record<string, unknown>,
   ): Promise<BaseVectorPoint[]> {
-    console.info(`Searching in collection ${this._collectionName} with limit ${searchLimit}`);
+    logger.info(`Searching in collection ${this._collectionName} with limit ${searchLimit}`);
 
     const searchParams = {
       vector: queryVector,
@@ -508,7 +511,7 @@ export abstract class RetoveBaseETLAbstract {
     searchLimit: number,
     filter?: Record<string, unknown>,
   ): Promise<BaseVectorPoint[]> {
-    console.info(`Generating embedding for the query text: ${queryText.substring(0, 50)}...`);
+    logger.info(`Generating embedding for the query text: ${queryText.substring(0, 50)}...`);
     let queryVector = this.getCachedQuery(queryText);
     if (!queryVector) {
       queryVector = await this._embeddingsService.generateEmbeddings(queryText, {
@@ -538,7 +541,7 @@ export abstract class RetoveBaseETLAbstract {
         throw error;
       }
       const delay = Math.min(this.retryOptions.initialDelay * 2 ** attempt, this.retryOptions.maxDelay);
-      console.info(`Retry ${attempt + 1}/${this.retryOptions.maxRetries} after ${delay}ms`);
+      logger.info(`Retry ${attempt + 1}/${this.retryOptions.maxRetries} after ${delay}ms`);
       await new Promise((resolve) => setTimeout(resolve, delay));
       return this.retry(operation, attempt + 1);
     }

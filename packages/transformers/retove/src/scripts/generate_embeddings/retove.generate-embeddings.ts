@@ -1,6 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 /**
  * This generates an embedding for the given text using a Python script.
@@ -25,7 +28,7 @@ export function generateEmbeddingWithPython(text: string): number[] {
   try {
     embedding = JSON.parse(result);
   } catch (error: any) {
-    console.debug(result);
+    logger.debug(result);
     throw new Error(`Failed to parse JSON: ${error.message}`);
   }
 

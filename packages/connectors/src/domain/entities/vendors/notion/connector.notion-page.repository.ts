@@ -4,6 +4,9 @@ import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/e
 import type { IConnectorNotionPageRepository } from "../../../../types/domain/entities/vendors/connector.notion.types";
 import { getPostgresClient, notionPages, type NotionPageDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorNotionPageRepository implements IConnectorNotionPageRepository {
   private _pgClient = getPostgresClient();
@@ -44,7 +47,7 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save page:", { pageId, error });
+      logger.error("Failed to save page:", { pageId, error });
       throw new AItError("NOTION_SAVE_PAGE", `Failed to save page ${pageId}: ${error.message}`, { id: pageId }, error);
     }
   }
@@ -55,24 +58,24 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
     }
 
     try {
-      console.debug("Saving pages to Notion repository:", { pages });
+      logger.debug("Saving pages to Notion repository:", { pages });
 
       for (const page of pages) {
         await this.savePage(page, { incremental: true });
       }
     } catch (error) {
-      console.error("Error saving pages:", error);
+      logger.error("Error saving pages:", { error });
       throw new AItError("NOTION_SAVE_PAGE_BULK", "Failed to save pages to repository");
     }
   }
 
   async getPage(id: string): Promise<NotionPageEntity | null> {
-    console.log("Getting page from Notion repository", id);
+    logger.info("Getting page from Notion repository", { id });
     return null;
   }
 
   async fetchPages(): Promise<NotionPageEntity[]> {
-    console.log("Getting pages from Notion repository");
+    logger.info("Getting pages from Notion repository");
     return [];
   }
 

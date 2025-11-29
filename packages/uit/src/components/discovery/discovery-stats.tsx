@@ -16,6 +16,7 @@ import {
   Zap,
   Youtube,
 } from "lucide-react";
+import { getLogger } from "@ait/core";
 import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -28,6 +29,8 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/styles/utils";
 import { InsightsProvider, useInsights } from "@/contexts/insights.context";
 import { AiInsightsPanel } from "./ai-insights-panel";
+
+const logger = getLogger();
 
 interface DailyActivity {
   date: string;
@@ -194,7 +197,7 @@ function DiscoveryStatsContent() {
         const data = await fetchDiscoveryStats(timeRange);
         setStats(data);
       } catch (error) {
-        console.error("Failed to load discovery stats:", error);
+        logger.error("Failed to load discovery stats:", { error });
       } finally {
         setIsLoading(false);
       }
