@@ -1,9 +1,11 @@
-import { AItError, type LinearIssueEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { AItError, getLogger, type LinearIssueEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
 import { getPostgresClient, linearIssues, type LinearIssueDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+
+const logger = getLogger();
 
 export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepository {
   private _pgClient = getPostgresClient();
@@ -43,7 +45,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save issue:", { issueId, error });
+      logger.error("Failed to save issue:", { issueId, error });
       throw new AItError(
         "LINEAR_SAVE_ISSUE",
         `Failed to save issue ${issueId}: ${error.message}`,
@@ -59,24 +61,24 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     }
 
     try {
-      console.debug("Saving issues to Linear repository:", { issues });
+      logger.debug("Saving issues to Linear repository:", { issues });
 
       for (const issue of issues) {
         await this.saveIssue(issue, { incremental: true });
       }
     } catch (error) {
-      console.error("Error saving issues:", error);
+      logger.error("Error saving issues:", { error });
       throw new AItError("LINEAR_SAVE_ISSUE_BULK", "Failed to save issues to repository");
     }
   }
 
   async getIssue(id: string): Promise<LinearIssueEntity | null> {
-    console.log("Getting issue from Linear repository", id);
+    logger.info("Getting issue from Linear repository", { id });
     return null;
   }
 
   async fetchIssues(): Promise<LinearIssueEntity[]> {
-    console.log("Getting issues from Linear repository");
+    logger.info("Getting issues from Linear repository");
     return [];
   }
 

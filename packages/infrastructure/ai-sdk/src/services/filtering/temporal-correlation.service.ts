@@ -1,5 +1,8 @@
+import { getLogger } from "@ait/core";
 import type { Document, BaseMetadata } from "../../types/documents";
 import { TemporalDateParser, type ITemporalDateParser } from "./temporal-date-parser.service";
+
+const logger = getLogger();
 
 export interface TemporalEntity {
   type: string;
@@ -38,7 +41,7 @@ export class TemporalCorrelationService implements ITemporalCorrelationService {
     const entitiesWithTimestamps = this._extractTimestamps(documents);
 
     if (entitiesWithTimestamps.length === 0) {
-      console.warn("No documents with valid timestamps found for temporal correlation");
+      logger.warn("No documents with valid timestamps found for temporal correlation");
       return [];
     }
 

@@ -1,8 +1,10 @@
-import { AItError } from "@ait/core";
+import { AItError, getLogger } from "@ait/core";
 import { z } from "zod";
 import { getAItClient } from "../../client/ai-sdk.client";
 import type { Document, BaseMetadata } from "../../types/documents";
 import { buildRerankPrompt } from "../prompts/ranking.prompts";
+
+const logger = getLogger();
 
 export interface IRerankService {
   rerank<TMetadata extends BaseMetadata>(
@@ -38,7 +40,7 @@ export class RerankService implements IRerankService {
     // If documents exceed max, only rerank the top candidates based on existing scores
     let docsToRerank = documents;
     if (documents.length > this._maxDocsForLLM) {
-      console.warn("Document count exceeds LLM reranking limit, pre-filtering to top candidates", {
+      logger.warn("Document count exceeds LLM reranking limit, pre-filtering to top candidates", {
         totalDocs: documents.length,
         maxDocs: this._maxDocsForLLM,
       });
@@ -103,7 +105,7 @@ export class RerankService implements IRerankService {
         return doc;
       });
 
-      console.debug("Reranking completed", {
+      logger.debug("Reranking completed", {
         inputDocs: documents.length,
         rerankedDocs: docsToRerank.length,
         outputDocs: result.length,
@@ -112,7 +114,7 @@ export class RerankService implements IRerankService {
 
       return result;
     } catch (error) {
-      console.warn("Reranking failed, propagating fallback", {
+      logger.warn("Reranking failed, propagating fallback", {
         error: error instanceof Error ? error.message : String(error),
         docCount: documents.length,
       });

@@ -8,6 +8,9 @@ import {
   type IFastQueryAnalyzerService,
 } from "../../services/routing/fast-query-analyzer.service";
 import { getQueryRewriter, type QueryRewriterService } from "../../services/generation/query-rewriter.service";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, QueryAnalysisOutput> {
   readonly name = "query-analysis";
@@ -63,7 +66,7 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
     };
 
     if (shouldUseFastPath) {
-      console.info("Fast path selected for simple query", {
+      logger.info("Fast path selected for simple query", {
         complexity: analysis.complexity,
         entityTypes: analysis.entityTypes,
         isTemporalQuery: analysis.isTemporalQuery,

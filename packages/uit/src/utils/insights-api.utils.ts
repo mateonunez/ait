@@ -1,6 +1,8 @@
 import type { InsightsData, GoalData, CreateGoalRequest, UpdateGoalRequest } from "@ait/ai-sdk";
-
+import { getLogger } from "@ait/core";
 import { apiGet, apiPost, apiPatch, apiDelete } from "./http-client";
+
+const logger = getLogger();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
 
@@ -10,7 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:300
 export async function fetchInsights(range: "week" | "month" | "year" = "week"): Promise<InsightsData> {
   const res = await apiGet<InsightsData>(`${API_BASE_URL}/insights/summary?range=${range}`);
   if (!res.ok) {
-    console.error("[Insights API] Failed to fetch insights:", res.error);
+    logger.error("[Insights API] Failed to fetch insights:", { error: res.error });
     throw new Error(res.error || "Failed to fetch insights");
   }
   return res.data as InsightsData;
@@ -26,7 +28,7 @@ export async function fetchCorrelations(
     `${API_BASE_URL}/insights/correlations?range=${range}`,
   );
   if (!res.ok) {
-    console.error("[Insights API] Failed to fetch correlations:", res.error);
+    logger.error("[Insights API] Failed to fetch correlations:", { error: res.error });
     throw new Error(res.error || "Failed to fetch correlations");
   }
   return res.data?.correlations || [];
@@ -40,7 +42,7 @@ export async function fetchAnomalies(range: "week" | "month" | "year" = "week"):
     `${API_BASE_URL}/insights/anomalies?range=${range}`,
   );
   if (!res.ok) {
-    console.error("[Insights API] Failed to fetch anomalies:", res.error);
+    logger.error("[Insights API] Failed to fetch anomalies:", { error: res.error });
     throw new Error(res.error || "Failed to fetch anomalies");
   }
   return res.data?.anomalies || [];
@@ -56,7 +58,7 @@ export async function fetchRecommendations(
     `${API_BASE_URL}/insights/recommendations?range=${range}`,
   );
   if (!res.ok) {
-    console.error("[Insights API] Failed to fetch recommendations:", res.error);
+    logger.error("[Insights API] Failed to fetch recommendations:", { error: res.error });
     throw new Error(res.error || "Failed to fetch recommendations");
   }
   return res.data?.recommendations || [];
@@ -68,7 +70,7 @@ export async function fetchRecommendations(
 export async function fetchGoals(): Promise<GoalData[]> {
   const res = await apiGet<GoalData[]>(`${API_BASE_URL}/insights/goals`);
   if (!res.ok) {
-    console.error("[Insights API] Failed to fetch goals:", res.error);
+    logger.error("[Insights API] Failed to fetch goals:", { error: res.error });
     throw new Error(res.error || "Failed to fetch goals");
   }
   return res.data as GoalData[];
@@ -80,7 +82,7 @@ export async function fetchGoals(): Promise<GoalData[]> {
 export async function createGoal(goal: CreateGoalRequest): Promise<GoalData> {
   const res = await apiPost<GoalData>(`${API_BASE_URL}/insights/goals`, goal);
   if (!res.ok) {
-    console.error("[Insights API] Failed to create goal:", res.error);
+    logger.error("[Insights API] Failed to create goal:", { error: res.error });
     throw new Error(res.error || "Failed to create goal");
   }
   return res.data as GoalData;
@@ -92,7 +94,7 @@ export async function createGoal(goal: CreateGoalRequest): Promise<GoalData> {
 export async function updateGoal(id: string, updates: UpdateGoalRequest): Promise<GoalData> {
   const res = await apiPatch<GoalData>(`${API_BASE_URL}/insights/goals/${id}`, updates);
   if (!res.ok) {
-    console.error("[Insights API] Failed to update goal:", res.error);
+    logger.error("[Insights API] Failed to update goal:", { error: res.error });
     throw new Error(res.error || "Failed to update goal");
   }
   return res.data as GoalData;
@@ -104,7 +106,7 @@ export async function updateGoal(id: string, updates: UpdateGoalRequest): Promis
 export async function deleteGoal(id: string): Promise<void> {
   const res = await apiDelete(`${API_BASE_URL}/insights/goals/${id}`);
   if (!res.ok) {
-    console.error("[Insights API] Failed to delete goal:", res.error);
+    logger.error("[Insights API] Failed to delete goal:", { error: res.error });
     throw new Error(res.error || "Failed to delete goal");
   }
 }

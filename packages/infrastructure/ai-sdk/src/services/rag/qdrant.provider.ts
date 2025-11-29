@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import { getQdrantClient, type qdrant } from "@ait/qdrant";
 import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
@@ -6,6 +7,8 @@ import { extractContentFromPayload, extractMetadataFromPayload } from "../../typ
 import { EmbeddingsService } from "../embeddings/embeddings.service";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+
+const logger = getLogger();
 
 export interface QdrantProviderConfig {
   url?: string;
@@ -205,7 +208,7 @@ export class QdrantProvider {
 
     // Log the exact Qdrant filter for debugging
     if (qdrantFilter) {
-      console.debug("Qdrant filter being applied", {
+      logger.debug("Qdrant filter being applied", {
         collection: this._config.collectionName,
         filter: JSON.stringify(qdrantFilter, null, 2),
       });
@@ -219,7 +222,7 @@ export class QdrantProvider {
       filter: qdrantFilter,
     });
 
-    console.debug("Qdrant search result", {
+    logger.debug("Qdrant search result", {
       query: `${query.slice(0, 50)}...`,
       scoreThreshold: effectiveThreshold,
       filter: filter,

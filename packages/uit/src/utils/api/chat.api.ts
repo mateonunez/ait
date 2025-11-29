@@ -2,6 +2,9 @@ import { requestStream } from "@ait/core";
 import type { AggregatedMetadata } from "@ait/core";
 import { STREAM_EVENT, METADATA_TYPE } from "@ait/core";
 import { parseGatewayStream } from "../stream-parser.utils";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
 
@@ -131,7 +134,7 @@ export async function sendMessage(options: SendMessageOptions): Promise<void> {
 
   if (!result.ok) {
     const errorMessage = `${result.error.code}: ${result.error.message}`;
-    console.error("[ChatAPI] Error:", errorMessage);
+    logger.error("[ChatAPI] Error:", { error: errorMessage });
     onError?.(errorMessage);
     return;
   }
@@ -141,7 +144,7 @@ export async function sendMessage(options: SendMessageOptions): Promise<void> {
     await processStreamEvents(result.value, aggregatedMetadata, { onText, onMetadata, onComplete, onError });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    console.error("[ChatAPI] Error processing stream:", errorMessage);
+    logger.error("[ChatAPI] Error processing stream:", { error: errorMessage });
     onError?.(errorMessage);
   }
 }

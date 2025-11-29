@@ -1,8 +1,11 @@
+import { getLogger } from "@ait/core";
 import { z } from "zod";
 import type { EntityType } from "@ait/core";
 import { VALID_ENTITY_TYPES } from "@ait/core";
 import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import { buildQueryIntentPrompt } from "../prompts/query-intent.prompt";
+
+const logger = getLogger();
 
 const QueryIntentSchema = z.object({
   entityTypes: z.array(z.string()).describe("Entity types relevant to this query"),
@@ -50,7 +53,7 @@ export class QueryIntentService implements IQueryIntentService {
         topicShift: intent.topicShift,
       };
 
-      console.info("Query intent analyzed", {
+      logger.info("Query intent analyzed", {
         entityTypes: result.entityTypes,
         isTemporalQuery: result.isTemporalQuery,
         primaryFocus: result.primaryFocus.slice(0, 100),

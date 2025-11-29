@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import {
   createTraceContext,
@@ -17,6 +18,8 @@ import type { StreamEvent } from "../../types";
 import { MetadataEmitterService, type RAGContextMetadata } from "../streaming/metadata-emitter.service";
 import { PromptOrchestrationService } from "../orchestration/prompt-orchestration.service";
 import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
+
+const logger = getLogger();
 
 export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
@@ -264,7 +267,7 @@ export class TextGenerationService implements ITextGenerationService {
         }
       } catch (error) {
         // Log error but don't fail the request if metadata extraction fails
-        console.warn("Failed to extract metadata:", error);
+        logger.warn("Failed to extract metadata:", { error });
       }
 
       const duration = Date.now() - overallStart;

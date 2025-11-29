@@ -11,7 +11,10 @@ import {
   DropdownMenuLabel,
 } from "../ui/dropdown-menu";
 import type { ModelMetadata } from "@ait/core";
+import { getLogger } from "@ait/core";
 import { listModels } from "@/utils/api";
+
+const logger = getLogger();
 
 interface ModelSelectorProps {
   selectedModelId?: string;
@@ -34,7 +37,7 @@ export function ModelSelector({ selectedModelId, onModelSelect, className }: Mod
       const modelList = await listModels();
       setModels(modelList);
     } catch (error) {
-      console.error("[ModelSelector] Failed to load models:", error);
+      logger.error("[ModelSelector] Failed to load models:", { error });
     } finally {
       setLoading(false);
     }

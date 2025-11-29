@@ -1,7 +1,9 @@
+import { getLogger } from "@ait/core";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+const logger = getLogger();
 export enum Models {
   GENERATION = "generation",
   EMBEDDING = "embedding",
@@ -112,7 +114,7 @@ export function getGenerationModel(): ModelSpec {
   const modelSpec = GENERATION_MODELS[modelName];
 
   if (!modelSpec) {
-    console.warn(
+    logger.warn(
       `Unknown generation model '${modelName}'. Available models: ${Object.keys(GENERATION_MODELS).join(", ")}`,
     );
 
@@ -154,7 +156,7 @@ export function getEmbeddingModel(): ModelSpec {
   const modelSpec = EMBEDDING_MODELS[modelName];
 
   if (!modelSpec) {
-    console.warn(
+    logger.warn(
       `Unknown embedding model '${modelName}'. Available models: ${Object.keys(EMBEDDING_MODELS).join(", ")}`,
     );
 

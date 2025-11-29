@@ -7,12 +7,15 @@ import { EventCard } from "@/components/connectors/event-card";
 import { CalendarCard } from "@/components/connectors/calendar-card";
 import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
-import type {
-  GoogleCalendarEventEntity,
-  GoogleCalendarCalendarEntity,
-  GoogleYouTubeSubscriptionEntity,
+import {
+  type GoogleCalendarEventEntity,
+  type GoogleCalendarCalendarEntity,
+  type GoogleYouTubeSubscriptionEntity,
+  getLogger,
 } from "@ait/core";
 import { Calendar, Youtube } from "lucide-react";
+
+const logger = getLogger();
 
 const TABS = [
   { id: "events", label: "Events" },
@@ -50,7 +53,7 @@ export default function GooglePage() {
           setTotalPages(response.pagination.totalPages);
         }
       } catch (error) {
-        console.error("Failed to fetch Google data:", error);
+        logger.error("Failed to fetch Google data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -64,7 +67,7 @@ export default function GooglePage() {
       await refreshVendor("google");
       await fetchData(activeTab, currentPage);
     } catch (error) {
-      console.error("Failed to refresh Google data:", error);
+      logger.error("Failed to refresh Google data:", { error });
     } finally {
       setIsRefreshing(false);
     }

@@ -1,9 +1,17 @@
-import { AItError, type GitHubRepositoryEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import {
+  AItError,
+  getLogger,
+  type GitHubRepositoryEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+} from "@ait/core";
 import { getPostgresClient, githubRepositories, drizzleOrm } from "@ait/postgres";
 import { connectorGithubRepositoryMapper } from "../../../mappers/vendors/connector.github.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import { randomUUID } from "node:crypto";
 import type { IConnectorGitHubRepoRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
+
+const logger = getLogger();
 
 export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoRepository {
   private _pgClient = getPostgresClient();
@@ -63,7 +71,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save repository:", { repoId: repositoryId, error });
+      logger.error("Failed to save repository:", { repoId: repositoryId, error });
       throw new AItError(
         "GITHUB_SAVE_REPOSITORY",
         `Failed to save repository ${repositoryId}: ${error.message}`,
@@ -82,12 +90,12 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
   }
 
   async getRepository(id: string): Promise<GitHubRepositoryEntity | null> {
-    console.log("Getting repository from GitHub repository", id);
+    logger.info("Getting repository from GitHub repository", { id });
     return null;
   }
 
   async fetchRepositories(): Promise<GitHubRepositoryEntity[]> {
-    console.log("Getting repositories from GitHub repository");
+    logger.info("Getting repositories from GitHub repository");
     return [];
   }
 

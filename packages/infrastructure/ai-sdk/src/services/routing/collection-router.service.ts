@@ -10,6 +10,9 @@ import { recordSpan, recordGeneration, createSpanWithTiming } from "../../teleme
 import type { TraceContext } from "../../types/telemetry";
 import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
 import { buildCollectionRouterPrompt, buildFallbackRoutingReason } from "../prompts/routing.prompts";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export interface ICollectionRouterService {
   routeCollections(
@@ -118,7 +121,7 @@ export class CollectionRouterService implements ICollectionRouterService {
         const allCollections = getAllCollections();
         const existingCollections = allCollections.filter((c) => existingVendors.has(c.vendor));
 
-        console.info("Broad query detected (heuristic), selecting all existing collections", {
+        logger.info("Broad query detected (heuristic), selecting all existing collections", {
           query: userQuery.slice(0, 100),
           collections: Array.from(existingVendors),
         });
@@ -157,7 +160,7 @@ export class CollectionRouterService implements ICollectionRouterService {
 
     // If heuristics are confident enough OR LLM routing is disabled, use heuristic result
     if (!this._enableLLMRouting || heuristicResult.confidence >= this._llmRoutingConfidenceThreshold) {
-      console.info("Collection routing completed (heuristic)", {
+      logger.info("Collection routing completed (heuristic)", {
         strategy: heuristicResult.strategy,
         confidence: heuristicResult.confidence,
         collectionsCount: heuristicResult.selectedCollections.length,
@@ -207,7 +210,7 @@ export class CollectionRouterService implements ICollectionRouterService {
 
       const validatedResult = await this.validateAndNormalizeResult(response, queryIntent, existingVendors);
 
-      console.info("Collection routing completed (LLM)", {
+      logger.info("Collection routing completed (LLM)", {
         strategy: validatedResult.strategy,
         confidence: validatedResult.confidence,
         collectionsCount: validatedResult.selectedCollections.length,
@@ -241,7 +244,7 @@ export class CollectionRouterService implements ICollectionRouterService {
 
       return validatedResult;
     } catch (error) {
-      console.warn("LLM collection routing failed, using heuristic result", {
+      logger.warn("LLM collection routing failed, using heuristic result", {
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -289,11 +292,11 @@ export class CollectionRouterService implements ICollectionRouterService {
     const normalizedCollections: CollectionWeight[] = response.selectedCollections
       .filter((c) => {
         if (!validVendors.has(c.vendor as CollectionVendor)) {
-          console.warn(`Invalid vendor in LLM response: ${c.vendor}`);
+          logger.warn(`Invalid vendor in LLM response: ${c.vendor}`);
           return false;
         }
         if (!existing.has(c.vendor as CollectionVendor)) {
-          console.warn(`Collection ${c.vendor} does not exist in Qdrant, filtering out`);
+          logger.warn(`Collection ${c.vendor} does not exist in Qdrant, filtering out`);
           return false;
         }
         return c.weight >= this._minConfidenceThreshold;
@@ -306,7 +309,7 @@ export class CollectionRouterService implements ICollectionRouterService {
       .sort((a, b) => b.weight - a.weight);
 
     if (normalizedCollections.length === 0) {
-      console.warn("No valid collections after normalization, using all existing collections");
+      logger.warn("No valid collections after normalization, using all existing collections");
       return this.buildAllExistingCollectionsFallback(response.reasoning || "No collections met threshold", existing);
     }
 

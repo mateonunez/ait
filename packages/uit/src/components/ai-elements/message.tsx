@@ -17,6 +17,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { submitFeedback, type FeedbackRating } from "@/utils/feedback.utils";
 import type { ChatMessageWithMetadata } from "@ait/core";
 import { Badge } from "../ui/badge";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 interface MessageProps {
   message: ChatMessageWithMetadata;
@@ -53,7 +56,7 @@ export function Message({ message, isStreaming = false }: MessageProps) {
         setFeedback(rating);
       }
     } catch (error) {
-      console.error("[Message] Error submitting feedback:", error);
+      logger.error("[Message] Error submitting feedback:", { error });
     } finally {
       setFeedbackSubmitting(false);
     }

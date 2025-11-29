@@ -77,10 +77,10 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
   public registerTasks(): void {
     // Register Spotify Track ETL
     schedulerRegistry.register(SpotifyETLs.track, async (data) => {
-      console.info(`[${SpotifyETLs.track}] Starting...`);
+      logger.info(`[${SpotifyETLs.track}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.track}] Fetching tracks from Spotify API (incremental)...`);
+        logger.info(`[${SpotifyETLs.track}] Fetching tracks from Spotify API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -89,67 +89,64 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(`[${SpotifyETLs.track}] Processing batch of ${batch.length} tracks...`);
+            logger.info(`[${SpotifyETLs.track}] Processing batch of ${batch.length} tracks...`);
             await this._spotifyService.connector.store.save(batch);
           }
-          console.info(`[${SpotifyETLs.track}] Fetched ${totalFetched} tracks (changed only)`);
+          logger.info(`[${SpotifyETLs.track}] Fetched ${totalFetched} tracks (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${SpotifyETLs.track}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${SpotifyETLs.track}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(SpotifyETLs.track, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(
-            `[${SpotifyETLs.track}] Error fetching tracks (likely rate limit). Proceeding to ETL...`,
-            error,
-          );
+          logger.error(`[${SpotifyETLs.track}] Error fetching tracks (likely rate limit). Proceeding to ETL...`, error);
         }
 
-        console.info(`[${SpotifyETLs.track}] Running ETL to Qdrant...`);
+        logger.info(`[${SpotifyETLs.track}] Running ETL to Qdrant...`);
         await runSpotifyTrackETL(qdrant, postgres);
-        console.info(`[${SpotifyETLs.track}] Completed`);
+        logger.info(`[${SpotifyETLs.track}] Completed`);
       });
     });
 
     // Register Spotify Artist ETL
     schedulerRegistry.register(SpotifyETLs.artist, async (data) => {
-      console.info(`[${SpotifyETLs.artist}] Starting...`);
+      logger.info(`[${SpotifyETLs.artist}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         try {
-          console.info(`[${SpotifyETLs.artist}] Fetching artists from Spotify API...`);
+          logger.info(`[${SpotifyETLs.artist}] Fetching artists from Spotify API...`);
           const artists = await this._spotifyService.fetchArtists();
-          console.info(`[${SpotifyETLs.artist}] Fetched ${artists.length} artists`);
+          logger.info(`[${SpotifyETLs.artist}] Fetched ${artists.length} artists`);
 
-          console.info(`[${SpotifyETLs.artist}] Saving artists to Postgres...`);
+          logger.info(`[${SpotifyETLs.artist}] Saving artists to Postgres...`);
           await this._spotifyService.connector.store.save(artists);
-          console.info(`[${SpotifyETLs.artist}] Saved to Postgres`);
+          logger.info(`[${SpotifyETLs.artist}] Saved to Postgres`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${SpotifyETLs.artist}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${SpotifyETLs.artist}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(SpotifyETLs.artist, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(
+          logger.error(
             `[${SpotifyETLs.artist}] Error fetching artists (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
-        console.info(`[${SpotifyETLs.artist}] Running ETL to Qdrant...`);
+        logger.info(`[${SpotifyETLs.artist}] Running ETL to Qdrant...`);
         await runSpotifyArtistETL(qdrant, postgres);
-        console.info(`[${SpotifyETLs.artist}] Completed`);
+        logger.info(`[${SpotifyETLs.artist}] Completed`);
       });
     });
 
     // Register Spotify Playlist ETL
     schedulerRegistry.register(SpotifyETLs.playlist, async (data) => {
-      console.info(`[${SpotifyETLs.playlist}] Starting...`);
+      logger.info(`[${SpotifyETLs.playlist}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.playlist}] Fetching playlists from Spotify API (incremental)...`);
+        logger.info(`[${SpotifyETLs.playlist}] Fetching playlists from Spotify API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -158,35 +155,35 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(`[${SpotifyETLs.playlist}] Processing batch of ${batch.length} playlists...`);
+            logger.info(`[${SpotifyETLs.playlist}] Processing batch of ${batch.length} playlists...`);
             await this._spotifyService.connector.store.save(batch);
           }
-          console.info(`[${SpotifyETLs.playlist}] Fetched ${totalFetched} playlists (changed only)`);
+          logger.info(`[${SpotifyETLs.playlist}] Fetched ${totalFetched} playlists (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${SpotifyETLs.playlist}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${SpotifyETLs.playlist}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(SpotifyETLs.playlist, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(
+          logger.error(
             `[${SpotifyETLs.playlist}] Error fetching playlists (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
-        console.info(`[${SpotifyETLs.playlist}] Running ETL to Qdrant...`);
+        logger.info(`[${SpotifyETLs.playlist}] Running ETL to Qdrant...`);
         await runSpotifyPlaylistETL(qdrant, postgres);
-        console.info(`[${SpotifyETLs.playlist}] Completed`);
+        logger.info(`[${SpotifyETLs.playlist}] Completed`);
       });
     });
 
     // Register Spotify Album ETL
     schedulerRegistry.register(SpotifyETLs.album, async (data) => {
-      console.info(`[${SpotifyETLs.album}] Starting...`);
+      logger.info(`[${SpotifyETLs.album}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.album}] Fetching albums from Spotify API (incremental)...`);
+        logger.info(`[${SpotifyETLs.album}] Fetching albums from Spotify API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -195,35 +192,32 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(`[${SpotifyETLs.album}] Processing batch of ${batch.length} albums...`);
+            logger.info(`[${SpotifyETLs.album}] Processing batch of ${batch.length} albums...`);
             await this._spotifyService.connector.store.save(batch);
           }
-          console.info(`[${SpotifyETLs.album}] Fetched ${totalFetched} albums (changed only)`);
+          logger.info(`[${SpotifyETLs.album}] Fetched ${totalFetched} albums (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${SpotifyETLs.album}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${SpotifyETLs.album}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(SpotifyETLs.album, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(
-            `[${SpotifyETLs.album}] Error fetching albums (likely rate limit). Proceeding to ETL...`,
-            error,
-          );
+          logger.error(`[${SpotifyETLs.album}] Error fetching albums (likely rate limit). Proceeding to ETL...`, error);
         }
 
-        console.info(`[${SpotifyETLs.album}] Running ETL to Qdrant...`);
+        logger.info(`[${SpotifyETLs.album}] Running ETL to Qdrant...`);
         await runSpotifyAlbumETL(qdrant, postgres);
-        console.info(`[${SpotifyETLs.album}] Completed`);
+        logger.info(`[${SpotifyETLs.album}] Completed`);
       });
     });
 
     // Register Spotify Recently Played ETL
     schedulerRegistry.register(SpotifyETLs.recentlyPlayed, async (data) => {
-      console.info(`[${SpotifyETLs.recentlyPlayed}] Starting...`);
+      logger.info(`[${SpotifyETLs.recentlyPlayed}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Fetching recently played from Spotify API (incremental)...`);
+        logger.info(`[${SpotifyETLs.recentlyPlayed}] Fetching recently played from Spotify API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -232,39 +226,39 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(`[${SpotifyETLs.recentlyPlayed}] Processing batch of ${batch.length} items...`);
+            logger.info(`[${SpotifyETLs.recentlyPlayed}] Processing batch of ${batch.length} items...`);
             await this._spotifyService.connector.store.save(batch);
           }
-          console.info(`[${SpotifyETLs.recentlyPlayed}] Fetched ${totalFetched} recently played items`);
+          logger.info(`[${SpotifyETLs.recentlyPlayed}] Fetched ${totalFetched} recently played items`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${SpotifyETLs.recentlyPlayed}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${SpotifyETLs.recentlyPlayed}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(SpotifyETLs.recentlyPlayed, data as Record<string, unknown>, {
               delay,
               priority: 3,
             });
             return;
           }
-          console.error(
+          logger.error(
             `[${SpotifyETLs.recentlyPlayed}] Error fetching recently played (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Running ETL to Qdrant...`);
+        logger.info(`[${SpotifyETLs.recentlyPlayed}] Running ETL to Qdrant...`);
         await runSpotifyRecentlyPlayedETL(qdrant, postgres);
-        console.info(`[${SpotifyETLs.recentlyPlayed}] Completed`);
+        logger.info(`[${SpotifyETLs.recentlyPlayed}] Completed`);
       });
     });
 
     // Register GitHub Repository ETL
     schedulerRegistry.register(GitHubETLs.repository, async (data) => {
-      console.info(`[${GitHubETLs.repository}] Starting...`);
+      logger.info(`[${GitHubETLs.repository}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         // 1. Fetch fresh data from GitHub API using pagination
-        console.info(`[${GitHubETLs.repository}] Fetching repositories from GitHub API (incremental)...`);
+        logger.info(`[${GitHubETLs.repository}] Fetching repositories from GitHub API (incremental)...`);
         let totalFetched = 0;
         let totalChanged = 0;
 
@@ -275,7 +269,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
           totalFetched += batch.length;
           totalChanged += batch.length; // All yielded items are changed (checksum filtered)
 
-          console.info(
+          logger.info(
             `[${GitHubETLs.repository}] Processing batch of ${batch.length} repositories. Range: ${batch[0].fullName} ... ${
               batch[batch.length - 1].fullName
             }`,
@@ -285,22 +279,22 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
           await this._githubService.connector.store.save(batch);
         }
 
-        console.info(`[${GitHubETLs.repository}] Fetched ${totalFetched} repositories (${totalChanged} changed)`);
+        logger.info(`[${GitHubETLs.repository}] Fetched ${totalFetched} repositories (${totalChanged} changed)`);
 
         // 3. Run ETL to Qdrant
-        console.info(`[${GitHubETLs.repository}] Running ETL to Qdrant...`);
+        logger.info(`[${GitHubETLs.repository}] Running ETL to Qdrant...`);
         await runGitHubRepositoryETL(qdrant, postgres);
-        console.info(`[${GitHubETLs.repository}] Completed`);
+        logger.info(`[${GitHubETLs.repository}] Completed`);
       });
     });
 
     // Register GitHub Pull Request ETL
     schedulerRegistry.register(GitHubETLs.pullRequest, async (data) => {
-      console.info(`[${GitHubETLs.pullRequest}] Starting...`);
+      logger.info(`[${GitHubETLs.pullRequest}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         // 1. Fetch fresh data from GitHub API (incremental)
-        console.info(`[${GitHubETLs.pullRequest}] Fetching pull requests from GitHub API (incremental)...`);
+        logger.info(`[${GitHubETLs.pullRequest}] Fetching pull requests from GitHub API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -309,7 +303,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(
+            logger.info(
               `[${GitHubETLs.pullRequest}] Processing batch of ${batch.length} pull requests for repo: ${
                 batch[0].repositoryFullName || "unknown"
               }`,
@@ -318,37 +312,37 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             // 2. Save batch to Postgres
             await this._githubService.connector.store.save(batch);
           }
-          console.info(`[${GitHubETLs.pullRequest}] Fetched ${totalFetched} pull requests`);
+          logger.info(`[${GitHubETLs.pullRequest}] Fetched ${totalFetched} pull requests`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${GitHubETLs.pullRequest}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${GitHubETLs.pullRequest}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(GitHubETLs.pullRequest, data as Record<string, unknown>, {
               delay,
               priority: 3,
             });
             return;
           }
-          console.error(
+          logger.error(
             `[${GitHubETLs.pullRequest}] Error fetching pull requests (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
         // 3. Run ETL to Qdrant
-        console.info(`[${GitHubETLs.pullRequest}] Running ETL to Qdrant...`);
+        logger.info(`[${GitHubETLs.pullRequest}] Running ETL to Qdrant...`);
         await runGitHubPullRequestETL(qdrant, postgres);
-        console.info(`[${GitHubETLs.pullRequest}] Completed`);
+        logger.info(`[${GitHubETLs.pullRequest}] Completed`);
       });
     });
 
     // Register GitHub Commit ETL
     schedulerRegistry.register(GitHubETLs.commit, async (data) => {
-      console.info(`[${GitHubETLs.commit}] Starting...`);
+      logger.info(`[${GitHubETLs.commit}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
         // 1. Fetch fresh data from GitHub API (incremental)
-        console.info(`[${GitHubETLs.commit}] Fetching commits from GitHub API (incremental)...`);
+        logger.info(`[${GitHubETLs.commit}] Fetching commits from GitHub API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -357,7 +351,7 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(
+            logger.info(
               `[${GitHubETLs.commit}] Processing batch of ${batch.length} commits for repo: ${
                 batch[0].repositoryFullName || "unknown"
               }`,
@@ -366,33 +360,33 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             // 2. Save batch to Postgres
             await this._githubService.connector.store.save(batch);
           }
-          console.info(`[${GitHubETLs.commit}] Fetched ${totalFetched} commits`);
+          logger.info(`[${GitHubETLs.commit}] Fetched ${totalFetched} commits`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${GitHubETLs.commit}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${GitHubETLs.commit}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(GitHubETLs.commit, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(
+          logger.error(
             `[${GitHubETLs.commit}] Error fetching commits (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
         // 3. Run ETL to Qdrant
-        console.info(`[${GitHubETLs.commit}] Running ETL to Qdrant...`);
+        logger.info(`[${GitHubETLs.commit}] Running ETL to Qdrant...`);
         await runGitHubCommitETL(qdrant, postgres);
-        console.info(`[${GitHubETLs.commit}] Completed`);
+        logger.info(`[${GitHubETLs.commit}] Completed`);
       });
     });
 
     // Register Linear Issue ETL
     schedulerRegistry.register(LinearETLs.issue, async (data) => {
-      console.info(`[${LinearETLs.issue}] Starting...`);
+      logger.info(`[${LinearETLs.issue}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${LinearETLs.issue}] Fetching issues from Linear API (incremental)...`);
+        logger.info(`[${LinearETLs.issue}] Fetching issues from Linear API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -401,55 +395,55 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(
+            logger.info(
               `[${LinearETLs.issue}] Processing batch of ${batch.length} issues. Team: ${
                 batch[0].teamName || "unknown"
               }`,
             );
             await this._linearService.connector.store.save(batch);
           }
-          console.info(`[${LinearETLs.issue}] Fetched ${totalFetched} issues (changed only)`);
+          logger.info(`[${LinearETLs.issue}] Fetched ${totalFetched} issues (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${LinearETLs.issue}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${LinearETLs.issue}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(LinearETLs.issue, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(`[${LinearETLs.issue}] Error fetching issues (likely rate limit). Proceeding to ETL...`, error);
+          logger.error(`[${LinearETLs.issue}] Error fetching issues (likely rate limit). Proceeding to ETL...`, error);
         }
 
-        console.info(`[${LinearETLs.issue}] Running ETL to Qdrant...`);
+        logger.info(`[${LinearETLs.issue}] Running ETL to Qdrant...`);
         await runLinearETL(qdrant, postgres);
-        console.info(`[${LinearETLs.issue}] Completed`);
+        logger.info(`[${LinearETLs.issue}] Completed`);
       });
     });
 
     // Register X (Twitter) Tweet ETL
     schedulerRegistry.register(XETLs.tweet, async (data) => {
-      console.info(`[${XETLs.tweet}] Starting...`);
+      logger.info(`[${XETLs.tweet}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        // console.info(`[${XETLs.tweet}] Fetching tweets from X API...`);
+        // logger.info(`[${XETLs.tweet}] Fetching tweets from X API...`);
         // const tweets = await this._xService.fetchTweets();
-        // console.info(`[${XETLs.tweet}] Fetched ${tweets.length} tweets`);
+        // logger.info(`[${XETLs.tweet}] Fetched ${tweets.length} tweets`);
 
-        // console.info(`[${XETLs.tweet}] Saving tweets to Postgres...`);
+        // logger.info(`[${XETLs.tweet}] Saving tweets to Postgres...`);
         // await this._xService.connector.store.save(tweets);
-        // console.info(`[${XETLs.tweet}] Saved to Postgres`);
+        // logger.info(`[${XETLs.tweet}] Saved to Postgres`);
 
-        console.info(`[${XETLs.tweet}] Running ETL to Qdrant...`);
+        logger.info(`[${XETLs.tweet}] Running ETL to Qdrant...`);
         await runXETL(qdrant, postgres);
-        console.info(`[${XETLs.tweet}] Completed`);
+        logger.info(`[${XETLs.tweet}] Completed`);
       });
     });
 
     // Register Notion Page ETL
     schedulerRegistry.register(NotionETLs.page, async (data) => {
-      console.info(`[${NotionETLs.page}] Starting...`);
+      logger.info(`[${NotionETLs.page}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${NotionETLs.page}] Fetching pages from Notion API (incremental)...`);
+        logger.info(`[${NotionETLs.page}] Fetching pages from Notion API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -458,32 +452,32 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(`[${NotionETLs.page}] Processing batch of ${batch.length} pages...`);
+            logger.info(`[${NotionETLs.page}] Processing batch of ${batch.length} pages...`);
             await this._notionService.connector.store.save(batch);
           }
-          console.info(`[${NotionETLs.page}] Fetched ${totalFetched} pages (changed only)`);
+          logger.info(`[${NotionETLs.page}] Fetched ${totalFetched} pages (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${NotionETLs.page}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${NotionETLs.page}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(NotionETLs.page, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(`[${NotionETLs.page}] Error fetching pages (likely rate limit). Proceeding to ETL...`, error);
+          logger.error(`[${NotionETLs.page}] Error fetching pages (likely rate limit). Proceeding to ETL...`, error);
         }
 
-        console.info(`[${NotionETLs.page}] Running ETL to Qdrant...`);
+        logger.info(`[${NotionETLs.page}] Running ETL to Qdrant...`);
         await runNotionETL(qdrant, postgres);
-        console.info(`[${NotionETLs.page}] Completed`);
+        logger.info(`[${NotionETLs.page}] Completed`);
       });
     });
 
     // Register Slack Message ETL
     schedulerRegistry.register(SlackETLs.message, async (data) => {
-      console.info(`[${SlackETLs.message}] Starting...`);
+      logger.info(`[${SlackETLs.message}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${SlackETLs.message}] Fetching messages from Slack API (incremental)...`);
+        logger.info(`[${SlackETLs.message}] Fetching messages from Slack API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -492,39 +486,39 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(
+            logger.info(
               `[${SlackETLs.message}] Processing batch of ${batch.length} messages in channel: ${
                 batch[0].channelName || "unknown"
               }`,
             );
             await this._slackService.connector.store.save(batch);
           }
-          console.info(`[${SlackETLs.message}] Fetched ${totalFetched} messages (changed only)`);
+          logger.info(`[${SlackETLs.message}] Fetched ${totalFetched} messages (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${SlackETLs.message}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${SlackETLs.message}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(SlackETLs.message, data as Record<string, unknown>, { delay, priority: 3 });
             return;
           }
-          console.error(
+          logger.error(
             `[${SlackETLs.message}] Error fetching messages (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
-        console.info(`[${SlackETLs.message}] Running ETL to Qdrant...`);
+        logger.info(`[${SlackETLs.message}] Running ETL to Qdrant...`);
         await runSlackETL(qdrant, postgres);
-        console.info(`[${SlackETLs.message}] Completed`);
+        logger.info(`[${SlackETLs.message}] Completed`);
       });
     });
 
     // Register Google Calendar Event ETL
     schedulerRegistry.register(GoogleCalendarETLs.event, async (data) => {
-      console.info(`[${GoogleCalendarETLs.event}] Starting...`);
+      logger.info(`[${GoogleCalendarETLs.event}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${GoogleCalendarETLs.event}] Fetching events from Google Calendar API (incremental)...`);
+        logger.info(`[${GoogleCalendarETLs.event}] Fetching events from Google Calendar API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -533,42 +527,42 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(
+            logger.info(
               `[${GoogleCalendarETLs.event}] Processing batch of ${batch.length} events. First: ${
                 batch[0].title || "untitled"
               }`,
             );
             await this._googleService.connector.store.save(batch);
           }
-          console.info(`[${GoogleCalendarETLs.event}] Fetched ${totalFetched} events (changed only)`);
+          logger.info(`[${GoogleCalendarETLs.event}] Fetched ${totalFetched} events (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${GoogleCalendarETLs.event}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${GoogleCalendarETLs.event}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(GoogleCalendarETLs.event, data as Record<string, unknown>, {
               delay,
               priority: 2,
             });
             return;
           }
-          console.error(
+          logger.error(
             `[${GoogleCalendarETLs.event}] Error fetching events (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
-        console.info(`[${GoogleCalendarETLs.event}] Running ETL to Qdrant...`);
+        logger.info(`[${GoogleCalendarETLs.event}] Running ETL to Qdrant...`);
         await runGoogleCalendarEventETL(qdrant, postgres);
-        console.info(`[${GoogleCalendarETLs.event}] Completed`);
+        logger.info(`[${GoogleCalendarETLs.event}] Completed`);
       });
     });
 
     // Register Google YouTube Subscription ETL
     schedulerRegistry.register(GoogleYouTubeETLs.subscription, async (data) => {
-      console.info(`[${GoogleYouTubeETLs.subscription}] Starting...`);
+      logger.info(`[${GoogleYouTubeETLs.subscription}] Starting...`);
 
       await this._withConnections(async ({ qdrant, postgres }) => {
-        console.info(`[${GoogleYouTubeETLs.subscription}] Fetching subscriptions from YouTube API (incremental)...`);
+        logger.info(`[${GoogleYouTubeETLs.subscription}] Fetching subscriptions from YouTube API (incremental)...`);
         let totalFetched = 0;
 
         try {
@@ -577,33 +571,33 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
             true, // shouldConnect
           )) {
             totalFetched += batch.length;
-            console.info(
+            logger.info(
               `[${GoogleYouTubeETLs.subscription}] Processing batch of ${batch.length} subscriptions. First: ${
                 batch[0].title || "untitled"
               }`,
             );
             await this._googleService.connector.store.save(batch);
           }
-          console.info(`[${GoogleYouTubeETLs.subscription}] Fetched ${totalFetched} subscriptions (changed only)`);
+          logger.info(`[${GoogleYouTubeETLs.subscription}] Fetched ${totalFetched} subscriptions (changed only)`);
         } catch (error: any) {
           if (error instanceof RateLimitError && this._scheduler) {
             const delay = Math.max(0, error.resetTime - Date.now());
-            console.warn(`[${GoogleYouTubeETLs.subscription}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
+            logger.warn(`[${GoogleYouTubeETLs.subscription}] Rate limit exceeded. Rescheduling in ${delay}ms...`);
             await this._scheduler.addJob(GoogleYouTubeETLs.subscription, data as Record<string, unknown>, {
               delay,
               priority: 2,
             });
             return;
           }
-          console.error(
+          logger.error(
             `[${GoogleYouTubeETLs.subscription}] Error fetching subscriptions (likely rate limit). Proceeding to ETL...`,
             error,
           );
         }
 
-        console.info(`[${GoogleYouTubeETLs.subscription}] Running ETL to Qdrant...`);
+        logger.info(`[${GoogleYouTubeETLs.subscription}] Running ETL to Qdrant...`);
         await runGoogleYouTubeSubscriptionETL(qdrant, postgres);
-        console.info(`[${GoogleYouTubeETLs.subscription}] Completed`);
+        logger.info(`[${GoogleYouTubeETLs.subscription}] Completed`);
       });
     });
   }

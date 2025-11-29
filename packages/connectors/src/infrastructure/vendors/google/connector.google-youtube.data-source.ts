@@ -84,7 +84,7 @@ export class ConnectorGoogleYouTubeDataSource implements IConnectorGoogleYouTube
           if (fullMessage.includes("has not been used") || fullMessage.includes("is disabled")) {
             throw new AItError(
               "API_DISABLED",
-              "YouTube Data API is not enabled. Please enable it at https://console.cloud.google.com/apis/library/youtube.googleapis.com",
+              "YouTube Data API is not enabled. Please enable it at https://logger.cloud.google.com/apis/library/youtube.googleapis.com",
               { originalError: fullMessage },
             );
           }

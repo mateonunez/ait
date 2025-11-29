@@ -14,8 +14,10 @@ import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/conn
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
 
 // Read version from package.json
+const logger = getLogger();
 const packageJson = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf-8"));
 const APP_VERSION = packageJson.version;
 const APP_ENVIRONMENT = process.env.NODE_ENV || "development";
@@ -115,7 +117,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         // Generate custom traceId for telemetry
         const traceId = `trace-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
-        console.info("Generating stream", {
+        logger.info("Generating stream", {
           prompt,
           conversationHistory,
           tools,
@@ -183,10 +185,9 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           try {
             await langfuseProvider.flush();
           } catch (flushError: unknown) {
-            console.error(
-              "[Gateway] Telemetry flush failed:",
-              flushError instanceof Error ? flushError.message : String(flushError),
-            );
+            logger.error("[Gateway] Telemetry flush failed:", {
+              error: flushError instanceof Error ? flushError.message : String(flushError),
+            });
             // Don't fail the request if telemetry flush fails
           }
         }

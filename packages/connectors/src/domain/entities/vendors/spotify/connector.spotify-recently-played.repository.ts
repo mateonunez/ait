@@ -9,6 +9,9 @@ import {
   drizzleOrm,
 } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpotifyRecentlyPlayedRepository {
   private _pgClient = getPostgresClient();
@@ -48,7 +51,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save recently played item:", { itemId: item.id, error });
+      logger.error("Failed to save recently played item:", { itemId: item.id, error });
       throw new AItError(
         "SPOTIFY_SAVE_RECENTLY_PLAYED",
         `Failed to save recently played item ${item.id}: ${error.message}`,
@@ -68,7 +71,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
         await this.saveRecentlyPlayed(item, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving recently played items:", error);
+      logger.error("Error saving recently played items:", { error });
       throw new AItError("SPOTIFY_SAVE_RECENTLY_PLAYED_BULK", "Failed to save recently played items to repository");
     }
   }

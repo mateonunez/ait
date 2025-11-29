@@ -66,10 +66,10 @@ export class Scheduler implements IScheduler {
 
       if (jobToRemove?.id) {
         await this._queue.removeJobScheduler(jobToRemove.id);
-        console.info(`[Scheduler] Removed repeatable job: ${jobName} (${cronExpression})`);
+        logger.info(`[Scheduler] Removed repeatable job: ${jobName} (${cronExpression})`);
       }
     } catch (error) {
-      console.warn(`[Scheduler] Failed to remove repeatable job ${jobName}:`, error);
+      logger.warn(`[Scheduler] Failed to remove repeatable job ${jobName}:`, error);
     }
   }
 
@@ -79,12 +79,12 @@ export class Scheduler implements IScheduler {
       for (const scheduler of jobSchedulers) {
         if (scheduler.id) {
           await this._queue.removeJobScheduler(scheduler.id);
-          console.info(`[Scheduler] Removed repeatable job: ${scheduler.name} (${scheduler.pattern})`);
+          logger.info(`[Scheduler] Removed repeatable job: ${scheduler.name} (${scheduler.pattern})`);
         }
       }
-      console.info(`[Scheduler] Removed ${jobSchedulers.length} repeatable jobs`);
+      logger.info(`[Scheduler] Removed ${jobSchedulers.length} repeatable jobs`);
     } catch (error) {
-      console.warn("[Scheduler] Failed to remove repeatable jobs:", error);
+      logger.warn("[Scheduler] Failed to remove repeatable jobs:", error);
     }
   }
 
@@ -100,23 +100,23 @@ export class Scheduler implements IScheduler {
       jobId: `${jobName}-${Date.now()}`,
     });
 
-    console.info(
+    logger.info(
       `[Scheduler] One-time job "${jobName}" added`,
       options ? `with options: ${JSON.stringify(options)}` : "",
     );
   }
 
   public async start(): Promise<void> {
-    console.info("[Scheduler] Starting scheduler...");
-    console.info(`[Scheduler] Available tasks: ${schedulerRegistry.list().join(", ")}`);
+    logger.info("[Scheduler] Starting scheduler...");
+    logger.info(`[Scheduler] Available tasks: ${schedulerRegistry.list().join(", ")}`);
   }
 
   public async stop(): Promise<void> {
-    console.info("[Scheduler] Stopping scheduler...");
+    logger.info("[Scheduler] Stopping scheduler...");
 
     await Promise.all([this._worker.close(), this._queue.close(), this._queueEvents.close()]);
 
-    console.info("[Scheduler] Scheduler stopped");
+    logger.info("[Scheduler] Scheduler stopped");
   }
 
   // Private Methods
@@ -147,14 +147,14 @@ export class Scheduler implements IScheduler {
       async (job: Job) => {
         const startTime = Date.now();
         try {
-          console.info(`[Worker] Running job: ${job.name} (priority: ${job.opts.priority || 0})`);
+          logger.info(`[Worker] Running job: ${job.name} (priority: ${job.opts.priority || 0})`);
           const handler = schedulerRegistry.get(job.name);
           await handler(job.data);
           const duration = Date.now() - startTime;
-          console.info(`[Worker] Job completed: ${job.name} (${duration}ms)`);
+          logger.info(`[Worker] Job completed: ${job.name} (${duration}ms)`);
         } catch (error) {
           const duration = Date.now() - startTime;
-          console.error(`[Worker] Job execution failed: ${job.name} (${duration}ms)`, error);
+          logger.error(`[Worker] Job execution failed: ${job.name} (${duration}ms)`, error);
           throw error;
         }
       },
@@ -178,11 +178,11 @@ export class Scheduler implements IScheduler {
   private _setupEventHandlers(): void {
     this._worker
       .on("completed", (job) => {
-        console.info(`[Worker] Job completed: ${job.name}`);
+        logger.info(`[Worker] Job completed: ${job.name}`);
       })
       .on("failed", (job, error) => {
         if (job) {
-          console.error(
+          logger.error(
             `[Worker] Job failed: ${job.name}`,
             "\nError:",
             error,
@@ -192,22 +192,22 @@ export class Scheduler implements IScheduler {
             job.data,
           );
         } else {
-          console.error("[Worker] Job failed: unknown job", error);
+          logger.error("[Worker] Job failed: unknown job", error);
         }
       })
       .on("error", (error) => {
-        console.error("[Worker] Error:", error);
+        logger.error("[Worker] Error:", error);
       });
 
     this._queueEvents
       .on("completed", ({ jobId }) => {
-        console.debug(`[Queue] Job ${jobId} completed`);
+        logger.debug(`[Queue] Job ${jobId} completed`);
       })
       .on("failed", ({ jobId, failedReason }) => {
-        console.error(`[Queue] Job ${jobId} failed:`, failedReason);
+        logger.error(`[Queue] Job ${jobId} failed:`, failedReason);
       })
       .on("error", (error) => {
-        console.error("[Queue] Error:", error);
+        logger.error("[Queue] Error:", error);
       });
   }
 }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
+import { getLogger } from "@ait/core";
 import { fetchAllMetrics } from "@/utils/stats-api.utils";
 import type {
   HealthData,
@@ -10,6 +11,8 @@ import type {
   FeedbackData,
   SystemData,
 } from "@ait/core";
+
+const logger = getLogger();
 
 interface StatsContextType {
   health: HealthData | null;
@@ -67,12 +70,12 @@ export function StatsProvider({ children }: { children: ReactNode }) {
         (key) => data.fetchErrors?.[key as keyof typeof data.fetchErrors],
       );
       if (errorKeys.length > 0) {
-        console.warn("[Stats] Some metrics failed to load:", errorKeys);
+        logger.warn("[Stats] Some metrics failed to load:", { errorKeys });
       } else {
-        console.log("[Stats] All metrics refreshed successfully");
+        logger.info("[Stats] All metrics refreshed successfully");
       }
     } catch (error) {
-      console.error("[Stats] Failed to refresh metrics:", error);
+      logger.error("[Stats] Failed to refresh metrics:", { error });
       // Reset all metrics on critical error
       setHealth(null);
       setPerformance(null);

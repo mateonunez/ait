@@ -1,8 +1,11 @@
+import { getLogger } from "@ait/core";
 import type { ToolExecutionResult, ToolExecutionConfig } from "../../types/text-generation";
 import type { Tool } from "../../types/tools";
 import type { OllamaToolCall } from "../../client/ollama.provider";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+
+const logger = getLogger();
 
 /**
  * Interface for tool execution service
@@ -51,7 +54,7 @@ export class ToolExecutionService implements IToolExecutionService {
         const startTime = Date.now();
 
         if (!tool) {
-          console.warn(`Tool ${toolName} not found`);
+          logger.warn(`Tool ${toolName} not found`);
           return {
             name: toolName,
             result: null,
@@ -67,7 +70,7 @@ export class ToolExecutionService implements IToolExecutionService {
 
         while (attempt < maxAttempts) {
           try {
-            console.info(`Executing tool: ${toolName}`, {
+            logger.info(`Executing tool: ${toolName}`, {
               arguments: toolCall.function.arguments,
               attempt: attempt + 1,
             });
@@ -78,7 +81,7 @@ export class ToolExecutionService implements IToolExecutionService {
             );
 
             const executionTimeMs = Date.now() - startTime;
-            console.info(`Tool ${toolName} completed`, { executionTimeMs });
+            logger.info(`Tool ${toolName} completed`, { executionTimeMs });
 
             finalResult = {
               name: toolName,
@@ -111,7 +114,7 @@ export class ToolExecutionService implements IToolExecutionService {
             if (attempt >= maxAttempts) {
               const executionTimeMs = Date.now() - startTime;
               const errMsg = error instanceof Error ? error.message : String(error);
-              console.error(`Tool ${toolName} failed`, { error: errMsg, executionTimeMs });
+              logger.error(`Tool ${toolName} failed`, { error: errMsg, executionTimeMs });
 
               finalResult = {
                 name: toolName,

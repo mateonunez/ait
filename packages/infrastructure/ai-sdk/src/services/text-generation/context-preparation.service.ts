@@ -1,4 +1,4 @@
-import { AItError } from "@ait/core";
+import { AItError, getLogger } from "@ait/core";
 import type { RAGContext, ContextPreparationConfig } from "../../types/text-generation";
 import type { Document, BaseMetadata } from "../../types/documents";
 import type { IMultiQueryRetrievalService } from "../retrieval/multi-query-retrieval.service";
@@ -13,6 +13,8 @@ import type { TraceContext } from "../../types/telemetry";
 import { getCacheAnalyticsService } from "../analytics/cache-analytics.service";
 import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
 import type { ICollectionRouterService } from "../routing/collection-router.service";
+
+const logger = getLogger();
 
 export interface IContextPreparationService {
   prepareContext(query: string, traceContext?: TraceContext | null): Promise<RAGContext>;
@@ -109,7 +111,7 @@ export class ContextPreparationService implements IContextPreparationService {
     } catch (error) {
       fallbackUsed = true;
       fallbackReason = error instanceof Error ? error.message : String(error);
-      console.error("RAG retrieval failed, returning fallback context", {
+      logger.error("RAG retrieval failed, returning fallback context", {
         error: fallbackReason,
       });
 
@@ -159,7 +161,7 @@ export class ContextPreparationService implements IContextPreparationService {
           }
         } else {
           // Fallback to regular context if temporal correlation yields no results
-          console.warn("Temporal correlation yielded no results, using regular context");
+          logger.warn("Temporal correlation yielded no results, using regular context");
           context = this._contextBuilder.buildContextFromDocuments(documents);
         }
       } else {
@@ -227,7 +229,7 @@ export class ContextPreparationService implements IContextPreparationService {
     const age = Date.now() - entry.timestamp;
     if (age > this._cacheDurationMs) {
       this._contextCache.delete(key);
-      console.info("Cache expired", { age, maxAge: this._cacheDurationMs });
+      logger.info("Cache expired", { age, maxAge: this._cacheDurationMs });
       return null;
     }
     // Touch LRU: reinsert

@@ -4,7 +4,10 @@ import {
   type StreamEvent,
   type MetadataPayload,
   type AggregatedMetadata,
+  getLogger,
 } from "@ait/core";
+
+const logger = getLogger();
 
 export function parseStreamLine(line: string): StreamEvent | null {
   if (!line || !line.includes(":")) {
@@ -46,11 +49,11 @@ export function parseStreamLine(line: string): StreamEvent | null {
       }
 
       default:
-        console.warn(`[StreamParser] Unknown event type: ${eventType}`);
+        logger.warn(`[StreamParser] Unknown event type: ${eventType}`);
         return null;
     }
   } catch (error) {
-    console.error(`[StreamParser] Failed to parse line: ${line}`, error);
+    logger.error(`[StreamParser] Failed to parse line: ${line}`, { error });
     return null;
   }
 }
@@ -144,7 +147,7 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
         if (line.length > 0) {
           const separatorIndex = line.indexOf(":");
           if (separatorIndex === -1) {
-            console.warn("Malformed stream line (no separator):", line);
+            logger.warn("Malformed stream line (no separator):", { line });
             continue;
           }
 
@@ -167,10 +170,10 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
                 yield { type: STREAM_EVENT.ERROR, message: data };
                 break;
               default:
-                console.warn(`Unknown stream event type received: ${type}`);
+                logger.warn(`Unknown stream event type received: ${type}`);
             }
           } catch (e) {
-            console.error("Failed to parse stream data JSON:", e, "Data string:", dataString);
+            logger.error("Failed to parse stream data JSON:", { error: e, dataString });
           }
         }
       }
@@ -197,7 +200,7 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
               break;
           }
         } catch (e) {
-          console.error("Failed to parse remaining buffer:", e);
+          logger.error("Failed to parse remaining buffer:", { error: e });
         }
       }
     }

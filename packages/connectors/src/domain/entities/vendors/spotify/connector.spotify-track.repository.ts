@@ -4,6 +4,9 @@ import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/e
 import type { IConnectorSpotifyTrackRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
 import { getPostgresClient, spotifyTracks, type SpotifyTrackDataTarget, drizzleOrm } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRepository {
   private _pgClient = getPostgresClient();
@@ -52,7 +55,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
           .execute();
       });
     } catch (error: any) {
-      console.error("Failed to save track:", { trackId: track.id, error });
+      logger.error("Failed to save track:", { trackId: track.id, error });
       throw new AItError(
         "SPOTIFY_SAVE_TRACK",
         `Failed to save track ${track.id}: ${error.message}`,
@@ -68,24 +71,24 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     }
 
     try {
-      console.debug("Saving tracks to Spotify repository:", { tracks });
+      logger.debug("Saving tracks to Spotify repository:", { tracks });
 
       for (const track of tracks) {
         await this.saveTrack(track, { incremental: false });
       }
     } catch (error) {
-      console.error("Error saving tracks:", error);
+      logger.error("Error saving tracks:", { error });
       throw new AItError("SPOTIFY_SAVE_TRACK_BULK", "Failed to save tracks to repository");
     }
   }
 
   async getTrack(id: string): Promise<SpotifyTrackEntity | null> {
-    console.log("Getting track from Spotify repository", id);
+    logger.info("Getting track from Spotify repository", { id });
     return null;
   }
 
   async fetchTracks(): Promise<SpotifyTrackEntity[]> {
-    console.log("Getting tracks from Spotify repository");
+    logger.info("Getting tracks from Spotify repository");
     return [];
   }
 

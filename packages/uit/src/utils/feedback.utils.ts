@@ -1,4 +1,7 @@
+import { getLogger } from "@ait/core";
 import { apiPost } from "./http-client";
+
+const logger = getLogger();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
 
@@ -16,7 +19,7 @@ export async function submitFeedback(params: {
   const res = await apiPost<{ feedbackId: string }>(`${API_BASE_URL}/feedback`, params);
 
   if (!res.ok) {
-    console.error("[Feedback] Failed to submit feedback:", res.error);
+    logger.error("[Feedback] Failed to submit feedback:", { error: res.error });
     return { success: false, error: res.error };
   }
 

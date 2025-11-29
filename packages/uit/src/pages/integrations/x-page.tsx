@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLogger } from "@ait/core";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { TweetCard } from "@/components/connectors/tweet-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { XTweetEntity as XTweet } from "@ait/core";
+
+const logger = getLogger();
 
 export default function XPage() {
   const { fetchEntityData, refreshVendor } = useIntegrationsContext();
@@ -23,7 +26,7 @@ export default function XPage() {
         setTweets(response.data as XTweet[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {
-        console.error("Failed to fetch X data:", error);
+        logger.error("Failed to fetch X data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -37,7 +40,7 @@ export default function XPage() {
       await refreshVendor("x");
       await fetchData(currentPage);
     } catch (error) {
-      console.error("Failed to refresh X data:", error);
+      logger.error("Failed to refresh X data:", { error });
     } finally {
       setIsRefreshing(false);
     }

@@ -15,6 +15,9 @@ import { RetoveSlackMessageETL } from "../../etl/vendors/retove.slack.message.et
 import { RetoveGoogleCalendarEventETL } from "../../etl/vendors/retove.google-calendar.event.etl";
 import { RetoveGoogleYouTubeSubscriptionETL } from "../../etl/vendors/retove.google-youtube.subscription.etl";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export const SpotifyETLs = {
   track: "RetoveSpotifyTrackETL",
@@ -58,9 +61,9 @@ export async function runSpotifyTrackETL(
 ) {
   const collection = getCollectionNameByVendor("spotify");
   const etl = new RetoveSpotifyTrackETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveSpotifyTrackETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveSpotifyTrackETL → ${collection} with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log(`✅ RetoveSpotifyTrackETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveSpotifyTrackETL → ${collection} completed successfully!`);
 }
 
 export async function runSpotifyArtistETL(
@@ -68,9 +71,9 @@ export async function runSpotifyArtistETL(
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
   const etl = new RetoveSpotifyArtistETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveSpotifyArtistETL with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveSpotifyArtistETL with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log("✅ RetoveSpotifyArtistETL process completed successfully!");
+  logger.info("✅ RetoveSpotifyArtistETL process completed successfully!");
 }
 
 export async function runSpotifyPlaylistETL(
@@ -78,9 +81,9 @@ export async function runSpotifyPlaylistETL(
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
   const etl = new RetoveSpotifyPlaylistETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveSpotifyPlaylistETL with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveSpotifyPlaylistETL with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log("✅ RetoveSpotifyPlaylistETL process completed successfully!");
+  logger.info("✅ RetoveSpotifyPlaylistETL process completed successfully!");
 }
 
 export async function runSpotifyAlbumETL(
@@ -88,9 +91,9 @@ export async function runSpotifyAlbumETL(
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
   const etl = new RetoveSpotifyAlbumETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveSpotifyAlbumETL with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveSpotifyAlbumETL with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log("✅ RetoveSpotifyAlbumETL process completed successfully!");
+  logger.info("✅ RetoveSpotifyAlbumETL process completed successfully!");
 }
 
 export async function runSpotifyRecentlyPlayedETL(
@@ -98,9 +101,9 @@ export async function runSpotifyRecentlyPlayedETL(
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
   const etl = new RetoveSpotifyRecentlyPlayedETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveSpotifyRecentlyPlayedETL with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveSpotifyRecentlyPlayedETL with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log("✅ RetoveSpotifyRecentlyPlayedETL process completed successfully!");
+  logger.info("✅ RetoveSpotifyRecentlyPlayedETL process completed successfully!");
 }
 
 export async function runGitHubRepositoryETL(
@@ -110,9 +113,9 @@ export async function runGitHubRepositoryETL(
   const collection = getCollectionNameByVendor("github");
   const githubETL = new RetoveGitHubRepositoryETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveGitHubRepositoryETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveGitHubRepositoryETL → ${collection} with limit of ${LIMIT}...`);
   await githubETL.run(LIMIT);
-  console.log(`✅ RetoveGitHubRepositoryETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveGitHubRepositoryETL → ${collection} completed successfully!`);
 }
 
 export async function runGitHubPullRequestETL(
@@ -120,9 +123,9 @@ export async function runGitHubPullRequestETL(
   pgClient: ReturnType<typeof getPostgresClient>,
 ) {
   const etl = new RetoveGitHubPullRequestETL(pgClient, qdrantClient);
-  console.log(`🔍 Running RetoveGitHubPullRequestETL with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveGitHubPullRequestETL with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log("✅ RetoveGitHubPullRequestETL process completed successfully!");
+  logger.info("✅ RetoveGitHubPullRequestETL process completed successfully!");
 }
 
 export async function runGitHubCommitETL(
@@ -132,45 +135,45 @@ export async function runGitHubCommitETL(
   const collection = getCollectionNameByVendor("github");
   const etl = new RetoveGitHubCommitETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveGitHubCommitETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveGitHubCommitETL → ${collection} with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
-  console.log(`✅ RetoveGitHubCommitETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveGitHubCommitETL → ${collection} completed successfully!`);
 }
 
 export async function runXETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const collection = getCollectionNameByVendor("x");
   const xETL = new RetoveXTweetETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveXTweetETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveXTweetETL → ${collection} with limit of ${LIMIT}...`);
   await xETL.run(LIMIT);
-  console.log(`✅ RetoveXTweetETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveXTweetETL → ${collection} completed successfully!`);
 }
 
 export async function runLinearETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const collection = getCollectionNameByVendor("linear");
   const linearETL = new RetoveLinearIssueETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveLinearIssueETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveLinearIssueETL → ${collection} with limit of ${LIMIT}...`);
   await linearETL.run(LIMIT);
-  console.log(`✅ RetoveLinearIssueETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveLinearIssueETL → ${collection} completed successfully!`);
 }
 
 export async function runNotionETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const collection = getCollectionNameByVendor("notion");
   const notionETL = new RetoveNotionPageETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveNotionPageETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveNotionPageETL → ${collection} with limit of ${LIMIT}...`);
   await notionETL.run(LIMIT);
-  console.log(`✅ RetoveNotionPageETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveNotionPageETL → ${collection} completed successfully!`);
 }
 
 export async function runSlackETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const collection = getCollectionNameByVendor("slack");
   const slackETL = new RetoveSlackMessageETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveSlackMessageETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveSlackMessageETL → ${collection} with limit of ${LIMIT}...`);
   await slackETL.run(LIMIT);
-  console.log(`✅ RetoveSlackMessageETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveSlackMessageETL → ${collection} completed successfully!`);
 }
 
 export async function runGoogleCalendarEventETL(
@@ -180,9 +183,9 @@ export async function runGoogleCalendarEventETL(
   const collection = getCollectionNameByVendor("google");
   const googleCalendarETL = new RetoveGoogleCalendarEventETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveGoogleCalendarEventETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveGoogleCalendarEventETL → ${collection} with limit of ${LIMIT}...`);
   await googleCalendarETL.run(LIMIT);
-  console.log(`✅ RetoveGoogleCalendarEventETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveGoogleCalendarEventETL → ${collection} completed successfully!`);
 }
 
 export const GoogleYouTubeETLs = {
@@ -196,7 +199,7 @@ export async function runGoogleYouTubeSubscriptionETL(
   const collection = getCollectionNameByVendor("google");
   const googleYouTubeETL = new RetoveGoogleYouTubeSubscriptionETL(pgClient, qdrantClient);
 
-  console.log(`🔍 Running RetoveGoogleYouTubeSubscriptionETL → ${collection} with limit of ${LIMIT}...`);
+  logger.info(`🔍 Running RetoveGoogleYouTubeSubscriptionETL → ${collection} with limit of ${LIMIT}...`);
   await googleYouTubeETL.run(LIMIT);
-  console.log(`✅ RetoveGoogleYouTubeSubscriptionETL → ${collection} completed successfully!`);
+  logger.info(`✅ RetoveGoogleYouTubeSubscriptionETL → ${collection} completed successfully!`);
 }

@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLogger } from "@ait/core";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { PageCard } from "@/components/connectors/page-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { NotionPageEntity } from "@ait/core";
+
+const logger = getLogger();
 
 export default function NotionPage() {
   const { fetchEntityData, refreshVendor } = useIntegrationsContext();
@@ -23,7 +26,7 @@ export default function NotionPage() {
         setPages(response.data as NotionPageEntity[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {
-        console.error("Failed to fetch Notion data:", error);
+        logger.error("Failed to fetch Notion data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -37,7 +40,7 @@ export default function NotionPage() {
       await refreshVendor("notion");
       await fetchData(currentPage);
     } catch (error) {
-      console.error("Failed to refresh Notion data:", error);
+      logger.error("Failed to refresh Notion data:", { error });
     } finally {
       setIsRefreshing(false);
     }

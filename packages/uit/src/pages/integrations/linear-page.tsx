@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLogger } from "@ait/core";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { IssueCard } from "@/components/connectors/issue-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { LinearIssueEntity as LinearIssue } from "@ait/core";
+
+const logger = getLogger();
 
 export default function LinearPage() {
   const { fetchEntityData, refreshVendor } = useIntegrationsContext();
@@ -23,7 +26,7 @@ export default function LinearPage() {
         setIssues(response.data as LinearIssue[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {
-        console.error("Failed to fetch Linear data:", error);
+        logger.error("Failed to fetch Linear data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -37,7 +40,7 @@ export default function LinearPage() {
       await refreshVendor("linear");
       await fetchData(currentPage);
     } catch (error) {
-      console.error("Failed to refresh Linear data:", error);
+      logger.error("Failed to refresh Linear data:", { error });
     } finally {
       setIsRefreshing(false);
     }

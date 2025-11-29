@@ -2,6 +2,9 @@ import dotenv from "dotenv";
 import postgres from "postgres";
 import { drizzle } from "drizzle-orm/postgres-js";
 import * as drizzleOrm from "drizzle-orm";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 dotenv.config();
 
@@ -76,7 +79,7 @@ export async function closePostgresConnection(): Promise<void> {
   if (_instance) {
     await _instance.queryClient.end({ timeout: 5 });
     _instance = null;
-    console.log("Database connection closed");
+    logger.info("Database connection closed");
   }
 }
 

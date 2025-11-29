@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLogger } from "@ait/core";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { IntegrationTabs } from "@/components/integration-tabs";
 import { Pagination } from "@/components/pagination";
@@ -16,6 +17,8 @@ import type {
   SpotifyAlbumEntity as SpotifyAlbum,
   SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed,
 } from "@ait/core";
+
+const logger = getLogger();
 
 type TabId = "tracks" | "artists" | "playlists" | "albums" | "recently-played";
 
@@ -80,7 +83,7 @@ export default function SpotifyPage() {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch Spotify data:", error);
+        logger.error("Failed to fetch Spotify data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -94,7 +97,7 @@ export default function SpotifyPage() {
       await refreshVendor("spotify");
       await fetchData(currentPage);
     } catch (error) {
-      console.error("Failed to refresh Spotify data:", error);
+      logger.error("Failed to refresh Spotify data:", { error });
     } finally {
       setIsRefreshing(false);
     }

@@ -6,6 +6,9 @@ import type {
   StageResult,
   PipelineExecutionOptions,
 } from "./pipeline.types";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
   private readonly _stages: IPipelineStage<unknown, unknown>[];
@@ -177,15 +180,15 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
   }
 
   private logInfo(message: string, data?: Record<string, unknown>): void {
-    console.info(`[PipelineOrchestrator] ${message}`, data || {});
+    logger.info(`[PipelineOrchestrator] ${message}`, data || {});
   }
 
   private logWarn(message: string, data?: Record<string, unknown>): void {
-    console.warn(`[PipelineOrchestrator] ${message}`, data || {});
+    logger.warn(`[PipelineOrchestrator] ${message}`, data || {});
   }
 
   private logError(message: string, error: Error): void {
-    console.error(`[PipelineOrchestrator] ${message}`, {
+    logger.error(`[PipelineOrchestrator] ${message}`, {
       error: error.message,
       stack: error.stack,
     });

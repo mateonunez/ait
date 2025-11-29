@@ -1,5 +1,8 @@
 import { Redis } from "ioredis";
 import { type ICacheProvider, setCacheProvider } from "@ait/ai-sdk";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class RedisCacheProvider implements ICacheProvider {
   private readonly redis: Redis;
@@ -7,8 +10,8 @@ export class RedisCacheProvider implements ICacheProvider {
   constructor(redisUrl: string) {
     this.redis = new Redis(redisUrl);
 
-    this.redis.on("error", (err: any) => console.error("Redis Client Error:", err));
-    this.redis.on("connect", () => console.log("Redis Client Connected"));
+    this.redis.on("error", (err: any) => logger.error("Redis Client Error:", { error: err }));
+    this.redis.on("connect", () => logger.info("Redis Client Connected"));
   }
 
   async get<T>(key: string): Promise<T | null> {
@@ -48,16 +51,16 @@ let _redisProvider: RedisCacheProvider | null = null;
 export function initializeCacheProvider(redisUrl?: string): void {
   if (redisUrl) {
     try {
-      console.log("Initializing Redis Cache Provider...");
+      logger.info("Initializing Redis Cache Provider...");
       const redisProvider = new RedisCacheProvider(redisUrl);
       _redisProvider = redisProvider;
       setCacheProvider(redisProvider);
-      console.log("Redis Cache Provider initialized successfully");
+      logger.info("Redis Cache Provider initialized successfully");
     } catch (error) {
-      console.warn("Failed to initialize Redis Cache Provider, falling back to Memory Cache:", error);
+      logger.warn("Failed to initialize Redis Cache Provider, falling back to Memory Cache:", { error });
     }
   } else {
-    console.warn("REDIS_URL not provided, using Memory Cache for ai-sdk");
+    logger.warn("REDIS_URL not provided, using Memory Cache for ai-sdk");
   }
 }
 

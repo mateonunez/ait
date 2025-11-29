@@ -1,5 +1,8 @@
 import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 import type { ChatMessage } from "../../types/chat";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export interface IQueryRewriterService {
   rewriteQuery(query: string, messages: ChatMessage[]): Promise<string>;
@@ -33,12 +36,12 @@ export class QueryRewriterService implements IQueryRewriterService {
       const rewritten = response.text.trim();
 
       if (rewritten.toLowerCase() !== query.toLowerCase()) {
-        console.debug("Query rewritten", { original: query, rewritten });
+        logger.debug("Query rewritten", { original: query, rewritten });
       }
 
       return rewritten;
     } catch (error) {
-      console.warn("Failed to rewrite query, using original", { error });
+      logger.warn("Failed to rewrite query, using original", { error });
       return query;
     }
   }

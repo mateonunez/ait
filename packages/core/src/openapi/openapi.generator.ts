@@ -4,6 +4,9 @@ import {
   openApiSchemas,
   type OpenApiSchemaConfig,
 } from "./openapi.schemas.config";
+import { getLogger } from "../logging/logger";
+
+const logger = getLogger();
 
 function generateTypesForSchema(
   schemaKey: string,
@@ -15,7 +18,7 @@ function generateTypesForSchema(
       if (error) {
         return reject(`Error generating types for ${schemaKey}: ${stderr}`);
       }
-      console.info(`Successfully generated types for ${schemaKey}`);
+      logger.info(`Successfully generated types for ${schemaKey}`);
       resolve();
     });
   });
@@ -37,8 +40,8 @@ async function generateAllTypes(): Promise<void> {
       await generateTypesForSchema(schemaKey, schema);
       results.push({ key: schemaKey, success: true });
     } catch (error) {
-      console.warn(`⚠️  Warning: Could not generate types for ${schemaKey}`);
-      console.warn(`   ${error}`);
+      logger.warn(`⚠️  Warning: Could not generate types for ${schemaKey}`);
+      logger.warn(`   ${error}`);
       results.push({
         key: schemaKey,
         success: false,
@@ -50,11 +53,11 @@ async function generateAllTypes(): Promise<void> {
   const successful = results.filter((r) => r.success);
   const failed = results.filter((r) => !r.success);
 
-  console.info(
+  logger.info(
     `\n✓ Successfully generated ${successful.length}/${results.length} schemas`
   );
   if (failed.length > 0) {
-    console.warn(
+    logger.warn(
       `⚠️  Failed to generate ${failed.length} schema(s): ${failed
         .map((f) => f.key)
         .join(", ")}`
@@ -63,6 +66,6 @@ async function generateAllTypes(): Promise<void> {
 }
 
 generateAllTypes().catch((error) => {
-  console.error(error);
+  logger.error(error);
   process.exit(1);
 });

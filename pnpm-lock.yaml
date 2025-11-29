@@ -266,6 +266,9 @@ importers:
 
   packages/infrastructure/redis:
     dependencies:
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../../core
       dotenv:
         specifier: ^17.2.2
         version: 17.2.3
@@ -297,6 +300,9 @@ importers:
       '@ait/connectors':
         specifier: workspace:*
         version: link:../../connectors
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../../core
       '@ait/postgres':
         specifier: workspace:*
         version: link:../../infrastructure/postgres

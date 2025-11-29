@@ -1,5 +1,7 @@
+import { getLogger } from "@ait/core";
 import type { RetryConfig } from "../../types/text-generation";
 
+const logger = getLogger();
 /**
  * Interface for retry service
  */
@@ -41,7 +43,7 @@ export class RetryService implements IRetryService {
         }
 
         const delay = this._delayMs * this._backoffMultiplier ** (attempt - 1);
-        console.warn(`Operation failed, retrying in ${delay}ms`, {
+        logger.warn(`Operation failed, retrying in ${delay}ms`, {
           attempt,
           context,
           error: lastError.message,

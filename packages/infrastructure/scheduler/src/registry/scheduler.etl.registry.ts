@@ -39,8 +39,8 @@ export class SchedulerTaskRegistry implements ISchedulerTaskRegistry {
     }
 
     this._tasks.set(name, handler);
-    console.info(`Task registered: ${name}`);
-    console.debug("Available tasks:", Array.from(this._tasks.keys()));
+    logger.info(`Task registered: ${name}`);
+    logger.debug("Available tasks:", Array.from(this._tasks.keys()));
   }
 
   public get(name: string): TaskHandler {

@@ -8,8 +8,10 @@ import type {
   FeedbackData,
   SystemData,
 } from "@ait/core";
-
+import { getLogger } from "@ait/core";
 import { apiGet } from "./http-client";
+
+const logger = getLogger();
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
 
@@ -22,7 +24,7 @@ export async function fetchHealthMetrics(): Promise<HealthData> {
   });
 
   if (!res.ok) {
-    console.error("[Stats API] Health fetch failed:", res.error);
+    logger.error("[Stats API] Health fetch failed:", { error: res.error });
     throw new Error(res.error || "Failed to fetch health metrics");
   }
 
@@ -117,7 +119,7 @@ export interface UnifiedStatsResponse {
 export async function fetchUnifiedStats(windowMinutes = 60): Promise<UnifiedStatsResponse> {
   const res = await apiGet<UnifiedStatsResponse>(`${API_BASE_URL}/observability/stats?window=${windowMinutes}`);
   if (!res.ok) {
-    console.error("[Stats API] Unified stats fetch failed:", res.error);
+    logger.error("[Stats API] Unified stats fetch failed:", { error: res.error });
     throw new Error(res.error || "Failed to fetch unified stats");
   }
 
@@ -130,7 +132,7 @@ export async function fetchUnifiedStats(windowMinutes = 60): Promise<UnifiedStat
  */
 export async function fetchAllMetrics(windowMinutes = 60) {
   try {
-    console.log("[Stats API] Fetching unified stats with window:", windowMinutes);
+    logger.info("[Stats API] Fetching unified stats with window:", { windowMinutes });
     const unifiedStats = await fetchUnifiedStats(windowMinutes);
 
     // Transform unified response to match expected format
@@ -146,11 +148,11 @@ export async function fetchAllMetrics(windowMinutes = 60) {
       fetchErrors: {},
     };
 
-    console.log("[Stats API] Unified stats fetch complete. All metrics loaded successfully.");
+    logger.info("[Stats API] Unified stats fetch complete. All metrics loaded successfully.");
 
     return result;
   } catch (error) {
-    console.error("[Stats API] Failed to fetch unified stats:", error);
+    logger.error("[Stats API] Failed to fetch unified stats:", { error });
     // Return empty result on error
     return {
       health: null,

@@ -123,7 +123,7 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
           if (fullMessage.includes("has not been used") || fullMessage.includes("is disabled")) {
             throw new AItError(
               "API_DISABLED",
-              "Google Calendar API is not enabled. Please enable it at https://console.cloud.google.com/apis/library/calendar-json.googleapis.com",
+              "Google Calendar API is not enabled. Please enable it at https://logger.cloud.google.com/apis/library/calendar-json.googleapis.com",
               { originalError: fullMessage },
             );
           }

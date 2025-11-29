@@ -8,6 +8,9 @@ import type {
   SpanType,
   SpanEvent,
 } from "../types/telemetry";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 interface TraceState {
   trace: any;
@@ -56,12 +59,12 @@ export class LangfuseProvider {
           flushInterval: this.config.flushInterval,
         });
       } catch (error) {
-        console.warn("[Langfuse] Failed to initialize client:", error);
+        logger.warn("[Langfuse] Failed to initialize client:", { error });
         this.config.enabled = false;
       }
     } else {
       if (this.config.enabled) {
-        console.warn("[Langfuse] Telemetry enabled but missing credentials", {
+        logger.warn("[Langfuse] Telemetry enabled but missing credentials", {
           hasPublicKey: !!this.config.publicKey,
           hasSecretKey: !!this.config.secretKey,
         });
@@ -102,7 +105,7 @@ export class LangfuseProvider {
         metadata,
       };
     } catch (error) {
-      console.warn("[Langfuse] Failed to create trace:", error);
+      logger.warn("[Langfuse] Failed to create trace:", { error });
       return null;
     }
   }
@@ -121,7 +124,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceContext.traceId);
       if (!traceState) {
-        console.warn(`Trace ${traceContext.traceId} not found for span ${spanId}`);
+        logger.warn(`Trace ${traceContext.traceId} not found for span ${spanId}`);
         return null;
       }
 
@@ -141,7 +144,7 @@ export class LangfuseProvider {
 
       return spanId;
     } catch (error) {
-      console.warn("Failed to create span:", error);
+      logger.warn("Failed to create span:", { error });
       return null;
     }
   }
@@ -177,7 +180,7 @@ export class LangfuseProvider {
         });
       }
     } catch (error) {
-      console.warn("Failed to update span:", error);
+      logger.warn("Failed to update span:", { error });
     }
   }
 
@@ -224,8 +227,8 @@ export class LangfuseProvider {
       // End span with explicit endTime for accurate duration
       span.end({ endTime });
       this.activeSpans.delete(spanId);
-    } catch (err) {
-      console.warn("Failed to end span:", err);
+    } catch (error) {
+      logger.warn("Failed to end span:", { error });
     }
   }
 
@@ -237,7 +240,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceId);
       if (!traceState) {
-        console.warn(`[Langfuse] Trace ${traceId} not found for input update`);
+        logger.warn(`[Langfuse] Trace ${traceId} not found for input update`);
         return;
       }
 
@@ -246,7 +249,7 @@ export class LangfuseProvider {
       });
       traceState.hasInput = true;
     } catch (error) {
-      console.warn("[Langfuse] Failed to update trace input:", error);
+      logger.warn("[Langfuse] Failed to update trace input:", { error });
     }
   }
 
@@ -258,7 +261,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceId);
       if (!traceState) {
-        console.warn(`[Langfuse] Trace ${traceId} not found for output update`);
+        logger.warn(`[Langfuse] Trace ${traceId} not found for output update`);
         return;
       }
 
@@ -267,7 +270,7 @@ export class LangfuseProvider {
       });
       traceState.hasOutput = true;
     } catch (error) {
-      console.warn("[Langfuse] Failed to update trace output:", error);
+      logger.warn("[Langfuse] Failed to update trace output:", { error });
     }
   }
 
@@ -279,7 +282,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceId);
       if (!traceState) {
-        console.warn(`[Langfuse] Trace ${traceId} not found for ending`);
+        logger.warn(`[Langfuse] Trace ${traceId} not found for ending`);
         return;
       }
 
@@ -306,8 +309,8 @@ export class LangfuseProvider {
       }
 
       traceState.isComplete = true;
-    } catch (err) {
-      console.warn("[Langfuse] Failed to end trace:", err);
+    } catch (error) {
+      logger.warn("[Langfuse] Failed to end trace:", { error });
     }
   }
 
@@ -332,7 +335,7 @@ export class LangfuseProvider {
         } as Record<string, unknown>,
       });
     } catch (error) {
-      console.warn("Failed to record event:", error);
+      logger.warn("Failed to record event:", { error });
     }
   }
 
@@ -361,7 +364,7 @@ export class LangfuseProvider {
         metadata: metadata as Record<string, unknown>,
       });
     } catch (error) {
-      console.warn("Failed to record generation:", error);
+      logger.warn("Failed to record generation:", { error });
     }
   }
 
@@ -410,7 +413,7 @@ export class LangfuseProvider {
     const validation = this.validateTraces();
 
     if (validation.warnings.length > 0) {
-      console.warn("[Langfuse] Trace validation warnings:", validation.warnings);
+      logger.warn("[Langfuse] Trace validation warnings:", { warnings: validation.warnings });
     }
 
     let lastError: Error | null = null;
@@ -433,7 +436,7 @@ export class LangfuseProvider {
         return;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        console.warn(`[Langfuse] Flush attempt ${attempt} failed:`, lastError.message);
+        logger.warn(`[Langfuse] Flush attempt ${attempt} failed:`, { error: lastError.message });
 
         if (attempt < this.flushRetries) {
           // Exponential backoff: 100ms, 200ms, 400ms
@@ -443,7 +446,7 @@ export class LangfuseProvider {
       }
     }
 
-    console.error("[Langfuse] Failed to flush after all retries:", lastError?.message);
+    logger.error("[Langfuse] Failed to flush after all retries:", { error: lastError?.message });
   }
 
   async shutdown(): Promise<void> {
@@ -457,7 +460,7 @@ export class LangfuseProvider {
       this.activeSpans.clear();
       this.client = null;
     } catch (error) {
-      console.warn("Failed to shutdown Langfuse client:", error);
+      logger.warn("Failed to shutdown Langfuse client:", { error });
     }
   }
 }

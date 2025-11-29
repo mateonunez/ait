@@ -1,4 +1,7 @@
+import { getLogger } from "@ait/core";
 import * as chrono from "chrono-node";
+
+const logger = getLogger();
 
 export interface DateRange {
   from?: string;
@@ -112,7 +115,7 @@ export class TemporalDateParser implements ITemporalDateParser {
         to: this._expandToEndOfPeriod(startDate, result).toISOString(),
       };
     } catch (error) {
-      console.warn("Date parsing failed", {
+      logger.warn("Date parsing failed", {
         error: error instanceof Error ? error.message : String(error),
         text: text.slice(0, 50),
       });

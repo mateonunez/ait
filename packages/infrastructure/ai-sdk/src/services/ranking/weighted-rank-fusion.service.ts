@@ -1,6 +1,9 @@
+import { getLogger } from "@ait/core";
 import type { Document, BaseMetadata } from "../../types/documents";
 import type { CollectionVendor } from "../../config/collections.config";
 import type { WeightedDocument } from "../../types/collections";
+
+const logger = getLogger();
 
 export interface WeightedRankFusionConfig {
   rrfK?: number;
@@ -42,7 +45,7 @@ export class WeightedRankFusionService implements IWeightedRankFusionService {
     maxResults = 100,
   ): WeightedDocument<TMetadata>[] {
     if (collectionResults.length === 0) {
-      console.warn("No collection results to fuse");
+      logger.warn("No collection results to fuse");
       return [];
     }
 

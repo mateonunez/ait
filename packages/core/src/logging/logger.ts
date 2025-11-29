@@ -21,6 +21,10 @@ class ConsoleLogger implements Logger {
     return Object.keys(merged).length > 0 ? merged : undefined;
   }
 
+  log(message: string, meta?: LoggerMeta): void {
+    console.log(message, formatMeta(this.mergeMeta(meta)));
+  }
+
   info(message: string, meta?: LoggerMeta): void {
     console.info(message, formatMeta(this.mergeMeta(meta)));
   }
@@ -46,8 +50,8 @@ const defaultLogger: Logger = new ConsoleLogger();
 
 let currentLogger: Logger = defaultLogger;
 
-export function setLogger(logger: Logger): void {
-  currentLogger = logger;
+export function setLogger(console: Logger): void {
+  currentLogger = console;
 }
 
 export function getLogger(): Logger {

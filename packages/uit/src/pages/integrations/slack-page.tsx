@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
+import { getLogger } from "@ait/core";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
 import { MessageCard } from "@/components/connectors/message-card";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import type { SlackMessageEntity } from "@ait/core";
+
+const logger = getLogger();
 
 export default function SlackPage() {
   const { fetchEntityData, refreshVendor } = useIntegrationsContext();
@@ -23,7 +26,7 @@ export default function SlackPage() {
         setMessages(response.data as SlackMessageEntity[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {
-        console.error("Failed to fetch Slack data:", error);
+        logger.error("Failed to fetch Slack data:", { error });
       } finally {
         setIsLoading(false);
       }
@@ -37,7 +40,7 @@ export default function SlackPage() {
       await refreshVendor("slack");
       await fetchData(currentPage);
     } catch (error) {
-      console.error("Failed to refresh Slack data:", error);
+      logger.error("Failed to refresh Slack data:", { error });
     } finally {
       setIsRefreshing(false);
     }

@@ -23,6 +23,9 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { listModels } from "@/utils/api";
 import { Link } from "wouter";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 interface AIChatDialogProps {
   open: boolean;
@@ -61,7 +64,7 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
         setModelsLoading(false);
       })
       .catch((error) => {
-        console.error("[AIChatDialog] Failed to fetch models:", error);
+        logger.error("[AIChatDialog] Failed to fetch models:", error);
         setModelsLoading(false);
       });
   }, []);
