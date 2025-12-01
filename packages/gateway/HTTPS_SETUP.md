@@ -106,7 +106,7 @@ This means you can generate certificates once and they'll be used automatically.
 
 ### Why does the frontend work but the backend doesn't?
 
-The frontend (UIT) runs on Vite's dev server which may handle certificates differently, or you may have already trusted it when first accessing it. However, **OAuth callbacks redirect directly to the gateway** (e.g., `https://localhost:3000/api/slack/auth/callback`), so the browser needs to trust the gateway's certificate separately.
+The frontend (UIt) runs on Vite's dev server which may handle certificates differently, or you may have already trusted it when first accessing it. However, **OAuth callbacks redirect directly to the gateway** (e.g., `https://localhost:3000/api/slack/auth/callback`), so the browser needs to trust the gateway's certificate separately.
 
 **Solution:** Run `npm run cert:trust` to trust the gateway certificate, then restart your browser.
 

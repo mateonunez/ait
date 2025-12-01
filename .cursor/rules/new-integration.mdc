@@ -1397,7 +1397,7 @@ Create `packages/connectors/test/domain/mappers/connector.{vendor}.mapper.test.t
 - [ ] Add service property and instantiation
 - [ ] Register task handler with `_register()`
 
-### UIT Package (`@ait/uit`)
+### UIt Package (`@ait/uit`)
 - [ ] Create UI service in `src/services/{vendor}.service.ts`
 - [ ] Export from `src/services/index.ts`
 - [ ] Add to `IntegrationEntity` in `src/types/integrations.types.ts`
