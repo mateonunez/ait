@@ -1,14 +1,14 @@
+import { createHash } from "node:crypto";
+import { type Logger, getLogger } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
-import { AIT } from "../shared/constants/ait.constant";
-import type { IConnector } from "../types/infrastructure/connector.interface";
 import {
-  ConnectorOAuthRefreshTokenExpiredError,
   ConnectorOAuthNetworkError,
+  ConnectorOAuthRefreshTokenExpiredError,
   ConnectorOAuthRequestError,
 } from "../shared/auth/lib/oauth/connector.oauth";
+import { AIT } from "../shared/constants/ait.constant";
 import { retryWithBackoff } from "../shared/utils/retry.utils";
-import { getLogger, type Logger } from "@ait/core";
-import { createHash } from "node:crypto";
+import type { IConnector } from "../types/infrastructure/connector.interface";
 
 export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, StoreType, RepositoryType>
   implements IConnector<AuthenticatorType, DataSourceType, StoreType>

@@ -1,4 +1,4 @@
-import type { Document, BaseMetadata } from "../../types/documents";
+import type { BaseMetadata, Document } from "../../types/documents";
 import type { IRerankService } from "./rerank.service";
 
 export interface FastRerankConfig {

@@ -1,13 +1,13 @@
+import type { PaginatedResponse, PaginationParams, SlackMessageEntity, SlackMessageExternal } from "@ait/core";
 import { ConnectorSlack } from "../../infrastructure/vendors/slack/connector.slack";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
 import {
-  connectorEntityConfigs,
   SLACK_ENTITY_TYPES_ENUM,
   type SlackServiceEntityMap,
+  connectorEntityConfigs,
 } from "./connector.vendors.config";
-import { getConnectorConfig } from "../connector.service.config";
-import type { SlackMessageEntity, SlackMessageExternal, PaginatedResponse, PaginationParams } from "@ait/core";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export interface IConnectorSlackService extends ConnectorServiceBase<ConnectorSlack, SlackServiceEntityMap> {
   fetchMessages(): Promise<SlackMessageEntity[]>;

@@ -1,4 +1,4 @@
-import { createActivityAggregatorService, type IConnectorServiceFactory } from "@ait/ai-sdk";
+import { type IConnectorServiceFactory, createActivityAggregatorService } from "@ait/ai-sdk";
 import { connectorServiceFactory } from "@ait/connectors";
 import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";

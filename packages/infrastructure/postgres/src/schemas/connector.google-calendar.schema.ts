@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, boolean, text, jsonb } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const googleCalendarEvents = pgTable("google_calendar_events", {
   id: varchar("id", { length: 255 }).primaryKey(),

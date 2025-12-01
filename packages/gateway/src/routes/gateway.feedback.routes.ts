@@ -1,5 +1,5 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getFeedbackService } from "@ait/ai-sdk";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 interface FeedbackBody {
   traceId?: string;

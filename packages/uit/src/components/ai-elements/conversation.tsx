@@ -1,7 +1,7 @@
-import { useRef, useEffect } from "react";
-import { Message } from "./message";
 import type { ChatMessageWithMetadata } from "@ait/core";
 import { motion } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { Message } from "./message";
 
 interface ConversationProps {
   messages: ChatMessageWithMetadata[];

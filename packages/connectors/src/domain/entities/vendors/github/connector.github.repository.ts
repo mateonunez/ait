@@ -1,10 +1,10 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
-import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { clearOAuthData, getOAuthData, saveOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
 import type { IConnectorGitHubRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
-import { ConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.repository";
 import { ConnectorGitHubRepoRepository } from "./connector.github-repo.repository";
 import { ConnectorGitHubCommitRepository } from "./connector.github.commit.repository";
+import { ConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.repository";
 
 export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository implements IConnectorGitHubRepository {
   private _gitHubRepositoryRepository: ConnectorGitHubRepoRepository;

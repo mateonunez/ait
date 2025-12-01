@@ -1,5 +1,5 @@
-import { createReasoningStep } from "../../utils/metadata.utils";
 import { REASONING_TYPE, type ReasoningStep, type ReasoningType } from "../../types";
+import { createReasoningStep } from "../../utils/metadata.utils";
 
 export interface IReasoningExtractionService {
   extractReasoning(text: string): ReasoningStep[];

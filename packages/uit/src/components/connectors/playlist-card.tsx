@@ -1,21 +1,21 @@
-import { ListMusic, Users, Music, Lock, Users2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
+import type { SpotifyPlaylistEntity as SpotifyPlaylist } from "@ait/core";
+import { motion } from "framer-motion";
+import { ListMusic, Lock, Music, Users, Users2 } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardTitle,
-  ConnectorCardStats,
-  ConnectorCardStatItem,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
-  ConnectorCardTimestamp,
   ConnectorCardMedia,
   ConnectorCardMediaOverlay,
   ConnectorCardPlayButton,
+  ConnectorCardStatItem,
+  ConnectorCardStats,
+  ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { SpotifyPlaylistEntity as SpotifyPlaylist } from "@ait/core";
 
 interface PlaylistCardProps {
   playlist: SpotifyPlaylist;

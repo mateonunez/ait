@@ -1,7 +1,7 @@
 import type { SlackMessageEntity } from "@ait/core";
+import { TextNormalizationService } from "../../metadata/text-normalization.service";
 import type { EntityFormatter } from "./formatter.utils";
 import { safeString } from "./formatter.utils";
-import { TextNormalizationService } from "../../metadata/text-normalization.service";
 
 const textNormalizer = new TextNormalizationService();
 

@@ -1,9 +1,9 @@
+import type { PaginatedResponse, PaginationParams, XTweetEntity, XTweetExternal } from "@ait/core";
 import { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
-import { ConnectorServiceBase } from "../connector.service.base.abstract";
-import { connectorEntityConfigs, X_ENTITY_TYPES_ENUM, type XServiceEntityMap } from "./connector.vendors.config";
-import { getConnectorConfig } from "../connector.service.config";
-import type { XTweetEntity, XTweetExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
+import { type XServiceEntityMap, X_ENTITY_TYPES_ENUM, connectorEntityConfigs } from "./connector.vendors.config";
 
 export interface IConnectorXService extends ConnectorServiceBase<ConnectorX, XServiceEntityMap> {
   fetchTweets(): Promise<XTweetEntity[]>;

@@ -1,5 +1,5 @@
-import { GenerationModels, GENERATION_MODELS } from "../../config/models.config";
-import type { ModelMetadata, ModelCapabilities } from "../../types";
+import { GENERATION_MODELS, GenerationModels } from "../../config/models.config";
+import type { ModelCapabilities, ModelMetadata } from "../../types";
 
 function createModelMetadata(
   id: string,

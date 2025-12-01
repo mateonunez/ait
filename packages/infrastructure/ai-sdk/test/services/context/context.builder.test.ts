@@ -1,7 +1,7 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
 import { ContextBuilder } from "../../../src/services/context/context.builder";
-import type { Document, BaseMetadata } from "../../../src/types/documents";
+import type { BaseMetadata, Document } from "../../../src/types/documents";
 
 describe("ContextBuilder", () => {
   let builder: ContextBuilder;

@@ -1,14 +1,14 @@
+import { getLogger } from "@ait/core";
 import { Langfuse } from "langfuse";
 import type {
-  TelemetryConfig,
-  TraceContext,
-  SpanMetadata,
+  SpanEvent,
   SpanInput,
+  SpanMetadata,
   SpanOutput,
   SpanType,
-  SpanEvent,
+  TelemetryConfig,
+  TraceContext,
 } from "../types/telemetry";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

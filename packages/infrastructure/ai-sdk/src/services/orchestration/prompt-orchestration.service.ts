@@ -1,11 +1,11 @@
-import type { ChatMessage } from "../../types/chat";
-import type { Tool } from "../../types/tools";
-import type { TraceContext } from "../../types/telemetry";
 import { ConversationProcessingStage } from "../../stages/generation/conversation-processing.stage";
 import { ToolExecutionStage } from "../../stages/generation/tool-execution.stage";
+import type { ChatMessage } from "../../types/chat";
+import type { TraceContext } from "../../types/telemetry";
+import type { ConversationConfig } from "../../types/text-generation";
+import type { Tool } from "../../types/tools";
 import { PromptBuilderService } from "../generation/prompt-builder.service";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../prompts/system.prompt";
-import type { ConversationConfig } from "../../types/text-generation";
 
 export interface PromptOrchestrationInput {
   userPrompt: string;

@@ -1,18 +1,18 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  getCollectionConfig,
-  getAllCollections,
-  getCollectionsNames,
-  getCollectionByEntityType,
-  getCollectionsByEntityTypes,
-  isValidCollectionVendor,
-  getCollectionNameByVendor,
-  getCollectionNameByEntityType,
-  getCollectionVendorByName,
-  type CollectionVendor,
-} from "../../src/config/collections.config";
+import { describe, it } from "node:test";
 import { type EntityType, VALID_ENTITY_TYPES } from "@ait/core";
+import {
+  type CollectionVendor,
+  getAllCollections,
+  getCollectionByEntityType,
+  getCollectionConfig,
+  getCollectionNameByEntityType,
+  getCollectionNameByVendor,
+  getCollectionVendorByName,
+  getCollectionsByEntityTypes,
+  getCollectionsNames,
+  isValidCollectionVendor,
+} from "../../src/config/collections.config";
 
 describe("Collections Configuration", () => {
   describe("getCollectionConfig", () => {

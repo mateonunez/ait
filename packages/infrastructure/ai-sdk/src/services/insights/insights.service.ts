@@ -1,25 +1,25 @@
+import crypto from "node:crypto";
+import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { getCacheService } from "../cache/cache.service";
+import { getCorrelationPrompt, getRecommendationPrompt, getSummaryPrompt } from "../prompts/insights.prompts";
 import { getAnomalyDetectorService } from "./anomaly-detector.service";
 import { getCorrelationEngineService } from "./correlation-engine.service";
-import { getSummaryPrompt, getCorrelationPrompt, getRecommendationPrompt } from "../prompts/insights.prompts";
 import type {
-  InsightsData,
-  InsightSummary,
-  InsightCorrelation,
-  InsightAnomaly,
-  InsightRecommendation,
   ActivityData,
+  InsightAnomaly,
+  InsightCorrelation,
+  InsightRecommendation,
+  InsightSummary,
   InsightsConfig,
+  InsightsData,
 } from "./insights.types";
 import {
-  InsightSummarySchema,
+  DEFAULT_INSIGHTS_CONFIG,
   InsightCorrelationSchema,
   InsightRecommendationSchema,
-  DEFAULT_INSIGHTS_CONFIG,
+  InsightSummarySchema,
 } from "./insights.types";
-import { getLogger } from "@ait/core";
-import crypto from "node:crypto";
 
 const logger = getLogger();
 

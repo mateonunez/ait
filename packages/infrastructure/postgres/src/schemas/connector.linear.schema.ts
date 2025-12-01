@@ -1,4 +1,4 @@
-import { pgTable, varchar, integer, timestamp, text } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const linearIssues = pgTable("linear_issues", {
   id: varchar("id", { length: 255 }).primaryKey(),

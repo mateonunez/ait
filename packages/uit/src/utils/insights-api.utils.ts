@@ -1,6 +1,6 @@
-import type { InsightsData, GoalData, CreateGoalRequest, UpdateGoalRequest } from "@ait/ai-sdk";
+import type { CreateGoalRequest, GoalData, InsightsData, UpdateGoalRequest } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
-import { apiGet, apiPost, apiPatch, apiDelete } from "./http-client";
+import { apiDelete, apiGet, apiPatch, apiPost } from "./http-client";
 
 const logger = getLogger();
 

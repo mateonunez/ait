@@ -1,6 +1,6 @@
+import { getLogger } from "@ait/core";
 import { getRedisClient } from "@ait/redis";
 import type { ISyncState, ISyncStateService } from "./sync-state.interface";
-import { getLogger } from "@ait/core";
 
 export class SyncStateService implements ISyncStateService {
   private redis = getRedisClient();

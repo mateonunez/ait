@@ -1,22 +1,22 @@
-import { Disc, Music, TrendingUp } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
-import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import { formatRelativeTime } from "@/utils/date.utils";
+import type { SpotifyAlbumEntity as SpotifyAlbum } from "@ait/core";
+import { motion } from "framer-motion";
+import { Disc, Music, TrendingUp } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardTitle,
-  ConnectorCardStats,
-  ConnectorCardStatItem,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
-  ConnectorCardTimestamp,
   ConnectorCardMedia,
   ConnectorCardMediaOverlay,
   ConnectorCardPlayButton,
+  ConnectorCardStatItem,
+  ConnectorCardStats,
+  ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { SpotifyAlbumEntity as SpotifyAlbum } from "@ait/core";
 
 interface AlbumCardProps {
   album: SpotifyAlbum;

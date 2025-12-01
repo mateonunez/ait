@@ -1,7 +1,7 @@
-import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { QueryIntentService } from "../../../src/services/routing/query-intent.service";
+import { afterEach, describe, it, mock } from "node:test";
 import type { AItClient } from "../../../src/client/ai-sdk.client";
+import { QueryIntentService } from "../../../src/services/routing/query-intent.service";
 
 describe("QueryIntentService", () => {
   const mockGenerateStructured = mock.fn<(...args: any[]) => Promise<any>>();

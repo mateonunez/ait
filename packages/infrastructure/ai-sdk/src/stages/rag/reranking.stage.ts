@@ -1,10 +1,10 @@
+import type { CollectionVendor } from "@/types";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { RerankingInput, RerankingOutput } from "../../types/stages";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { CollectionRerankService } from "../../services/ranking/collection-rerank.service";
 import { FastRerankService } from "../../services/ranking/fast-rerank.service";
 import { RerankService } from "../../services/ranking/rerank.service";
-import type { CollectionVendor } from "@/types";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { RerankingInput, RerankingOutput } from "../../types/stages";
 
 export interface RerankingStageConfig {
   enableLLMReranking?: boolean;

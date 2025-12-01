@@ -1,18 +1,18 @@
-import { motion } from "framer-motion";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { AIChatButton } from "@/components/ai-chat-button";
-import { GoalsButton } from "@/components/goals-button";
-import { IntegrationsList } from "@/components/integrations-list";
-import { useHomepageData } from "@/hooks/useHomepageData";
-import { useChatDialog } from "@/contexts/chat.context";
-import type { HomeSection as HomeSectionType } from "@/types/integrations.types";
 import { DiscoveryStats } from "@/components/discovery/discovery-stats";
 import { GoalTrackerWidget } from "@/components/discovery/goal-tracker-widget";
-import { InsightsProvider } from "@/contexts/insights.context";
-import { cn } from "@/styles/utils";
-import { useState } from "react";
+import { GoalsButton } from "@/components/goals-button";
 import { FloatingPromptButton } from "@/components/home/floating-prompt-button";
 import { HomeFeed } from "@/components/home/home-feed";
+import { IntegrationsList } from "@/components/integrations-list";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { useChatDialog } from "@/contexts/chat.context";
+import { InsightsProvider } from "@/contexts/insights.context";
+import { useHomepageData } from "@/hooks/useHomepageData";
+import { cn } from "@/styles/utils";
+import type { HomeSection as HomeSectionType } from "@/types/integrations.types";
+import { motion } from "framer-motion";
+import { useState } from "react";
 
 const animationVariants = {
   initial: { opacity: 0, y: 10 },

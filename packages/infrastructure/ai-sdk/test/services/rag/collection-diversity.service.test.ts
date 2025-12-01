@@ -1,5 +1,5 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
 import { CollectionDiversityService } from "../../../src/services/ranking/collection-diversity.service";
 import type { WeightedDocument } from "../../../src/types/collections";
 import type { BaseMetadata } from "../../../src/types/documents";

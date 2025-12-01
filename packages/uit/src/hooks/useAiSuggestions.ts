@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import type { Suggestion } from "@ait/ai-sdk";
 import { fetchSuggestions } from "@/utils/api/suggestions.api";
+import type { Suggestion } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
+import { useEffect, useState } from "react";
 
 const logger = getLogger();
 

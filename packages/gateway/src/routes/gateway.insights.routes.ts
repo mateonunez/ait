@@ -1,13 +1,13 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
-  getInsightsService,
   type CreateGoalRequest,
+  type IConnectorServiceFactory,
   type UpdateGoalRequest,
   createActivityAggregatorService,
-  type IConnectorServiceFactory,
+  getInsightsService,
 } from "@ait/ai-sdk";
 import { getGoalTrackingService } from "@ait/ai-sdk";
 import { connectorServiceFactory } from "@ait/connectors";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { getRedisClient } from "../services/redis-cache.provider";
 
 interface InsightsQuery {

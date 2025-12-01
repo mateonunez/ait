@@ -1,16 +1,16 @@
+import type { IEmbeddingsService } from "@ait/ai-sdk";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import {
-  type getPostgresClient,
-  googleSubscriptions,
   type GoogleSubscriptionDataTarget,
   drizzleOrm,
+  type getPostgresClient,
+  googleSubscriptions,
 } from "@ait/postgres";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
-import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleYouTubeSubscriptionDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-youtube.descriptor";
-import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
+import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
 
 export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GoogleSubscriptionDataTarget> =

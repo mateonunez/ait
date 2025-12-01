@@ -1,33 +1,33 @@
-import { useEffect, useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { InsightsProvider, useInsights } from "@/contexts/insights.context";
+import { cn } from "@/styles/utils";
+import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
+import { getLogger } from "@ait/core";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Music,
-  MessageSquare,
-  GitCommit,
-  Twitter,
-  Sparkles,
+  Activity,
   CheckSquare,
   FileText,
-  TrendingUp,
-  TrendingDown,
+  GitCommit,
+  MessageSquare,
   Minus,
-  Activity,
-  Zap,
+  Music,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Twitter,
   Youtube,
+  Zap,
 } from "lucide-react";
-import { getLogger } from "@ait/core";
-import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/styles/utils";
-import { InsightsProvider, useInsights } from "@/contexts/insights.context";
+import { useEffect, useMemo, useState } from "react";
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { AiInsightsPanel } from "./ai-insights-panel";
 
 const logger = getLogger();

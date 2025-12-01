@@ -1,7 +1,7 @@
-import type { ConversationConfig, ContextPreparationConfig, ToolExecutionConfig, RetryConfig } from "./text-generation";
-import type { MultiQueryConfig, CollectionRoutingConfig, CollectionDiversityConfig } from "./rag";
-import type { GenerationModelName, EmbeddingModelName } from "../config/models.config";
+import type { EmbeddingModelName, GenerationModelName } from "../config/models.config";
+import type { CollectionDiversityConfig, CollectionRoutingConfig, MultiQueryConfig } from "./rag";
 import type { TelemetryConfig } from "./telemetry";
+import type { ContextPreparationConfig, ConversationConfig, RetryConfig, ToolExecutionConfig } from "./text-generation";
 
 /**
  * Configuration for generation model parameters

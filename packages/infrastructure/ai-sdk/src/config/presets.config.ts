@@ -1,5 +1,5 @@
-import { GenerationModels, EmbeddingModels } from "./models.config";
 import type { ClientConfig } from "../types/config";
+import { EmbeddingModels, GenerationModels } from "./models.config";
 
 export type PresetName = "basic" | "rag-optimized" | "tool-focused" | "conversational" | "production";
 

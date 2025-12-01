@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, text, boolean, jsonb } from "drizzle-orm/pg-core";
+import { boolean, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const notionPages = pgTable("notion_pages", {
   id: varchar("id", { length: 255 }).primaryKey(),

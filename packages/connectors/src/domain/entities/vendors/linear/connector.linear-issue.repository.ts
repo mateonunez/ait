@@ -1,9 +1,9 @@
-import { AItError, getLogger, type LinearIssueEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { randomUUID } from "node:crypto";
+import { AItError, type LinearIssueEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { type LinearIssueDataTarget, drizzleOrm, getPostgresClient, linearIssues } from "@ait/postgres";
 import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
-import { getPostgresClient, linearIssues, type LinearIssueDataTarget, drizzleOrm } from "@ait/postgres";
-import { randomUUID } from "node:crypto";
 
 const logger = getLogger();
 

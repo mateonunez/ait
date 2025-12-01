@@ -1,8 +1,8 @@
+import { ConversationManagerService } from "../../services/generation/conversation-manager.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { ConversationProcessingInput, ConversationProcessingOutput } from "../../types/stages";
 import type { ConversationConfig } from "../../types/text-generation";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
-import { ConversationManagerService } from "../../services/generation/conversation-manager.service";
 
 export class ConversationProcessingStage
   implements IPipelineStage<ConversationProcessingInput, ConversationProcessingOutput>

@@ -1,21 +1,21 @@
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
-import { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
-import { ConnectorServiceBase } from "../connector.service.base.abstract";
-import { getConnectorConfig } from "../connector.service.config";
 import type {
-  GitHubRepositoryEntity,
-  GitHubRepositoryExternal,
-  GitHubPullRequestEntity,
-  GitHubPullRequestExternal,
   GitHubCommitEntity,
   GitHubCommitExternal,
+  GitHubPullRequestEntity,
+  GitHubPullRequestExternal,
+  GitHubRepositoryEntity,
+  GitHubRepositoryExternal,
   PaginatedResponse,
   PaginationParams,
 } from "@ait/core";
+import { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
 import {
-  connectorEntityConfigs,
   GITHUB_ENTITY_TYPES_ENUM,
   type GitHubServiceEntityMap,
+  connectorEntityConfigs,
 } from "./connector.vendors.config";
 
 export interface IConnectorGitHubService extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap> {

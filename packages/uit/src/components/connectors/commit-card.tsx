@@ -1,20 +1,20 @@
-import { User, GitCommit, FileCode, CheckCircle2 } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { formatRelativeTime } from "@/utils/date.utils";
+import type { GitHubCommitEntity as GitHubCommit } from "@ait/core";
+import { motion } from "framer-motion";
+import { CheckCircle2, FileCode, GitCommit, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardDescription,
-  ConnectorCardStats,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardStats,
   ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { GitHubCommitEntity as GitHubCommit } from "@ait/core";
 
 interface CommitCardProps {
   commit: GitHubCommit;

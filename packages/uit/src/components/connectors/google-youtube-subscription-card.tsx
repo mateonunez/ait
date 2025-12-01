@@ -1,17 +1,17 @@
-import { Youtube, Video } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
+import type { GoogleYouTubeSubscriptionEntity } from "@ait/core";
+import { motion } from "framer-motion";
+import { Video, Youtube } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardDescription,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { GoogleYouTubeSubscriptionEntity } from "@ait/core";
 
 interface SubscriptionCardProps {
   subscription: GoogleYouTubeSubscriptionEntity;

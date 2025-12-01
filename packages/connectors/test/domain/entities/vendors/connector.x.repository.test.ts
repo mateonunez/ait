@@ -1,7 +1,7 @@
-import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { getPostgresClient, closePostgresConnection, drizzleOrm, xTweets } from "@ait/postgres";
+import { after, beforeEach, describe, it } from "node:test";
 import type { XTweetEntity } from "@ait/core";
+import { closePostgresConnection, drizzleOrm, getPostgresClient, xTweets } from "@ait/postgres";
 import { ConnectorXTweetRepository } from "../../../../src/domain/entities/vendors/x/connector.x.repository";
 
 describe("ConnectorXRepository", () => {

@@ -1,5 +1,5 @@
 import { AItError } from "../errors/ait-error";
-import { err, ok, type Result } from "../types/result";
+import { type Result, err, ok } from "../types/result";
 
 export interface HttpRequestOptions {
   method?: string;

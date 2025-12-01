@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyArtistEntity } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { type SpotifyArtistDataTarget, drizzleOrm, getPostgresClient, spotifyArtists } from "@ait/postgres";
 import { connectorSpotifyArtistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyArtistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { getPostgresClient, spotifyArtists, type SpotifyArtistDataTarget, drizzleOrm } from "@ait/postgres";
-import { randomUUID } from "node:crypto";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

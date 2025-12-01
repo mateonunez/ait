@@ -1,8 +1,8 @@
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/styles/utils";
 import type { SuggestionItem } from "@ait/core";
 import { motion } from "framer-motion";
 import * as Icons from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface SuggestionsProps {
   suggestions: SuggestionItem[];

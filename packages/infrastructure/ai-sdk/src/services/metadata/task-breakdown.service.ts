@@ -1,5 +1,5 @@
-import { createTaskStep } from "../../utils/metadata.utils";
 import type { TaskStep } from "../../types";
+import { createTaskStep } from "../../utils/metadata.utils";
 
 /**
  * Service for breaking down complex queries into tasks

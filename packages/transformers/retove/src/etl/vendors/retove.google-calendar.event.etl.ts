@@ -1,16 +1,16 @@
+import type { IEmbeddingsService } from "@ait/ai-sdk";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import {
-  type getPostgresClient,
-  googleCalendarEvents,
   type GoogleCalendarEventDataTarget,
   drizzleOrm,
+  type getPostgresClient,
+  googleCalendarEvents,
 } from "@ait/postgres";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
 import type { qdrant } from "@ait/qdrant";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
-import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleCalendarEventDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-calendar.descriptor";
-import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
+import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
 
 export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GoogleCalendarEventDataTarget> =

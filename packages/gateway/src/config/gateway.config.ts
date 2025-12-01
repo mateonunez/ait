@@ -1,10 +1,10 @@
-import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
-import fastifyCors from "@fastify/cors";
-import fastifySecureSession from "@fastify/secure-session";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ait } from "@ait/connectors";
+import fastifyCors from "@fastify/cors";
+import fastifySecureSession from "@fastify/secure-session";
+import Fastify, { type FastifyInstance, type FastifyServerOptions } from "fastify";
 
 function getHttpsOptions(): { key: Buffer; cert: Buffer } | null {
   const certDir = join(__dirname, "../../certs");

@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { WeightedRankFusionService } from "../../../src/services/ranking/weighted-rank-fusion.service";
-import type { Document, BaseMetadata } from "../../../src/types/documents";
+import { describe, it } from "node:test";
 import type { CollectionVendor } from "../../../src/config/collections.config";
+import { WeightedRankFusionService } from "../../../src/services/ranking/weighted-rank-fusion.service";
+import type { BaseMetadata, Document } from "../../../src/types/documents";
 
 describe("WeightedRankFusionService", () => {
   const createMockDoc = (id: string, content: string, vendor: CollectionVendor): Document<BaseMetadata> => ({

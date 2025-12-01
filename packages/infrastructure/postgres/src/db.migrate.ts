@@ -1,8 +1,8 @@
+import { getLogger } from "@ait/core";
 import dotenv from "dotenv";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { migrationsPath } from "./drizzle.config";
-import { getPostgresClient, closePostgresConnection } from "./postgres.client";
-import { getLogger } from "@ait/core";
+import { closePostgresConnection, getPostgresClient } from "./postgres.client";
 
 const logger = getLogger();
 

@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
-import { getLogger } from "@ait/core";
+import { CommitCard } from "@/components/connectors/commit-card";
+import { PullRequestCard } from "@/components/connectors/pull-request-card";
+import { RepositoryCard } from "@/components/connectors/repository-card";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { IntegrationTabs } from "@/components/integration-tabs";
-import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
-import { RepositoryCard } from "@/components/connectors/repository-card";
-import { PullRequestCard } from "@/components/connectors/pull-request-card";
-import { CommitCard } from "@/components/connectors/commit-card";
+import { Pagination } from "@/components/pagination";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
+import { getLogger } from "@ait/core";
 import type {
-  GitHubRepositoryEntity as GitHubRepository,
-  GitHubPullRequestEntity as GitHubPullRequest,
   GitHubCommitEntity as GitHubCommit,
+  GitHubPullRequestEntity as GitHubPullRequest,
+  GitHubRepositoryEntity as GitHubRepository,
 } from "@ait/core";
+import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
 

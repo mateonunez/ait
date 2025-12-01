@@ -1,5 +1,5 @@
 import type { ChatMessage } from "./chat";
-import type { Document, BaseMetadata } from "./documents";
+import type { BaseMetadata, Document } from "./documents";
 
 /**
  * Configuration for conversation manager

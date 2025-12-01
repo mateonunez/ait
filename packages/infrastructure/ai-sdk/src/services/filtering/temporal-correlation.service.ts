@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
-import type { Document, BaseMetadata } from "../../types/documents";
-import { TemporalDateParser, type ITemporalDateParser } from "./temporal-date-parser.service";
+import type { BaseMetadata, Document } from "../../types/documents";
+import { type ITemporalDateParser, TemporalDateParser } from "./temporal-date-parser.service";
 
 const logger = getLogger();
 

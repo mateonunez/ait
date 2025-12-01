@@ -1,8 +1,8 @@
+import type { XTweetEntity, XTweetExternal } from "@ait/core";
 import type { XTweetDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
-import type { XTweetExternal, XTweetEntity } from "@ait/core";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 
 const xTweetMapping: ConnectorMapperDefinition<XTweetExternal, XTweetEntity, XTweetDataTarget> = {
   id: connectorMapperPassThrough<"id", string, XTweetExternal, XTweetEntity, XTweetDataTarget>("id"),

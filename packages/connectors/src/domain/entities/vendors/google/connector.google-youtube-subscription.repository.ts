@@ -1,7 +1,7 @@
 import type { GoogleYouTubeSubscriptionEntity, PaginatedResponse, PaginationParams } from "@ait/core";
-import type { IConnectorGoogleYouTubeSubscriptionRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
+import { drizzleOrm, getPostgresClient, googleSubscriptions } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import { getPostgresClient, googleSubscriptions, drizzleOrm } from "@ait/postgres";
+import type { IConnectorGoogleYouTubeSubscriptionRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
 import { connectorGoogleYouTubeSubscriptionMapper } from "../../../mappers/vendors/connector.google-youtube.mapper";
 
 export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorGoogleYouTubeSubscriptionRepository {

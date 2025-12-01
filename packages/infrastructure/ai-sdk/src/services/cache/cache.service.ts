@@ -1,4 +1,4 @@
-import { getCacheAnalyticsService, type CacheAnalyticsService } from "../analytics/cache-analytics.service";
+import { type CacheAnalyticsService, getCacheAnalyticsService } from "../analytics/cache-analytics.service";
 
 export interface ICacheProvider {
   get<T>(key: string): Promise<T | null> | T | null;

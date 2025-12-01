@@ -1,8 +1,8 @@
-import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { getPostgresClient, closePostgresConnection, drizzleOrm, notionPages } from "@ait/postgres";
-import { ConnectorNotionPageRepository } from "../../../../src/domain/entities/vendors/notion/connector.notion-page.repository";
+import { after, beforeEach, describe, it } from "node:test";
 import type { NotionPageEntity } from "@ait/core";
+import { closePostgresConnection, drizzleOrm, getPostgresClient, notionPages } from "@ait/postgres";
+import { ConnectorNotionPageRepository } from "../../../../src/domain/entities/vendors/notion/connector.notion-page.repository";
 
 describe("ConnectorNotionPageRepository", () => {
   const repository = new ConnectorNotionPageRepository();

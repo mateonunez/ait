@@ -1,6 +1,6 @@
-import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
-import { buildSuggestionPrompt } from "../prompts/suggestion.prompt";
 import { getLogger } from "@ait/core";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
+import { buildSuggestionPrompt } from "../prompts/suggestion.prompt";
 
 const logger = getLogger();
 

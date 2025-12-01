@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Target, Plus, Edit2, Trash2, Flame, Trophy, TrendingUp, Zap, Calendar, ChevronRight } from "lucide-react";
-import { useInsights } from "@/contexts/insights.context";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import type { GoalData, GoalType, GoalPeriod, CreateGoalRequest } from "@ait/ai-sdk";
+import { useInsights } from "@/contexts/insights.context";
 import { cn } from "@/styles/utils";
+import type { CreateGoalRequest, GoalData, GoalPeriod, GoalType } from "@ait/ai-sdk";
+import { AnimatePresence, motion } from "framer-motion";
+import { Calendar, ChevronRight, Edit2, Flame, Plus, Target, Trash2, TrendingUp, Trophy, Zap } from "lucide-react";
+import { useState } from "react";
 
 const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string; icon: string; color: string }> = [
   { value: "commits", label: "Commits", icon: "💻", color: "#F97316" },

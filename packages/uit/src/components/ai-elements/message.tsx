@@ -1,23 +1,23 @@
-import { useState } from "react";
 import { cn } from "@/styles/utils";
+import { type FeedbackRating, submitFeedback } from "@/utils/feedback.utils";
+import type { ChatMessageWithMetadata } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Copy,
+  Brain,
   Check,
-  ThumbsUp,
-  ThumbsDown,
   ChevronDown,
   ChevronUp,
-  Brain,
+  Copy,
   Database,
-  Wrench,
   ListChecks,
+  ThumbsDown,
+  ThumbsUp,
+  Wrench,
 } from "lucide-react";
+import { useState } from "react";
 import { Streamdown } from "streamdown";
-import { motion, AnimatePresence } from "framer-motion";
-import { submitFeedback, type FeedbackRating } from "@/utils/feedback.utils";
-import type { ChatMessageWithMetadata } from "@ait/core";
 import { Badge } from "../ui/badge";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

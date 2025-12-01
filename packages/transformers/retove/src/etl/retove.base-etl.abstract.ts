@@ -1,19 +1,19 @@
-import type { getPostgresClient } from "@ait/postgres";
-import type { qdrant } from "@ait/qdrant";
+import { createHash } from "node:crypto";
 import {
   EmbeddingsService,
-  getEmbeddingModelConfig,
   type IEmbeddingsService,
-  getCollectionsNames,
-  OPTIMAL_CHUNK_SIZE,
-  OPTIMAL_CHUNK_OVERLAP,
-  getSparseVectorService,
   type ISparseVectorService,
+  OPTIMAL_CHUNK_OVERLAP,
+  OPTIMAL_CHUNK_SIZE,
   type SparseVector,
+  getCollectionsNames,
+  getEmbeddingModelConfig,
+  getSparseVectorService,
 } from "@ait/ai-sdk";
-import { SyncStateService, type ISyncStateService } from "@ait/connectors";
+import { type ISyncStateService, SyncStateService } from "@ait/connectors";
 import { getLogger } from "@ait/core";
-import { createHash } from "node:crypto";
+import type { getPostgresClient } from "@ait/postgres";
+import type { qdrant } from "@ait/qdrant";
 
 const logger = getLogger();
 

@@ -1,4 +1,4 @@
-import type { PercentileMetrics, MetricSnapshot, PerformanceSnapshot } from "./types";
+import type { MetricSnapshot, PercentileMetrics, PerformanceSnapshot } from "./types";
 
 /**
  * Service for calculating performance metrics

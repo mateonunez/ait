@@ -1,6 +1,6 @@
 import { useStats } from "@/contexts/stats.context";
-import { MetricCard } from "../metric-card";
 import { AlertTriangle } from "lucide-react";
+import { MetricCard } from "../metric-card";
 
 export function ErrorsTab() {
   const { errors } = useStats();

@@ -1,8 +1,8 @@
+import type { GitHubRepositoryEntity, GitHubRepositoryExternal } from "@ait/core";
 import type { GitHubRepositoryDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
-import type { GitHubRepositoryEntity, GitHubRepositoryExternal } from "@ait/core";
 
 const githubRepositoryMapping: ConnectorMapperDefinition<
   GitHubRepositoryExternal,

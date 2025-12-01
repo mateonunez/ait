@@ -1,9 +1,9 @@
 import { getLogger } from "@ait/core";
-import type { ToolExecutionResult, ToolExecutionConfig } from "../../types/text-generation";
-import type { Tool } from "../../types/tools";
 import type { OllamaToolCall } from "../../client/ollama.provider";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import type { ToolExecutionConfig, ToolExecutionResult } from "../../types/text-generation";
+import type { Tool } from "../../types/tools";
 
 const logger = getLogger();
 

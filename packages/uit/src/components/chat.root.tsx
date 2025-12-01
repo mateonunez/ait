@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { ChatProvider } from "@/contexts/chat.context";
+import type { ReactNode } from "react";
 
 interface ChatRootProps {
   children: ReactNode;

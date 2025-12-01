@@ -1,7 +1,7 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { DiversityService } from "../../../src/services/filtering/diversity.service";
-import type { Document, BaseMetadata } from "../../../src/types/documents";
+import type { BaseMetadata, Document } from "../../../src/types/documents";
 
 describe("DiversityService", () => {
   describe("applyMMR", () => {

@@ -1,29 +1,29 @@
-import dotenv from "dotenv";
 import { AItError, getLogger } from "@ait/core";
-import { createOllama } from "ollama-ai-provider-v2";
 import { generateObject, generateText } from "ai";
+import dotenv from "dotenv";
+import { createOllama } from "ollama-ai-provider-v2";
 import type { ZodType } from "zod";
-import { OllamaProvider } from "./ollama.provider";
 import {
-  getGenerationModel,
-  getEmbeddingModel,
-  getModelSpec,
-  type ModelSpec,
-  type GenerationModelName,
   type EmbeddingModelName,
+  type GenerationModelName,
+  type ModelSpec,
+  getEmbeddingModel,
+  getGenerationModel,
+  getModelSpec,
 } from "../config/models.config";
-import { getPreset, mergePresetWithOverrides, type PresetName } from "../config/presets.config";
+import { type PresetName, getPreset, mergePresetWithOverrides } from "../config/presets.config";
+import type { TextGenerationService } from "../services/text-generation/text-generation.service";
+import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 import type { ClientConfig } from "../types/config";
 import type {
-  GenerationModel,
   EmbeddingsModel,
+  GenerationModel,
   ModelGenerateOptions,
-  ModelStreamOptions,
   ModelGenerateResult,
+  ModelStreamOptions,
 } from "../types/models";
 import type { OllamaTool } from "../types/providers/ollama.types";
-import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
-import type { TextGenerationService } from "../services/text-generation/text-generation.service";
+import { OllamaProvider } from "./ollama.provider";
 
 dotenv.config();
 

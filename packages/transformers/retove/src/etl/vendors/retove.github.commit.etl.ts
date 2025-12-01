@@ -1,11 +1,11 @@
-import { type getPostgresClient, githubCommits, type GitHubCommitDataTarget, drizzleOrm } from "@ait/postgres";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { qdrant } from "@ait/qdrant";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
+import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { type GitHubCommitDataTarget, drizzleOrm, type getPostgresClient, githubCommits } from "@ait/postgres";
+import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubCommitDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
-import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
+import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
 
 export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubCommitDataTarget> = new ETLGitHubCommitDescriptor();

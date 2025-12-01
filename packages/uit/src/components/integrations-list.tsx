@@ -1,22 +1,22 @@
-import { useLocation } from "wouter";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/styles/utils";
 import { AIT_SERVICES } from "@/utils/items.const";
 import {
-  Github,
-  Music,
-  MessageSquare,
-  FileText,
-  Code2,
-  Zap,
-  Video,
-  Palette,
-  Cloud,
-  CreditCard,
-  Twitter,
   Calendar,
+  Cloud,
+  Code2,
+  CreditCard,
+  FileText,
+  Github,
+  MessageSquare,
+  Music,
+  Palette,
+  Twitter,
+  Video,
+  Zap,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useLocation } from "wouter";
 
 const INTEGRATION_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   github: Github,

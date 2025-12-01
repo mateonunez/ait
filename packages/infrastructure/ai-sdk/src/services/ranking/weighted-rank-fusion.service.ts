@@ -1,7 +1,7 @@
 import { getLogger } from "@ait/core";
-import type { Document, BaseMetadata } from "../../types/documents";
 import type { CollectionVendor } from "../../config/collections.config";
 import type { WeightedDocument } from "../../types/collections";
+import type { BaseMetadata, Document } from "../../types/documents";
 
 const logger = getLogger();
 

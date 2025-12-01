@@ -1,8 +1,8 @@
-import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { getPostgresClient, closePostgresConnection, drizzleOrm } from "@ait/postgres";
-import { githubRepositories, githubCommits, githubPullRequests } from "@ait/postgres";
-import type { GitHubRepositoryEntity, GitHubCommitEntity, GitHubPullRequestEntity } from "@ait/core";
+import { after, beforeEach, describe, it } from "node:test";
+import type { GitHubCommitEntity, GitHubPullRequestEntity, GitHubRepositoryEntity } from "@ait/core";
+import { closePostgresConnection, drizzleOrm, getPostgresClient } from "@ait/postgres";
+import { githubCommits, githubPullRequests, githubRepositories } from "@ait/postgres";
 import { ConnectorGitHubRepoRepository } from "../../../../src/domain/entities/vendors/github/connector.github-repo.repository";
 import { ConnectorGitHubCommitRepository } from "../../../../src/domain/entities/vendors/github/connector.github.commit.repository";
 import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";

@@ -2,7 +2,7 @@
 
 Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /eɪt/). It depends. 🤷‍♂️
 
-AIt is a comprehensive platform for extracting, transforming, and loading data from multiple sources (GitHub, Linear, Spotify, X) into vector databases for AI-powered semantic search and text generation.
+AIt is a comprehensive platform for interacting with your own data with multiple sources compatible (GitHub, Linear, Spotify, Notion, X, Google, and more soon). AIt brings you AI-capabilities to your own ecosystem.
 
 ## Quick Start
 
@@ -50,32 +50,10 @@ AIt follows a modular monorepo architecture:
 Create a `.env` file in the root directory with the following essential variables:
 
 ```bash
-# Database
-POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
+cd packages/gateway
+cp .env.example .env
 
-# OAuth (required for connectors)
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_secret
-
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-
-LINEAR_CLIENT_ID=your_linear_client_id
-LINEAR_CLIENT_SECRET=your_linear_secret
-
-X_CLIENT_ID=your_x_client_id
-X_CLIENT_SECRET=your_x_secret
-
-NOTION_CLIENT_ID=your_notion_client_id
-NOTION_CLIENT_SECRET=your_notion_secret
-
-SLACK_CLIENT_ID=your_slack_client_id
-SLACK_CLIENT_SECRET=your_slack_secret
-
-# Infrastructure URLs (defaults usually work)
-OLLAMA_BASE_URL=http://localhost:11434
-QDRANT_URL=http://localhost:6333
-REDIS_URL=redis://:myredissecret@localhost:6379
+# Fill your own data on the .env
 ```
 
 See individual package READMEs for detailed configuration options.
@@ -91,7 +69,7 @@ pnpm test  # Runs tests with isolated Docker services
 ### Code Generation
 
 ```bash
-pnpm generate:openapi  # Generate OpenAPI types
+pnpm generate:openapi  # Generate OpenAPI types, runs automatically at install
 cd packages/infrastructure/postgres && pnpm db:generate  # Generate DB types
 ```
 

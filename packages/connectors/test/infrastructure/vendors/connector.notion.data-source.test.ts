@@ -1,11 +1,11 @@
+import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
+import { AItError } from "@ait/core";
+import { MockAgent, setGlobalDispatcher } from "undici";
 import {
   ConnectorNotionDataSource,
   type IConnectorNotionDataSource,
 } from "../../../src/infrastructure/vendors/notion/connector.notion.data-source";
-import { AItError } from "@ait/core";
-import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import { MockAgent, setGlobalDispatcher } from "undici";
 
 describe("ConnectorNotionDataSource", () => {
   let agent: MockAgent;

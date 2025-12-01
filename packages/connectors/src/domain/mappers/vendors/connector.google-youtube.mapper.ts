@@ -1,4 +1,4 @@
-import type { GoogleYouTubeSubscriptionExternal, GoogleYouTubeSubscriptionEntity } from "@ait/core";
+import type { GoogleYouTubeSubscriptionEntity, GoogleYouTubeSubscriptionExternal } from "@ait/core";
 import type { GoogleSubscriptionDataTarget, GoogleSubscriptionDataTargetInsert } from "@ait/postgres";
 
 class ConnectorGoogleYouTubeSubscriptionMapper {

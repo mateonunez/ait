@@ -1,13 +1,13 @@
+import type { LinearIssueEntity, LinearIssueExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
 import {
-  connectorEntityConfigs,
   LINEAR_ENTITY_TYPES_ENUM,
   type LinearServiceEntityMap,
+  connectorEntityConfigs,
 } from "./connector.vendors.config";
-import { getConnectorConfig } from "../connector.service.config";
-import type { LinearIssueEntity, LinearIssueExternal, PaginatedResponse, PaginationParams } from "@ait/core";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export interface IConnectorLinearService extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap> {
   fetchIssues(): Promise<LinearIssueEntity[]>;

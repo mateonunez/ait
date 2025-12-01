@@ -18,8 +18,8 @@
     "prepare": "pnpm generate:openapi && pnpm build",
     "typecheck": "tsc -p ./tsconfig.json --noEmit",
     "clean": "rm -rf dist coverage",
-    "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "lint": "biome format && biome lint && biome check",
+    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write",
     "generate:openapi": "tsx ./src/openapi/openapi.generator.ts"
   },
   "keywords": ["core", "errors", "types", "http"],

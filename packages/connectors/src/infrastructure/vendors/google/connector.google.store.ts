@@ -1,10 +1,10 @@
 import type { GoogleEntity } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
-import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
-import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 
 export class ConnectorGoogleStore implements IConnectorStore {
   private _ConnectorGoogleRepository: IConnectorGoogleRepository;

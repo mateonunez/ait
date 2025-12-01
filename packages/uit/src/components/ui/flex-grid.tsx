@@ -1,5 +1,5 @@
-import { type HTMLAttributes, forwardRef } from "react";
 import { cn } from "@/styles/utils";
+import { type HTMLAttributes, forwardRef } from "react";
 
 interface FlexGridProps extends HTMLAttributes<HTMLDivElement> {
   gap?: number;

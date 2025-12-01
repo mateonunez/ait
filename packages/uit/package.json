@@ -10,8 +10,8 @@
     "build:watch": "vite build --watch",
     "clean": "rm -rf dist node_modules/.vite",
     "preview": "vite preview",
-    "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe"
+    "lint": "biome format && biome lint && biome check",
+    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write"
   },
   "dependencies": {
     "@ai-sdk/react": "^1.2.12",

@@ -1,7 +1,7 @@
 import type { GitHubRepositoryEntity, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
-import type { IConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.types";
 import type { IConnectorGitHubCommitRepository } from "./connector.github.commit.types";
+import type { IConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.types";
 
 export interface IConnectorGitHubRepoRepository {
   saveRepository(repository: Partial<GitHubRepositoryEntity>, options?: IConnectorRepositorySaveOptions): Promise<void>;

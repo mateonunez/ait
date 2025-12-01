@@ -1,5 +1,5 @@
-import { requestJson, AItError, getLogger, RateLimitError } from "@ait/core";
-import type { SlackMessageExternal, SlackApiResponse, SlackUser, SlackConversation } from "@ait/core";
+import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import type { SlackApiResponse, SlackConversation, SlackMessageExternal, SlackUser } from "@ait/core";
 
 export interface IConnectorSlackDataSource {
   fetchMessages(cursor?: string): Promise<{ messages: SlackMessageExternal[]; nextCursor?: string }>;

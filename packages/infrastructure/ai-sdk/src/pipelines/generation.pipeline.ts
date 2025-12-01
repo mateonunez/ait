@@ -1,10 +1,10 @@
 import { PipelineBuilder } from "../services/rag/pipeline/pipeline.builder";
 import type { PipelineOrchestrator } from "../services/rag/pipeline/pipeline.orchestrator";
-import { ConversationProcessingStage } from "../stages/generation/conversation-processing.stage";
 import { ContextPreparationStage } from "../stages/generation/context-preparation.stage";
-import { ToolExecutionStage } from "../stages/generation/tool-execution.stage";
-import { TextGenerationStage } from "../stages/generation/text-generation.stage";
+import { ConversationProcessingStage } from "../stages/generation/conversation-processing.stage";
 import { MetadataExtractionStage } from "../stages/generation/metadata-extraction.stage";
+import { TextGenerationStage } from "../stages/generation/text-generation.stage";
+import { ToolExecutionStage } from "../stages/generation/tool-execution.stage";
 import type { ConversationProcessingInput, MetadataExtractionOutput } from "../types/stages";
 import type { ConversationConfig } from "../types/text-generation";
 

@@ -1,12 +1,12 @@
+import { getLogger } from "@ait/core";
 import type {
   IPipelineStage,
   PipelineConfig,
   PipelineContext,
+  PipelineExecutionOptions,
   PipelineResult,
   StageResult,
-  PipelineExecutionOptions,
 } from "./pipeline.types";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

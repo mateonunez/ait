@@ -1,5 +1,5 @@
+import { type SuggestionContext, getSuggestionService } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getSuggestionService, type SuggestionContext } from "@ait/ai-sdk";
 
 const suggestionService = getSuggestionService();
 

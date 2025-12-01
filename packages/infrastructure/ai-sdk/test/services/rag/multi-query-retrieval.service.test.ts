@@ -1,14 +1,14 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
 import sinon from "sinon";
-import { MultiQueryRetrievalService } from "../../../src/services/retrieval/multi-query-retrieval.service";
-import type { IQueryPlannerService } from "../../../src/services/retrieval/query-planner.service";
 import type { IDiversityService } from "../../../src/services/filtering/diversity.service";
 import type { ITypeFilterService } from "../../../src/services/filtering/type-filter.service";
-import type { IRankFusionService } from "../../../src/services/ranking/rank-fusion.service";
-import type { Document, BaseMetadata } from "../../../src/types/documents";
-import type { QueryPlanResult } from "../../../src/types/rag";
 import type { QdrantProvider } from "../../../src/services/rag/qdrant.provider";
+import type { IRankFusionService } from "../../../src/services/ranking/rank-fusion.service";
+import { MultiQueryRetrievalService } from "../../../src/services/retrieval/multi-query-retrieval.service";
+import type { IQueryPlannerService } from "../../../src/services/retrieval/query-planner.service";
+import type { BaseMetadata, Document } from "../../../src/types/documents";
+import type { QueryPlanResult } from "../../../src/types/rag";
 
 describe("MultiQueryRetrievalService", () => {
   let service: MultiQueryRetrievalService;

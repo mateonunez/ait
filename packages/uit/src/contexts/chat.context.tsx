@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { clearSession, generateUserId, getSessionId } from "@/utils/user-tracking";
 import { getLogger } from "@ait/core";
-import { generateUserId, getSessionId, clearSession } from "@/utils/user-tracking";
+import { type ReactNode, createContext, useContext, useEffect, useState } from "react";
 
 const logger = getLogger();
 

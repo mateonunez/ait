@@ -1,4 +1,4 @@
-import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
+import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
 import type { LinearIssueExternal } from "@ait/core";
 
 export interface IConnectorLinearDataSource {

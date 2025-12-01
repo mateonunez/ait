@@ -1,11 +1,11 @@
 import { getLogger } from "@ait/core";
-import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { QueryAnalysisOutput, ContextBuildingInput } from "../../types/stages";
-import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { EntityType } from "@ait/core";
 import { getCollectionByEntityType } from "../../config/collections.config";
 import type { CollectionVendor } from "../../config/collections.config";
-import type { EntityType } from "@ait/core";
+import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { ContextBuildingInput, QueryAnalysisOutput } from "../../types/stages";
 
 const logger = getLogger();
 

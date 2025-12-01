@@ -1,13 +1,13 @@
 import { getLogger } from "@ait/core";
 import { z } from "zod";
-import type { QueryPlannerConfig, QueryPlanResult } from "../../types/rag";
 import { getAItClient } from "../../client/ai-sdk.client";
-import { QueryHeuristicService, type IQueryHeuristicService } from "../routing/query-heuristic.service";
-import { type QueryIntent, QueryIntentService, type IQueryIntentService } from "../routing/query-intent.service";
-import { recordSpan, recordGeneration } from "../../telemetry/telemetry.middleware";
+import { recordGeneration, recordSpan } from "../../telemetry/telemetry.middleware";
+import type { QueryPlanResult, QueryPlannerConfig } from "../../types/rag";
 import type { TraceContext } from "../../types/telemetry";
+import { type ITextNormalizationService, TextNormalizationService } from "../metadata/text-normalization.service";
 import { buildQueryPlanningPrompt } from "../prompts/planning.prompts";
-import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
+import { type IQueryHeuristicService, QueryHeuristicService } from "../routing/query-heuristic.service";
+import { type IQueryIntentService, type QueryIntent, QueryIntentService } from "../routing/query-intent.service";
 
 const logger = getLogger();
 

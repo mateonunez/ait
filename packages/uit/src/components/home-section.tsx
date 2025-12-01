@@ -1,9 +1,9 @@
-import { useLocation } from "wouter";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/styles/utils";
 import type { IntegrationEntity } from "@/types/integrations.types";
 import { type EntityType, getEntityMetadata } from "@ait/core";
-import { cn } from "@/styles/utils";
+import { useLocation } from "wouter";
 import { renderCard } from "./card-renderer";
 
 interface HomeSectionProps {

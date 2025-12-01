@@ -1,9 +1,9 @@
-import type { GoogleCalendarEventExternal, GoogleCalendarCalendarExternal } from "@ait/core";
+import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "@ait/core";
+import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
 import type {
-  IConnectorGoogleCalendarDataSource,
   GoogleCalendarPaginatedResponse,
+  IConnectorGoogleCalendarDataSource,
 } from "../../../types/infrastructure/connector.google-calendar.data-source.interface";
-import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
 
 export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalendarDataSource {
   private readonly apiUrl: string;

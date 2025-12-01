@@ -1,11 +1,11 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { TextGenerationService } from "./text-generation.service";
+import { beforeEach, describe, it } from "node:test";
 import { initAItClient } from "../../client/ai-sdk.client";
-import { smoothStream } from "./utils/stream.utils";
+import { EmbeddingModels, GenerationModels } from "../../config/models.config";
 import type { ChatMessage } from "../../types/chat";
-import { GenerationModels, EmbeddingModels } from "../../config/models.config";
 import type { StreamEvent } from "../../types/streaming/stream-events";
+import { TextGenerationService } from "./text-generation.service";
+import { smoothStream } from "./utils/stream.utils";
 
 describe("AIt Personality Integration (AI SDK)", () => {
   const timeout = 1800000;

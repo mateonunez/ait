@@ -1,7 +1,7 @@
+import { request } from "undici";
 import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import { ConnectorOAuthRequestError, ConnectorOAuthNetworkError } from "../../../shared/auth/lib/oauth/connector.oauth";
-import { request } from "undici";
+import { ConnectorOAuthNetworkError, ConnectorOAuthRequestError } from "../../../shared/auth/lib/oauth/connector.oauth";
 
 /**
  * Notion-specific authenticator that uses JSON body instead of form data

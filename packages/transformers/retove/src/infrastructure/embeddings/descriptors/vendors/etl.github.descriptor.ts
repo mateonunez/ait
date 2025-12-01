@@ -1,6 +1,6 @@
 import type { GitHubCommitDataTarget, GitHubPullRequestDataTarget, GitHubRepositoryDataTarget } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> {
   public getEmbeddingText(repository: GitHubRepositoryDataTarget): string {

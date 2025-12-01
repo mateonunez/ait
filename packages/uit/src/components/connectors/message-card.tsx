@@ -1,16 +1,16 @@
-import { Hash, MessageSquare, Reply, File, Image, Pin, FileText, Video, Music, Archive } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
 import { cn } from "@/styles/utils";
+import type { SlackFile, SlackMessageEntity as SlackMessage, SlackReaction } from "@ait/core";
+import { motion } from "framer-motion";
+import { Archive, File, FileText, Hash, Image, MessageSquare, Music, Pin, Reply, Video } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { SlackMessageEntity as SlackMessage, SlackFile, SlackReaction } from "@ait/core";
 
 interface MessageCardProps {
   message: SlackMessage;

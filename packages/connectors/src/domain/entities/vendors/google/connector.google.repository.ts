@@ -1,9 +1,9 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
-import { getOAuthData, saveOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { clearOAuthData, getOAuthData, saveOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
 import type { IConnectorGoogleRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import { ConnectorGoogleCalendarEventRepository } from "./connector.google-calendar-event.repository";
 import { ConnectorGoogleCalendarCalendarRepository } from "./connector.google-calendar-calendar.repository";
+import { ConnectorGoogleCalendarEventRepository } from "./connector.google-calendar-event.repository";
 import { ConnectorGoogleYouTubeSubscriptionRepository } from "./connector.google-youtube-subscription.repository";
 
 export class ConnectorGoogleRepository

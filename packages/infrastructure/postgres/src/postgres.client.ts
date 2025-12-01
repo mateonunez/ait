@@ -1,8 +1,8 @@
-import dotenv from "dotenv";
-import postgres from "postgres";
-import { drizzle } from "drizzle-orm/postgres-js";
-import * as drizzleOrm from "drizzle-orm";
 import { getLogger } from "@ait/core";
+import dotenv from "dotenv";
+import * as drizzleOrm from "drizzle-orm";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 
 const logger = getLogger();
 

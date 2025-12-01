@@ -1,8 +1,8 @@
-import { Target } from "lucide-react";
-import { Button } from "./ui/button";
 import { useInsights } from "@/contexts/insights.context";
+import { Target } from "lucide-react";
 import { useState } from "react";
 import { GoalsDialog } from "./discovery/goals-dialog";
+import { Button } from "./ui/button";
 
 export function GoalsButton() {
   const { goals } = useInsights();

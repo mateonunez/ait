@@ -1,8 +1,8 @@
+import type { SlackMessageEntity, SlackMessageExternal } from "@ait/core";
 import type { SlackMessageDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
-import type { SlackMessageEntity, SlackMessageExternal } from "@ait/core";
 
 const slackMessageMapping: ConnectorMapperDefinition<SlackMessageExternal, SlackMessageEntity, SlackMessageDataTarget> =
   {

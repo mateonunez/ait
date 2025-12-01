@@ -1,7 +1,7 @@
-import type { GitHubPullRequestDataTarget } from "@ait/postgres";
-import { ConnectorMapper } from "../connector.mapper";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import type { GitHubPullRequestEntity, GitHubPullRequestExternal } from "@ait/core";
+import type { GitHubPullRequestDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
+import { ConnectorMapper } from "../connector.mapper";
 
 const githubPullRequestMapping: ConnectorMapperDefinition<
   GitHubPullRequestExternal,

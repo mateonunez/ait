@@ -1,6 +1,6 @@
-import { type HTMLAttributes, forwardRef } from "react";
-import { cn } from "@/styles/utils";
 import { theme } from "@/styles/theme";
+import { cn } from "@/styles/utils";
+import { type HTMLAttributes, forwardRef } from "react";
 
 interface HeadingProps extends HTMLAttributes<HTMLHeadingElement> {
   variant?: "hero" | "default";

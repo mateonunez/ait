@@ -1,12 +1,12 @@
-import { ConnectorGoogleCalendarDataSource } from "./connector.google-calendar.data-source";
-import { ConnectorGoogleYouTubeDataSource } from "./connector.google-youtube.data-source";
 import type {
-  GoogleCalendarEventExternal,
   GoogleCalendarCalendarExternal,
+  GoogleCalendarEventExternal,
   GoogleYouTubeSubscriptionExternal,
 } from "@ait/core";
 import type { GoogleCalendarPaginatedResponse } from "../../../types/infrastructure/connector.google-calendar.data-source.interface";
 import type { GoogleYouTubePaginatedResponse } from "../../../types/infrastructure/connector.google-youtube.data-source.interface";
+import { ConnectorGoogleCalendarDataSource } from "./connector.google-calendar.data-source";
+import { ConnectorGoogleYouTubeDataSource } from "./connector.google-youtube.data-source";
 
 export class ConnectorGoogleDataSource {
   private _calendarDataSource: ConnectorGoogleCalendarDataSource;

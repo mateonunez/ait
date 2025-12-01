@@ -1,10 +1,10 @@
+import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
+import { MockAgent, setGlobalDispatcher } from "undici";
 import {
   ConnectorGitHubDataSource,
   type ConnectorGitHubFetchRepositoriesResponse,
 } from "../../../src/infrastructure/vendors/github/connector.github.data-source";
-import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import { MockAgent, setGlobalDispatcher } from "undici";
 
 describe("ConnectorGitHubDataSource", () => {
   let agent: MockAgent;

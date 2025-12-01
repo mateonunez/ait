@@ -1,5 +1,5 @@
 import { requestJson } from "@ait/core";
-import type { PaginationParams, PaginatedResponse, RefreshResponse, LinearIssueEntity as LinearIssue } from "@ait/core";
+import type { LinearIssueEntity as LinearIssue, PaginatedResponse, PaginationParams, RefreshResponse } from "@ait/core";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";
 

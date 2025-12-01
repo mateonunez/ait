@@ -1,19 +1,19 @@
 import type { EntityType } from "@ait/core";
 import type { EntityFormatter } from "./formatter.utils";
-import {
-  SpotifyTrackFormatter,
-  SpotifyArtistFormatter,
-  SpotifyPlaylistFormatter,
-  SpotifyAlbumFormatter,
-  SpotifyRecentlyPlayedFormatter,
-} from "./spotify.formatter";
-import { GitHubRepositoryFormatter, GitHubPullRequestFormatter, GitHubCommitFormatter } from "./github.formatter";
-import { XTweetFormatter } from "./x.formatter";
+import { GitHubCommitFormatter, GitHubPullRequestFormatter, GitHubRepositoryFormatter } from "./github.formatter";
+import { GoogleCalendarCalendarFormatter, GoogleCalendarEventFormatter } from "./google-calendar.formatter";
+import { GoogleYouTubeSubscriptionFormatter } from "./google-youtube.formatter";
+import { LinearIssueFormatter } from "./linear.formatter";
 import { NotionPageFormatter } from "./notion.formatter";
 import { SlackMessageFormatter } from "./slack.formatter";
-import { LinearIssueFormatter } from "./linear.formatter";
-import { GoogleCalendarEventFormatter, GoogleCalendarCalendarFormatter } from "./google-calendar.formatter";
-import { GoogleYouTubeSubscriptionFormatter } from "./google-youtube.formatter";
+import {
+  SpotifyAlbumFormatter,
+  SpotifyArtistFormatter,
+  SpotifyPlaylistFormatter,
+  SpotifyRecentlyPlayedFormatter,
+  SpotifyTrackFormatter,
+} from "./spotify.formatter";
+import { XTweetFormatter } from "./x.formatter";
 
 export {
   SpotifyTrackFormatter,

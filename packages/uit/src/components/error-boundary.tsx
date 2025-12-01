@@ -1,5 +1,5 @@
-import React, { type JSX } from "react";
 import { getLogger } from "@ait/core";
+import React, { type JSX } from "react";
 
 const logger = getLogger();
 

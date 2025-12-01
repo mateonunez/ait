@@ -10,8 +10,8 @@
     "clean": "rm -rf dist coverage",
     "start": "node ./dist/scheduler.entrypoint.js",
     "start:manual": "tsx src/scheduler.entrypoint.ts --manual",
-    "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe",
+    "lint": "biome format && biome lint && biome check",
+    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write",
     "pretest": "test -f .env.test || cp .env.example .env.test",
     "test": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test'",
     "test:watch": "glob src/**/*.test.ts -c 'c8 tsx --require ./test-setup.ts --test --watch'"

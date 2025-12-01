@@ -1,8 +1,8 @@
 import { getLogger } from "@ait/core";
-import type { ConversationConfig, ConversationContext } from "../../types/text-generation";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
 import type { ChatMessage } from "../../types/chat";
-import { TokenEstimationService, type ITokenEstimationService } from "../metadata/token-estimation.service";
-import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
+import type { ConversationConfig, ConversationContext } from "../../types/text-generation";
+import { type ITokenEstimationService, TokenEstimationService } from "../metadata/token-estimation.service";
 import { buildSummarizationPrompt } from "../prompts/summarization.prompt";
 
 const logger = getLogger();

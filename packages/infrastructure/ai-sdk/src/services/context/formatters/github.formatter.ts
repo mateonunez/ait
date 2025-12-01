@@ -1,7 +1,7 @@
-import type { GitHubRepositoryEntity, GitHubPullRequestEntity, GitHubCommitEntity } from "@ait/core";
-import type { EntityFormatter } from "./formatter.utils";
-import { safeString, safeNumber, joinParts } from "./formatter.utils";
+import type { GitHubCommitEntity, GitHubPullRequestEntity, GitHubRepositoryEntity } from "@ait/core";
 import { TextNormalizationService } from "../../metadata/text-normalization.service";
+import type { EntityFormatter } from "./formatter.utils";
+import { joinParts, safeNumber, safeString } from "./formatter.utils";
 
 const textNormalizer = new TextNormalizationService();
 

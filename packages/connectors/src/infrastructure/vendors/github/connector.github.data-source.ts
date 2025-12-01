@@ -1,13 +1,13 @@
-import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
 import {
   AItError,
-  RateLimitError,
-  getLogger,
-  type PaginationParams,
   type GitHubCommitExternal,
   type GitHubPullRequestExternal,
   type GitHubRepositoryExternal,
+  type PaginationParams,
+  RateLimitError,
+  getLogger,
 } from "@ait/core";
+import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
 
 export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];

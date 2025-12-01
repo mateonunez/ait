@@ -1,11 +1,11 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import type { GitHubCommitEntity, GitHubPullRequestEntity, GitHubRepositoryEntity } from "@ait/core";
 import {
-  GitHubRepositoryFormatter,
-  GitHubPullRequestFormatter,
   GitHubCommitFormatter,
+  GitHubPullRequestFormatter,
+  GitHubRepositoryFormatter,
 } from "../../../../src/services/context/formatters/github.formatter";
-import type { GitHubRepositoryEntity, GitHubPullRequestEntity, GitHubCommitEntity } from "@ait/core";
 
 describe("GitHub Formatters", () => {
   describe("GitHubRepositoryFormatter", () => {

@@ -1,20 +1,20 @@
-import { getQdrantClient } from "@ait/qdrant";
-import { getPostgresClient, closePostgresConnection } from "@ait/postgres";
 import { getLogger } from "@ait/core";
+import { closePostgresConnection, getPostgresClient } from "@ait/postgres";
+import { getQdrantClient } from "@ait/qdrant";
 import {
-  runSpotifyTrackETL,
-  runSpotifyArtistETL,
-  runSpotifyPlaylistETL,
-  runSpotifyAlbumETL,
-  runSpotifyRecentlyPlayedETL,
-  runGitHubRepositoryETL,
-  runLinearETL,
-  runXETL,
-  runGitHubPullRequestETL,
   runGitHubCommitETL,
+  runGitHubPullRequestETL,
+  runGitHubRepositoryETL,
+  runGoogleYouTubeSubscriptionETL,
+  runLinearETL,
   runNotionETL,
   runSlackETL,
-  runGoogleYouTubeSubscriptionETL,
+  runSpotifyAlbumETL,
+  runSpotifyArtistETL,
+  runSpotifyPlaylistETL,
+  runSpotifyRecentlyPlayedETL,
+  runSpotifyTrackETL,
+  runXETL,
 } from "./infrastructure/runners/etl.runners";
 
 const logger = getLogger();

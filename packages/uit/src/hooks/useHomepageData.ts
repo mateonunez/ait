@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo, useRef } from "react";
-import { getLogger, getEntityMetadata, type EntityType } from "@ait/core";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import { contentAlgorithmService } from "@/services/content-algorithm.service";
-import type { IntegrationEntity, HomeSection as HomeSectionType } from "@/types/integrations.types";
+import type { HomeSection as HomeSectionType, IntegrationEntity } from "@/types/integrations.types";
+import { type EntityType, getEntityMetadata, getLogger } from "@ait/core";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const logger = getLogger();
 

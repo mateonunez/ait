@@ -1,5 +1,5 @@
 import { getLogger } from "@ait/core";
-import { getCollectionConfig, getAllCollections, type CollectionVendor } from "../../config/collections.config";
+import { type CollectionVendor, getAllCollections, getCollectionConfig } from "../../config/collections.config";
 import type { CollectionWeight } from "../../types/collections";
 
 const logger = getLogger();

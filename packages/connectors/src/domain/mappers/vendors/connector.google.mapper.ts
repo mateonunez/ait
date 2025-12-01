@@ -1,13 +1,13 @@
 import type {
-  GoogleCalendarEventExternal,
-  GoogleCalendarEventEntity,
-  GoogleCalendarCalendarExternal,
   GoogleCalendarCalendarEntity,
+  GoogleCalendarCalendarExternal,
+  GoogleCalendarEventEntity,
+  GoogleCalendarEventExternal,
 } from "@ait/core";
-import type { GoogleCalendarEventDataTarget, GoogleCalendarCalendarDataTarget } from "@ait/postgres";
+import type { GoogleCalendarCalendarDataTarget, GoogleCalendarEventDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 
 const googleCalendarEventMapping: ConnectorMapperDefinition<
   GoogleCalendarEventExternal,

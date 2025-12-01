@@ -1,10 +1,10 @@
-import { AItError, type SlackMessageEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { randomUUID } from "node:crypto";
+import { AItError, type PaginatedResponse, type PaginationParams, type SlackMessageEntity } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { type SlackMessageDataTarget, drizzleOrm, getPostgresClient, slackMessages } from "@ait/postgres";
 import { connectorSlackMessageMapper } from "../../../../domain/mappers/vendors/connector.slack.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSlackMessageRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
-import { getPostgresClient, slackMessages, type SlackMessageDataTarget, drizzleOrm } from "@ait/postgres";
-import { randomUUID } from "node:crypto";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

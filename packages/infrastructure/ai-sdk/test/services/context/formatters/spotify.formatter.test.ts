@@ -1,19 +1,19 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import {
-  SpotifyTrackFormatter,
-  SpotifyArtistFormatter,
-  SpotifyPlaylistFormatter,
-  SpotifyAlbumFormatter,
-  SpotifyRecentlyPlayedFormatter,
-} from "../../../../src/services/context/formatters/spotify.formatter";
+import { describe, it } from "node:test";
 import type {
-  SpotifyTrackEntity,
+  SpotifyAlbumEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
-  SpotifyAlbumEntity,
   SpotifyRecentlyPlayedEntity,
+  SpotifyTrackEntity,
 } from "@ait/core";
+import {
+  SpotifyAlbumFormatter,
+  SpotifyArtistFormatter,
+  SpotifyPlaylistFormatter,
+  SpotifyRecentlyPlayedFormatter,
+  SpotifyTrackFormatter,
+} from "../../../../src/services/context/formatters/spotify.formatter";
 
 describe("Spotify Formatters", () => {
   describe("SpotifyTrackFormatter", () => {

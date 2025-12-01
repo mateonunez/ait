@@ -1,25 +1,25 @@
-import { useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Sparkles,
-  TrendingUp,
-  AlertTriangle,
-  Lightbulb,
-  RefreshCw,
-  AlertCircle,
-  ChevronUp,
-  Zap,
-  Brain,
-  Target,
-  ArrowRight,
-} from "lucide-react";
-import { useInsights } from "@/contexts/insights.context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useInsights } from "@/contexts/insights.context";
 import { cn } from "@/styles/utils";
-import type { InsightCorrelation, InsightAnomaly, InsightRecommendation } from "@ait/ai-sdk";
+import type { InsightAnomaly, InsightCorrelation, InsightRecommendation } from "@ait/ai-sdk";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowRight,
+  Brain,
+  ChevronUp,
+  Lightbulb,
+  RefreshCw,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import { useEffect } from "react";
 
 interface AiInsightsPanelProps {
   timeRange: "week" | "month" | "year";

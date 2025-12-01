@@ -1,6 +1,6 @@
 import { useStats } from "@/contexts/stats.context";
+import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { MetricCard } from "../metric-card";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
 
 export function QualityTab() {
   const { quality } = useStats();

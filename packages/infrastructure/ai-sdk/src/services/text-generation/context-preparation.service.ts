@@ -1,17 +1,17 @@
 import { AItError, getLogger } from "@ait/core";
-import type { RAGContext, ContextPreparationConfig } from "../../types/text-generation";
-import type { Document, BaseMetadata } from "../../types/documents";
-import type { IMultiQueryRetrievalService } from "../retrieval/multi-query-retrieval.service";
-import type { IEmbeddingsService } from "../embeddings/embeddings.service";
-import { ContextBuilder } from "../context/context.builder";
-import {
-  TemporalCorrelationService,
-  type ITemporalCorrelationService,
-} from "../filtering/temporal-correlation.service";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { BaseMetadata, Document } from "../../types/documents";
 import type { TraceContext } from "../../types/telemetry";
+import type { ContextPreparationConfig, RAGContext } from "../../types/text-generation";
 import { getCacheAnalyticsService } from "../analytics/cache-analytics.service";
+import { ContextBuilder } from "../context/context.builder";
+import type { IEmbeddingsService } from "../embeddings/embeddings.service";
+import {
+  type ITemporalCorrelationService,
+  TemporalCorrelationService,
+} from "../filtering/temporal-correlation.service";
 import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
+import type { IMultiQueryRetrievalService } from "../retrieval/multi-query-retrieval.service";
 import type { ICollectionRouterService } from "../routing/collection-router.service";
 
 const logger = getLogger();

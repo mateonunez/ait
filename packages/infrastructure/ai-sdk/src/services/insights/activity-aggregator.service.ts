@@ -1,7 +1,7 @@
 import { getLogger } from "@ait/core";
 import { getCacheService } from "../cache/cache.service";
 import type { ActivityData, IntegrationActivity } from "./insights.types";
-import { getIntegrationRegistryService, type ConnectorType } from "./integration-registry.service";
+import { type ConnectorType, getIntegrationRegistryService } from "./integration-registry.service";
 
 const logger = getLogger();
 

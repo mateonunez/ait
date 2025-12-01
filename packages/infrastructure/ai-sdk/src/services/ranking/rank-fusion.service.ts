@@ -1,5 +1,5 @@
-import type { RankFusionConfig, RankedResult, QueryResult } from "../../types/rag";
-import type { Document, BaseMetadata } from "../../types/documents";
+import type { BaseMetadata, Document } from "../../types/documents";
+import type { QueryResult, RankFusionConfig, RankedResult } from "../../types/rag";
 
 /**
  * Interface for rank fusion service

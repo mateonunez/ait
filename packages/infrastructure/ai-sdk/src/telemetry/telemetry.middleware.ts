@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
+import type { SpanInput, SpanMetadata, SpanOutput, SpanType, TelemetryOptions, TraceContext } from "../types/telemetry";
 import { getLangfuseProvider } from "./langfuse.provider";
-import type { TraceContext, SpanMetadata, SpanInput, SpanOutput, SpanType, TelemetryOptions } from "../types/telemetry";
 
 export interface WithTelemetryOptions<T = unknown> {
   name: string;

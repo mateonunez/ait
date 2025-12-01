@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import { PipelineStageAbstract } from "../../../src/services/rag/pipeline/pipeline-stage.abstract";
 import { PipelineBuilder } from "../../../src/services/rag/pipeline/pipeline.builder";
 import { PipelineOrchestrator } from "../../../src/services/rag/pipeline/pipeline.orchestrator";
-import { PipelineStageAbstract } from "../../../src/services/rag/pipeline/pipeline-stage.abstract";
 import type { PipelineContext } from "../../../src/services/rag/pipeline/pipeline.types";
 
 describe("Pipeline Architecture", () => {

@@ -1,6 +1,6 @@
-import type { PromptComponents } from "../../types/text-generation";
 import type { ChatMessage } from "../../types/chat";
 import type { ModelMessage } from "../../types/models";
+import type { PromptComponents } from "../../types/text-generation";
 
 /**
  * Interface for prompt builder service

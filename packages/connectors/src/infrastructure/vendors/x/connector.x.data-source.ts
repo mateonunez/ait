@@ -1,6 +1,6 @@
-import { requestJson, RateLimitError, AItError, getLogger } from "@ait/core";
+import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
 
-import type { XTweetExternal, XTweetIncludes, XMediaEntity, XPollEntity, XPlaceEntity } from "@ait/core";
+import type { XMediaEntity, XPlaceEntity, XPollEntity, XTweetExternal, XTweetIncludes } from "@ait/core";
 import { ait } from "../../../shared/constants/ait.constant";
 
 export interface IConnectorXDataSource {

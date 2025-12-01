@@ -1,7 +1,7 @@
 import type { LinearIssueEntity } from "@ait/core";
-import type { EntityFormatter } from "./formatter.utils";
-import { safeString, safeNumber, safeArray } from "./formatter.utils";
 import { TextNormalizationService } from "../../metadata/text-normalization.service";
+import type { EntityFormatter } from "./formatter.utils";
+import { safeArray, safeNumber, safeString } from "./formatter.utils";
 
 const textNormalizer = new TextNormalizationService();
 

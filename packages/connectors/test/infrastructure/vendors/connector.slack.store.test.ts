@@ -1,8 +1,8 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import type { SlackMessageEntity, SlackEntity } from "@ait/core";
-import type { IConnectorSlackRepository } from "../../../src/types/domain/entities/vendors/connector.slack.types";
+import { beforeEach, describe, it } from "node:test";
+import type { SlackEntity, SlackMessageEntity } from "@ait/core";
 import { ConnectorSlackStore } from "../../../src/infrastructure/vendors/slack/connector.slack.store";
+import type { IConnectorSlackRepository } from "../../../src/types/domain/entities/vendors/connector.slack.types";
 
 describe("ConnectorSlackStore", () => {
   let mockRepository: IConnectorSlackRepository;

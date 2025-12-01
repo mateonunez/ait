@@ -1,6 +1,6 @@
-import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
-import type { ChatMessage } from "../../types/chat";
 import { getLogger } from "@ait/core";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
+import type { ChatMessage } from "../../types/chat";
 
 const logger = getLogger();
 

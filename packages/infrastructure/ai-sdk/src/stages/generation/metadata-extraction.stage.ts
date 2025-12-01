@@ -1,10 +1,10 @@
-import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { MetadataExtractionInput, MetadataExtractionOutput } from "../../types/stages";
-import { getReasoningExtractionService } from "../../services/metadata/reasoning-extraction.service";
-import { getTaskBreakdownService } from "../../services/metadata/task-breakdown.service";
-import { getModelInfoService } from "../../services/metadata/model-info.service";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { getSuggestionService } from "../../services/generation/suggestion.service";
+import { getModelInfoService } from "../../services/metadata/model-info.service";
+import { getReasoningExtractionService } from "../../services/metadata/reasoning-extraction.service";
+import { getTaskBreakdownService } from "../../services/metadata/task-breakdown.service";
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import type { MetadataExtractionInput, MetadataExtractionOutput } from "../../types/stages";
 
 export class MetadataExtractionStage implements IPipelineStage<MetadataExtractionInput, MetadataExtractionOutput> {
   readonly name = "metadata-extraction";

@@ -1,26 +1,26 @@
 import type {
-  SpotifyArtistExternal,
-  SpotifyArtistEntity,
-  SpotifyTrackExternal,
-  SpotifyTrackEntity,
-  SpotifyPlaylistExternal,
-  SpotifyPlaylistEntity,
-  SpotifyAlbumExternal,
   SpotifyAlbumEntity,
+  SpotifyAlbumExternal,
+  SpotifyArtistEntity,
+  SpotifyArtistExternal,
+  SpotifyImage,
+  SpotifyPlaylistEntity,
+  SpotifyPlaylistExternal,
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
-  SpotifyImage,
+  SpotifyTrackEntity,
+  SpotifyTrackExternal,
 } from "@ait/core";
 import type {
-  SpotifyArtistDataTarget,
-  SpotifyTrackDataTarget,
-  SpotifyPlaylistDataTarget,
   SpotifyAlbumDataTarget,
+  SpotifyArtistDataTarget,
+  SpotifyPlaylistDataTarget,
   SpotifyRecentlyPlayedDataTarget,
+  SpotifyTrackDataTarget,
 } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough, mapObjectToStringArray } from "../utils/connector.mapper.utils";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 
 const spotifyTrackMapping: ConnectorMapperDefinition<SpotifyTrackExternal, SpotifyTrackEntity, SpotifyTrackDataTarget> =
   {

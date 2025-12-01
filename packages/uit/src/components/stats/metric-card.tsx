@@ -1,5 +1,5 @@
 import { cn } from "@/styles/utils";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 
 export interface MetricCardProps {
   label: string;

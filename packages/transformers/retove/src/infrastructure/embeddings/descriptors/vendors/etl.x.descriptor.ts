@@ -1,6 +1,6 @@
 import type { XTweetDataTarget } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTarget> {
   public getEmbeddingText(tweet: XTweetDataTarget): string {

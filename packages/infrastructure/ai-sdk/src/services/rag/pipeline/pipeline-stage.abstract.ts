@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
-import type { IPipelineStage, PipelineContext } from "./pipeline.types";
 import { recordSpan } from "../../../telemetry/telemetry.middleware";
+import type { IPipelineStage, PipelineContext } from "./pipeline.types";
 
 const logger = getLogger();
 

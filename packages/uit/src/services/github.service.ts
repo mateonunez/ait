@@ -1,11 +1,11 @@
 import { requestJson } from "@ait/core";
 import type {
-  PaginationParams,
-  PaginatedResponse,
-  RefreshResponse,
-  GitHubRepositoryEntity as GitHubRepository,
-  GitHubPullRequestEntity as GitHubPullRequest,
   GitHubCommitEntity as GitHubCommit,
+  GitHubPullRequestEntity as GitHubPullRequest,
+  GitHubRepositoryEntity as GitHubRepository,
+  PaginatedResponse,
+  PaginationParams,
+  RefreshResponse,
 } from "@ait/core";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";

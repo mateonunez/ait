@@ -1,20 +1,20 @@
-import {
-  GenerationModels,
-  getTextGenerationService,
-  initAItClient,
-  getLangfuseProvider,
-  type TextGenerationService,
-  type StreamEvent,
-  STREAM_EVENT,
-  createAllConnectorTools,
-} from "@ait/ai-sdk";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import type { ChatMessage } from "@ait/ai-sdk";
-import { connectorServiceFactory, type ConnectorSpotifyService } from "@ait/connectors";
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { randomUUID } from "node:crypto";
+import {
+  GenerationModels,
+  STREAM_EVENT,
+  type StreamEvent,
+  type TextGenerationService,
+  createAllConnectorTools,
+  getLangfuseProvider,
+  getTextGenerationService,
+  initAItClient,
+} from "@ait/ai-sdk";
+import type { ChatMessage } from "@ait/ai-sdk";
+import { type ConnectorSpotifyService, connectorServiceFactory } from "@ait/connectors";
 import { getLogger } from "@ait/core";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 // Read version from package.json
 const logger = getLogger();

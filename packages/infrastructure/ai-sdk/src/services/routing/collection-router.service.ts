@@ -1,16 +1,16 @@
-import { z } from "zod";
-import type { CollectionVendor } from "../../config/collections.config";
-import { getAllCollections, getCollectionsByEntityTypes } from "../../config/collections.config";
 import type { EntityType } from "@ait/core";
 import { VALID_ENTITY_TYPES, getVendorKeywords } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { z } from "zod";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
+import type { CollectionVendor } from "../../config/collections.config";
+import { getAllCollections, getCollectionsByEntityTypes } from "../../config/collections.config";
+import { createSpanWithTiming, recordGeneration, recordSpan } from "../../telemetry/telemetry.middleware";
 import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
-import type { QueryIntent } from "./query-intent.service";
-import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
-import { recordSpan, recordGeneration, createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
 import { buildCollectionRouterPrompt, buildFallbackRoutingReason } from "../prompts/routing.prompts";
-import { getLogger } from "@ait/core";
+import type { QueryIntent } from "./query-intent.service";
 
 const logger = getLogger();
 

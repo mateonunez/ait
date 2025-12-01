@@ -1,27 +1,27 @@
-import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import {
-  getPostgresClient,
-  closePostgresConnection,
-  drizzleOrm,
-  spotifyTracks,
-  spotifyArtists,
-  spotifyPlaylists,
-  spotifyAlbums,
-  spotifyRecentlyPlayed,
-} from "@ait/postgres";
+import { after, beforeEach, describe, it } from "node:test";
 import type {
-  SpotifyTrackEntity,
+  SpotifyAlbumEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
-  SpotifyAlbumEntity,
   SpotifyRecentlyPlayedEntity,
+  SpotifyTrackEntity,
 } from "@ait/core";
-import { ConnectorSpotifyTrackRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-track.repository";
+import {
+  closePostgresConnection,
+  drizzleOrm,
+  getPostgresClient,
+  spotifyAlbums,
+  spotifyArtists,
+  spotifyPlaylists,
+  spotifyRecentlyPlayed,
+  spotifyTracks,
+} from "@ait/postgres";
+import { ConnectorSpotifyAlbumRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-album.repository";
 import { ConnectorSpotifyArtistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-artist.repository";
 import { ConnectorSpotifyPlaylistRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-playlist.repository";
-import { ConnectorSpotifyAlbumRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-album.repository";
 import { ConnectorSpotifyRecentlyPlayedRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-recently-played.repository";
+import { ConnectorSpotifyTrackRepository } from "../../../../src/domain/entities/vendors/spotify/connector.spotify-track.repository";
 
 describe("ConnectorSpotifyRepository", () => {
   const trackRepository: ConnectorSpotifyTrackRepository = new ConnectorSpotifyTrackRepository();

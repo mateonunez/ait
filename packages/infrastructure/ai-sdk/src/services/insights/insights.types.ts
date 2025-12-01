@@ -1,5 +1,5 @@
-import { z } from "zod";
 import type { EntityType } from "@ait/core";
+import { z } from "zod";
 
 /**
  * Insight Types

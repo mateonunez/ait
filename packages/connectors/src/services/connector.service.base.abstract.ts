@@ -1,11 +1,11 @@
+import { AItError, type ValidationSchema, getLogger, validate } from "@ait/core";
+import { getRedisClient } from "@ait/redis";
 import type { BaseConnectorAbstract } from "../infrastructure/connector.base.abstract";
-import { AItError, getLogger, validate, type ValidationSchema } from "@ait/core";
 import type { IConnectorOAuthConfig } from "../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
-import { getRedisClient } from "@ait/redis";
 
-import { SyncStateService } from "./shared/sync/sync-state.service";
 import { createHash } from "node:crypto";
+import { SyncStateService } from "./shared/sync/sync-state.service";
 
 interface EntityConfig<TEntityMap, K extends keyof TEntityMap, E> {
   fetcher?: () => Promise<E[]>;

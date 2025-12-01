@@ -1,16 +1,16 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { initLangfuseProvider, resetLangfuseProvider } from "../../src/telemetry/langfuse.provider";
 import {
-  withTelemetry,
   createTraceContext,
+  endTraceWithError,
+  endTraceWithOutput,
   recordSpan,
   shouldEnableTelemetry,
   updateTraceInput,
   updateTraceOutput,
-  endTraceWithOutput,
-  endTraceWithError,
+  withTelemetry,
 } from "../../src/telemetry/telemetry.middleware";
-import { initLangfuseProvider, resetLangfuseProvider } from "../../src/telemetry/langfuse.provider";
 import type { SpanType } from "../../src/types/telemetry";
 
 describe("telemetry.middleware", () => {

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
-import type { Document, BaseMetadata } from "../../types/documents";
-import type { RetrievedDocument } from "../../types/metadata/rag-context.metadata";
 import type { StreamEvent } from "../../types";
-import { STREAM_EVENT, METADATA_TYPE } from "../../types";
+import { METADATA_TYPE, STREAM_EVENT } from "../../types";
+import type { BaseMetadata, Document } from "../../types/documents";
+import type { RetrievedDocument } from "../../types/metadata/rag-context.metadata";
 
 export interface RAGContextMetadata {
   context: string;

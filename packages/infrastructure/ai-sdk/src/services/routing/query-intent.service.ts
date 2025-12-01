@@ -1,8 +1,8 @@
 import { getLogger } from "@ait/core";
-import { z } from "zod";
 import type { EntityType } from "@ait/core";
 import { VALID_ENTITY_TYPES } from "@ait/core";
-import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
+import { z } from "zod";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
 import { buildQueryIntentPrompt } from "../prompts/query-intent.prompt";
 
 const logger = getLogger();

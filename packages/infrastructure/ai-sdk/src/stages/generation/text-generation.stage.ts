@@ -1,6 +1,6 @@
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { TextGenerationInput, TextGenerationOutput } from "../../types/stages";
-import { getAItClient, type AItClient } from "../../client/ai-sdk.client";
 
 export class TextGenerationStage implements IPipelineStage<TextGenerationInput, TextGenerationOutput> {
   readonly name = "text-generation";

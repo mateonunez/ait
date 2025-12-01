@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
-import { getLogger } from "@ait/core";
-import { IntegrationLayout } from "@/components/integration-layout";
-import { Pagination } from "@/components/pagination";
-import { LoadingGrid } from "@/components/loading-grid";
 import { PageCard } from "@/components/connectors/page-card";
+import { IntegrationLayout } from "@/components/integration-layout";
+import { LoadingGrid } from "@/components/loading-grid";
+import { Pagination } from "@/components/pagination";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
+import { getLogger } from "@ait/core";
 import type { NotionPageEntity } from "@ait/core";
+import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
 

@@ -1,21 +1,21 @@
 import "dotenv/config";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
-import { initializeCacheProvider } from "./services/redis-cache.provider";
 import chatRoutes from "./routes/gateway.chat.routes";
-import modelsRoutes from "./routes/gateway.models.routes";
-import githubRoutes from "./routes/gateway.github.routes";
-import linearRoutes from "./routes/gateway.linear.routes";
-import spotifyRoutes from "./routes/gateway.spotify.routes";
-import xRoutes from "./routes/gateway.x.routes";
-import notionRoutes from "./routes/gateway.notion.routes";
-import slackRoutes from "./routes/gateway.slack.routes";
-import googleRoutes from "./routes/gateway.google.routes";
-import observabilityRoutes from "./routes/gateway.observability.routes";
-import feedbackRoutes from "./routes/gateway.feedback.routes";
 import discoveryRoutes from "./routes/gateway.discovery.routes";
+import feedbackRoutes from "./routes/gateway.feedback.routes";
+import githubRoutes from "./routes/gateway.github.routes";
+import googleRoutes from "./routes/gateway.google.routes";
 import insightsRoutes from "./routes/gateway.insights.routes";
+import linearRoutes from "./routes/gateway.linear.routes";
+import modelsRoutes from "./routes/gateway.models.routes";
+import notionRoutes from "./routes/gateway.notion.routes";
+import observabilityRoutes from "./routes/gateway.observability.routes";
+import slackRoutes from "./routes/gateway.slack.routes";
+import spotifyRoutes from "./routes/gateway.spotify.routes";
 import suggestionsRoutes from "./routes/gateway.suggestions.routes";
+import xRoutes from "./routes/gateway.x.routes";
+import { initializeCacheProvider } from "./services/redis-cache.provider";
 
 const redisUrl = process.env.REDIS_URL;
 

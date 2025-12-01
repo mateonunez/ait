@@ -1,13 +1,13 @@
-import { type ReactNode, forwardRef, type KeyboardEvent } from "react";
-import { motion, type HTMLMotionProps } from "framer-motion";
-import { ExternalLink } from "lucide-react";
 import { cn } from "@/styles/utils";
+import { type HTMLMotionProps, motion } from "framer-motion";
+import { ExternalLink } from "lucide-react";
+import { type KeyboardEvent, type ReactNode, forwardRef } from "react";
 import {
-  CARD_BASE_STYLES,
   CARD_ANIMATIONS,
+  CARD_BASE_STYLES,
   SERVICE_COLORS,
-  getServiceGlow,
   type ServiceType,
+  getServiceGlow,
 } from "./connector-card.styles";
 
 interface ConnectorCardBaseProps extends Omit<HTMLMotionProps<"article">, "children"> {

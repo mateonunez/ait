@@ -1,4 +1,4 @@
-import type { GoogleCalendarEventExternal, GoogleCalendarCalendarExternal } from "@ait/core";
+import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "@ait/core";
 
 export interface GoogleCalendarPaginatedResponse<T> {
   items: T[];

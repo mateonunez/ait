@@ -1,6 +1,6 @@
 import type { GoogleCalendarEventDataTarget } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 export class ETLGoogleCalendarEventDescriptor implements IETLEmbeddingDescriptor<GoogleCalendarEventDataTarget> {
   public getEmbeddingText(event: GoogleCalendarEventDataTarget): string {

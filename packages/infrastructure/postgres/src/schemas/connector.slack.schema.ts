@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, text, integer, index, jsonb } from "drizzle-orm/pg-core";
+import { index, integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const slackMessages = pgTable(
   "slack_messages",

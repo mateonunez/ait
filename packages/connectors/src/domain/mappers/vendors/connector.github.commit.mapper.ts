@@ -1,7 +1,7 @@
-import type { GitHubCommitDataTarget } from "@ait/postgres";
-import { ConnectorMapper } from "../connector.mapper";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import type { GitHubCommitEntity, GitHubCommitExternal } from "@ait/core";
+import type { GitHubCommitDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
+import { ConnectorMapper } from "../connector.mapper";
 
 function parseCommitMessage(message: string): { subject: string; body: string | null } {
   const lines = message.split("\n");

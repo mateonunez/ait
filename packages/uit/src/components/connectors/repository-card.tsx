@@ -1,21 +1,21 @@
-import { Star, GitFork, User } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { formatRelativeTime } from "@/utils/date.utils";
+import type { GitHubRepositoryEntity as GitHubRepository } from "@ait/core";
+import { motion } from "framer-motion";
+import { GitFork, Star, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardDescription,
-  ConnectorCardStats,
-  ConnectorCardStatItem,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardStatItem,
+  ConnectorCardStats,
   ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { GitHubRepositoryEntity as GitHubRepository } from "@ait/core";
 
 interface RepositoryCardProps {
   repository: GitHubRepository;

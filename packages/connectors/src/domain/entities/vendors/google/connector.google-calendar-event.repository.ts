@@ -1,14 +1,14 @@
 import {
   AItError,
+  type GoogleCalendarEventEntity,
   type PaginatedResponse,
   type PaginationParams,
-  type GoogleCalendarEventEntity,
   getLogger,
 } from "@ait/core";
-import { connectorGoogleCalendarEventMapper } from "../../../mappers/vendors/connector.google.mapper";
+import { type GoogleCalendarEventDataTarget, drizzleOrm, getPostgresClient, googleCalendarEvents } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarEventRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import { getPostgresClient, googleCalendarEvents, type GoogleCalendarEventDataTarget, drizzleOrm } from "@ait/postgres";
+import { connectorGoogleCalendarEventMapper } from "../../../mappers/vendors/connector.google.mapper";
 
 const logger = getLogger();
 

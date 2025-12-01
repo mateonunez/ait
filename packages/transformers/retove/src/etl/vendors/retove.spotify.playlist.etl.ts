@@ -1,11 +1,11 @@
-import type { qdrant } from "@ait/qdrant";
-import { spotifyPlaylists, type getPostgresClient, drizzleOrm } from "@ait/postgres";
-import type { SpotifyPlaylistDataTarget } from "@ait/postgres";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
-import { ETLSpotifyPlaylistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { drizzleOrm, type getPostgresClient, spotifyPlaylists } from "@ait/postgres";
+import type { SpotifyPlaylistDataTarget } from "@ait/postgres";
+import type { qdrant } from "@ait/qdrant";
+import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import { ETLSpotifyPlaylistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
+import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
 
 export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> = new ETLSpotifyPlaylistDescriptor();

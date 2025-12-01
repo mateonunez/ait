@@ -1,15 +1,15 @@
 import { AItError, getLogger } from "@ait/core";
-import type { GenerationModel, EmbeddingsModel, ModelGenerateOptions, ModelStreamOptions } from "../types/models";
+import type { EmbeddingsModel, GenerationModel, ModelGenerateOptions, ModelStreamOptions } from "../types/models";
 import type {
+  OllamaChatGenerateOptions,
+  OllamaChatRequest,
+  OllamaConfig,
+  OllamaEmbedRequest,
+  OllamaGenerateRequest,
+  OllamaGenerateResult,
+  OllamaMessage,
   OllamaTool,
   OllamaToolCall,
-  OllamaMessage,
-  OllamaGenerateRequest,
-  OllamaChatRequest,
-  OllamaEmbedRequest,
-  OllamaConfig,
-  OllamaChatGenerateOptions,
-  OllamaGenerateResult,
 } from "../types/providers/ollama.types";
 
 export type {

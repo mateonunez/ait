@@ -1,15 +1,15 @@
-// connector.x.store.test.ts
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+// connector.x.store.test.ts
+import { beforeEach, describe, it } from "node:test";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorXStore } from "../../../src/infrastructure/vendors/x/connector.x.store";
+import { X_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
+import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
 import type {
   IConnectorXRepository,
   XEntity,
   XTweetEntity,
 } from "../../../src/types/domain/entities/vendors/connector.x.repository.types";
-import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
-import { ConnectorXStore } from "../../../src/infrastructure/vendors/x/connector.x.store";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
-import { X_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
 
 describe("ConnectorXStore", () => {
   let mockRepository: IConnectorXRepository;

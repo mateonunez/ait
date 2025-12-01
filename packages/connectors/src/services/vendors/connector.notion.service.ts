@@ -1,13 +1,13 @@
+import type { NotionPageEntity, NotionPageExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import { ConnectorNotion } from "../../infrastructure/vendors/notion/connector.notion";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
 import {
-  connectorEntityConfigs,
   NOTION_ENTITY_TYPES_ENUM,
   type NotionServiceEntityMap,
+  connectorEntityConfigs,
 } from "./connector.vendors.config";
-import { getConnectorConfig } from "../connector.service.config";
-import type { NotionPageEntity, NotionPageExternal, PaginatedResponse, PaginationParams } from "@ait/core";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export interface IConnectorNotionService extends ConnectorServiceBase<ConnectorNotion, NotionServiceEntityMap> {
   fetchPages(): Promise<NotionPageEntity[]>;

@@ -1,5 +1,5 @@
-import type { ConnectorLevels } from "../../../types/domain/mappers/connector.mapper.interface";
 import { AItError } from "@ait/core";
+import type { ConnectorLevels } from "../../../types/domain/mappers/connector.mapper.interface";
 
 export interface PassThroughLevelOptions<T> {
   /**

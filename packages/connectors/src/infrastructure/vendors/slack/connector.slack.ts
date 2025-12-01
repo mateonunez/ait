@@ -1,11 +1,11 @@
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorSlackRepository } from "../../../domain/entities/vendors/slack/connector.slack.repository";
 import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
-import { ConnectorSlackStore } from "./connector.slack.store";
-import type { IConnectorSlackRepository } from "../../../types/domain/entities/vendors/connector.slack.types";
 import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorSlackRepository } from "../../../types/domain/entities/vendors/connector.slack.types";
 import { ConnectorSlackAuthenticator } from "./connector.slack.authenticator";
 import { ConnectorSlackDataSource } from "./connector.slack.data-source";
-import { ConnectorSlackRepository } from "../../../domain/entities/vendors/slack/connector.slack.repository";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorSlackStore } from "./connector.slack.store";
 
 export class ConnectorSlack extends BaseConnectorAbstract<
   ConnectorSlackAuthenticator,

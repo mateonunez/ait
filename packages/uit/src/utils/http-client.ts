@@ -1,4 +1,4 @@
-import { requestJson, type AItError, type HttpRequestOptions } from "@ait/core";
+import { type AItError, type HttpRequestOptions, requestJson } from "@ait/core";
 
 export interface ApiResponse<T> {
   ok: boolean;

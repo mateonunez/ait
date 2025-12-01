@@ -1,8 +1,8 @@
-import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { getPostgresClient, closePostgresConnection, drizzleOrm, slackMessages } from "@ait/postgres";
-import { ConnectorSlackMessageRepository } from "../../../../src/domain/entities/vendors/slack/connector.slack-message.repository";
+import { after, beforeEach, describe, it } from "node:test";
 import type { SlackMessageEntity } from "@ait/core";
+import { closePostgresConnection, drizzleOrm, getPostgresClient, slackMessages } from "@ait/postgres";
+import { ConnectorSlackMessageRepository } from "../../../../src/domain/entities/vendors/slack/connector.slack-message.repository";
 
 describe("ConnectorSlackMessageRepository", () => {
   const repository = new ConnectorSlackMessageRepository();

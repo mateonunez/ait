@@ -1,8 +1,8 @@
-import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { CollectionRouterService } from "../../../src/services/routing/collection-router.service";
+import { afterEach, describe, it, mock } from "node:test";
 import type { AItClient } from "../../../src/client/ai-sdk.client";
 import type { ICollectionDiscoveryService } from "../../../src/services/metadata/collection-discovery.service";
+import { CollectionRouterService } from "../../../src/services/routing/collection-router.service";
 
 describe("CollectionRouterService", () => {
   const mockGenerateStructured = mock.fn<(...args: any[]) => Promise<any>>();

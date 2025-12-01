@@ -1,9 +1,9 @@
 import type { SpotifyEntity } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
-import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 import { SPOTIFY_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 
 export class ConnectorSpotifyStore implements IConnectorStore {
   private _connectorSpotifyRepository: IConnectorSpotifyRepository;

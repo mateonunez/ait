@@ -1,11 +1,11 @@
-import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
-import { ConnectorGitHubAuthenticator } from "./connector.github.authenticator";
-import { ConnectorGitHubRepository } from "../../../domain/entities/vendors/github/connector.github.repository";
-import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorGitHubRepository } from "../../../domain/entities/vendors/github/connector.github.repository";
+import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
+import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorGitHubRepository } from "../../../types/domain/entities/vendors/connector.github.repository.types";
+import { ConnectorGitHubAuthenticator } from "./connector.github.authenticator";
 import { ConnectorGitHubDataSource } from "./connector.github.data-source";
 import { ConnectorGitHubStore } from "./connector.github.store";
-import type { IConnectorGitHubRepository } from "../../../types/domain/entities/vendors/connector.github.repository.types";
 
 export class ConnectorGitHub extends BaseConnectorAbstract<
   ConnectorGitHubAuthenticator,

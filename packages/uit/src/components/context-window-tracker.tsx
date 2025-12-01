@@ -1,9 +1,9 @@
-import { useMemo } from "react";
-import { cn } from "@/styles/utils";
-import { Database, TrendingUp, AlertTriangle } from "lucide-react";
-import { motion } from "framer-motion";
-import { formatTokenCount, calculateContextWindowUsage } from "@/utils/token-counter.utils";
 import type { TokenUsage } from "@/hooks/useAItChat";
+import { cn } from "@/styles/utils";
+import { calculateContextWindowUsage, formatTokenCount } from "@/utils/token-counter.utils";
+import { motion } from "framer-motion";
+import { AlertTriangle, Database, TrendingUp } from "lucide-react";
+import { useMemo } from "react";
 
 interface ContextWindowTrackerProps {
   tokenUsage: TokenUsage;

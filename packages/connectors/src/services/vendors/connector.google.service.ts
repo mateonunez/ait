@@ -1,21 +1,21 @@
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
-import { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
-import { ConnectorServiceBase } from "../connector.service.base.abstract";
-import { getConnectorConfig } from "../connector.service.config";
 import type {
-  GoogleCalendarEventEntity,
-  GoogleCalendarEventExternal,
   GoogleCalendarCalendarEntity,
   GoogleCalendarCalendarExternal,
+  GoogleCalendarEventEntity,
+  GoogleCalendarEventExternal,
   GoogleYouTubeSubscriptionEntity,
   GoogleYouTubeSubscriptionExternal,
   PaginatedResponse,
   PaginationParams,
 } from "@ait/core";
+import { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
 import {
-  connectorEntityConfigs,
   GOOGLE_ENTITY_TYPES_ENUM,
   type GoogleServiceEntityMap,
+  connectorEntityConfigs,
 } from "./connector.vendors.config";
 
 export interface IConnectorGoogleService extends ConnectorServiceBase<ConnectorGoogle, GoogleServiceEntityMap> {

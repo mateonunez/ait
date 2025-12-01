@@ -1,13 +1,13 @@
-import type { ConnectorServiceConstructor, ConnectorType } from "../types/infrastructure/connector.interface";
 import { AItError } from "@ait/core";
+import type { ConnectorServiceConstructor, ConnectorType } from "../types/infrastructure/connector.interface";
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
+import { ConnectorGoogleService } from "./vendors/connector.google-calendar.service";
 import { ConnectorLinearService } from "./vendors/connector.linear.service";
-import { ConnectorSpotifyService } from "./vendors/connector.spotify.service";
-import { ConnectorXService } from "./vendors/connector.x.service";
 import { ConnectorNotionService } from "./vendors/connector.notion.service";
 import { ConnectorSlackService } from "./vendors/connector.slack.service";
-import { ConnectorGoogleService } from "./vendors/connector.google-calendar.service";
+import { ConnectorSpotifyService } from "./vendors/connector.spotify.service";
+import { ConnectorXService } from "./vendors/connector.x.service";
 
 export const connectorServices: Record<ConnectorType, ConnectorServiceConstructor<ConnectorServiceBase<any, any>>> = {
   github: ConnectorGitHubService,

@@ -1,10 +1,10 @@
 import { AItError } from "@ait/core";
+import type { XEntity } from "@ait/core";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { X_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorXRepository } from "../../../types/domain/entities/vendors/connector.x.repository.types";
-import type { XEntity } from "@ait/core";
 import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
 
 export class ConnectorXStore implements IConnectorStore {
   private _connectorXRepository: IConnectorXRepository;

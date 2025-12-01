@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createTool } from "../../utils/tool.utils";
 import type { SpotifyServiceInterface } from "../../interfaces/spotify.service.interface";
+import { createTool } from "../../utils/tool.utils";
 
 export const spotifySearchSchema = z.object({
   query: z.string().describe("The search query for Spotify content"),

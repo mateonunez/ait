@@ -1,6 +1,6 @@
-import type { BaseMetadata } from "../../types/documents";
 import type { CollectionVendor } from "../../config/collections.config";
 import type { WeightedDocument } from "../../types/collections";
+import type { BaseMetadata } from "../../types/documents";
 
 export interface CollectionDiversityConfig {
   minDocsPerCollection?: number;

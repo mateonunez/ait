@@ -1,5 +1,5 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
 import { ConnectorSpotifyStore } from "../../../src/infrastructure/vendors/spotify/connector.spotify.store";
 import type {
   IConnectorSpotifyRepository,

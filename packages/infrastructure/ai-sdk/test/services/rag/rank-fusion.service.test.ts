@@ -1,7 +1,7 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { RankFusionService } from "../../../src/services/ranking/rank-fusion.service";
-import type { Document, BaseMetadata } from "../../../src/types/documents";
+import type { BaseMetadata, Document } from "../../../src/types/documents";
 import type { QueryResult } from "../../../src/types/rag";
 
 describe("RankFusionService", () => {

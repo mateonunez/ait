@@ -1,6 +1,6 @@
 import type { LinearIssueDataTarget } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 export class ETLLinearIssueDescriptor implements IETLEmbeddingDescriptor<LinearIssueDataTarget> {
   public getEmbeddingText(issue: LinearIssueDataTarget): string {

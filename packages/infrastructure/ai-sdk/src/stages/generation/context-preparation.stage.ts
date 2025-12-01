@@ -1,19 +1,19 @@
-import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { ContextPreparationInput, ContextPreparationOutput } from "../../types/stages";
-import type { Document, BaseMetadata } from "../../types/documents";
-import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../../services/prompts/system.prompt";
-import { PipelineBuilder } from "../../services/rag/pipeline/pipeline.builder";
-import { QueryAnalysisStage } from "../rag/query-analysis.stage";
-import { SimpleRetrievalStage } from "../rag/simple-retrieval.stage";
-import { CollectionRoutingStage } from "../rag/collection-routing.stage";
-import { RetrievalStage } from "../rag/retrieval.stage";
-import { FusionStage } from "../rag/fusion.stage";
-import { RerankingStage } from "../rag/reranking.stage";
-import { ContextBuildingStage } from "../rag/context-building.stage";
-import { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
-import { createMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.factory";
 import { getCacheService } from "../../services/cache/cache.service";
+import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../../services/prompts/system.prompt";
+import { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
+import { PipelineBuilder } from "../../services/rag/pipeline/pipeline.builder";
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { createMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.factory";
+import type { BaseMetadata, Document } from "../../types/documents";
+import type { ContextPreparationInput, ContextPreparationOutput } from "../../types/stages";
+import { CollectionRoutingStage } from "../rag/collection-routing.stage";
+import { ContextBuildingStage } from "../rag/context-building.stage";
+import { FusionStage } from "../rag/fusion.stage";
+import { QueryAnalysisStage } from "../rag/query-analysis.stage";
+import { RerankingStage } from "../rag/reranking.stage";
+import { RetrievalStage } from "../rag/retrieval.stage";
+import { SimpleRetrievalStage } from "../rag/simple-retrieval.stage";
 
 export class ContextPreparationStage implements IPipelineStage<ContextPreparationInput, ContextPreparationOutput> {
   readonly name = "context-preparation";

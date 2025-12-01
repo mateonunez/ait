@@ -1,7 +1,7 @@
 import { AItError, getLogger } from "@ait/core";
 import { z } from "zod";
 import { getAItClient } from "../../client/ai-sdk.client";
-import type { Document, BaseMetadata } from "../../types/documents";
+import type { BaseMetadata, Document } from "../../types/documents";
 import { buildRerankPrompt } from "../prompts/ranking.prompts";
 
 const logger = getLogger();

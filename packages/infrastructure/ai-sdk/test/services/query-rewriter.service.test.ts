@@ -1,7 +1,7 @@
-import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { QueryRewriterService } from "../../src/services/generation/query-rewriter.service";
+import { beforeEach, describe, it, mock } from "node:test";
 import type { AItClient } from "../../src/client/ai-sdk.client";
+import { QueryRewriterService } from "../../src/services/generation/query-rewriter.service";
 
 describe("QueryRewriterService", () => {
   let service: QueryRewriterService;

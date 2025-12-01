@@ -1,10 +1,10 @@
-import { getAItClient } from "../../client/ai-sdk.client";
 import { AItError } from "@ait/core";
-import { TextPreprocessor, type TextChunk } from "./text-preprocessor";
 import { getLogger } from "@ait/core";
-import { createEmbeddingsConfig, type EmbeddingsConfig } from "./embeddings.config";
+import { getAItClient } from "../../client/ai-sdk.client";
 import { recordSpan, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { type EmbeddingsConfig, createEmbeddingsConfig } from "./embeddings.config";
+import { type TextChunk, TextPreprocessor } from "./text-preprocessor";
 
 export interface IEmbeddingsService {
   generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]>;

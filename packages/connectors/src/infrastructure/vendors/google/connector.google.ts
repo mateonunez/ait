@@ -1,11 +1,11 @@
-import { BaseConnectorAbstract } from "../../connector.base.abstract";
-import { ConnectorGoogleAuthenticator } from "./connector.google.authenticator";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { ConnectorGoogleRepository } from "../../../domain/entities/vendors/google/connector.google.repository";
 import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
+import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
+import { BaseConnectorAbstract } from "../../connector.base.abstract";
+import { ConnectorGoogleAuthenticator } from "./connector.google.authenticator";
 import { ConnectorGoogleDataSource } from "./connector.google.data-source";
 import { ConnectorGoogleStore } from "./connector.google.store";
-import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
 
 export class ConnectorGoogle extends BaseConnectorAbstract<
   ConnectorGoogleAuthenticator,

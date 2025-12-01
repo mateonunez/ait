@@ -1,28 +1,28 @@
 import type {
-  SpotifyArtistEntity,
-  SpotifyArtistExternal,
-  SpotifyTrackEntity,
-  SpotifyTrackExternal,
-  SpotifyPlaylistEntity,
-  SpotifyPlaylistExternal,
-  SpotifyAlbumExternal,
-  SpotifyAlbumEntity,
-  SpotifyRecentlyPlayedEntity,
-  SpotifyRecentlyPlayedExternal,
-  SpotifyCurrentlyPlayingExternal,
   PaginatedResponse,
   PaginationParams,
+  SpotifyAlbumEntity,
+  SpotifyAlbumExternal,
+  SpotifyArtistEntity,
+  SpotifyArtistExternal,
+  SpotifyCurrentlyPlayingExternal,
+  SpotifyPlaylistEntity,
+  SpotifyPlaylistExternal,
+  SpotifyRecentlyPlayedEntity,
+  SpotifyRecentlyPlayedExternal,
+  SpotifyTrackEntity,
+  SpotifyTrackExternal,
 } from "@ait/core";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import { connectorSpotifyTrackMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
-import { getConnectorConfig } from "../connector.service.config";
+import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
+import { getConnectorConfig } from "../connector.service.config";
 import {
-  connectorEntityConfigs,
   SPOTIFY_ENTITY_TYPES_ENUM,
   type SpotifyServiceEntityMap,
+  connectorEntityConfigs,
 } from "./connector.vendors.config";
-import { connectorSpotifyTrackMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 
 export interface IConnectorSpotifyService extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap> {
   fetchTracks(): Promise<SpotifyTrackEntity[]>;

@@ -1,7 +1,7 @@
-import { describe, it, mock, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { ConversationManagerService } from "../../../src/services/generation/conversation-manager.service";
+import { afterEach, describe, it, mock } from "node:test";
 import type { AItClient } from "../../../src/client/ai-sdk.client";
+import { ConversationManagerService } from "../../../src/services/generation/conversation-manager.service";
 import type { ITokenEstimationService } from "../../../src/services/metadata/token-estimation.service";
 import type { ChatMessage } from "../../../src/types";
 

@@ -1,6 +1,6 @@
 import type {
-  GoogleCalendarEventEntity,
   GoogleCalendarCalendarEntity,
+  GoogleCalendarEventEntity,
   GoogleYouTubeSubscriptionEntity,
   PaginatedResponse,
   PaginationParams,

@@ -2,8 +2,8 @@ import type {
   SpotifyAlbumDataTarget,
   SpotifyArtistDataTarget,
   SpotifyPlaylistDataTarget,
-  SpotifyTrackDataTarget,
   SpotifyRecentlyPlayedDataTarget,
+  SpotifyTrackDataTarget,
 } from "@ait/postgres";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 

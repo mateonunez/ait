@@ -1,17 +1,17 @@
 import "./App.css";
 import { Route, Switch } from "wouter";
-import HomePage from "./pages/home-page";
-import GitHubPage from "./pages/integrations/github-page";
-import SpotifyPage from "./pages/integrations/spotify-page";
-import XPage from "./pages/integrations/x-page";
-import LinearPage from "./pages/integrations/linear-page";
-import NotionPage from "./pages/integrations/notion-page";
-import SlackPage from "./pages/integrations/slack-page";
-import GooglePage from "./pages/integrations/google-page";
-import StatsPage from "./pages/stats-page";
 import { AIChatDialog } from "./components/ai-chat-dialog";
 import { useChatDialog } from "./contexts/chat.context";
 import { IntegrationsProvider } from "./contexts/integrations.context";
+import HomePage from "./pages/home-page";
+import GitHubPage from "./pages/integrations/github-page";
+import GooglePage from "./pages/integrations/google-page";
+import LinearPage from "./pages/integrations/linear-page";
+import NotionPage from "./pages/integrations/notion-page";
+import SlackPage from "./pages/integrations/slack-page";
+import SpotifyPage from "./pages/integrations/spotify-page";
+import XPage from "./pages/integrations/x-page";
+import StatsPage from "./pages/stats-page";
 
 export default function App() {
   const { isOpen, closeChat } = useChatDialog();

@@ -1,8 +1,8 @@
-import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { FusionInput, FusionOutput } from "../../types/stages";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
-import { WeightedRankFusionService } from "../../services/ranking/weighted-rank-fusion.service";
 import { DiversityService } from "../../services/filtering/diversity.service";
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { WeightedRankFusionService } from "../../services/ranking/weighted-rank-fusion.service";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { FusionInput, FusionOutput } from "../../types/stages";
 
 export class FusionStage implements IPipelineStage<FusionInput, FusionOutput> {
   readonly name = "fusion";

@@ -1,12 +1,12 @@
 import { getLogger } from "@ait/core";
 import { getQdrantClient, type qdrant } from "@ait/qdrant";
-import type { IEmbeddingsService } from "../embeddings/embeddings.service";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
-import type { Document, BaseMetadata } from "../../types/documents";
-import { extractContentFromPayload, extractMetadataFromPayload } from "../../types/qdrant";
-import { EmbeddingsService } from "../embeddings/embeddings.service";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { BaseMetadata, Document } from "../../types/documents";
+import { extractContentFromPayload, extractMetadataFromPayload } from "../../types/qdrant";
 import type { TraceContext } from "../../types/telemetry";
+import type { IEmbeddingsService } from "../embeddings/embeddings.service";
+import { EmbeddingsService } from "../embeddings/embeddings.service";
 
 const logger = getLogger();
 

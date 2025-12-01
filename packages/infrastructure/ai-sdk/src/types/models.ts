@@ -1,4 +1,4 @@
-import type { OllamaTool, OllamaToolCall, OllamaMessage } from "./providers/ollama.types";
+import type { OllamaMessage, OllamaTool, OllamaToolCall } from "./providers/ollama.types";
 
 /**
  * Message format for model chat

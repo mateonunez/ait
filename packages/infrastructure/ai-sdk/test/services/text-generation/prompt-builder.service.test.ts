@@ -1,8 +1,8 @@
-import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { describe, it } from "node:test";
 import { PromptBuilderService } from "../../../src/services/generation/prompt-builder.service";
-import type { PromptComponents } from "../../../src/types/text-generation";
 import type { ChatMessage } from "../../../src/types/chat";
+import type { PromptComponents } from "../../../src/types/text-generation";
 
 describe("PromptBuilderService", () => {
   describe("buildPrompt", () => {

@@ -1,9 +1,9 @@
 import {
-  STREAM_EVENT,
-  METADATA_TYPE,
-  type StreamEvent,
-  type MetadataPayload,
   type AggregatedMetadata,
+  METADATA_TYPE,
+  type MetadataPayload,
+  STREAM_EVENT,
+  type StreamEvent,
   getLogger,
 } from "@ait/core";
 

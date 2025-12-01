@@ -1,5 +1,5 @@
-import type { ActivityData, InsightCorrelation } from "./insights.types";
 import { getLogger } from "@ait/core";
+import type { ActivityData, InsightCorrelation } from "./insights.types";
 import { getIntegrationRegistryService } from "./integration-registry.service";
 
 const logger = getLogger();

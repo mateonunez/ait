@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Cpu } from "lucide-react";
 import { cn } from "@/styles/utils";
+import { listModels } from "@/utils/api";
+import type { ModelMetadata } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { Check, ChevronsUpDown, Cpu } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import type { ModelMetadata } from "@ait/core";
-import { getLogger } from "@ait/core";
-import { listModels } from "@/utils/api";
 
 const logger = getLogger();
 

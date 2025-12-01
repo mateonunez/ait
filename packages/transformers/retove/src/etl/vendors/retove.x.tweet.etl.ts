@@ -1,10 +1,10 @@
-import { ETLXTweetDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.x.descriptor";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
-import { xTweets, type getPostgresClient, type XTweetDataTarget, drizzleOrm } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
-import type { qdrant } from "@ait/qdrant";
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { type XTweetDataTarget, drizzleOrm, type getPostgresClient, xTweets } from "@ait/postgres";
+import type { qdrant } from "@ait/qdrant";
+import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import { ETLXTweetDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.x.descriptor";
+import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
 
 export class RetoveXTweetETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<XTweetDataTarget> = new ETLXTweetDescriptor();

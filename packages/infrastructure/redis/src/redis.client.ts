@@ -1,6 +1,6 @@
+import { getLogger } from "@ait/core";
 import dotenv from "dotenv";
 import { Redis, type RedisOptions } from "ioredis";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Loader2, Paperclip, Mic } from "lucide-react";
 import { cn } from "@/styles/utils";
 import { motion } from "framer-motion";
+import { Loader2, Mic, Paperclip, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface PromptInputProps {
   onSubmit: (message: string) => void;

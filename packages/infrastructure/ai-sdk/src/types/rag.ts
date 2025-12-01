@@ -1,7 +1,7 @@
-import type { QueryIntent } from "../services/routing/query-intent.service";
-import type { Document, BaseMetadata } from "./documents";
 import type { CollectionVendor } from "../config/collections.config";
+import type { QueryIntent } from "../services/routing/query-intent.service";
 import type { CollectionWeight } from "./collections";
+import type { BaseMetadata, Document } from "./documents";
 
 /**
  * Configuration for query planning service

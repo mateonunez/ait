@@ -1,13 +1,13 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
-import type { InsightsData, GoalData, CreateGoalRequest, UpdateGoalRequest } from "@ait/ai-sdk";
-import { getLogger } from "@ait/core";
 import {
-  fetchInsights,
-  fetchGoals,
   createGoal as apiCreateGoal,
-  updateGoal as apiUpdateGoal,
   deleteGoal as apiDeleteGoal,
+  updateGoal as apiUpdateGoal,
+  fetchGoals,
+  fetchInsights,
 } from "@/utils/insights-api.utils";
+import type { CreateGoalRequest, GoalData, InsightsData, UpdateGoalRequest } from "@ait/ai-sdk";
+import { getLogger } from "@ait/core";
+import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 
 const logger = getLogger();
 

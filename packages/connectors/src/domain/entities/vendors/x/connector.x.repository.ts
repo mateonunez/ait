@@ -1,20 +1,20 @@
-import { AItError, type XTweetEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
-import { connectorXTweetMapper } from "../../../mappers/vendors/connector.x.mapper";
+import { randomUUID } from "node:crypto";
+import { AItError, type PaginatedResponse, type PaginationParams, type XTweetEntity, getLogger } from "@ait/core";
+import {
+  type OAuthTokenDataTarget,
+  type XTweetDataTarget,
+  drizzleOrm,
+  getPostgresClient,
+  xTweets,
+} from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
-import { saveOAuthData, getOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { clearOAuthData, getOAuthData, saveOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type {
   IConnectorXRepository,
   IConnectorXTweetRepository,
 } from "../../../../types/domain/entities/vendors/connector.x.repository.types";
-import {
-  getPostgresClient,
-  type OAuthTokenDataTarget,
-  type XTweetDataTarget,
-  xTweets,
-  drizzleOrm,
-} from "@ait/postgres";
-import { randomUUID } from "node:crypto";
+import { connectorXTweetMapper } from "../../../mappers/vendors/connector.x.mapper";
 
 const logger = getLogger();
 

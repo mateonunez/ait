@@ -1,8 +1,8 @@
+import type { NotionPageEntity, NotionPageExternal } from "@ait/core";
 import type { NotionPageDataTarget } from "@ait/postgres";
+import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
 import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
-import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
-import type { NotionPageEntity, NotionPageExternal } from "@ait/core";
 
 function extractTitleFromProperties(properties: Record<string, unknown>): string {
   const titleProperty = properties.title;

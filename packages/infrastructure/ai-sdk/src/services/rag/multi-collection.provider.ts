@@ -1,15 +1,15 @@
 import { getLogger } from "@ait/core";
+import type { EntityType } from "@ait/core";
 import { z } from "zod";
 import type { CollectionVendor } from "../../config/collections.config";
 import { getCollectionConfig } from "../../config/collections.config";
-import { QdrantProvider } from "./qdrant.provider";
-import type { Document, BaseMetadata } from "../../types/documents";
-import type { CollectionWeight, CollectionSearchResult, MultiCollectionSearchResult } from "../../types/collections";
 import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { CollectionSearchResult, CollectionWeight, MultiCollectionSearchResult } from "../../types/collections";
+import type { BaseMetadata, Document } from "../../types/documents";
 import type { TraceContext } from "../../types/telemetry";
-import type { EntityType } from "@ait/core";
 import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
 import { buildQueryAdaptationPrompt } from "../prompts/routing.prompts";
+import { QdrantProvider } from "./qdrant.provider";
 
 const logger = getLogger();
 

@@ -1,7 +1,7 @@
-import { ConnectorGoogleCalendarDataSource } from "../../../src/infrastructure/vendors/google/connector.google-calendar.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
+import { ConnectorGoogleCalendarDataSource } from "../../../src/infrastructure/vendors/google/connector.google-calendar.data-source";
 
 describe("ConnectorGoogleCalendarDataSource", () => {
   let agent: MockAgent;

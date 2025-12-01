@@ -1,18 +1,18 @@
-import { Mic2, TrendingUp } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
 import { formatRelativeTime } from "@/utils/date.utils";
+import type { SpotifyArtistEntity as SpotifyArtist } from "@ait/core";
+import { motion } from "framer-motion";
+import { Mic2, TrendingUp } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardTitle,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
-  ConnectorCardTimestamp,
   ConnectorCardMedia,
   ConnectorCardMediaOverlay,
+  ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { SpotifyArtistEntity as SpotifyArtist } from "@ait/core";
 
 interface ArtistCardProps {
   artist: SpotifyArtist;

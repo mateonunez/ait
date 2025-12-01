@@ -1,33 +1,33 @@
+import { cn } from "@/styles/utils";
+import { formatRelativeTime } from "@/utils/date.utils";
+import type { XMediaEntity, XPollEntity, XTweetEntity as XTweet } from "@ait/core";
+import { motion } from "framer-motion";
 import {
-  Heart,
-  Repeat2,
-  MessageCircle,
-  Quote,
-  User,
-  Image as ImageIcon,
-  Video,
   BarChart3,
+  Heart,
+  Image as ImageIcon,
   MapPin,
+  MessageCircle,
   MessageSquare,
   Play,
+  Quote,
+  Repeat2,
+  User,
+  Video,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Progress } from "../ui/progress";
-import { formatRelativeTime } from "@/utils/date.utils";
-import { cn } from "@/styles/utils";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
-  ConnectorCardStats,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardStats,
   ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { XTweetEntity as XTweet, XMediaEntity, XPollEntity } from "@ait/core";
 
 interface TweetCardProps {
   tweet: XTweet;

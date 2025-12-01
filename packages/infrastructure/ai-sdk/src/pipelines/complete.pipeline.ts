@@ -1,6 +1,6 @@
-import { createRAGPipeline, type RAGPipelineConfig } from "./rag.pipeline";
-import { createGenerationPipeline, type GenerationPipelineConfig } from "./generation.pipeline";
 import type { PipelineOrchestrator } from "../services/rag/pipeline/pipeline.orchestrator";
+import { type GenerationPipelineConfig, createGenerationPipeline } from "./generation.pipeline";
+import { type RAGPipelineConfig, createRAGPipeline } from "./rag.pipeline";
 
 export interface CompletePipelineConfig {
   rag?: RAGPipelineConfig;

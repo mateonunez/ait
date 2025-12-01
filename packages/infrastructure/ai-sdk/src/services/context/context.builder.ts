@@ -1,31 +1,31 @@
 import { randomUUID } from "node:crypto";
-import type { Document, BaseMetadata } from "../../types/documents";
-import { buildTitleFromMetadata } from "../../utils/context.utils";
-import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
-import { TemporalLabelService, type ITemporalLabelService } from "./temporal-label.service";
 import type { EntityType } from "@ait/core";
+import type { BaseMetadata, Document } from "../../types/documents";
+import { buildTitleFromMetadata } from "../../utils/context.utils";
+import { formatDocumentToXml, formatMetadataToXml } from "../../utils/xml.utils";
 import type { TemporalCluster } from "../filtering/temporal-correlation.service";
+import { type ITextNormalizationService, TextNormalizationService } from "../metadata/text-normalization.service";
 import type { EntityFormatter } from "./formatters/formatter.utils";
 import { safeString } from "./formatters/formatter.utils";
 import {
-  SpotifyTrackFormatter,
-  SpotifyArtistFormatter,
-  SpotifyPlaylistFormatter,
-  SpotifyAlbumFormatter,
-  SpotifyRecentlyPlayedFormatter,
-} from "./formatters/spotify.formatter";
-import {
-  GitHubRepositoryFormatter,
-  GitHubPullRequestFormatter,
   GitHubCommitFormatter,
+  GitHubPullRequestFormatter,
+  GitHubRepositoryFormatter,
 } from "./formatters/github.formatter";
-import { XTweetFormatter } from "./formatters/x.formatter";
+import { GoogleCalendarCalendarFormatter, GoogleCalendarEventFormatter } from "./formatters/google-calendar.formatter";
+import { GoogleYouTubeSubscriptionFormatter } from "./formatters/google-youtube.formatter";
+import { LinearIssueFormatter } from "./formatters/linear.formatter";
 import { NotionPageFormatter } from "./formatters/notion.formatter";
 import { SlackMessageFormatter } from "./formatters/slack.formatter";
-import { LinearIssueFormatter } from "./formatters/linear.formatter";
-import { GoogleCalendarEventFormatter, GoogleCalendarCalendarFormatter } from "./formatters/google-calendar.formatter";
-import { GoogleYouTubeSubscriptionFormatter } from "./formatters/google-youtube.formatter";
-import { formatMetadataToXml, formatDocumentToXml } from "../../utils/xml.utils";
+import {
+  SpotifyAlbumFormatter,
+  SpotifyArtistFormatter,
+  SpotifyPlaylistFormatter,
+  SpotifyRecentlyPlayedFormatter,
+  SpotifyTrackFormatter,
+} from "./formatters/spotify.formatter";
+import { XTweetFormatter } from "./formatters/x.formatter";
+import { type ITemporalLabelService, TemporalLabelService } from "./temporal-label.service";
 
 const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
   track: SpotifyTrackFormatter,

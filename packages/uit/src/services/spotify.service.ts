@@ -1,13 +1,13 @@
 import { requestJson } from "@ait/core";
 import type {
-  PaginationParams,
   PaginatedResponse,
+  PaginationParams,
   RefreshResponse,
-  SpotifyTrackEntity as SpotifyTrack,
+  SpotifyAlbumEntity as SpotifyAlbum,
   SpotifyArtistEntity as SpotifyArtist,
   SpotifyPlaylistEntity as SpotifyPlaylist,
-  SpotifyAlbumEntity as SpotifyAlbum,
   SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed,
+  SpotifyTrackEntity as SpotifyTrack,
 } from "@ait/core";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";

@@ -1,19 +1,19 @@
-import { Calendar, Clock, Globe, Check } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
 import { cn } from "@/styles/utils";
+import type { GoogleCalendarCalendarEntity as GoogleCalendar } from "@ait/core";
+import { motion } from "framer-motion";
+import { Calendar, Check, Clock, Globe } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardDescription,
-  ConnectorCardStats,
-  ConnectorCardStatItem,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardStatItem,
+  ConnectorCardStats,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { GoogleCalendarCalendarEntity as GoogleCalendar } from "@ait/core";
 
 interface CalendarCardProps {
   calendar: GoogleCalendar;

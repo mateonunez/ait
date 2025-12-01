@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Database, ExternalLink, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/styles/utils";
-import { Badge } from "../ui/badge";
 import type { RAGContextMetadata, RetrievedDocument } from "@ait/core";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronUp, Database, ExternalLink } from "lucide-react";
+import { useState } from "react";
+import { Badge } from "../ui/badge";
 
 interface ContextPanelProps {
   context: RAGContextMetadata;

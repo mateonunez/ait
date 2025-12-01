@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
+import type { BaseMetadata, Document } from "../../types/documents";
 import type { DiversityConfig } from "../../types/rag";
-import type { Document, BaseMetadata } from "../../types/documents";
 
 const logger = getLogger();
 

@@ -1,7 +1,7 @@
-import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
-import { AItError } from "@ait/core";
-import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { randomBytes } from "node:crypto";
+import { AItError } from "@ait/core";
+import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import { generatePkcePair } from "../../../shared/auth/pkce.util";
 
 export class ConnectorXAuthenticator extends ConnectorAuthenticatorAbstract {

@@ -1,8 +1,8 @@
-import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { ContextBuildingInput, ContextBuildingOutput } from "../../types/stages";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { ContextBuilder } from "../../services/context/context.builder";
 import { TemporalCorrelationService } from "../../services/filtering/temporal-correlation.service";
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { ContextBuildingInput, ContextBuildingOutput } from "../../types/stages";
 
 export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput, ContextBuildingOutput> {
   readonly name = "context-building";

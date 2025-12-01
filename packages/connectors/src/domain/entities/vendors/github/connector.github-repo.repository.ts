@@ -1,15 +1,15 @@
+import { randomUUID } from "node:crypto";
 import {
   AItError,
-  getLogger,
   type GitHubRepositoryEntity,
   type PaginatedResponse,
   type PaginationParams,
+  getLogger,
 } from "@ait/core";
-import { getPostgresClient, githubRepositories, drizzleOrm } from "@ait/postgres";
-import { connectorGithubRepositoryMapper } from "../../../mappers/vendors/connector.github.mapper";
+import { drizzleOrm, getPostgresClient, githubRepositories } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import { randomUUID } from "node:crypto";
 import type { IConnectorGitHubRepoRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
+import { connectorGithubRepositoryMapper } from "../../../mappers/vendors/connector.github.mapper";
 
 const logger = getLogger();
 

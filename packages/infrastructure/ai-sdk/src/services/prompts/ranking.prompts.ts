@@ -1,4 +1,4 @@
-import type { Document, BaseMetadata } from "../../types/documents";
+import type { BaseMetadata, Document } from "../../types/documents";
 
 export const buildRerankPrompt = (query: string, documents: Document<BaseMetadata>[], previewLength = 300) => {
   const docsText = documents.map((doc, i) => `[${i}] ${doc.pageContent.slice(0, previewLength)}`).join("\n\n");

@@ -1,7 +1,7 @@
-import { ConnectorGoogleYouTubeDataSource } from "../../../src/infrastructure/vendors/google/connector.google-youtube.data-source";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { MockAgent, setGlobalDispatcher } from "undici";
+import { ConnectorGoogleYouTubeDataSource } from "../../../src/infrastructure/vendors/google/connector.google-youtube.data-source";
 
 describe("ConnectorGoogleYouTubeDataSource", () => {
   let agent: MockAgent;

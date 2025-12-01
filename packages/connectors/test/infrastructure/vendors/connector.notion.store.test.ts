@@ -1,8 +1,8 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import type { NotionPageEntity, NotionEntity } from "@ait/core";
-import type { IConnectorNotionRepository } from "../../../src/types/domain/entities/vendors/connector.notion.types";
+import { beforeEach, describe, it } from "node:test";
+import type { NotionEntity, NotionPageEntity } from "@ait/core";
 import { ConnectorNotionStore } from "../../../src/infrastructure/vendors/notion/connector.notion.store";
+import type { IConnectorNotionRepository } from "../../../src/types/domain/entities/vendors/connector.notion.types";
 
 describe("ConnectorNotionStore", () => {
   let mockRepository: IConnectorNotionRepository;

@@ -1,10 +1,10 @@
-import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { ToolExecutionInput, ToolExecutionOutput } from "../../types/stages";
 import { getAItClient } from "../../client/ai-sdk.client";
-import { convertToOllamaTools } from "../../tools/tool.converter";
-import type { Tool } from "../../types/tools";
 import { PromptBuilderService } from "../../services/generation/prompt-builder.service";
 import { ToolExecutionService } from "../../services/generation/tool-execution.service";
+import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { convertToOllamaTools } from "../../tools/tool.converter";
+import type { ToolExecutionInput, ToolExecutionOutput } from "../../types/stages";
+import type { Tool } from "../../types/tools";
 
 export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, ToolExecutionOutput> {
   readonly name = "tool-execution";

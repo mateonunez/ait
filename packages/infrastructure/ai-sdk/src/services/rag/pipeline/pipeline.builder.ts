@@ -1,5 +1,5 @@
-import type { IPipelineStage, PipelineConfig, FailureMode } from "./pipeline.types";
 import { PipelineOrchestrator } from "./pipeline.orchestrator";
+import type { FailureMode, IPipelineStage, PipelineConfig } from "./pipeline.types";
 
 export class PipelineBuilder<TInput = unknown, TOutput = unknown> {
   private _stages: IPipelineStage<unknown, unknown>[] = [];

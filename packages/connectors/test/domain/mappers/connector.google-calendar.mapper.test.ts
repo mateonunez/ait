@@ -1,10 +1,10 @@
-import {
-  connectorGoogleCalendarEventMapper,
-  connectorGoogleCalendarCalendarMapper,
-} from "../../../src/domain/mappers/vendors/connector.google.mapper";
-import type { GoogleCalendarEventExternal, GoogleCalendarCalendarExternal } from "@ait/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "@ait/core";
+import {
+  connectorGoogleCalendarCalendarMapper,
+  connectorGoogleCalendarEventMapper,
+} from "../../../src/domain/mappers/vendors/connector.google.mapper";
 
 describe("Google Calendar Mappers", () => {
   describe("connectorGoogleCalendarEventMapper", () => {

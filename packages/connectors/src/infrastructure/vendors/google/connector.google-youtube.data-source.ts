@@ -1,9 +1,9 @@
 import type { GoogleYouTubeSubscriptionExternal } from "@ait/core";
+import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
 import type {
-  IConnectorGoogleYouTubeDataSource,
   GoogleYouTubePaginatedResponse,
+  IConnectorGoogleYouTubeDataSource,
 } from "../../../types/infrastructure/connector.google-youtube.data-source.interface";
-import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
 
 export class ConnectorGoogleYouTubeDataSource implements IConnectorGoogleYouTubeDataSource {
   private readonly apiUrl: string;

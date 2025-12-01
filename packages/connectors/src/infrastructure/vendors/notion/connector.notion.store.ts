@@ -1,9 +1,9 @@
 import type { NotionEntity } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { IConnectorNotionRepository } from "../../../types/domain/entities/vendors/connector.notion.types";
-import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 import { NOTION_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorNotionRepository } from "../../../types/domain/entities/vendors/connector.notion.types";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 
 export class ConnectorNotionStore implements IConnectorStore {
   private _connectorNotionRepository: IConnectorNotionRepository;

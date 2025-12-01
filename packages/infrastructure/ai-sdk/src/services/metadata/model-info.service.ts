@@ -1,10 +1,10 @@
 import {
-  createDefaultCapabilities,
   type ModelCapabilities,
   type ModelMetadata,
   type ModelParameters,
+  createDefaultCapabilities,
 } from "../../types";
-import { MODEL_REGISTRY, getModelMetadata, getAllModels } from "./model-registry";
+import { MODEL_REGISTRY, getAllModels, getModelMetadata } from "./model-registry";
 
 export interface IModelInfoService {
   getModelInfo(modelId: string): ModelMetadata | null;

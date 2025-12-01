@@ -1,5 +1,5 @@
-import { drizzleOrm, getPostgresClient, type OAuthTokenDataTarget, oauthTokens } from "@ait/postgres";
 import { randomUUID } from "node:crypto";
+import { type OAuthTokenDataTarget, drizzleOrm, getPostgresClient, oauthTokens } from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "./connector.oauth";
 
 const _pgClient = getPostgresClient();

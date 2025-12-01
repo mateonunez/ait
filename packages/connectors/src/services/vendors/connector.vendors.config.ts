@@ -1,61 +1,61 @@
+import type {
+  GitHubCommitEntity,
+  GitHubCommitExternal,
+  GitHubPullRequestEntity,
+  GitHubPullRequestExternal,
+  GitHubRepositoryEntity,
+  GitHubRepositoryExternal,
+  GoogleCalendarCalendarEntity,
+  GoogleCalendarCalendarExternal,
+  GoogleCalendarEventEntity,
+  GoogleCalendarEventExternal,
+  GoogleYouTubeSubscriptionEntity,
+  GoogleYouTubeSubscriptionExternal,
+  LinearIssueEntity,
+  LinearIssueExternal,
+  NotionPageEntity,
+  NotionPageExternal,
+  SlackMessageEntity,
+  SlackMessageExternal,
+  SpotifyAlbumEntity,
+  SpotifyAlbumExternal,
+  SpotifyArtistEntity,
+  SpotifyArtistExternal,
+  SpotifyPlaylistEntity,
+  SpotifyPlaylistExternal,
+  SpotifyRecentlyPlayedEntity,
+  SpotifyRecentlyPlayedExternal,
+  SpotifyTrackEntity,
+  SpotifyTrackExternal,
+  XTweetEntity,
+  XTweetExternal,
+} from "@ait/core";
+import { connectorGithubCommitMapper } from "../../domain/mappers/vendors/connector.github.commit.mapper";
 import { connectorGithubRepositoryMapper } from "../../domain/mappers/vendors/connector.github.mapper";
 import { connectorGithubPullRequestMapper } from "../../domain/mappers/vendors/connector.github.pull-request.mapper";
-import { connectorGithubCommitMapper } from "../../domain/mappers/vendors/connector.github.commit.mapper";
+import { connectorGoogleYouTubeSubscriptionMapper } from "../../domain/mappers/vendors/connector.google-youtube.mapper";
+import {
+  connectorGoogleCalendarCalendarMapper,
+  connectorGoogleCalendarEventMapper,
+} from "../../domain/mappers/vendors/connector.google.mapper";
 import { connectorLinearIssueMapper } from "../../domain/mappers/vendors/connector.linear.mapper";
+import { connectorNotionPageMapper } from "../../domain/mappers/vendors/connector.notion.mapper";
+import { connectorSlackMessageMapper } from "../../domain/mappers/vendors/connector.slack.mapper";
 import {
   connectorSpotifyAlbumMapper,
   connectorSpotifyArtistMapper,
   connectorSpotifyRecentlyPlayedMapper,
   connectorSpotifyTrackMapper,
 } from "../../domain/mappers/vendors/connector.spotify.mapper";
+import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
 import { connectorXTweetMapper } from "../../domain/mappers/vendors/connector.x.mapper";
-import { connectorNotionPageMapper } from "../../domain/mappers/vendors/connector.notion.mapper";
-import { connectorSlackMessageMapper } from "../../domain/mappers/vendors/connector.slack.mapper";
-import {
-  connectorGoogleCalendarEventMapper,
-  connectorGoogleCalendarCalendarMapper,
-} from "../../domain/mappers/vendors/connector.google.mapper";
-import { connectorGoogleYouTubeSubscriptionMapper } from "../../domain/mappers/vendors/connector.google-youtube.mapper";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
+import type { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
-import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
-import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 import type { ConnectorNotion } from "../../infrastructure/vendors/notion/connector.notion";
 import type { ConnectorSlack } from "../../infrastructure/vendors/slack/connector.slack";
-import type { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
-import type {
-  GitHubRepositoryEntity,
-  GitHubRepositoryExternal,
-  GitHubPullRequestEntity,
-  GitHubPullRequestExternal,
-  GitHubCommitEntity,
-  GitHubCommitExternal,
-  LinearIssueEntity,
-  LinearIssueExternal,
-  SpotifyArtistEntity,
-  SpotifyArtistExternal,
-  SpotifyTrackEntity,
-  SpotifyTrackExternal,
-  SpotifyPlaylistEntity,
-  SpotifyPlaylistExternal,
-  SpotifyAlbumEntity,
-  SpotifyAlbumExternal,
-  SpotifyRecentlyPlayedEntity,
-  SpotifyRecentlyPlayedExternal,
-  XTweetEntity,
-  XTweetExternal,
-  NotionPageEntity,
-  NotionPageExternal,
-  SlackMessageEntity,
-  SlackMessageExternal,
-  GoogleCalendarEventEntity,
-  GoogleCalendarEventExternal,
-  GoogleCalendarCalendarEntity,
-  GoogleCalendarCalendarExternal,
-  GoogleYouTubeSubscriptionEntity,
-  GoogleYouTubeSubscriptionExternal,
-} from "@ait/core";
-import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
+import type { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
+import type { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
 
 export interface EntityConfig<TConnector, TExternal, TDomain> {
   fetcher?: (connector: TConnector) => Promise<TExternal[]>;

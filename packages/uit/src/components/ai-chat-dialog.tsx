@@ -1,29 +1,29 @@
-import { useState, useMemo, useEffect } from "react";
-import {
-  X,
-  Settings,
-  Activity,
-  BarChart3,
-  Database,
-  Brain,
-  ListChecks,
-  Wrench,
-  CheckCircle2,
-  Circle,
-  MessageSquarePlus,
-} from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
-import { Conversation, PromptInput, ModelSelector, Suggestions } from "./ai-elements";
-import { ContextWindowTracker } from "./context-window-tracker";
 import { useAItChat } from "@/hooks/useAItChat";
 import { useAiSuggestions } from "@/hooks/useAiSuggestions";
 import { cn } from "@/styles/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
 import { listModels } from "@/utils/api";
-import { Link } from "wouter";
 import { getLogger } from "@ait/core";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Activity,
+  BarChart3,
+  Brain,
+  CheckCircle2,
+  Circle,
+  Database,
+  ListChecks,
+  MessageSquarePlus,
+  Settings,
+  Wrench,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "wouter";
+import { Conversation, ModelSelector, PromptInput, Suggestions } from "./ai-elements";
+import { ContextWindowTracker } from "./context-window-tracker";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Dialog, DialogContent, DialogTitle } from "./ui/dialog";
 
 const logger = getLogger();
 

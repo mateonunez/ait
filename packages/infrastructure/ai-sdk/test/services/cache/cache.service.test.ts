@@ -1,10 +1,10 @@
-import { describe, it, mock, beforeEach } from "node:test";
 import assert from "node:assert";
-import { CacheService, resetCacheService } from "../../../src/services/cache/cache.service";
+import { beforeEach, describe, it, mock } from "node:test";
 import {
   getCacheAnalyticsService,
   resetCacheAnalyticsService,
 } from "../../../src/services/analytics/cache-analytics.service";
+import { CacheService, resetCacheService } from "../../../src/services/cache/cache.service";
 
 describe("CacheService", () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
-import { describe, it, beforeEach, afterEach } from "node:test";
 import assert from "node:assert/strict";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import sinon from "sinon";
 import { CollectionDiscoveryService } from "../../../src/services/metadata/collection-discovery.service";
 import type { CollectionWeight } from "../../../src/types/collections";

@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { CalendarCard } from "@/components/connectors/calendar-card";
+import { EventCard } from "@/components/connectors/event-card";
+import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { IntegrationTabs } from "@/components/integration-tabs";
-import { Pagination } from "@/components/pagination";
 import { LoadingGrid } from "@/components/loading-grid";
-import { EventCard } from "@/components/connectors/event-card";
-import { CalendarCard } from "@/components/connectors/calendar-card";
-import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
+import { Pagination } from "@/components/pagination";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import {
-  type GoogleCalendarEventEntity,
   type GoogleCalendarCalendarEntity,
+  type GoogleCalendarEventEntity,
   type GoogleYouTubeSubscriptionEntity,
   getLogger,
 } from "@ait/core";
 import { Calendar, Youtube } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
 

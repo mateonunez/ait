@@ -1,10 +1,10 @@
+import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
+import { MockAgent, setGlobalDispatcher } from "undici";
 import {
   ConnectorSlackDataSource,
   type IConnectorSlackDataSource,
 } from "../../../src/infrastructure/vendors/slack/connector.slack.data-source";
-import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
-import { MockAgent, setGlobalDispatcher } from "undici";
 
 describe("ConnectorSlackDataSource Content Detection", () => {
   let agent: MockAgent;

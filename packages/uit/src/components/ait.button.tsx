@@ -1,7 +1,7 @@
-import type { ButtonHTMLAttributes } from "react";
-import { cn } from "@/styles/utils";
-import { theme } from "@/styles/theme";
 import { useUIt } from "@/contexts/uit.context";
+import { theme } from "@/styles/theme";
+import { cn } from "@/styles/utils";
+import type { ButtonHTMLAttributes } from "react";
 
 interface AItButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string;

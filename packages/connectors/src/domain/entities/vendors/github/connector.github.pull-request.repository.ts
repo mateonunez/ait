@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import {
   AItError,
   type GitHubPullRequestEntity,
@@ -5,11 +6,10 @@ import {
   type PaginationParams,
   getLogger,
 } from "@ait/core";
-import { getPostgresClient, githubPullRequests, drizzleOrm } from "@ait/postgres";
-import { connectorGithubPullRequestMapper } from "../../../mappers/vendors/connector.github.pull-request.mapper";
-import { randomUUID } from "node:crypto";
-import type { IConnectorGitHubPullRequestRepository } from "../../../../types/domain/entities/vendors/connector.github.pull-request.types";
+import { drizzleOrm, getPostgresClient, githubPullRequests } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
+import type { IConnectorGitHubPullRequestRepository } from "../../../../types/domain/entities/vendors/connector.github.pull-request.types";
+import { connectorGithubPullRequestMapper } from "../../../mappers/vendors/connector.github.pull-request.mapper";
 
 const logger = getLogger();
 

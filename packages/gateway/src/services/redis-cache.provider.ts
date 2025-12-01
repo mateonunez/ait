@@ -1,6 +1,6 @@
-import { Redis } from "ioredis";
 import { type ICacheProvider, setCacheProvider } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
+import { Redis } from "ioredis";
 
 const logger = getLogger();
 

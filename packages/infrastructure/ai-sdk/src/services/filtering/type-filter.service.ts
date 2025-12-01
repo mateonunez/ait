@@ -1,14 +1,14 @@
-import type { TypeFilter } from "../../types/rag";
-import type { QueryIntent } from "../routing/query-intent.service";
-import { TemporalDateParser, type ITemporalDateParser } from "./temporal-date-parser.service";
-import { TextNormalizationService, type ITextNormalizationService } from "../metadata/text-normalization.service";
 import {
-  findEntityTypesByKeywords,
-  getEntityTypesByVendor,
-  getEntityMetadata,
-  VALID_ENTITY_TYPES,
   type EntityType,
+  VALID_ENTITY_TYPES,
+  findEntityTypesByKeywords,
+  getEntityMetadata,
+  getEntityTypesByVendor,
 } from "@ait/core";
+import type { TypeFilter } from "../../types/rag";
+import { type ITextNormalizationService, TextNormalizationService } from "../metadata/text-normalization.service";
+import type { QueryIntent } from "../routing/query-intent.service";
+import { type ITemporalDateParser, TemporalDateParser } from "./temporal-date-parser.service";
 
 export interface ITypeFilterService {
   inferTypes(

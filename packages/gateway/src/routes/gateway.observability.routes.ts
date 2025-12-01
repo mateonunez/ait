@@ -1,4 +1,4 @@
-import { getAnalyticsService, getLangfuseProvider, getFeedbackService } from "@ait/ai-sdk";
+import { getAnalyticsService, getFeedbackService, getLangfuseProvider } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 /**

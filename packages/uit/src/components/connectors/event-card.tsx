@@ -1,21 +1,21 @@
-import { Calendar, Clock, MapPin, Users, Video, Repeat, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
-import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import { formatRelativeTime } from "@/utils/date.utils";
+import type { GoogleCalendarEventEntity as GoogleCalendarEvent } from "@ait/core";
+import { motion } from "framer-motion";
+import { AlertCircle, Calendar, CheckCircle2, Clock, MapPin, Repeat, Users, Video, XCircle } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardDescription,
-  ConnectorCardStats,
-  ConnectorCardStatItem,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
+  ConnectorCardStatItem,
+  ConnectorCardStats,
   ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { GoogleCalendarEventEntity as GoogleCalendarEvent } from "@ait/core";
 
 function normalizeEventDate(date: Date): Date {
   const now = new Date();

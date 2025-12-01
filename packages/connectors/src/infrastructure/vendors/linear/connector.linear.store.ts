@@ -1,9 +1,9 @@
 import type { LinearEntity } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
-import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
-import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 import { LINEAR_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
+import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorStore } from "../../../types/shared/store/connector.store.interface";
 
 export class ConnectorLinearStore implements IConnectorStore {
   private _connectorLinearRepository: IConnectorLinearRepository;

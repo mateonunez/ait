@@ -1,12 +1,12 @@
 import type {
-  SpotifyTrackEntity,
+  SpotifyAlbumEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
-  SpotifyAlbumEntity,
   SpotifyRecentlyPlayedEntity,
+  SpotifyTrackEntity,
 } from "@ait/core";
 import type { EntityFormatter } from "./formatter.utils";
-import { safeString, safeNumber, safeArray, joinParts } from "./formatter.utils";
+import { joinParts, safeArray, safeNumber, safeString } from "./formatter.utils";
 
 const extractArtistName = (artists: unknown[]): string => {
   if (artists.length === 0) return "Unknown Artist";

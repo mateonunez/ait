@@ -1,21 +1,21 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import {
-  type EntityType,
-  type IntegrationVendor,
-  type PaginationParams,
-  type PaginatedResponse,
-  getLogger,
-} from "@ait/core";
-import type { CachedEntityData, CachedIntegrationData, IntegrationEntity } from "@/types/integrations.types";
-import {
-  spotifyService,
   githubService,
-  xService,
+  googleService,
   linearService,
   notionService,
   slackService,
-  googleService,
+  spotifyService,
+  xService,
 } from "@/services";
+import type { CachedEntityData, CachedIntegrationData, IntegrationEntity } from "@/types/integrations.types";
+import {
+  type EntityType,
+  type IntegrationVendor,
+  type PaginatedResponse,
+  type PaginationParams,
+  getLogger,
+} from "@ait/core";
+import { type ReactNode, createContext, useCallback, useContext, useState } from "react";
 
 const logger = getLogger();
 

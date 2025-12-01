@@ -1,7 +1,7 @@
-import { CollectionRouterService, type CollectionRouterConfig } from "../../services/routing/collection-router.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { CollectionRoutingInput, CollectionRoutingOutput } from "../../types/stages";
+import { type CollectionRouterConfig, CollectionRouterService } from "../../services/routing/collection-router.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { CollectionRoutingInput, CollectionRoutingOutput } from "../../types/stages";
 
 export interface CollectionRoutingStageConfig extends CollectionRouterConfig {}
 

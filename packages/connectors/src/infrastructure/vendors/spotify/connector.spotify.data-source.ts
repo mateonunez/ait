@@ -6,8 +6,8 @@ import type {
   SpotifyRecentlyPlayedExternal,
   SpotifyTrackExternal,
 } from "@ait/core";
+import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
 import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
-import { requestJson, AItError, RateLimitError, getLogger } from "@ait/core";
 
 interface SpotifyPaginatedResponse<T> {
   items: T[];

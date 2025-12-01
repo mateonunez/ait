@@ -1,6 +1,6 @@
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type { IConnectorOAuthTokenResponse } from "../../../../shared/auth/lib/oauth/connector.oauth";
-import { getOAuthData, saveOAuthData, clearOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
+import { clearOAuthData, getOAuthData, saveOAuthData } from "../../../../shared/auth/lib/oauth/connector.oauth.utils";
 import type { IConnectorSlackRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
 import { ConnectorSlackMessageRepository } from "./connector.slack-message.repository";
 

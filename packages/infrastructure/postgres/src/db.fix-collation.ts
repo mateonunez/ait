@@ -1,6 +1,6 @@
-import dotenv from "dotenv";
-import { getPostgresClient, closePostgresConnection } from "./postgres.client";
 import { getLogger } from "@ait/core";
+import dotenv from "dotenv";
+import { closePostgresConnection, getPostgresClient } from "./postgres.client";
 
 const logger = getLogger();
 

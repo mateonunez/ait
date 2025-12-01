@@ -1,19 +1,19 @@
 import { getLogger } from "@ait/core";
+import { recordSpan } from "../../telemetry/telemetry.middleware";
+import type { CollectionWeight } from "../../types/collections";
+import type { BaseMetadata, Document } from "../../types/documents";
 import type { MultiQueryConfig, QueryPlanResult, QueryResult } from "../../types/rag";
-import type { Document, BaseMetadata } from "../../types/documents";
-import type { QdrantProvider } from "../rag/qdrant.provider";
-import type { IQueryPlannerService } from "./query-planner.service";
+import type { TraceContext } from "../../types/telemetry";
 import type { IDiversityService } from "../filtering/diversity.service";
 import type { ITypeFilterService } from "../filtering/type-filter.service";
-import type { IRankFusionService } from "../ranking/rank-fusion.service";
-import type { IHyDEService } from "./hyde.service";
-import type { IRerankService } from "../ranking/rerank.service";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
-import type { TraceContext } from "../../types/telemetry";
 import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
-import type { CollectionWeight } from "../../types/collections";
+import type { QdrantProvider } from "../rag/qdrant.provider";
+import type { IRankFusionService } from "../ranking/rank-fusion.service";
+import type { IRerankService } from "../ranking/rerank.service";
 import type { IQueryHeuristicService } from "../routing/query-heuristic.service";
 import type { IQueryIntentService } from "../routing/query-intent.service";
+import type { IHyDEService } from "./hyde.service";
+import type { IQueryPlannerService } from "./query-planner.service";
 
 const logger = getLogger();
 

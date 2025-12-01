@@ -1,10 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { AItError, type NotionPageEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { type NotionPageDataTarget, drizzleOrm, getPostgresClient, notionPages } from "@ait/postgres";
 import { connectorNotionPageMapper } from "../../../../domain/mappers/vendors/connector.notion.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorNotionPageRepository } from "../../../../types/domain/entities/vendors/connector.notion.types";
-import { getPostgresClient, notionPages, type NotionPageDataTarget, drizzleOrm } from "@ait/postgres";
-import { randomUUID } from "node:crypto";
-import { getLogger } from "@ait/core";
 
 const logger = getLogger();
 

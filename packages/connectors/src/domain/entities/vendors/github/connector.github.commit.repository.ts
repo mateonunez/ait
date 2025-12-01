@@ -1,8 +1,8 @@
 import { AItError, type GitHubCommitEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
-import { getPostgresClient, githubCommits, drizzleOrm } from "@ait/postgres";
-import { connectorGithubCommitMapper } from "../../../mappers/vendors/connector.github.commit.mapper";
-import type { IConnectorGitHubCommitRepository } from "../../../../types/domain/entities/vendors/connector.github.commit.types";
+import { drizzleOrm, getPostgresClient, githubCommits } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
+import type { IConnectorGitHubCommitRepository } from "../../../../types/domain/entities/vendors/connector.github.commit.types";
+import { connectorGithubCommitMapper } from "../../../mappers/vendors/connector.github.commit.mapper";
 
 const logger = getLogger();
 

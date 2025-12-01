@@ -1,5 +1,5 @@
+import type { XMediaEntity, XPlaceEntity, XPollEntity } from "@ait/core";
 import { integer, jsonb, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
-import type { XMediaEntity, XPollEntity, XPlaceEntity } from "@ait/core";
 
 export const xTweets = pgTable("x_tweets", {
   id: varchar("id", { length: 255 }).primaryKey(),

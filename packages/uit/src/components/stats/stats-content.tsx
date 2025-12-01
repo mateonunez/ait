@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { cn } from "@/styles/utils";
-import { RefreshCw, Activity } from "lucide-react";
 import { useStats } from "@/contexts/stats.context";
-import { motion, AnimatePresence } from "framer-motion";
-import { OverviewTab } from "./tabs/overview-tab";
-import { PerformanceTab } from "./tabs/performance-tab";
+import { cn } from "@/styles/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import { Activity, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CacheTab } from "./tabs/cache-tab";
 import { CostTab } from "./tabs/cost-tab";
 import { ErrorsTab } from "./tabs/errors-tab";
+import { OverviewTab } from "./tabs/overview-tab";
+import { PerformanceTab } from "./tabs/performance-tab";
 import { QualityTab } from "./tabs/quality-tab";
 import { SystemTab } from "./tabs/system-tab";
 

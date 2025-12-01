@@ -1,8 +1,8 @@
 import { requestStream } from "@ait/core";
 import type { AggregatedMetadata } from "@ait/core";
-import { STREAM_EVENT, METADATA_TYPE } from "@ait/core";
-import { parseGatewayStream } from "../stream-parser.utils";
+import { METADATA_TYPE, STREAM_EVENT } from "@ait/core";
 import { getLogger } from "@ait/core";
+import { parseGatewayStream } from "../stream-parser.utils";
 
 const logger = getLogger();
 

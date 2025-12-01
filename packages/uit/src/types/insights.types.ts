@@ -4,7 +4,7 @@
  * Re-export backend types from @ait/ai-sdk for easier frontend usage
  */
 
-import type { GoalType, GoalPeriod } from "@ait/ai-sdk";
+import type { GoalPeriod, GoalType } from "@ait/ai-sdk";
 
 // Re-export all insight types from backend
 export type {

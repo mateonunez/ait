@@ -1,10 +1,10 @@
-import { ArrowLeft, RefreshCw } from "lucide-react";
-import { useLocation } from "wouter";
-import { Button } from "./ui/button";
-import { ThemeToggle } from "./theme-toggle";
-import { AIChatButton } from "./ai-chat-button";
 import { cn } from "@/styles/utils";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
+import { useLocation } from "wouter";
+import { AIChatButton } from "./ai-chat-button";
+import { ThemeToggle } from "./theme-toggle";
+import { Button } from "./ui/button";
 
 interface IntegrationLayoutProps {
   title: string;

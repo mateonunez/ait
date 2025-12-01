@@ -1,14 +1,14 @@
+import { getLogger } from "@ait/core";
+import { type QueryRewriterService, getQueryRewriter } from "../../services/generation/query-rewriter.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import type { QueryAnalysisInput, QueryAnalysisOutput } from "../../types/stages";
-import type { QueryIntent } from "../../services/routing/query-intent.service";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import {
-  getFastQueryAnalyzer,
   type FastQueryAnalysis,
   type IFastQueryAnalyzerService,
+  getFastQueryAnalyzer,
 } from "../../services/routing/fast-query-analyzer.service";
-import { getQueryRewriter, type QueryRewriterService } from "../../services/generation/query-rewriter.service";
-import { getLogger } from "@ait/core";
+import type { QueryIntent } from "../../services/routing/query-intent.service";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { QueryAnalysisInput, QueryAnalysisOutput } from "../../types/stages";
 
 const logger = getLogger();
 

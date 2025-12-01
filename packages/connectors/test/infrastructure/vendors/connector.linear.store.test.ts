@@ -1,14 +1,14 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorLinearStore } from "../../../src/infrastructure/vendors/linear/connector.linear.store";
+import { LINEAR_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
+import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
 import type {
   IConnectorLinearRepository,
   LinearEntity,
   LinearIssueEntity,
 } from "../../../src/types/domain/entities/vendors/connector.linear.types";
-import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
-import { ConnectorLinearStore } from "../../../src/infrastructure/vendors/linear/connector.linear.store";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
-import { LINEAR_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
 
 describe("ConnectorLinearStore", () => {
   let mockRepository: IConnectorLinearRepository;

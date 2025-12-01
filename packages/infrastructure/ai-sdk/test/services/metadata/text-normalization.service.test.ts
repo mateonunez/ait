@@ -1,5 +1,5 @@
-import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
+import { beforeEach, describe, it } from "node:test";
 import { TextNormalizationService } from "../../../src/services/metadata/text-normalization.service";
 
 describe("TextNormalizationService", () => {

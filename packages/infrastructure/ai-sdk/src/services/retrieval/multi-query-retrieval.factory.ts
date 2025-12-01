@@ -1,15 +1,15 @@
+import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
 import type { MultiQueryConfig } from "../../types/rag";
-import { QueryPlannerService } from "./query-planner.service";
+import { EmbeddingsService } from "../embeddings/embeddings.service";
 import { DiversityService } from "../filtering/diversity.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
 import { RankFusionService } from "../ranking/rank-fusion.service";
-import { HyDEService } from "./hyde.service";
 import { RerankService } from "../ranking/rerank.service";
-import { MultiQueryRetrievalService, type IMultiQueryRetrievalService } from "./multi-query-retrieval.service";
-import { EmbeddingsService } from "../embeddings/embeddings.service";
-import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
 import { QueryHeuristicService } from "../routing/query-heuristic.service";
 import { QueryIntentService } from "../routing/query-intent.service";
+import { HyDEService } from "./hyde.service";
+import { type IMultiQueryRetrievalService, MultiQueryRetrievalService } from "./multi-query-retrieval.service";
+import { QueryPlannerService } from "./query-planner.service";
 
 export function createMultiQueryRetrievalService(config: MultiQueryConfig = {}): IMultiQueryRetrievalService {
   const heuristics = new QueryHeuristicService();

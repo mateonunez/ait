@@ -1,8 +1,8 @@
-import { describe, it, after, beforeEach } from "node:test";
 import assert from "node:assert/strict";
-import { getPostgresClient, closePostgresConnection, drizzleOrm, linearIssues } from "@ait/postgres";
-import { ConnectorLinearIssueRepository } from "../../../../src/domain/entities/vendors/linear/connector.linear-issue.repository";
+import { after, beforeEach, describe, it } from "node:test";
 import type { LinearIssueEntity } from "@ait/core";
+import { closePostgresConnection, drizzleOrm, getPostgresClient, linearIssues } from "@ait/postgres";
+import { ConnectorLinearIssueRepository } from "../../../../src/domain/entities/vendors/linear/connector.linear-issue.repository";
 
 describe("ConnectorLinearRepository", () => {
   const repository = new ConnectorLinearIssueRepository();

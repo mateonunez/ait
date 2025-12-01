@@ -1,5 +1,5 @@
-import type { BaseMetadata } from "../types/documents";
 import type { TitleComponents } from "../types/context";
+import type { BaseMetadata } from "../types/documents";
 
 export function extractTitleComponents(metadata: BaseMetadata): TitleComponents {
   return {

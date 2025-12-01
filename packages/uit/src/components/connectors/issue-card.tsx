@@ -1,19 +1,19 @@
-import { Circle, AlertCircle, CheckCircle2, User, Tag, Zap } from "lucide-react";
-import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
-import { formatRelativeTime } from "@/utils/date.utils";
 import { cn } from "@/styles/utils";
+import { formatRelativeTime } from "@/utils/date.utils";
+import type { LinearIssueEntity as LinearIssue } from "@ait/core";
+import { motion } from "framer-motion";
+import { AlertCircle, CheckCircle2, Circle, Tag, User, Zap } from "lucide-react";
+import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
-  ConnectorCardHeader,
-  ConnectorCardTitle,
   ConnectorCardDescription,
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
+  ConnectorCardHeader,
   ConnectorCardTimestamp,
+  ConnectorCardTitle,
 } from "./connector-card-base";
-import type { LinearIssueEntity as LinearIssue } from "@ait/core";
 
 interface IssueCardProps {
   issue: LinearIssue;

@@ -1,6 +1,6 @@
 import type { SlackMessageDataTarget } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 export class ETLSlackMessageDescriptor implements IETLEmbeddingDescriptor<SlackMessageDataTarget> {
   public getEmbeddingText(message: SlackMessageDataTarget): string {

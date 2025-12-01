@@ -1,11 +1,11 @@
+import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorNotionRepository } from "../../../domain/entities/vendors/notion/connector.notion.repository";
 import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
-import { ConnectorNotionStore } from "./connector.notion.store";
-import type { IConnectorNotionRepository } from "../../../types/domain/entities/vendors/connector.notion.types";
 import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorNotionRepository } from "../../../types/domain/entities/vendors/connector.notion.types";
 import { ConnectorNotionAuthenticator } from "./connector.notion.authenticator";
 import { ConnectorNotionDataSource } from "./connector.notion.data-source";
-import { ConnectorNotionRepository } from "../../../domain/entities/vendors/notion/connector.notion.repository";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
+import { ConnectorNotionStore } from "./connector.notion.store";
 
 export class ConnectorNotion extends BaseConnectorAbstract<
   ConnectorNotionAuthenticator,

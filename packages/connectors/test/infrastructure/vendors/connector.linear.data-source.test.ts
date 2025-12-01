@@ -1,8 +1,8 @@
-import { ConnectorLinearDataSource } from "../../../src/infrastructure/vendors/linear/connector.linear.data-source";
-import { AItError } from "@ait/core";
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import { AItError } from "@ait/core";
 import { MockAgent, setGlobalDispatcher } from "undici";
+import { ConnectorLinearDataSource } from "../../../src/infrastructure/vendors/linear/connector.linear.data-source";
 
 describe("ConnectorLinearDataSource", () => {
   let agent: MockAgent;

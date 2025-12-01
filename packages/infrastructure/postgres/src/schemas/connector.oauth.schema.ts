@@ -1,5 +1,5 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { randomUUID } from "node:crypto";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 export const oauthTokens = pgTable("oauth_tokens", {
   id: text("id").primaryKey().default(randomUUID()),

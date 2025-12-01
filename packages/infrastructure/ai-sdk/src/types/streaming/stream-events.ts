@@ -1,8 +1,8 @@
-import type { STREAM_EVENT, METADATA_TYPE, StreamEventType } from "../../constants/stream.constants";
+import type { METADATA_TYPE, STREAM_EVENT, StreamEventType } from "../../constants/stream.constants";
 import type { RAGContextMetadata } from "../metadata/rag-context.metadata";
 import type { ReasoningStep } from "../metadata/reasoning-step.metadata";
-import type { TaskStep } from "../metadata/task-step.metadata";
 import type { SuggestionItem } from "../metadata/suggestion.metadata";
+import type { TaskStep } from "../metadata/task-step.metadata";
 import type { ToolCallMetadata } from "../metadata/tool-call.metadata";
 import type { ModelMetadata } from "../models/model.metadata";
 

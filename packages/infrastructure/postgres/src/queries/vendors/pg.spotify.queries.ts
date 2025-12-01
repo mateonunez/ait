@@ -1,6 +1,6 @@
-import type { getPostgresClient } from "../../postgres.client";
-import { spotifyTracks, spotifyRecentlyPlayed } from "../../schemas/connector.spotify.schema";
 import { desc } from "drizzle-orm";
+import type { getPostgresClient } from "../../postgres.client";
+import { spotifyRecentlyPlayed, spotifyTracks } from "../../schemas/connector.spotify.schema";
 
 export function getSpotifyTracksQuery(
   _postgresClient: ReturnType<typeof getPostgresClient>,

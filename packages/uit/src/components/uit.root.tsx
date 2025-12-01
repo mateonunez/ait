@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { AItProvider } from "@/contexts/uit.context";
+import type { ReactNode } from "react";
 
 interface AItRootProps {
   children: ReactNode;

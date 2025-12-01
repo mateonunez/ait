@@ -1,11 +1,11 @@
-import type { Document, BaseMetadata } from "../../types/documents";
+import { getLogger } from "@ait/core";
 import type { CollectionVendor } from "../../config/collections.config";
-import type { WeightedDocument } from "../../types/collections";
-import type { IRerankService } from "./rerank.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { WeightedDocument } from "../../types/collections";
+import type { BaseMetadata, Document } from "../../types/documents";
 import type { TraceContext } from "../../types/telemetry";
 import { CollectionDiversityService, type ICollectionDiversityService } from "./collection-diversity.service";
-import { getLogger } from "@ait/core";
+import type { IRerankService } from "./rerank.service";
 
 const logger = getLogger();
 

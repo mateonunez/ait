@@ -1,23 +1,23 @@
 import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
+import { createRAGPipeline } from "../../pipelines/rag.pipeline";
+import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
 import {
   createTraceContext,
+  endTraceWithError,
+  endTraceWithOutput,
   shouldEnableTelemetry,
   updateTraceInput,
-  endTraceWithOutput,
-  endTraceWithError,
 } from "../../telemetry/telemetry.middleware";
-import type { TraceContext } from "../../types/telemetry";
-import { getErrorClassificationService } from "../errors/error-classification.service";
-import { getAnalyticsService } from "../analytics/analytics.service";
-import { createRAGPipeline } from "../../pipelines/rag.pipeline";
-import type { ChatMessage } from "../../types/chat";
-import type { Tool } from "../../types/tools";
-import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { StreamEvent } from "../../types";
-import { MetadataEmitterService, type RAGContextMetadata } from "../streaming/metadata-emitter.service";
+import type { ChatMessage } from "../../types/chat";
+import type { TextGenerationFeatureConfig } from "../../types/config";
+import type { TraceContext } from "../../types/telemetry";
+import type { Tool } from "../../types/tools";
+import { getAnalyticsService } from "../analytics/analytics.service";
+import { getErrorClassificationService } from "../errors/error-classification.service";
 import { PromptOrchestrationService } from "../orchestration/prompt-orchestration.service";
-import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
+import { MetadataEmitterService, type RAGContextMetadata } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
 

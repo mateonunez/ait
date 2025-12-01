@@ -1,5 +1,5 @@
-import { requestJson } from "@ait/core";
 import type { Suggestion } from "@ait/ai-sdk";
+import { requestJson } from "@ait/core";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
 

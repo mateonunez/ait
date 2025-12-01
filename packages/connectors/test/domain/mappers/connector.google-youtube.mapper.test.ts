@@ -1,7 +1,7 @@
-import { connectorGoogleYouTubeSubscriptionMapper } from "../../../src/domain/mappers/vendors/connector.google-youtube.mapper";
-import type { GoogleYouTubeSubscriptionExternal } from "@ait/core";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import type { GoogleYouTubeSubscriptionExternal } from "@ait/core";
+import { connectorGoogleYouTubeSubscriptionMapper } from "../../../src/domain/mappers/vendors/connector.google-youtube.mapper";
 
 describe("Google YouTube Mappers", () => {
   describe("connectorGoogleYouTubeSubscriptionMapper", () => {

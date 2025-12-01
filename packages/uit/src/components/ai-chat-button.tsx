@@ -1,6 +1,6 @@
+import { useChatDialog } from "@/contexts/chat.context";
 import { Sparkles } from "lucide-react";
 import { Button } from "./ui/button";
-import { useChatDialog } from "@/contexts/chat.context";
 
 export function AIChatButton() {
   const { openChat } = useChatDialog();

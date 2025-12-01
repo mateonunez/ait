@@ -1,8 +1,8 @@
-import type { GoalData, GoalType, CreateGoalRequest, UpdateGoalRequest } from "./insights.types";
-import { getLogger } from "@ait/core";
 import { randomUUID } from "node:crypto";
-import { getIntegrationRegistryService } from "./integration-registry.service";
+import { getLogger } from "@ait/core";
+import type { CreateGoalRequest, GoalData, GoalType, UpdateGoalRequest } from "./insights.types";
 import type { ActivityData } from "./insights.types";
+import { getIntegrationRegistryService } from "./integration-registry.service";
 
 const logger = getLogger();
 

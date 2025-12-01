@@ -1,6 +1,6 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/styles/utils";
 import { PromptInput } from "@/components/ai-elements/prompt-input";
+import { cn } from "@/styles/utils";
+import { AnimatePresence, motion } from "framer-motion";
 
 interface FloatingPromptButtonProps {
   isOpen: boolean;

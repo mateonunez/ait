@@ -1,7 +1,7 @@
 import { requestJson } from "@ait/core";
 import type {
-  PaginationParams,
   PaginatedResponse,
+  PaginationParams,
   RefreshResponse,
   SlackMessageEntity as SlackMessage,
 } from "@ait/core";

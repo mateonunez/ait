@@ -1,4 +1,4 @@
-import { getModelInfoService, type ModelMetadata } from "@ait/ai-sdk";
+import { type ModelMetadata, getModelInfoService } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 /**

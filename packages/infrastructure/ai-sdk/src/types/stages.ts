@@ -1,9 +1,9 @@
-import type { Document, BaseMetadata } from "./documents";
+import type { Suggestion } from "../services/generation/suggestion.service";
+import type { QueryIntent } from "../services/routing/query-intent.service";
 import type { ChatMessage } from "./chat";
 import type { CollectionRouterResult } from "./collections";
-import type { QueryIntent } from "../services/routing/query-intent.service";
+import type { BaseMetadata, Document } from "./documents";
 import type { TraceContext } from "./telemetry";
-import type { Suggestion } from "../services/generation/suggestion.service";
 
 export interface QueryAnalysisInput {
   query: string;

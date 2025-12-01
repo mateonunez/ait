@@ -1,10 +1,10 @@
 import type {
-  SpotifyArtistExternal,
-  SpotifyTrackExternal,
-  SpotifyPlaylistExternal,
   SpotifyAlbumExternal,
-  SpotifyRecentlyPlayedExternal,
+  SpotifyArtistExternal,
   SpotifyCurrentlyPlayingExternal,
+  SpotifyPlaylistExternal,
+  SpotifyRecentlyPlayedExternal,
+  SpotifyTrackExternal,
 } from "@ait/core";
 
 interface SpotifyPaginatedResponse<T> {

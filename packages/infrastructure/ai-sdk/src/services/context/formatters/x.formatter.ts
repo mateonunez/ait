@@ -1,6 +1,6 @@
 import type { XTweetEntity } from "@ait/core";
 import type { EntityFormatter } from "./formatter.utils";
-import { safeString, safeNumber, joinParts } from "./formatter.utils";
+import { joinParts, safeNumber, safeString } from "./formatter.utils";
 
 export const XTweetFormatter: EntityFormatter<XTweetEntity> = {
   format: (meta, pageContent) => {

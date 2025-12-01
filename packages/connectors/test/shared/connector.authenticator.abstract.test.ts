@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { MockAgent, setGlobalDispatcher } from "undici";
 import { beforeEach, describe, it } from "node:test";
+import { MockAgent, setGlobalDispatcher } from "undici";
 import { ConnectorAuthenticatorAbstract } from "../../src/shared/auth/connector.authenticator.abstract";
 import {
   ConnectorOAuth,

@@ -12,8 +12,8 @@
     "cert:generate": "./scripts/generate-cert.sh",
     "cert:trust": "./scripts/trust-cert.sh",
     "prepare:cert": "pnpm cert:generate && pnpm cert:trust",
-    "lint": "biome format && biome lint",
-    "lint:fix": "biome format --write && biome lint --write --unsafe"
+    "lint": "biome format && biome lint && biome check",
+    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write"
   },
   "dependencies": {
     "@ait/ai-sdk": "workspace:*",
