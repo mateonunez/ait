@@ -26,7 +26,7 @@
     "@ait/qdrant": "workspace:*",
     "@ait/redis": "workspace:*",
     "@ait/retove": "workspace:*",
-    "bullmq": "^5.64.1",
+    "bullmq": "^5.65.0",
     "dotenv": "^17.2.3"
   },
   "devDependencies": {
