@@ -22,7 +22,7 @@ import {
   GoogleYouTubeETLs,
   runGoogleYouTubeSubscriptionETL,
 } from "@ait/retove";
-import { RateLimitError } from "@ait/core";
+import { getLogger, RateLimitError } from "@ait/core";
 import type { Scheduler } from "../scheduler.service";
 import { getQdrantClient } from "@ait/qdrant";
 import { getPostgresClient } from "@ait/postgres";
@@ -44,6 +44,8 @@ import {
   SPOTIFY_ENTITY_TYPES_ENUM,
   GOOGLE_ENTITY_TYPES_ENUM,
 } from "@ait/connectors";
+
+const logger = getLogger();
 
 export interface ISchedulerETLTaskManager {
   registerTasks(): void;

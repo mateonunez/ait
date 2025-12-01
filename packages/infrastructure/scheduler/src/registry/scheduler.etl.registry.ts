@@ -1,4 +1,8 @@
+import { getLogger } from "@ait/core";
+
 type TaskHandler = (data: Record<string, unknown>) => Promise<void>;
+
+const logger = getLogger();
 
 export class TaskRegistryError extends Error {
   constructor(message: string) {
@@ -40,7 +44,7 @@ export class SchedulerTaskRegistry implements ISchedulerTaskRegistry {
 
     this._tasks.set(name, handler);
     logger.info(`Task registered: ${name}`);
-    logger.debug("Available tasks:", Array.from(this._tasks.keys()));
+    logger.debug("Available tasks:", { tasks: Array.from(this._tasks.keys()) });
   }
 
   public get(name: string): TaskHandler {

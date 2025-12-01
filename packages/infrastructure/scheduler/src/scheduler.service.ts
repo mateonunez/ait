@@ -1,6 +1,9 @@
 import { type Job, Queue, Worker, QueueEvents, type JobsOptions } from "bullmq";
 import type { IRedisConfig } from "@ait/redis";
 import { schedulerRegistry } from "./registry/scheduler.etl.registry";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 export class SchedulerError extends Error {
   constructor(message: string) {
@@ -69,7 +72,7 @@ export class Scheduler implements IScheduler {
         logger.info(`[Scheduler] Removed repeatable job: ${jobName} (${cronExpression})`);
       }
     } catch (error) {
-      logger.warn(`[Scheduler] Failed to remove repeatable job ${jobName}:`, error);
+      logger.warn(`[Scheduler] Failed to remove repeatable job ${jobName}:`, { error });
     }
   }
 
@@ -84,7 +87,7 @@ export class Scheduler implements IScheduler {
       }
       logger.info(`[Scheduler] Removed ${jobSchedulers.length} repeatable jobs`);
     } catch (error) {
-      logger.warn("[Scheduler] Failed to remove repeatable jobs:", error);
+      logger.warn("[Scheduler] Failed to remove repeatable jobs:", { error });
     }
   }
 
@@ -102,7 +105,7 @@ export class Scheduler implements IScheduler {
 
     logger.info(
       `[Scheduler] One-time job "${jobName}" added`,
-      options ? `with options: ${JSON.stringify(options)}` : "",
+      { options: options ? JSON.stringify(options) : "" },
     );
   }
 
@@ -154,7 +157,7 @@ export class Scheduler implements IScheduler {
           logger.info(`[Worker] Job completed: ${job.name} (${duration}ms)`);
         } catch (error) {
           const duration = Date.now() - startTime;
-          logger.error(`[Worker] Job execution failed: ${job.name} (${duration}ms)`, error);
+          logger.error(`[Worker] Job execution failed: ${job.name} (${duration}ms)`, { error });
           throw error;
         }
       },
@@ -184,19 +187,14 @@ export class Scheduler implements IScheduler {
         if (job) {
           logger.error(
             `[Worker] Job failed: ${job.name}`,
-            "\nError:",
-            error,
-            "\nAttempt:",
-            job.attemptsMade,
-            "\nData:",
-            job.data,
+            { error: error.message, attemptsMade: job.attemptsMade, data: job.data },
           );
         } else {
-          logger.error("[Worker] Job failed: unknown job", error);
+          logger.error("[Worker] Job failed: unknown job", { error: error.message });
         }
       })
       .on("error", (error) => {
-        logger.error("[Worker] Error:", error);
+        logger.error("[Worker] Error:", { error: error.message });
       });
 
     this._queueEvents
@@ -204,10 +202,10 @@ export class Scheduler implements IScheduler {
         logger.debug(`[Queue] Job ${jobId} completed`);
       })
       .on("failed", ({ jobId, failedReason }) => {
-        logger.error(`[Queue] Job ${jobId} failed:`, failedReason);
+        logger.error(`[Queue] Job ${jobId} failed:`, { failedReason });
       })
       .on("error", (error) => {
-        logger.error("[Queue] Error:", error);
+        logger.error("[Queue] Error:", { error: error.message });
       });
   }
 }

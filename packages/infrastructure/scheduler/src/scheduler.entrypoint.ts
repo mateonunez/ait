@@ -13,6 +13,9 @@ import {
 } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
 import { closePostgresConnection } from "@ait/postgres";
+import { getLogger } from "@ait/core";
+
+const logger = getLogger();
 
 interface JobConfig {
   name: string;
@@ -249,7 +252,7 @@ async function main() {
     process.on("SIGTERM", () => shutdown("SIGTERM"));
     process.on("SIGINT", () => shutdown("SIGINT"));
   } catch (error) {
-    logger.error("💥 Failed to start ETL Scheduler:", error);
+    logger.error("💥 Failed to start ETL Scheduler:", { error });
     process.exit(1);
   }
 }
