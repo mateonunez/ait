@@ -88,7 +88,7 @@ If you prefer not to use ngrok, you can use self-signed certificates. Note that 
    pnpm dev
    ```
 
-   The server will automatically detect the certificates and start in HTTPS mode.
+   The gateway will start in HTTPS mode when both `USE_HTTPS=true` AND certificates exist.
 
    **Important:** After trusting the certificate, restart your browser to ensure OAuth callbacks work without warnings.
 

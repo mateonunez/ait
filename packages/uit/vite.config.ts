@@ -4,13 +4,14 @@ import react from "@vitejs/plugin-react";
 import { config as dotenvConfig } from "dotenv";
 import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
-import { getHttpsOptions, ngrokPlugin, normalizeDomain } from "./plugins";
+import { getGatewayUrl, getHttpsOptions, ngrokPlugin, normalizeDomain } from "./plugins";
 
 dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
 dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
 const useNgrok = Boolean(process.env.NGROK_AUTH_TOKEN);
 const ngrokDomain = process.env.NGROK_DOMAIN;
+const gatewayPort = Number(process.env.APP_PORT) || 3000;
 
 export default defineConfig({
   plugins: [
@@ -45,6 +46,8 @@ export default defineConfig({
       }
     }
 
+    const gatewayUrl = getGatewayUrl(__dirname, gatewayPort);
+
     return {
       ...(httpsOptions ? { https: httpsOptions } : {}),
       port: Number(process.env.VITE_PORT) || 5173,
@@ -52,7 +55,7 @@ export default defineConfig({
       ...(allowedHosts.length > 0 ? { allowedHosts } : {}),
       proxy: {
         "/api": {
-          target: "https://localhost:3000",
+          target: gatewayUrl,
           changeOrigin: true,
           secure: false,
         },
