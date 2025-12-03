@@ -1,4 +1,4 @@
-import { fetchAllMetrics } from "@/utils/stats-api.utils";
+import { fetchAllMetrics } from "@/services/observability.service";
 import { getLogger } from "@ait/core";
 import type {
   CacheData,

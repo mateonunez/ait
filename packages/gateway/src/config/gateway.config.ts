@@ -22,8 +22,7 @@ function getHttpsOptions(): { key: Buffer; cert: Buffer } | null {
 
 export function buildServer(): FastifyInstance {
   const httpsOptions = getHttpsOptions();
-  const useHttps = process.env.USE_HTTPS === "true" || httpsOptions !== null;
-  const isHttps = useHttps && httpsOptions !== null;
+  const useHttps = process.env.USE_HTTPS === "true" && httpsOptions !== null;
 
   const serverOptions: FastifyServerOptions & { https?: { key: Buffer; cert: Buffer } } = {
     logger: {
@@ -38,7 +37,7 @@ export function buildServer(): FastifyInstance {
     ignoreTrailingSlash: true,
   };
 
-  if (isHttps && httpsOptions) {
+  if (useHttps) {
     serverOptions.https = httpsOptions;
   }
 
@@ -48,7 +47,7 @@ export function buildServer(): FastifyInstance {
   const allowedOrigins = [
     "http://localhost:5173",
     "https://localhost:5173",
-    "https://localhost:3000",
+    "http://localhost:3000",
     "https://localhost:3000",
   ];
 
@@ -66,7 +65,7 @@ export function buildServer(): FastifyInstance {
   const salt = randomBytes(8).toString("hex");
 
   // Enable secure cookies when using HTTPS or in production
-  const useSecureCookies = isHttps || process.env.NODE_ENV === "production";
+  const useSecureCookies = useHttps || process.env.NODE_ENV === "production";
 
   server.register(fastifySecureSession, {
     secret: process.env.SESSION_SECRET || ait,

@@ -1,7 +1,7 @@
 import { useAItChat } from "@/hooks/useAItChat";
 import { useAiSuggestions } from "@/hooks/useAiSuggestions";
+import { listModels } from "@/services/models.service";
 import { cn } from "@/styles/utils";
-import { listModels } from "@/utils/api";
 import { getLogger } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -109,22 +109,22 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!fixed !inset-0 !top-0 !left-0 !translate-x-0 !translate-y-0 h-[100dvh] max-h-[100dvh] w-screen !max-w-none p-0 gap-0 flex flex-col [&>button]:hidden !rounded-none !border-0">
+      <DialogContent className="fixed! inset-0! top-0! left-0! translate-x-0! translate-y-0! h-dvh max-h-dvh w-screen max-w-none! p-0 gap-0 flex flex-col [&>button]:hidden rounded-none! border-0!">
         <DialogTitle className="sr-only">AIt Chat</DialogTitle>
         {/* Header */}
         <div className="flex items-center justify-between gap-2 sm:gap-3 md:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-border">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-            <h2 className="text-base sm:text-lg font-semibold whitespace-nowrap flex-shrink-0">AIt Chat</h2>
-            <div className="hidden md:block flex-shrink-0 min-w-0">
+            <h2 className="text-base sm:text-lg font-semibold whitespace-nowrap shrink-0">AIt Chat</h2>
+            <div className="hidden md:block shrink-0 min-w-0">
               <ModelSelector selectedModelId={selectedModel} onModelSelect={setSelectedModel} />
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+          <div className="hidden md:flex items-center gap-3 shrink-0">
             <ContextWindowTracker tokenUsage={tokenUsage} maxContextWindow={maxContextWindow} compact />
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             <button
               type="button"
               onClick={() => {
@@ -248,7 +248,7 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
                 >
                   <div className="h-full flex flex-col">
                     {/* Mobile header with close button */}
-                    <div className="flex items-center justify-between p-3 sm:hidden border-b border-border flex-shrink-0">
+                    <div className="flex items-center justify-between p-3 sm:hidden border-b border-border shrink-0">
                       <h3 className="text-base font-semibold">Settings</h3>
                       <button
                         type="button"

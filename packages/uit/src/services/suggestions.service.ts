@@ -1,7 +1,6 @@
 import type { Suggestion } from "@ait/ai-sdk";
 import { requestJson } from "@ait/core";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
+import { apiConfig } from "../config/api.config";
 
 export interface FetchSuggestionsOptions {
   context?: string;
@@ -9,7 +8,7 @@ export interface FetchSuggestionsOptions {
 }
 
 export async function fetchSuggestions(options: FetchSuggestionsOptions): Promise<Suggestion[]> {
-  const result = await requestJson<Suggestion[]>(`${API_BASE_URL}/suggestions`, {
+  const result = await requestJson<Suggestion[]>(`${apiConfig.apiBaseUrl}/suggestions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

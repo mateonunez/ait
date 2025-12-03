@@ -7,8 +7,8 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { InsightsProvider, useInsights } from "@/contexts/insights.context";
+import { fetchDiscoveryStats } from "@/services/observability.service";
 import { cn } from "@/styles/utils";
-import { fetchDiscoveryStats } from "@/utils/stats-api.utils";
 import { getLogger } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";
 import {

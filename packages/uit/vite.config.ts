@@ -1,26 +1,17 @@
-import { readFileSync } from "node:fs";
 import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { config as dotenvConfig } from "dotenv";
 import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
+import { getHttpsOptions, ngrokPlugin, normalizeDomain } from "./plugins";
 
-function getHttpsOptions(): { key: Buffer; cert: Buffer } | null {
-  // Use shared certificates from gateway package
-  const gatewayCertDir = path.resolve(__dirname, "../gateway/certs");
-  const keyPath = path.join(gatewayCertDir, "server.key");
-  const certPath = path.join(gatewayCertDir, "server.crt");
+dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
+dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
-  try {
-    const key = readFileSync(keyPath);
-    const cert = readFileSync(certPath);
-    return { key, cert };
-  } catch {
-    return null;
-  }
-}
+const useNgrok = Boolean(process.env.NGROK_AUTH_TOKEN);
+const ngrokDomain = process.env.NGROK_DOMAIN;
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
@@ -28,6 +19,7 @@ export default defineConfig({
     nodePolyfills({
       include: ["path", "url", "process"],
     }),
+    ngrokPlugin(),
   ],
   resolve: {
     alias: {
@@ -41,11 +33,30 @@ export default defineConfig({
     },
   },
   server: (() => {
-    const httpsOptions = process.env.USE_HTTPS === "true" ? getHttpsOptions() : null;
+    // Skip local HTTPS when ngrok is enabled (ngrok provides HTTPS on the public URL)
+    const httpsOptions = !useNgrok && process.env.USE_HTTPS === "true" ? getHttpsOptions(__dirname) : null;
+
+    // Allow ngrok domains when ngrok is enabled
+    const allowedHosts: string[] = [];
+    if (useNgrok) {
+      allowedHosts.push(".ngrok-free.app", ".ngrok.io", ".ngrok-free.dev");
+      if (ngrokDomain) {
+        allowedHosts.push(normalizeDomain(ngrokDomain));
+      }
+    }
+
     return {
       ...(httpsOptions ? { https: httpsOptions } : {}),
       port: Number(process.env.VITE_PORT) || 5173,
       host: true,
+      ...(allowedHosts.length > 0 ? { allowedHosts } : {}),
+      proxy: {
+        "/api": {
+          target: "https://localhost:3000",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
     };
   })(),
 });

@@ -1,4 +1,4 @@
-import { sendMessage } from "@/utils/api";
+import { sendMessage } from "@/services/chat.service";
 import { createEmptyMetadata } from "@/utils/stream-parser.utils";
 import { calculateConversationTokens } from "@/utils/token-counter.utils";
 import type { AggregatedMetadata, ChatMessageWithMetadata } from "@ait/core";

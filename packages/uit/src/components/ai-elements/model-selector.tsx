@@ -1,5 +1,5 @@
+import { listModels } from "@/services/models.service";
 import { cn } from "@/styles/utils";
-import { listModels } from "@/utils/api";
 import type { ModelMetadata } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { Check, ChevronsUpDown, Cpu } from "lucide-react";

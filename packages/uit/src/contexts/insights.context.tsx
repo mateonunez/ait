@@ -4,7 +4,7 @@ import {
   updateGoal as apiUpdateGoal,
   fetchGoals,
   fetchInsights,
-} from "@/utils/insights-api.utils";
+} from "@/services/insights.service";
 import type { CreateGoalRequest, GoalData, InsightsData, UpdateGoalRequest } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";

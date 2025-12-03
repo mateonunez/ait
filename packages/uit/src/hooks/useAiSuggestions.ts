@@ -1,4 +1,4 @@
-import { fetchSuggestions } from "@/utils/api/suggestions.api";
+import { fetchSuggestions } from "@/services/suggestions.service";
 import type { Suggestion } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
 import { useEffect, useState } from "react";
