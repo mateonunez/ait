@@ -18,3 +18,14 @@ export function getHttpsOptions(dirname: string): { key: Buffer; cert: Buffer } 
     return null;
   }
 }
+
+export function isGatewayHttpsEnabled(dirname: string): boolean {
+  const useHttps = process.env.USE_HTTPS === "true";
+  const certsExist = getHttpsOptions(dirname) !== null;
+  return useHttps && certsExist;
+}
+
+export function getGatewayUrl(dirname: string, port = 3000): string {
+  const protocol = isGatewayHttpsEnabled(dirname) ? "https" : "http";
+  return `${protocol}://localhost:${port}`;
+}
