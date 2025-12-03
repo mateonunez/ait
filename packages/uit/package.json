@@ -17,6 +17,8 @@
     "@ai-sdk/react": "^1.2.12",
     "@ait/ai-sdk": "workspace:*",
     "@ait/core": "workspace:*",
+    "@ngrok/ngrok": "^1.4.1",
+    "dotenv": "^17.2.3",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",

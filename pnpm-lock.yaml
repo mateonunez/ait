@@ -292,43 +292,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/infrastructure/scheduler:
-    dependencies:
-      '@ait/connectors':
-        specifier: workspace:*
-        version: link:../../connectors
-      '@ait/core':
-        specifier: workspace:*
-        version: link:../../core
-      '@ait/postgres':
-        specifier: workspace:*
-        version: link:../postgres
-      '@ait/qdrant':
-        specifier: workspace:*
-        version: link:../qdrant
-      '@ait/redis':
-        specifier: workspace:*
-        version: link:../redis
-      '@ait/retove':
-        specifier: workspace:*
-        version: link:../../transformers/retove
-      bullmq:
-        specifier: ^5.65.0
-        version: 5.65.0
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
-    devDependencies:
-      '@types/dotenv':
-        specifier: ^8.2.3
-        version: 8.2.3
-      tsx:
-        specifier: ^4.20.6
-        version: 4.20.6
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/transformers/retove:
     dependencies:
       '@ait/ai-sdk':
@@ -371,6 +334,9 @@ importers:
       '@ait/core':
         specifier: workspace:*
         version: link:../core
+      '@ngrok/ngrok':
+        specifier: ^1.4.1
+        version: 1.6.0
       '@radix-ui/react-avatar':
         specifier: ^1.1.11
         version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.6))(@types/react@19.2.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -434,6 +400,9 @@ importers:
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.6))(@types/react@19.2.6)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
       embla-carousel-react:
         specifier: ^8.6.0
         version: 8.6.0(react@19.2.0)
@@ -1238,35 +1207,86 @@ packages:
   '@mermaid-js/parser@0.6.3':
     resolution: {integrity: sha512-lnjOhe7zyHjc+If7yT4zoedx2vo4sHaTmtkl1+or8BRTnCtDmcTpAjpzDSfCZrshM5bCoz0GyidzadJAH1xobA==}
 
-  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
-    resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
+  '@ngrok/ngrok-android-arm64@1.6.0':
+    resolution: {integrity: sha512-gOfVVjYq7ruPMgH108j99uaBUkwD1DxDpnk+RufQHzxRKL72MZad7QfaRwc1v8iRMyOh3EKYYvU2y8HSXDbSkA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [android]
+
+  '@ngrok/ngrok-darwin-arm64@1.6.0':
+    resolution: {integrity: sha512-YdKlEkz0PHHnoy2UlEH2XMrupetmT6K6bLrF+MFWrKYKpIbOuGV4HcVioh1iu0NTmn7xJwrAbo/Mwx2E95/qdg==}
+    engines: {node: '>= 10'}
     cpu: [arm64]
     os: [darwin]
 
-  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.3':
-    resolution: {integrity: sha512-mdzd3AVzYKuUmiWOQ8GNhl64/IoFGol569zNRdkLReh6LRLHOXxU4U8eq0JwaD8iFHdVGqSy4IjFL4reoWCDFw==}
+  '@ngrok/ngrok-darwin-universal@1.6.0':
+    resolution: {integrity: sha512-yiUCkg10+vUKgvkD2rAZHlzvZmINUNF7mna7iL+ydh4pOx6jamSwDQ2QRseVAyxC9eZVy/rKFYLVnz2Ci+0D9w==}
+    engines: {node: '>= 10'}
+    os: [darwin]
+
+  '@ngrok/ngrok-darwin-x64@1.6.0':
+    resolution: {integrity: sha512-a6LbwODDDCRpriILe+1lq+zuIjGbj+pR1A0KThTP8riVTQ538DMqR09kv5Oz7ZqcclS/IK+3ZLKkxHuPX9ob3g==}
+    engines: {node: '>= 10'}
     cpu: [x64]
     os: [darwin]
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.3':
-    resolution: {integrity: sha512-YxQL+ax0XqBJDZiKimS2XQaf+2wDGVa1enVRGzEvLLVFeqa5kx2bWbtcSXgsxjQB7nRqqIGFIcLteF/sHeVtQg==}
-    cpu: [arm64]
-    os: [linux]
+  '@ngrok/ngrok-freebsd-x64@1.6.0':
+    resolution: {integrity: sha512-t77ayWr0zPrW75DstzvoE6Hwj7h1mpQSFKQ3I0B3iC9o7XZhcNkwFpX8QLbmQNkeHxz5UhlBtzOYPdzDJY+3uw==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [freebsd]
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.3':
-    resolution: {integrity: sha512-fg0uy/dG/nZEXfYilKoRe7yALaNmHoYeIoJuJ7KJ+YyU2bvY8vPv27f7UKhGRpY6euFYqEVhxCFZgAUNQBM3nw==}
+  '@ngrok/ngrok-linux-arm-gnueabihf@1.6.0':
+    resolution: {integrity: sha512-NBCJnPAbl44Ua3dpO+kOkyz4cGGLu2FiDcEHBES7OARiSscoui+DyNPLe5auZFjag5/0B3ZNiDgCcdRBAi+KNQ==}
+    engines: {node: '>= 10'}
     cpu: [arm]
     os: [linux]
 
-  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.3':
-    resolution: {integrity: sha512-cvwNfbP07pKUfq1uH+S6KJ7dT9K8WOE4ZiAcsrSes+UY55E/0jLYc+vq+DO7jlmqRb5zAggExKm0H7O/CBaesg==}
+  '@ngrok/ngrok-linux-arm64-gnu@1.6.0':
+    resolution: {integrity: sha512-i65WIaeImO2/oyTfwUAVW1j/poLMzX/PAYsDRLXOac6/1DV6kIQX1kmr+CEs6NtmKgD76QiApbqtksd9MDlncg==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@ngrok/ngrok-linux-arm64-musl@1.6.0':
+    resolution: {integrity: sha512-7osqE43Pl6HiTeLZSEnSTtgbNQ1zqYovYjZ7lGgeKJHlgWXE6RvE7qhdjDw17ebUuT0IS8JPGZFnlyF6J0UKPQ==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@ngrok/ngrok-linux-x64-gnu@1.6.0':
+    resolution: {integrity: sha512-jP3enLStnTGTKLBXqctVt3wIVvGLP/BkLKYuXwrU1EqchtvDcsAhpspeUeX23SAtLXUgbX9vN1B6IvsAxWcyxw==}
+    engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
 
-  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
-    resolution: {integrity: sha512-x0fWaQtYp4E6sktbsdAqnehxDgEc/VwM7uLsRCYWaiGu0ykYdZPiS8zCWdnjHwyiumousxfBm4SO31eXqwEZhQ==}
+  '@ngrok/ngrok-linux-x64-musl@1.6.0':
+    resolution: {integrity: sha512-hrBrXCofgmY9pc36N0nfDS+bfomu5hOqt0N5IQkL4n0UaQcl48tKddIex2eR+mU3QBYh6p1XKxAwyAVjwplD2w==}
+    engines: {node: '>= 10'}
+    cpu: [x64]
+    os: [linux]
+
+  '@ngrok/ngrok-win32-arm64-msvc@1.6.0':
+    resolution: {integrity: sha512-EXJXFaXh/cNRaTqs02EmysILtcSImFWwC98mjG6PU5MEG+gqNz8AddnqFytY0RRxkR9SxwnC+7QAV3qYOSU6kA==}
+    engines: {node: '>= 10'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@ngrok/ngrok-win32-ia32-msvc@1.6.0':
+    resolution: {integrity: sha512-R+5WB6ONT4ynHFusxRw8kbXx2SBYftl6XUiNQNmwwCdwdNO7fPzdwhbmbzgfCEjQrYQrXD1vs5J+zJJeSaAicw==}
+    engines: {node: '>= 10'}
+    cpu: [ia32]
+    os: [win32]
+
+  '@ngrok/ngrok-win32-x64-msvc@1.6.0':
+    resolution: {integrity: sha512-4QViW0GSPsjmghYPExO0Jt9DtIybK23MXPP0BltOuoFP0iyA15vb03QXAI4223zlSLWSWYnOx+qnCuzV1qT0lQ==}
+    engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@ngrok/ngrok@1.6.0':
+    resolution: {integrity: sha512-TWC6nh4Kl16HjhG/bVhpYNP5UIyJc9oZetCrnO4r5+gq95eIxZKoLXzuAyC0gF/J+NEY3c1euFAET5Sn9wOWaw==}
+    engines: {node: '>= 10'}
 
   '@octokit/auth-token@6.0.0':
     resolution: {integrity: sha512-P4YJBPdPSpWTQ1NU4XYdvHvXJJDxM6YwpS0FZHRgP7YFkdVxsWcpWGy/NVqlAA7PcPCnMacXlRm1y2PFZRWL/w==}
@@ -2680,9 +2700,6 @@ packages:
   builtin-status-codes@3.0.0:
     resolution: {integrity: sha512-HpGFw18DgFWlncDfjTa2rcQ4W88O1mC8e8yZ2AvQY5KDaktSTwo+KRf6nHK6FRI5FyRyb/5T6+TSxfP7QyGsmQ==}
 
-  bullmq@5.65.0:
-    resolution: {integrity: sha512-fyOcyf2ad4zrNmE18vdF/ie7DrW0TwhLt5e0DkqDxbRpDNiUdYqgp2QZJW2ntnUN08T2mDMC4deUUhF2UOAmeQ==}
-
   c8@10.1.3:
     resolution: {integrity: sha512-LvcyrOAaOnrrlMpW22n690PUvxiq4Uf9WMhQwNJ9vgagkL/ph1+D4uvjvDA5XCbykrc0sx+ay6pVi9YZ1GnhyA==}
     engines: {node: '>=18'}
@@ -2840,10 +2857,6 @@ packages:
 
   create-require@1.1.1:
     resolution: {integrity: sha512-dcKFX3jn0MpIaXjisoRvexIJVEKzaq7z2rZKxf+MSr9TkdmHmsU4m2lcLojrj/FHl8mk5VxMmYA+ftRkP/3oKQ==}
-
-  cron-parser@4.9.0:
-    resolution: {integrity: sha512-p0SaNjrHOnQeR8/VnfGbmg9te2kfyYSQ7Sc/j/6DtPL3JQvKxmjO9TSjNFpujqV3vEYYBvNNvXSxzyksBWAx1Q==}
-    engines: {node: '>=12.0.0'}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -3893,10 +3906,6 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
-  luxon@3.7.2:
-    resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
-    engines: {node: '>=12'}
-
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
 
@@ -4155,13 +4164,6 @@ packages:
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
-  msgpackr-extract@3.0.3:
-    resolution: {integrity: sha512-P0efT1C9jIdVRefqjzOQ9Xml57zpOXnIuS+csaB4MdZbTdmGDLo8XhzBG1N7aO11gKDDkJvBLULeFTo46wwreA==}
-    hasBin: true
-
-  msgpackr@1.11.5:
-    resolution: {integrity: sha512-UjkUHN0yqp9RWKy0Lplhh+wlpdt9oQBYgULZOiFhV3VclSF1JnSQWZ5r9gORQlNYaUKQoR8itv7g7z1xDDuACA==}
-
   mustache@4.2.0:
     resolution: {integrity: sha512-71ippSywq5Yb7/tVYyGbkBggbU8H3u5Rz56fH60jGFgr8uHwxs+aSKeqmluIVzM0m0kB7xQjKS6qPfd0b2ZoqQ==}
     hasBin: true
@@ -4176,9 +4178,6 @@ packages:
     engines: {node: ^18 || >=20}
     hasBin: true
 
-  node-abort-controller@3.1.1:
-    resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
-
   node-fetch@2.7.0:
     resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
     engines: {node: 4.x || >=6.0.0}
@@ -4187,10 +4186,6 @@ packages:
     peerDependenciesMeta:
       encoding:
         optional: true
-
-  node-gyp-build-optional-packages@5.2.2:
-    resolution: {integrity: sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==}
-    hasBin: true
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
@@ -6132,23 +6127,60 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
+  '@ngrok/ngrok-android-arm64@1.6.0':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.3':
+  '@ngrok/ngrok-darwin-arm64@1.6.0':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.3':
+  '@ngrok/ngrok-darwin-universal@1.6.0':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.3':
+  '@ngrok/ngrok-darwin-x64@1.6.0':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.3':
+  '@ngrok/ngrok-freebsd-x64@1.6.0':
     optional: true
 
-  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.3':
+  '@ngrok/ngrok-linux-arm-gnueabihf@1.6.0':
     optional: true
+
+  '@ngrok/ngrok-linux-arm64-gnu@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok-linux-arm64-musl@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok-linux-x64-gnu@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok-linux-x64-musl@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok-win32-arm64-msvc@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok-win32-ia32-msvc@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok-win32-x64-msvc@1.6.0':
+    optional: true
+
+  '@ngrok/ngrok@1.6.0':
+    optionalDependencies:
+      '@ngrok/ngrok-android-arm64': 1.6.0
+      '@ngrok/ngrok-darwin-arm64': 1.6.0
+      '@ngrok/ngrok-darwin-universal': 1.6.0
+      '@ngrok/ngrok-darwin-x64': 1.6.0
+      '@ngrok/ngrok-freebsd-x64': 1.6.0
+      '@ngrok/ngrok-linux-arm-gnueabihf': 1.6.0
+      '@ngrok/ngrok-linux-arm64-gnu': 1.6.0
+      '@ngrok/ngrok-linux-arm64-musl': 1.6.0
+      '@ngrok/ngrok-linux-x64-gnu': 1.6.0
+      '@ngrok/ngrok-linux-x64-musl': 1.6.0
+      '@ngrok/ngrok-win32-arm64-msvc': 1.6.0
+      '@ngrok/ngrok-win32-ia32-msvc': 1.6.0
+      '@ngrok/ngrok-win32-x64-msvc': 1.6.0
 
   '@octokit/auth-token@6.0.0': {}
 
@@ -7680,18 +7712,6 @@ snapshots:
 
   builtin-status-codes@3.0.0: {}
 
-  bullmq@5.65.0:
-    dependencies:
-      cron-parser: 4.9.0
-      ioredis: 5.8.2
-      msgpackr: 1.11.5
-      node-abort-controller: 3.1.1
-      semver: 7.7.3
-      tslib: 2.8.1
-      uuid: 11.1.0
-    transitivePeerDependencies:
-      - supports-color
-
   c8@10.1.3:
     dependencies:
       '@bcoe/v8-coverage': 1.0.2
@@ -7876,10 +7896,6 @@ snapshots:
       sha.js: 2.4.12
 
   create-require@1.1.1: {}
-
-  cron-parser@4.9.0:
-    dependencies:
-      luxon: 3.7.2
 
   cross-spawn@7.0.6:
     dependencies:
@@ -8091,10 +8107,6 @@ snapshots:
   dateformat@4.6.3: {}
 
   dayjs@1.11.19: {}
-
-  debug@4.4.3:
-    dependencies:
-      ms: 2.1.3
 
   debug@4.4.3(supports-color@10.2.2):
     dependencies:
@@ -8726,7 +8738,7 @@ snapshots:
     dependencies:
       '@ioredis/commands': 1.4.0
       cluster-key-slot: 1.1.2
-      debug: 4.4.3
+      debug: 4.4.3(supports-color@10.2.2)
       denque: 2.1.0
       lodash.defaults: 4.2.0
       lodash.isarguments: 3.1.0
@@ -8975,8 +8987,6 @@ snapshots:
   lucide-react@0.546.0(react@19.2.0):
     dependencies:
       react: 19.2.0
-
-  luxon@3.7.2: {}
 
   magic-string@0.30.21:
     dependencies:
@@ -9481,38 +9491,15 @@ snapshots:
 
   ms@2.1.3: {}
 
-  msgpackr-extract@3.0.3:
-    dependencies:
-      node-gyp-build-optional-packages: 5.2.2
-    optionalDependencies:
-      '@msgpackr-extract/msgpackr-extract-darwin-arm64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-darwin-x64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-arm': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-arm64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-linux-x64': 3.0.3
-      '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.3
-    optional: true
-
-  msgpackr@1.11.5:
-    optionalDependencies:
-      msgpackr-extract: 3.0.3
-
   mustache@4.2.0: {}
 
   nanoid@3.3.11: {}
 
   nanoid@5.1.6: {}
 
-  node-abort-controller@3.1.1: {}
-
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
-
-  node-gyp-build-optional-packages@5.2.2:
-    dependencies:
-      detect-libc: 2.1.2
-    optional: true
 
   node-releases@2.0.27: {}
 

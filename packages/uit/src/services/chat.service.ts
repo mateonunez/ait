@@ -2,11 +2,10 @@ import { requestStream } from "@ait/core";
 import type { AggregatedMetadata } from "@ait/core";
 import { METADATA_TYPE, STREAM_EVENT } from "@ait/core";
 import { getLogger } from "@ait/core";
-import { parseGatewayStream } from "../stream-parser.utils";
+import { apiConfig } from "../config/api.config";
+import { parseGatewayStream } from "../utils/stream-parser.utils";
 
 const logger = getLogger();
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://localhost:3000/api";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -41,11 +40,9 @@ function updateMetadata(metadata: AggregatedMetadata, event: any): void {
     case METADATA_TYPE.CONTEXT:
       metadata.context = event.data;
       break;
-
     case METADATA_TYPE.REASONING:
       metadata.reasoning = [...metadata.reasoning, event.data];
       break;
-
     case METADATA_TYPE.TASK: {
       const taskIndex = metadata.tasks.findIndex((t: any) => t.id === event.data.id);
       if (taskIndex >= 0) {
@@ -55,11 +52,9 @@ function updateMetadata(metadata: AggregatedMetadata, event: any): void {
       }
       break;
     }
-
     case METADATA_TYPE.SUGGESTION:
       metadata.suggestions = event.data;
       break;
-
     case METADATA_TYPE.TOOL_CALL: {
       const toolIndex = metadata.toolCalls.findIndex((t: any) => t.id === event.data.id);
       if (toolIndex >= 0) {
@@ -69,7 +64,6 @@ function updateMetadata(metadata: AggregatedMetadata, event: any): void {
       }
       break;
     }
-
     case METADATA_TYPE.MODEL:
       metadata.model = event.data;
       break;
@@ -88,19 +82,16 @@ async function processStreamEvents(
       case STREAM_EVENT.TEXT:
         onText?.(event.content);
         break;
-
       case STREAM_EVENT.METADATA:
         updateMetadata(aggregatedMetadata, event);
         onMetadata?.(aggregatedMetadata);
         break;
-
       case STREAM_EVENT.DATA:
         onComplete?.({
           finishReason: event.finishReason || "stop",
           traceId: event.traceId || "",
         });
         break;
-
       case STREAM_EVENT.ERROR:
         onError?.(event.message);
         break;
@@ -121,7 +112,7 @@ export async function sendMessage(options: SendMessageOptions): Promise<void> {
     signal,
   } = options;
 
-  const result = await requestStream(`${API_BASE_URL}/chat`, {
+  const result = await requestStream(`${apiConfig.apiBaseUrl}/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -134,7 +125,7 @@ export async function sendMessage(options: SendMessageOptions): Promise<void> {
 
   if (!result.ok) {
     const errorMessage = `${result.error.code}: ${result.error.message}`;
-    logger.error("[ChatAPI] Error:", { error: errorMessage });
+    logger.error("[ChatService] Error:", { error: errorMessage });
     onError?.(errorMessage);
     return;
   }
@@ -144,7 +135,7 @@ export async function sendMessage(options: SendMessageOptions): Promise<void> {
     await processStreamEvents(result.value, aggregatedMetadata, { onText, onMetadata, onComplete, onError });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    logger.error("[ChatAPI] Error processing stream:", { error: errorMessage });
+    logger.error("[ChatService] Error processing stream:", { error: errorMessage });
     onError?.(errorMessage);
   }
 }

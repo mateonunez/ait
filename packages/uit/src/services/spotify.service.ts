@@ -9,100 +9,53 @@ import type {
   SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed,
   SpotifyTrackEntity as SpotifyTrack,
 } from "@ait/core";
-
-const BASE_URL = import.meta.env.VITE_API_URL || "https://localhost:3000";
+import { apiConfig, buildQueryString } from "../config/api.config";
 
 export class SpotifyService {
   private baseUrl: string;
 
-  constructor(baseUrl: string = BASE_URL) {
-    this.baseUrl = `${baseUrl}/api/spotify`;
+  constructor() {
+    this.baseUrl = `${apiConfig.gatewayUrl}/api/spotify`;
   }
 
   async fetchTracks(params?: PaginationParams) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-
-    const url = `${this.baseUrl}/data/tracks${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const url = `${this.baseUrl}/data/tracks${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<SpotifyTrack>>(url);
-
-    if (!result.ok) {
-      throw result.error;
-    }
-
+    if (!result.ok) throw result.error;
     return result.value.data;
   }
 
   async fetchArtists(params?: PaginationParams) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-
-    const url = `${this.baseUrl}/data/artists${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const url = `${this.baseUrl}/data/artists${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<SpotifyArtist>>(url);
-
-    if (!result.ok) {
-      throw result.error;
-    }
-
+    if (!result.ok) throw result.error;
     return result.value.data;
   }
 
   async fetchPlaylists(params?: PaginationParams) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-
-    const url = `${this.baseUrl}/data/playlists${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const url = `${this.baseUrl}/data/playlists${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<SpotifyPlaylist>>(url);
-
-    if (!result.ok) {
-      throw result.error;
-    }
-
+    if (!result.ok) throw result.error;
     return result.value.data;
   }
 
   async fetchAlbums(params?: PaginationParams) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-
-    const url = `${this.baseUrl}/data/albums${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const url = `${this.baseUrl}/data/albums${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<SpotifyAlbum>>(url);
-
-    if (!result.ok) {
-      throw result.error;
-    }
-
+    if (!result.ok) throw result.error;
     return result.value.data;
   }
 
   async fetchRecentlyPlayed(params?: PaginationParams) {
-    const queryParams = new URLSearchParams();
-    if (params?.page) queryParams.append("page", params.page.toString());
-    if (params?.limit) queryParams.append("limit", params.limit.toString());
-
-    const url = `${this.baseUrl}/data/recently-played${queryParams.toString() ? `?${queryParams}` : ""}`;
+    const url = `${this.baseUrl}/data/recently-played${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<SpotifyRecentlyPlayed>>(url);
-
-    if (!result.ok) {
-      throw result.error;
-    }
-
+    if (!result.ok) throw result.error;
     return result.value.data;
   }
 
   async refresh() {
-    const result = await requestJson<RefreshResponse>(`${this.baseUrl}/refresh`, {
-      method: "POST",
-    });
-
-    if (!result.ok) {
-      throw result.error;
-    }
-
+    const result = await requestJson<RefreshResponse>(`${this.baseUrl}/refresh`, { method: "POST" });
+    if (!result.ok) throw result.error;
     return result.value.data;
   }
 }

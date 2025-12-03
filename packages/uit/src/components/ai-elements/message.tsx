@@ -1,5 +1,5 @@
+import { type FeedbackRating, submitFeedback } from "@/services/feedback.service";
 import { cn } from "@/styles/utils";
-import { type FeedbackRating, submitFeedback } from "@/utils/feedback.utils";
 import type { ChatMessageWithMetadata } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";

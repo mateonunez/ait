@@ -41,8 +41,8 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
 
   try {
     await server.listen({ port, host: "0.0.0.0" });
-    const protocol = (server.server as { key?: Buffer })?.key ? "https" : "http";
-    server.log.info(`Gateway running on ${protocol}://localhost:${port}`);
+    server.log.info(`Gateway running on http://localhost:${port}`);
+    server.log.info("API requests are proxied through UIt (Vite dev server)");
   } catch (err) {
     server.log.error(err);
     process.exit(1);
