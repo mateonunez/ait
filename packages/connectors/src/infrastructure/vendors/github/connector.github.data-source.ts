@@ -77,13 +77,16 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             direction: "desc",
           });
 
-          // Use list data directly without N+1 detail fetching
-          for (const pr of listResponse.data) {
-            allPullRequests.push({
-              ...pr,
-              __type: "pull_request" as const,
-            } as GitHubPullRequestExternal);
-          }
+          const prs = listResponse.data;
+
+          const allPullRequestsForRepo = await this._enrichPullRequestsWithDetails(
+            owner,
+            repoName,
+            repo.full_name,
+            prs,
+          );
+
+          allPullRequests.push(...allPullRequestsForRepo);
         } catch (error: unknown) {
           this._logger.warn(`Failed to fetch PRs for ${repo.full_name}`, {
             error: error instanceof Error ? error.message : String(error),
@@ -212,14 +215,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         const prs = listResponse.data;
 
         if (prs.length > 0) {
-          // Use list data directly - no N+1 detail fetching
-          const mappedPRs: GitHubPullRequestExternal[] = prs.map(
-            (pr) =>
-              ({
-                ...pr,
-                __type: "pull_request" as const,
-              }) as GitHubPullRequestExternal,
-          );
+          const mappedPRs = await this._enrichPullRequestsWithDetails(owner, repoName, repo.full_name, prs);
 
           const nextCursor = prs.length === limit ? `${repoIndex}:${page + 1}` : `${repoIndex + 1}:1`;
 
@@ -313,6 +309,46 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
     }
 
     return { data: [], nextCursor: undefined };
+  }
+
+  private async _enrichPullRequestsWithDetails(
+    owner: string,
+    repoName: string,
+    repoFullName: string,
+    prs: any[],
+  ): Promise<GitHubPullRequestExternal[]> {
+    const detailedPRs: any[] = [];
+    const chunkSize = 5;
+
+    for (let i = 0; i < prs.length; i += chunkSize) {
+      const chunk = prs.slice(i, i + chunkSize);
+      const chunkResults = await Promise.all(
+        chunk.map(async (pr: any) => {
+          try {
+            const detailResponse = await this.octokit.pulls.get({
+              owner,
+              repo: repoName,
+              pull_number: pr.number,
+            });
+            return detailResponse.data;
+          } catch (error) {
+            this._logger.warn(`Failed to fetch detailed PR ${pr.number} for ${repoFullName}`, {
+              error: error instanceof Error ? error.message : String(error),
+            });
+            return pr; // Fallback to list item if detail fetch fails
+          }
+        }),
+      );
+      detailedPRs.push(...chunkResults);
+    }
+
+    return detailedPRs.map(
+      (pr) =>
+        ({
+          ...pr,
+          __type: "pull_request" as const,
+        }) as GitHubPullRequestExternal,
+    );
   }
 
   private _handleError(error: any, context: string): never {

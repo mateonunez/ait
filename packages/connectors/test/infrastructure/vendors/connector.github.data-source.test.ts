@@ -176,7 +176,7 @@ describe("ConnectorGitHubDataSource", () => {
       agent
         .get("https://api.github.com")
         .intercept({
-          path: (path) => path.includes("/repos/mateonunez/test-repo/pulls"),
+          path: (path) => path.includes("/repos/mateonunez/test-repo/pulls") && !path.includes("/pulls/"),
           method: "GET",
         })
         .reply(200, mockPullRequestsResponse, {
@@ -185,6 +185,29 @@ describe("ConnectorGitHubDataSource", () => {
           },
         });
 
+      // Mock pulls detail endpoint
+      agent
+        .get("https://api.github.com")
+        .intercept({
+          path: (path) => path.includes("/repos/mateonunez/test-repo/pulls/1"),
+          method: "GET",
+        })
+        .reply(
+          200,
+          {
+            ...mockPullRequestsResponse[0],
+            merged: true,
+            additions: 100,
+            deletions: 10,
+            changed_files: 5,
+          },
+          {
+            headers: {
+              "content-type": "application/json",
+            },
+          },
+        );
+
       const result = await dataSource.fetchPullRequests();
 
       assert.ok(Array.isArray(result));
@@ -192,6 +215,8 @@ describe("ConnectorGitHubDataSource", () => {
       assert.equal(result[0]?.__type, "pull_request");
       assert.equal(result[0]?.number, 1);
       assert.equal(result[0]?.title, "Test PR 1");
+      assert.equal(result[0]?.merged, true);
+      assert.equal(result[0]?.additions, 100);
     });
 
     it("should handle errors when fetching pull requests", async () => {
