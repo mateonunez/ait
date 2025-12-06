@@ -81,14 +81,14 @@ const SCHEDULED_JOBS: JobConfig[] = [
     name: GitHubETLs.pullRequest,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 3,
+    priority: 0,
     enabled: true,
   },
   {
     name: LinearETLs.issue,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 3,
+    priority: 1,
     enabled: true,
   },
   {
@@ -102,7 +102,7 @@ const SCHEDULED_JOBS: JobConfig[] = [
     name: SpotifyETLs.playlist,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
-    priority: 3,
+    priority: 2,
     enabled: true,
   },
 

@@ -25,9 +25,37 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
   private octokit: Octokit;
   private _logger = getLogger();
   private _repositoryCache: GitHubRepositoryExternal[] | null = null;
+  private _authenticatedUserCache: string | null = null;
 
   constructor(accessToken: string) {
     this.octokit = new Octokit({ auth: accessToken });
+  }
+
+  private async _getAuthenticatedUser(): Promise<string> {
+    if (this._authenticatedUserCache) {
+      return this._authenticatedUserCache;
+    }
+
+    try {
+      const response = await this.octokit.users.getAuthenticated();
+      this._authenticatedUserCache = response.data.login;
+      return this._authenticatedUserCache;
+    } catch (error) {
+      this._logger.warn("Failed to get authenticated user", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return "";
+    }
+  }
+
+  private async _shouldSkipRepoForActivity(repo: GitHubRepositoryExternal): Promise<boolean> {
+    if (!repo.fork) {
+      return false;
+    }
+    const authenticatedUser = await this._getAuthenticatedUser();
+    const repoOwner = repo.owner?.login;
+
+    return repoOwner !== authenticatedUser;
   }
 
   async fetchRepositories(params?: PaginationParams): Promise<GitHubRepositoryExternal[]> {
@@ -65,6 +93,11 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         const repoName = repo.name;
 
         if (!owner || !repoName) continue;
+
+        if (await this._shouldSkipRepoForActivity(repo)) {
+          this._logger.debug(`Skipping PRs for forked repo ${repo.full_name}`);
+          continue;
+        }
 
         try {
           const listResponse = await this.octokit.pulls.list({
@@ -110,6 +143,12 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         const repoName = repo.name;
 
         if (!owner || !repoName) continue;
+
+        // Skip forked repos unless they belong to the authenticated user
+        if (await this._shouldSkipRepoForActivity(repo)) {
+          this._logger.debug(`Skipping commits for forked repo ${repo.full_name}`);
+          continue;
+        }
 
         try {
           // Note: listCommits doesn't support 'sort' parameter - it orders by commit date
@@ -201,6 +240,13 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         continue;
       }
 
+      if (await this._shouldSkipRepoForActivity(repo)) {
+        this._logger.debug(`Skipping PRs for forked repo ${repo.full_name} (paginated)`);
+        repoIndex++;
+        page = 1;
+        continue;
+      }
+
       try {
         const listResponse = await this.octokit.pulls.list({
           owner,
@@ -257,6 +303,13 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       const repoName = repo.name;
 
       if (!owner || !repoName) {
+        repoIndex++;
+        page = 1;
+        continue;
+      }
+
+      if (await this._shouldSkipRepoForActivity(repo)) {
+        this._logger.debug(`Skipping commits for forked repo ${repo.full_name} (paginated)`);
         repoIndex++;
         page = 1;
         continue;
