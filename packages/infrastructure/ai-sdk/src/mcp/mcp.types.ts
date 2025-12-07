@@ -1,4 +1,4 @@
-export type MCPVendor = "notion" | "github";
+export type MCPVendor = "notion" | "github" | "linear";
 
 /**
  * Transport types for MCP connections
