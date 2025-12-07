@@ -90,7 +90,24 @@ export class CollectionRouterService implements ICollectionRouterService {
       /all\s+my\s+data/i,
     ];
 
+    // Activity summary patterns - need ALL collections
+    const activityPatterns = [
+      /summary\s+of\s+(my\s+)?(activity|work|week|month|day)/i,
+      /my\s+(weekly|daily|monthly)\s+(activity|report|summary)/i,
+      /(what|show).+(i\s+did|my\s+activity|been\s+up\s+to)/i,
+      /weekly\s+report/i,
+      /activity\s+(from|this|last)\s+(week|month|day)/i,
+      /include\s+.*(summary|activity)/i,
+      /summarize\s+my\s+(week|month|activity)/i,
+    ];
+
     for (const pattern of broadPatterns) {
+      if (pattern.test(normalized)) {
+        return true;
+      }
+    }
+
+    for (const pattern of activityPatterns) {
       if (pattern.test(normalized)) {
         return true;
       }

@@ -30,7 +30,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       const params = new URLSearchParams({
         client_id: process.env.GITHUB_CLIENT_ID!,
         redirect_uri: process.env.GITHUB_REDIRECT_URI!,
-        scope: "repo",
+        scope: "repo read:user user:email repo:status public_repo",
       });
 
       const authUrl = `${process.env.GITHUB_AUTH_URL}?${params}`;
@@ -54,19 +54,9 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       try {
         await githubService.connector.connect(code);
 
-        const repositories = await githubService.fetchRepositories();
-        await githubService.connector.store.save(repositories);
-
-        const pullRequests = await githubService.fetchPullRequests();
-        await githubService.connector.store.save(pullRequests);
-
-        const commits = await githubService.fetchCommits();
-        await githubService.connector.store.save(commits);
-
         reply.send({
-          repositories,
-          pullRequests,
-          commits,
+          success: true,
+          message: "GitHub authentication successful.",
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

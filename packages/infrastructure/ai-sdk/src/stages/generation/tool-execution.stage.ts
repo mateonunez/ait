@@ -42,6 +42,13 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
     const toolResults: unknown[] = [];
     let hasToolCalls = false;
 
+    // Initialize messages with full context (system + history + user)
+    const currentMessages: any[] = this.promptBuilder.buildMessages(
+      input.systemMessage,
+      input.recentMessages,
+      input.currentPrompt,
+    );
+
     let currentPrompt = this.promptBuilder.buildPrompt({
       systemMessage: input.systemMessage,
       conversationHistory: this.formatConversation(input.recentMessages, input.summary),
@@ -49,11 +56,12 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
     });
 
     for (let round = 0; round < input.maxRounds; round++) {
-      const messages = this.promptBuilder.buildMessages(input.systemMessage, input.recentMessages, input.currentPrompt);
+      // DEBUG: Log current messages state
+      console.log(`[ToolExecutionStage] Round ${round} messages payload:`, JSON.stringify(currentMessages, null, 2));
 
       const checkResult = await client.generateText({
         prompt: currentPrompt,
-        messages,
+        messages: currentMessages, // Always use the accumulated messages
         tools: ollamaTools,
         temperature: client.config.generation.temperature,
         topP: client.config.generation.topP,
@@ -81,6 +89,28 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
           toolResults: formattedToolResults,
         });
 
+        // Append assistant's tool calls to history
+        // We convert tool calls to text to avoid 500 errors with Ollama which usually
+        // doesn't support the 'tool' role correctly in history without IDs (which are missing)
+        const toolNames = checkResult.toolCalls.map((tc) => tc.function.name).join(", ");
+        const toolCallDetails = checkResult.toolCalls
+          .map((tc) => `Tool Call: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`)
+          .join("\n\n");
+
+        currentMessages.push({
+          role: "assistant",
+          content: `${checkResult.text || `I will now execute the following tools: ${toolNames}`}\n\n${toolCallDetails}`,
+        });
+
+        // Append tool results to history
+        currentMessages.push({
+          role: "user",
+          content: formattedToolResults,
+        });
+
+        // Continue to next round
+      } else {
+        // No tools called, stop execution
         break;
       }
     }

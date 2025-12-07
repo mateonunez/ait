@@ -88,25 +88,45 @@ export class OllamaProvider {
           },
         ];
 
+        const requestBody = JSON.stringify({
+          model: modelName,
+          messages,
+          stream: false,
+          tools: options.tools,
+          options: {
+            temperature: options.temperature,
+            top_p: options.topP,
+            top_k: options.topK,
+          },
+        } as OllamaChatRequest);
+
+        logger.debug("[OllamaProvider] Sending chat request", {
+          messageCount: messages.length,
+          lastMessage: messages[messages.length - 1],
+          toolsCount: options.tools?.length,
+        });
+
+        // Check for validation issues manually
+        if (messages.some((m) => !m.content && !m.tool_calls)) {
+          logger.warn("[OllamaProvider] Found message with empty content and no tool_calls", { messages });
+        }
+
         const response = await fetch(`${baseURL}/api/chat`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: modelName,
-            messages,
-            stream: false,
-            tools: options.tools,
-            options: {
-              temperature: options.temperature,
-              top_p: options.topP,
-              top_k: options.topK,
-            },
-          } as OllamaChatRequest),
+          body: requestBody,
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          logger.error("[OllamaProvider] API Error Detail", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
           throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
             status: response.status,
+            detail: errorText,
           });
         }
 

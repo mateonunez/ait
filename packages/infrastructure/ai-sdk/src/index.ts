@@ -89,7 +89,14 @@ export { createTool, createSuccessResult, createErrorResult } from "./utils/tool
 export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
 
 export { convertToOllamaTools } from "./tools/tool.converter";
-export { createAllConnectorTools, createSpotifyTools } from "./tools/connectors.tools";
+export {
+  createAllConnectorTools,
+  createAllConnectorToolsWithMCP,
+  createSpotifyTools,
+  createAllMCPTools,
+  createMCPToolsForVendor,
+  getMCPToolsSummary,
+} from "./tools/connectors.tools";
 export type { SpotifySearchResult } from "./tools/domains/spotify.tools";
 export type { ModelMetadata, ModelCapabilities, ModelParameters } from "./types/models/model.metadata";
 
@@ -244,3 +251,24 @@ export type {
 } from "./services/insights/insights.types";
 
 export { DEFAULT_INSIGHTS_CONFIG } from "./services/insights/insights.types";
+
+// MCP (Model Context Protocol) - Enables write operations via vendor-hosted MCP servers
+export {
+  MCPClientManager,
+  getMCPClientManager,
+  resetMCPClientManager,
+  MCP_SERVERS,
+  getMCPServerConfig,
+  getMCPVendors,
+  hasMCPServer,
+  type MCPVendor,
+  type MCPTransport,
+  type MCPServerConfig,
+  type MCPClientState,
+  type MCPTool,
+  type MCPToolResult,
+  type MCPToolCallRequest,
+  type MCPClientInfo,
+  type MCPConnectOptions,
+  type MCPTokenProvider,
+} from "./mcp";
