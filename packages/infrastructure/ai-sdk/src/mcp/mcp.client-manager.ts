@@ -102,7 +102,7 @@ export class MCPClientManager {
     this._clients.set(vendor, connection);
 
     try {
-      const transport = await this._createTransport(config, options.accessToken);
+      const transport = await this._createTransport(config, options);
 
       // Store transport reference for stdio cleanup
       if (config.transport === "stdio" && transport instanceof StdioClientTransport) {
@@ -133,9 +133,10 @@ export class MCPClientManager {
 
   private async _createTransport(
     config: MCPServerConfig,
-    accessToken: string,
+    options: MCPConnectOptions,
   ): Promise<StreamableHTTPClientTransport | SSEClientTransport | StdioClientTransport> {
     const { transport, url, npmPackage, tokenEnvVar } = config;
+    const { accessToken, env: extraEnv } = options;
 
     if (transport === "stdio") {
       if (!npmPackage) {
@@ -145,6 +146,7 @@ export class MCPClientManager {
       // Create environment with the token
       const env: Record<string, string> = {
         ...process.env,
+        ...extraEnv,
       } as Record<string, string>;
 
       if (tokenEnvVar) {
