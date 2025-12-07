@@ -38,6 +38,20 @@ export const MCP_SERVERS: Record<MCPVendor, MCPServerConfig> = {
       prompts: false,
     },
   },
+  linear: {
+    name: "linear",
+    url: "",
+    transport: "stdio",
+    authHeader: "Authorization",
+    tokenSource: "linear",
+    npmPackage: "linear-mcp-server",
+    tokenEnvVar: "LINEAR_API_KEY",
+    capabilities: {
+      tools: true,
+      resources: true,
+      prompts: false,
+    },
+  },
 } as const;
 
 export function getMCPServerConfig(vendor: MCPVendor): MCPServerConfig {

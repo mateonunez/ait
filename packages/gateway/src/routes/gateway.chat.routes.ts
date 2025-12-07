@@ -16,6 +16,7 @@ import {
 import type { ChatMessage } from "@ait/ai-sdk";
 import {
   type ConnectorGitHubService,
+  type ConnectorLinearService,
   type ConnectorNotionService,
   type ConnectorSpotifyService,
   connectorServiceFactory,
@@ -36,6 +37,7 @@ declare module "fastify" {
     spotifyService: ConnectorSpotifyService;
     notionService: ConnectorNotionService;
     githubService: ConnectorGitHubService;
+    linearService: ConnectorLinearService;
     mcpManager: MCPClientManager;
   }
 }
@@ -92,6 +94,7 @@ async function initializeMCPConnections(
   mcpManager: MCPClientManager,
   notionService: ConnectorNotionService,
   githubService: ConnectorGitHubService,
+  linearService: ConnectorLinearService,
 ): Promise<void> {
   // Try to connect Notion MCP if authenticated
   try {
@@ -120,6 +123,20 @@ async function initializeMCPConnections(
       error: error instanceof Error ? error.message : String(error),
     });
   }
+
+  // Try to connect Linear MCP if authenticated
+  try {
+    await linearService.connector.connect();
+    const linearAuth = await linearService.connector.store.getAuthenticationData();
+    if (linearAuth?.accessToken) {
+      await mcpManager.connect("linear", { accessToken: linearAuth.accessToken });
+      logger.info("[MCP] Connected to Linear MCP server");
+    }
+  } catch (error) {
+    logger.debug("[MCP] Linear not authenticated, skipping MCP connection", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 export default async function chatRoutes(fastify: FastifyInstance) {
@@ -140,6 +157,10 @@ export default async function chatRoutes(fastify: FastifyInstance) {
     fastify.decorate("githubService", connectorServiceFactory.getService<ConnectorGitHubService>("github"));
   }
 
+  if (!fastify.linearService) {
+    fastify.decorate("linearService", connectorServiceFactory.getService<ConnectorLinearService>("linear"));
+  }
+
   if (!fastify.mcpManager) {
     fastify.decorate("mcpManager", getMCPClientManager());
   }
@@ -148,11 +169,13 @@ export default async function chatRoutes(fastify: FastifyInstance) {
   const mcpManager = fastify.mcpManager;
 
   // Initialize MCP connections in the background (don't block startup)
-  initializeMCPConnections(mcpManager, fastify.notionService, fastify.githubService).catch((error) => {
-    logger.warn("[MCP] Failed to initialize MCP connections:", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-  });
+  initializeMCPConnections(mcpManager, fastify.notionService, fastify.githubService, fastify.linearService).catch(
+    (error) => {
+      logger.warn("[MCP] Failed to initialize MCP connections:", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+  );
 
   fastify.post("/", async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
     try {
