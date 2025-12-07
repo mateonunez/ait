@@ -163,23 +163,25 @@ export class ToolExecutionService implements IToolExecutionService {
         if (Array.isArray(value)) {
           const preview = value.slice(0, 5);
           const suffix = value.length > 5 ? `, and ${value.length - 5} more` : "";
-          return JSON.stringify(preview, null, 2) + suffix;
+          const json = JSON.stringify(preview, null, 2);
+          return (json.length > 2000 ? `${json.slice(0, 2000)}...` : json) + suffix;
         }
         if (value && typeof value === "object") {
           const obj = value as Record<string, unknown>;
           if (Array.isArray(obj.results)) {
             const preview = (obj.results as unknown[]).slice(0, 5);
             const count = (obj as any).count ?? (obj.results as unknown[]).length;
-            return JSON.stringify({ count, preview }, null, 2);
+            const json = JSON.stringify({ count, preview }, null, 2);
+            return json.length > 2000 ? `${json.slice(0, 2000)}...` : json;
           }
           const json = JSON.stringify(value);
-          return json.length > 800 ? `${json.slice(0, 800)}…` : JSON.stringify(value, null, 2);
+          return json.length > 2000 ? `${json.slice(0, 2000)}…` : JSON.stringify(value, null, 2);
         }
         const asString = String(value ?? "");
-        return asString.length > 800 ? `${asString.slice(0, 800)}…` : asString;
+        return asString.length > 2000 ? `${asString.slice(0, 2000)}…` : asString;
       } catch {
         const asString = String(value ?? "");
-        return asString.length > 800 ? `${asString.slice(0, 800)}…` : asString;
+        return asString.length > 2000 ? `${asString.slice(0, 2000)}…` : asString;
       }
     };
 

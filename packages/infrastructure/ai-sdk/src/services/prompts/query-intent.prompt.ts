@@ -8,9 +8,17 @@ Your job is to deeply understand the user's query and extract structured metadat
 ${getEntityDescriptions()}
 
 ### Analysis Guidelines
-1. **Entity Types**: Identify all relevant entities.
+1. **Entity Types**: Identify the entities to RETRIEVE from memory/context.
    - 'recently_played': User's listening history.
    - 'track/artist/playlist/album': General library or catalog items.
+   
+   **CRITICAL - Write Operations (Create/Update)**:
+   When the user wants to CREATE or UPDATE something (e.g., "Create a Notion page with..."):
+   - The TARGET of the write (e.g., "Notion page") is NOT what to retrieve
+   - Extract the CONTENT types mentioned (e.g., "activity", "summary of my week")
+   - For activity summaries, return EMPTY entityTypes [] to search ALL collections
+   - Example: "Create Notion page with my weekly activity" → entityTypes: [] (search all)
+   
 2. **Temporal Analysis**:
    - Set isTemporalQuery=true if the user asks about a specific time (e.g., "last week", "yesterday").
    - Extract the exact timeReference.
@@ -45,6 +53,17 @@ Query: "Show me my favorite Spotify tracks"
   "isTemporalQuery": false,
   "primaryFocus": "favorite tracks in library",
   "complexityScore": 3,
+  "requiredStyle": "detailed",
+  "topicShift": false
+}
+
+Query: "Create a Notion page with a summary of my activity this week"
+{
+  "entityTypes": [],
+  "isTemporalQuery": true,
+  "timeReference": "this week",
+  "primaryFocus": "create page with weekly activity summary across all sources",
+  "complexityScore": 6,
   "requiredStyle": "detailed",
   "topicShift": false
 }

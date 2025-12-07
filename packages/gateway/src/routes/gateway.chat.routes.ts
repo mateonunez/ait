@@ -3,16 +3,23 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   GenerationModels,
+  type MCPClientManager,
   STREAM_EVENT,
   type StreamEvent,
   type TextGenerationService,
-  createAllConnectorTools,
+  createAllConnectorToolsWithMCP,
   getLangfuseProvider,
+  getMCPClientManager,
   getTextGenerationService,
   initAItClient,
 } from "@ait/ai-sdk";
 import type { ChatMessage } from "@ait/ai-sdk";
-import { type ConnectorSpotifyService, connectorServiceFactory } from "@ait/connectors";
+import {
+  type ConnectorGitHubService,
+  type ConnectorNotionService,
+  type ConnectorSpotifyService,
+  connectorServiceFactory,
+} from "@ait/connectors";
 import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
@@ -27,6 +34,9 @@ declare module "fastify" {
   interface FastifyInstance {
     textGenerationService: TextGenerationService;
     spotifyService: ConnectorSpotifyService;
+    notionService: ConnectorNotionService;
+    githubService: ConnectorGitHubService;
+    mcpManager: MCPClientManager;
   }
 }
 
@@ -74,7 +84,46 @@ if (!(global as any).__messageToTraceMap) {
   (global as any).__messageToTraceMap = {};
 }
 
+/**
+ * Initialize MCP connections for available connectors
+ * Connects to vendor-hosted MCP servers using existing OAuth tokens
+ */
+async function initializeMCPConnections(
+  mcpManager: MCPClientManager,
+  notionService: ConnectorNotionService,
+  githubService: ConnectorGitHubService,
+): Promise<void> {
+  // Try to connect Notion MCP if authenticated
+  try {
+    await notionService.connector.connect();
+    const notionAuth = await notionService.connector.store.getAuthenticationData();
+    if (notionAuth?.accessToken) {
+      await mcpManager.connect("notion", { accessToken: notionAuth.accessToken });
+      logger.info("[MCP] Connected to Notion MCP server");
+    }
+  } catch (error) {
+    logger.debug("[MCP] Notion not authenticated, skipping MCP connection", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+
+  // Try to connect GitHub MCP if authenticated
+  try {
+    await githubService.connector.connect();
+    const githubAuth = await githubService.connector.store.getAuthenticationData();
+    if (githubAuth?.accessToken) {
+      await mcpManager.connect("github", { accessToken: githubAuth.accessToken });
+      logger.info("[MCP] Connected to GitHub MCP server");
+    }
+  } catch (error) {
+    logger.debug("[MCP] GitHub not authenticated, skipping MCP connection", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
 export default async function chatRoutes(fastify: FastifyInstance) {
+  // Initialize services
   if (!fastify.textGenerationService) {
     fastify.decorate("textGenerationService", getTextGenerationService());
   }
@@ -83,9 +132,27 @@ export default async function chatRoutes(fastify: FastifyInstance) {
     fastify.decorate("spotifyService", connectorServiceFactory.getService<ConnectorSpotifyService>("spotify"));
   }
 
-  const textGenerationService = fastify.textGenerationService;
+  if (!fastify.notionService) {
+    fastify.decorate("notionService", connectorServiceFactory.getService<ConnectorNotionService>("notion"));
+  }
 
-  const tools = createAllConnectorTools(fastify.spotifyService);
+  if (!fastify.githubService) {
+    fastify.decorate("githubService", connectorServiceFactory.getService<ConnectorGitHubService>("github"));
+  }
+
+  if (!fastify.mcpManager) {
+    fastify.decorate("mcpManager", getMCPClientManager());
+  }
+
+  const textGenerationService = fastify.textGenerationService;
+  const mcpManager = fastify.mcpManager;
+
+  // Initialize MCP connections in the background (don't block startup)
+  initializeMCPConnections(mcpManager, fastify.notionService, fastify.githubService).catch((error) => {
+    logger.warn("[MCP] Failed to initialize MCP connections:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
 
   fastify.post("/", async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
     try {
@@ -117,11 +184,16 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         // Generate custom traceId for telemetry
         const traceId = `trace-${Date.now()}-${randomUUID().slice(0, 8)}`;
 
-        logger.info("Generating stream", {
+        const tools = await createAllConnectorToolsWithMCP(fastify.spotifyService, mcpManager);
+        const hasMCPConnected = mcpManager.getConnectedVendors().length > 0;
+        const maxToolRounds = hasMCPConnected ? 3 : 1;
+
+        logger.info("Generating stream with MCP tools", {
           prompt,
           conversationHistory,
-          tools,
-          maxToolRounds: 1,
+          toolCount: Object.keys(tools).length,
+          mcpConnected: mcpManager.getConnectedVendors(),
+          maxToolRounds,
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
           enableMetadata,
           traceId,
@@ -132,18 +204,19 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           enableRAG: true,
           messages: conversationHistory,
           tools,
-          maxToolRounds: 1,
+          maxToolRounds,
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
           enableMetadata,
           traceId,
           userId: request.headers["x-user-id"] as string | undefined,
           sessionId: request.headers["x-session-id"] as string | undefined,
-          tags: ["gateway", "chat"],
+          tags: ["gateway", "chat", "mcp"],
           metadata: {
             version: APP_VERSION,
             environment: APP_ENVIRONMENT,
             deploymentTimestamp: DEPLOYMENT_TIMESTAMP,
             model: model || "default",
+            mcpVendors: mcpManager.getConnectedVendors().join(","),
           },
         });
 
