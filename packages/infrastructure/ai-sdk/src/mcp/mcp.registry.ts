@@ -52,6 +52,20 @@ export const MCP_SERVERS: Record<MCPVendor, MCPServerConfig> = {
       prompts: false,
     },
   },
+  slack: {
+    name: "slack",
+    url: "",
+    transport: "stdio",
+    authHeader: "Authorization",
+    tokenSource: "slack",
+    npmPackage: "@modelcontextprotocol/server-slack",
+    tokenEnvVar: "SLACK_BOT_TOKEN",
+    capabilities: {
+      tools: true,
+      resources: true,
+      prompts: false,
+    },
+  },
 } as const;
 
 export function getMCPServerConfig(vendor: MCPVendor): MCPServerConfig {

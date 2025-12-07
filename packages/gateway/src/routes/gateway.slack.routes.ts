@@ -41,7 +41,7 @@ export default async function slackRoutes(fastify: FastifyInstance) {
         client_id: clientId,
         redirect_uri: redirectUri,
         user_scope:
-          "channels:read,groups:read,im:read,mpim:read,channels:history,groups:history,im:history,mpim:history,users:read",
+          "channels:read,groups:read,im:read,mpim:read,channels:history,groups:history,im:history,mpim:history,users:read,chat:write",
         response_type: "code",
       });
 

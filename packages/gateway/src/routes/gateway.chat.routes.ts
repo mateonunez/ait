@@ -18,6 +18,7 @@ import {
   type ConnectorGitHubService,
   type ConnectorLinearService,
   type ConnectorNotionService,
+  type ConnectorSlackService,
   type ConnectorSpotifyService,
   connectorServiceFactory,
 } from "@ait/connectors";
@@ -38,6 +39,7 @@ declare module "fastify" {
     notionService: ConnectorNotionService;
     githubService: ConnectorGitHubService;
     linearService: ConnectorLinearService;
+    slackService: ConnectorSlackService;
     mcpManager: MCPClientManager;
   }
 }
@@ -95,6 +97,7 @@ async function initializeMCPConnections(
   notionService: ConnectorNotionService,
   githubService: ConnectorGitHubService,
   linearService: ConnectorLinearService,
+  slackService: ConnectorSlackService,
 ): Promise<void> {
   // Try to connect Notion MCP if authenticated
   try {
@@ -137,6 +140,25 @@ async function initializeMCPConnections(
       error: error instanceof Error ? error.message : String(error),
     });
   }
+
+  // Try to connect Slack MCP if authenticated
+  try {
+    await slackService.connector.connect();
+    const slackAuth = await slackService.connector.store.getAuthenticationData();
+    if (slackAuth?.accessToken) {
+      const teamId = (slackAuth.metadata as { team_id?: string })?.team_id;
+      const env: Record<string, string> = {};
+      if (teamId) {
+        env.SLACK_TEAM_ID = teamId;
+      }
+      await mcpManager.connect("slack", { accessToken: slackAuth.accessToken, env });
+      logger.info("[MCP] Connected to Slack MCP server");
+    }
+  } catch (error) {
+    logger.debug("[MCP] Slack not authenticated, skipping MCP connection", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 export default async function chatRoutes(fastify: FastifyInstance) {
@@ -161,6 +183,10 @@ export default async function chatRoutes(fastify: FastifyInstance) {
     fastify.decorate("linearService", connectorServiceFactory.getService<ConnectorLinearService>("linear"));
   }
 
+  if (!fastify.slackService) {
+    fastify.decorate("slackService", connectorServiceFactory.getService<ConnectorSlackService>("slack"));
+  }
+
   if (!fastify.mcpManager) {
     fastify.decorate("mcpManager", getMCPClientManager());
   }
@@ -169,13 +195,17 @@ export default async function chatRoutes(fastify: FastifyInstance) {
   const mcpManager = fastify.mcpManager;
 
   // Initialize MCP connections in the background (don't block startup)
-  initializeMCPConnections(mcpManager, fastify.notionService, fastify.githubService, fastify.linearService).catch(
-    (error) => {
-      logger.warn("[MCP] Failed to initialize MCP connections:", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    },
-  );
+  initializeMCPConnections(
+    mcpManager,
+    fastify.notionService,
+    fastify.githubService,
+    fastify.linearService,
+    fastify.slackService,
+  ).catch((error) => {
+    logger.warn("[MCP] Failed to initialize MCP connections:", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  });
 
   fastify.post("/", async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
     try {

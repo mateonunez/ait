@@ -1,4 +1,4 @@
-export type MCPVendor = "notion" | "github" | "linear";
+export type MCPVendor = "notion" | "github" | "linear" | "slack";
 
 /**
  * Transport types for MCP connections
@@ -63,6 +63,7 @@ export interface MCPClientInfo {
 
 export interface MCPConnectOptions {
   accessToken: string;
+  env?: Record<string, string>;
   timeout?: number;
   autoReconnect?: boolean;
 }

@@ -28,6 +28,7 @@ export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider
           tokenType: tokenType || ouathData.tokenType,
           scope: scope || ouathData.scope,
           expiresIn: expiresIn ? expiresIn.toString() : ouathData.expiresIn,
+          metadata: data.metadata || ouathData.metadata,
           updatedAt: now,
         })
         .where(drizzleOrm.eq(oauthTokens.provider, provider))
@@ -41,6 +42,7 @@ export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider
         scope: scope,
         expiresIn: expiresIn?.toString(),
         provider: provider,
+        metadata: data.metadata,
         createdAt: now,
         updatedAt: now,
       };
@@ -59,6 +61,7 @@ export async function getOAuthData(provider: string): Promise<OAuthTokenDataTarg
       scope: oauthTokens.scope,
       expiresIn: oauthTokens.expiresIn,
       provider: oauthTokens.provider,
+      metadata: oauthTokens.metadata,
       createdAt: oauthTokens.createdAt,
       updatedAt: oauthTokens.updatedAt,
     })

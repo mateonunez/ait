@@ -24,11 +24,16 @@ export class ConnectorSlack extends BaseConnectorAbstract<
     return this._store.getAuthenticationData();
   }
 
-  protected async authenticate(code: string): Promise<{ access_token: string }> {
+  protected async authenticate(code: string): Promise<{ access_token: string; metadata: Record<string, unknown> }> {
     const response = await this._authenticator.authenticate(code);
     const userToken = response.authed_user?.access_token;
+    const teamId = (response.team as { id: string })?.id;
+
     return {
       access_token: userToken || response.access_token,
+      metadata: {
+        team_id: teamId,
+      },
     };
   }
 
@@ -44,7 +49,10 @@ export class ConnectorSlack extends BaseConnectorAbstract<
     return new ConnectorSlackDataSource(accessToken);
   }
 
-  protected async saveAuthenticatedData(response: { access_token: string }): Promise<void> {
+  protected async saveAuthenticatedData(response: {
+    access_token: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<void> {
     await this._store.saveAuthenticationData(response);
   }
 
