@@ -23,6 +23,7 @@ export interface ModelGenerateOptions {
  */
 export interface ModelStreamOptions {
   prompt: string;
+  messages?: ModelMessage[];
   temperature?: number;
   topP?: number;
   topK?: number;

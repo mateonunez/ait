@@ -22,6 +22,8 @@ export interface PromptOrchestrationOutput {
   toolCalls: unknown[];
   toolResults: unknown[];
   hasToolCalls: boolean;
+  accumulatedMessages?: ChatMessage[];
+  finalTextResponse?: string;
 }
 
 export class PromptOrchestrationService {
@@ -58,6 +60,8 @@ export class PromptOrchestrationService {
     const toolResults: unknown[] = [];
     let hasToolCalls = false;
     let finalPrompt: string;
+    let accumulatedMessages: ChatMessage[] | undefined;
+    let finalTextResponse: string | undefined;
 
     if (input.tools && maxToolRounds > 0) {
       const toolResult = await this.toolStage.execute(
@@ -79,6 +83,8 @@ export class PromptOrchestrationService {
       toolCalls.push(...toolResult.toolCalls);
       toolResults.push(...toolResult.toolResults);
       hasToolCalls = toolResult.hasToolCalls;
+      accumulatedMessages = toolResult.accumulatedMessages as ChatMessage[] | undefined;
+      finalTextResponse = toolResult.finalTextResponse;
     } else {
       finalPrompt = this.promptBuilder.buildPrompt({
         systemMessage: systemPrompt,
@@ -94,6 +100,8 @@ export class PromptOrchestrationService {
       toolCalls,
       toolResults,
       hasToolCalls,
+      accumulatedMessages,
+      finalTextResponse,
     };
   }
 }

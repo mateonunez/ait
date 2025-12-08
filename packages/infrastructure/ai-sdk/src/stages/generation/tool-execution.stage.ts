@@ -110,7 +110,24 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
 
         // Continue to next round
       } else {
-        // No tools called, stop execution
+        // No tools called - LLM returned a final text response
+        // Capture this text so we don't need to call the LLM again
+        if (checkResult.text?.trim()) {
+          console.log(
+            `[ToolExecutionStage] Round ${round} - LLM returned final text (no more tool calls):`,
+            checkResult.text.substring(0, 200),
+          );
+          return {
+            ...input,
+            finalPrompt: currentPrompt,
+            toolCalls,
+            toolResults,
+            hasToolCalls,
+            accumulatedMessages: hasToolCalls ? currentMessages : undefined,
+            finalTextResponse: checkResult.text,
+          };
+        }
+        // No text either, just break
         break;
       }
     }
@@ -121,6 +138,7 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
       toolCalls,
       toolResults,
       hasToolCalls,
+      accumulatedMessages: hasToolCalls ? currentMessages : undefined,
     };
   }
 

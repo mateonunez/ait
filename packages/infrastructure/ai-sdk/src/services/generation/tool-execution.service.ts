@@ -159,29 +159,30 @@ export class ToolExecutionService implements IToolExecutionService {
     const parts: string[] = ["## Current Real-Time Information\n"];
 
     const formatCompact = (value: unknown): string => {
+      const MAX_LENGTH = 8000; // Increased from 2000 to avoid truncating important data like channel lists
       try {
         if (Array.isArray(value)) {
-          const preview = value.slice(0, 5);
-          const suffix = value.length > 5 ? `, and ${value.length - 5} more` : "";
+          const preview = value.slice(0, 10); // Increased from 5 to 10
+          const suffix = value.length > 10 ? `, and ${value.length - 10} more` : "";
           const json = JSON.stringify(preview, null, 2);
-          return (json.length > 2000 ? `${json.slice(0, 2000)}...` : json) + suffix;
+          return (json.length > MAX_LENGTH ? `${json.slice(0, MAX_LENGTH)}...` : json) + suffix;
         }
         if (value && typeof value === "object") {
           const obj = value as Record<string, unknown>;
           if (Array.isArray(obj.results)) {
-            const preview = (obj.results as unknown[]).slice(0, 5);
+            const preview = (obj.results as unknown[]).slice(0, 10);
             const count = (obj as any).count ?? (obj.results as unknown[]).length;
             const json = JSON.stringify({ count, preview }, null, 2);
-            return json.length > 2000 ? `${json.slice(0, 2000)}...` : json;
+            return json.length > MAX_LENGTH ? `${json.slice(0, MAX_LENGTH)}...` : json;
           }
           const json = JSON.stringify(value);
-          return json.length > 2000 ? `${json.slice(0, 2000)}…` : JSON.stringify(value, null, 2);
+          return json.length > MAX_LENGTH ? `${json.slice(0, MAX_LENGTH)}…` : JSON.stringify(value, null, 2);
         }
         const asString = String(value ?? "");
-        return asString.length > 2000 ? `${asString.slice(0, 2000)}…` : asString;
+        return asString.length > MAX_LENGTH ? `${asString.slice(0, MAX_LENGTH)}…` : asString;
       } catch {
         const asString = String(value ?? "");
-        return asString.length > 2000 ? `${asString.slice(0, 2000)}…` : asString;
+        return asString.length > MAX_LENGTH ? `${asString.slice(0, MAX_LENGTH)}…` : asString;
       }
     };
 
@@ -194,10 +195,17 @@ export class ToolExecutionService implements IToolExecutionService {
     }
 
     parts.push(
-      "\nThis is current, real-time information. You now have this knowledge. Answer the user's query naturally, in your voice, as if you've always known this. Weave in relevant context from memory when it adds depth. Never cite sources or say where this came from. Just speak it as your own knowledge.",
+      "\n**IMPORTANT**: Use this information to CONTINUE executing tools to complete the user's request. If the user asked to send a message, post something, or create a resource, use the appropriate tool NOW with the information above. Only respond with text AFTER all actions are complete or if you need clarification.",
     );
 
-    return parts.join("\n");
+    const formatted = parts.join("\n");
+    logger.debug("[ToolExecutionService] Formatted tool results", {
+      resultCount: results.length,
+      formattedLength: formatted.length,
+      preview: formatted.substring(0, 500),
+    });
+
+    return formatted;
   }
 
   private async _executeWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
