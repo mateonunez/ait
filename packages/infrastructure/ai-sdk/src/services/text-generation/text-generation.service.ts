@@ -202,17 +202,28 @@ export class TextGenerationService implements ITextGenerationService {
 
       const finalPrompt = promptResult.finalPrompt;
 
-      const stream = client.streamText({
-        prompt: finalPrompt,
-        temperature: client.config.generation.temperature,
-        topP: client.config.generation.topP,
-        topK: client.config.generation.topK,
-      });
+      // If LLM already generated final text during tool execution, use it directly
+      // This happens when the LLM returns text without more tool calls
+      if (promptResult.finalTextResponse) {
+        fullResponse = promptResult.finalTextResponse;
+        chunkCount = 1;
+        yield promptResult.finalTextResponse;
+      } else {
+        // Use accumulated messages for streaming if tools were called,
+        // so the LLM has full conversation context for the final response
+        const stream = client.streamText({
+          prompt: finalPrompt,
+          messages: promptResult.accumulatedMessages,
+          temperature: client.config.generation.temperature,
+          topP: client.config.generation.topP,
+          topK: client.config.generation.topK,
+        });
 
-      for await (const chunk of stream) {
-        chunkCount++;
-        fullResponse += chunk;
-        yield chunk;
+        for await (const chunk of stream) {
+          chunkCount++;
+          fullResponse += chunk;
+          yield chunk;
+        }
       }
 
       // Extract and emit metadata after collecting full response

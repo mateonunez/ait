@@ -40,6 +40,7 @@ export interface LlmGenerateTextOptions {
 
 export interface LlmStreamOptions {
   prompt: string;
+  messages?: ModelGenerateOptions["messages"];
   temperature?: number;
   topP?: number;
   topK?: number;
@@ -195,6 +196,7 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
     async *streamText(options: LlmStreamOptions): AsyncGenerator<string> {
       const streamOptions: ModelStreamOptions = {
         prompt: options.prompt,
+        messages: options.messages,
         temperature: options.temperature ?? config.generation.temperature,
         topP: options.topP ?? config.generation.topP,
         topK: options.topK ?? config.generation.topK,

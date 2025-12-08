@@ -112,6 +112,8 @@ export interface ToolExecutionOutput extends ContextPreparationOutput {
   toolCalls: unknown[];
   toolResults: unknown[];
   hasToolCalls: boolean;
+  accumulatedMessages?: ChatMessage[];
+  finalTextResponse?: string;
 }
 
 export interface TextGenerationInput extends ToolExecutionOutput {

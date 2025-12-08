@@ -33,6 +33,7 @@ export class OllamaProvider {
 
   createTextModel(modelName: string): GenerationModel & {
     doChatGenerate(options: OllamaChatGenerateOptions): Promise<OllamaGenerateResult>;
+    doChatStream(options: ModelStreamOptions): AsyncGenerator<string>;
   } {
     const baseURL = this.baseURL;
 
@@ -145,6 +146,12 @@ export class OllamaProvider {
       },
 
       async *doStream(options: ModelStreamOptions): AsyncGenerator<string> {
+        // Use chat API if messages are provided
+        if (options.messages) {
+          yield* this.doChatStream(options);
+          return;
+        }
+
         const response = await fetch(`${baseURL}/api/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -193,6 +200,83 @@ export class OllamaProvider {
                   }
                 } catch (e) {
                   logger.warn("Failed to parse streaming line:", { line });
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      },
+
+      async *doChatStream(options: ModelStreamOptions): AsyncGenerator<string> {
+        const messages = options.messages || [
+          {
+            role: "user" as const,
+            content: options.prompt || "",
+          },
+        ];
+
+        logger.debug("[OllamaProvider] Streaming chat request", {
+          messageCount: messages.length,
+          lastMessage: messages[messages.length - 1],
+        });
+
+        const response = await fetch(`${baseURL}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: modelName,
+            messages,
+            stream: true,
+            options: {
+              temperature: options.temperature,
+              top_p: options.topP,
+              top_k: options.topK,
+            },
+          } as OllamaChatRequest),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error("[OllamaProvider] Chat stream error", {
+            status: response.status,
+            statusText: response.statusText,
+            body: errorText,
+          });
+          throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
+            status: response.status,
+            detail: errorText,
+          });
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new AItError("OLLAMA_NO_BODY", "No response body");
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (line.trim()) {
+                try {
+                  const data = JSON.parse(line);
+                  // Chat API returns content in message.content
+                  if (data.message?.content) {
+                    yield data.message.content;
+                  }
+                } catch (e) {
+                  logger.warn("Failed to parse chat streaming line:", { line });
                 }
               }
             }
