@@ -1,5 +1,6 @@
 # AIt
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mateonunez/ait)
 [![CI](https://github.com/mateonunez/ait/actions/workflows/ci.yml/badge.svg)](https://github.com/mateonunez/ait/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-24%2B-green.svg)](https://nodejs.org/)
