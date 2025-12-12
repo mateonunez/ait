@@ -1,30 +1,37 @@
 import { getLogger } from "@ait/core";
 import { getCacheAnalyticsService } from "../../services/analytics/cache-analytics.service";
-import type { ICacheService } from "../../services/cache/cache.service";
+import { type SemanticCacheService, getSemanticCacheService } from "../../services/cache/semantic-cache.service";
 import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { IMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.service";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming, recordSpan } from "../../telemetry/telemetry.middleware";
 import type { CollectionWeight } from "../../types/collections";
 import type { RetrievalInput, RetrievalOutput } from "../../types/stages";
 
 const logger = getLogger();
 
+interface SemanticRetrievalCacheEntry {
+  documents: any[];
+  collections: string[];
+}
+
 export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalOutput> {
   readonly name = "retrieval";
 
-  private readonly multiQueryRetrieval: IMultiQueryRetrievalService;
-  private readonly multiCollectionProvider: MultiCollectionProvider;
-  private readonly cacheService?: ICacheService;
+  private readonly _multiQueryRetrieval: IMultiQueryRetrievalService;
+  private readonly _multiCollectionProvider: MultiCollectionProvider;
+  private readonly _semanticCache: SemanticCacheService;
+  private readonly _enableCache: boolean;
 
   constructor(
     multiQueryRetrieval: IMultiQueryRetrievalService,
     multiCollectionProvider: MultiCollectionProvider,
-    cacheService?: ICacheService,
+    enableCache = true,
   ) {
-    this.multiQueryRetrieval = multiQueryRetrieval;
-    this.multiCollectionProvider = multiCollectionProvider;
-    this.cacheService = cacheService;
+    this._multiQueryRetrieval = multiQueryRetrieval;
+    this._multiCollectionProvider = multiCollectionProvider;
+    this._semanticCache = getSemanticCacheService();
+    this._enableCache = enableCache;
   }
 
   async canExecute(input: RetrievalInput): Promise<boolean> {
@@ -41,48 +48,79 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
         })
       : null;
 
-    if (this.cacheService) {
-      const cacheKey = this._buildCacheKey(input.query, input.routingResult.selectedCollections);
-      logger.debug("Checking cache", { cacheKey, query: input.query.slice(0, 50) });
+    // Build collection context for cache key (not normalized)
+    const collectionContext = this._buildCollectionContext(input.routingResult.selectedCollections);
 
-      const cachedResult = this.cacheService.get<any[]>(cacheKey);
-      const cachedDocs = cachedResult instanceof Promise ? await cachedResult : cachedResult;
+    if (this._enableCache) {
+      logger.debug("Checking semantic cache", { query: input.query.slice(0, 50), collectionContext });
 
-      if (cachedDocs) {
+      // Pass query and context separately - query gets semantically normalized, context is preserved
+      const cachedEntry = await this._semanticCache.get<SemanticRetrievalCacheEntry>(
+        input.query,
+        collectionContext,
+        context.traceContext,
+      );
+
+      if (cachedEntry) {
         const duration = Date.now() - startTime;
 
-        logger.debug("Cache hit", { cacheKey, documentCount: cachedDocs.length, duration });
+        logger.debug("Semantic cache hit", {
+          query: input.query.slice(0, 50),
+          collectionContext,
+          documentCount: cachedEntry.documents.length,
+          duration,
+        });
 
-        cacheAnalytics.recordCacheHit(input.query, duration, cachedDocs.length);
+        cacheAnalytics.recordCacheHit(input.query, duration, cachedEntry.documents.length);
+
+        if (context.traceContext) {
+          recordSpan(
+            "rag-semantic-cache-hit",
+            "cache",
+            context.traceContext,
+            { query: input.query.slice(0, 100), collectionContext },
+            { cacheHit: true, documentCount: cachedEntry.documents.length, latencyMs: duration },
+          );
+        }
 
         if (endSpan) {
           endSpan({
-            documentCount: cachedDocs.length,
+            documentCount: cachedEntry.documents.length,
             duration,
-            source: "cache",
+            source: "semantic-cache",
             cacheHit: true,
-            cacheKey,
+            cacheKey: `normalized|${collectionContext}`,
           });
         }
 
         return {
           ...input,
-          documents: cachedDocs,
+          documents: cachedEntry.documents,
           retrievalMetadata: {
             queriesExecuted: 0,
             totalDuration: duration,
-            documentsPerCollection: { cache: cachedDocs.length },
+            documentsPerCollection: { cache: cachedEntry.documents.length },
             fromCache: true,
           },
         };
       }
 
-      logger.debug("Cache miss", { cacheKey });
-      cacheAnalytics.recordCacheMiss(input.query, 0); // Latency updated after retrieval
+      logger.debug("Semantic cache miss", { query: input.query.slice(0, 50), collectionContext });
+      cacheAnalytics.recordCacheMiss(input.query, Date.now() - startTime);
+
+      if (context.traceContext) {
+        recordSpan(
+          "rag-semantic-cache-miss",
+          "cache",
+          context.traceContext,
+          { query: input.query.slice(0, 100), collectionContext },
+          { cacheHit: false, latencyMs: Date.now() - startTime },
+        );
+      }
     }
 
-    const documents = await this.multiQueryRetrieval.retrieveAcrossCollections(
-      this.multiCollectionProvider,
+    const documents = await this._multiQueryRetrieval.retrieveAcrossCollections(
+      this._multiCollectionProvider,
       input.routingResult.selectedCollections,
       input.query,
       context.traceContext,
@@ -90,13 +128,17 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
 
     const totalDuration = Date.now() - startTime;
 
-    if (this.cacheService) {
-      const cacheKey = this._buildCacheKey(input.query, input.routingResult.selectedCollections);
-      const setResult = this.cacheService.set(cacheKey, documents, 60 * 60 * 1000);
-      if (setResult instanceof Promise) {
-        await setResult;
-      }
-      logger.debug("Cached retrieval results", { cacheKey, documentCount: documents.length });
+    if (this._enableCache && documents.length > 0) {
+      const cacheEntry: SemanticRetrievalCacheEntry = {
+        documents,
+        collections: input.routingResult.selectedCollections.map((c) => c.vendor),
+      };
+      await this._semanticCache.set(input.query, cacheEntry, collectionContext);
+      logger.debug("Cached retrieval results (semantic)", {
+        query: input.query.slice(0, 50),
+        collectionContext,
+        documentCount: documents.length,
+      });
     }
 
     const documentsPerCollection: Record<string, number> = {};
@@ -127,18 +169,12 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     };
   }
 
-  private _normalizeQuery(query: string): string {
-    return query.trim().toLowerCase().replace(/\s+/g, " ");
-  }
-
-  private _buildCacheKey(query: string, collections: CollectionWeight[]): string {
-    const normalizedQuery = this._normalizeQuery(query);
-
+  private _buildCollectionContext(collections: CollectionWeight[]): string {
     const sortedVendors = collections
       .map((c) => c.vendor)
       .sort()
       .join(",");
 
-    return `rag:retrieval:${normalizedQuery}:${sortedVendors}`;
+    return `collections:${sortedVendors}`;
   }
 }

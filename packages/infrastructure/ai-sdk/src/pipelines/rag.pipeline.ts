@@ -1,4 +1,3 @@
-import { getCacheService } from "../services/cache/cache.service";
 import { MultiCollectionProvider } from "../services/rag/multi-collection.provider";
 import { PipelineBuilder } from "../services/rag/pipeline/pipeline.builder";
 import type { PipelineOrchestrator } from "../services/rag/pipeline/pipeline.orchestrator";
@@ -52,13 +51,11 @@ export function createRAGPipeline(
     concurrency: config.concurrency ?? 4,
   });
 
-  const cacheService = getCacheService();
-
   return PipelineBuilder.create<QueryAnalysisInput, ContextBuildingOutput>()
     .addStage(new QueryAnalysisStage())
     .addStage(new SimpleRetrievalStage(multiCollectionProvider, config.maxDocs))
     .addStage(new CollectionRoutingStage(config.collectionRouting))
-    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider /*cacheService*/))
+    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
     .addStage(new FusionStage())
     .addStage(new RerankingStage(config.reranking))
     .addStage(new ContextBuildingStage(config.contextBuilding))

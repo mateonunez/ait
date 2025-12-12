@@ -61,7 +61,8 @@ export type SpanType =
   | "pipeline"
   | "routing"
   | "retrieval"
-  | "fusion";
+  | "fusion"
+  | "cache";
 
 export interface SpanInput {
   prompt?: string;

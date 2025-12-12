@@ -24,6 +24,9 @@ export class MemoryCacheProvider implements ICacheProvider {
   private readonly maxItems: number;
   private readonly ttlMs: number;
   private readonly analytics: CacheAnalyticsService;
+  private _statsUpdateTimeout: ReturnType<typeof setTimeout> | null = null;
+  private _lastStatsUpdate = 0;
+  private static readonly STATS_UPDATE_INTERVAL_MS = 5000;
 
   constructor(config: CacheConfig = {}) {
     this.maxItems = config.maxItems ?? 100;
@@ -95,37 +98,81 @@ export class MemoryCacheProvider implements ICacheProvider {
     }
   }
 
-  private _updateStats(): void {
-    let estimatedBytes = 0;
-    const sampleSize = Math.min(this.cache.size, 10);
-    let sampleBytes = 0;
-    let samples = 0;
+  private _scheduleStatsUpdate(): void {
+    const now = Date.now();
 
-    if (this.cache.size > 0) {
-      for (const [key, entry] of this.cache.entries()) {
-        estimatedBytes += key.length * 2 + 100;
-
-        if (samples < sampleSize) {
-          try {
-            const json = JSON.stringify(entry.value);
-            sampleBytes += json.length * 2;
-            samples++;
-          } catch {
-            // Fallback for circular refs or non-serializable
-            sampleBytes += 2048;
-            samples++;
-          }
-        }
-      }
-
-      const avgValueSize = samples > 0 ? sampleBytes / samples : 0;
-      estimatedBytes += avgValueSize * this.cache.size;
+    // If we've never updated or it's been long enough, update immediately
+    if (this._lastStatsUpdate === 0 || now - this._lastStatsUpdate >= MemoryCacheProvider.STATS_UPDATE_INTERVAL_MS) {
+      this._computeStats();
+      this._lastStatsUpdate = now;
+      return;
     }
 
+    // Otherwise, schedule a debounced update
+    if (!this._statsUpdateTimeout) {
+      this._statsUpdateTimeout = setTimeout(
+        () => {
+          this._computeStats();
+          this._lastStatsUpdate = Date.now();
+          this._statsUpdateTimeout = null;
+        },
+        MemoryCacheProvider.STATS_UPDATE_INTERVAL_MS - (now - this._lastStatsUpdate),
+      );
+    }
+  }
+
+  private _computeStats(): void {
+    const entryCount = this.cache.size;
+
+    // Fast path: if cache is empty or small, just count entries
+    if (entryCount <= 5) {
+      this.analytics.updateCacheStats({
+        entryCount,
+        estimatedMemoryMB: entryCount * 0.002,
+      });
+      return;
+    }
+
+    const sampleSize = Math.min(entryCount, 5);
+    let sampleBytes = 0;
+    let samples = 0;
+    const iterator = this.cache.entries();
+
+    for (let i = 0; i < sampleSize; i++) {
+      const entry = iterator.next();
+      if (entry.done) break;
+
+      const [key, value] = entry.value;
+      // Estimate key size
+      sampleBytes += key.length * 2 + 100;
+
+      // Sample value size (only for first few)
+      if (samples < 3) {
+        try {
+          const json = JSON.stringify(value.value);
+          sampleBytes += json.length * 2;
+          samples++;
+        } catch {
+          sampleBytes += 2048; // Fallback estimate
+          samples++;
+        }
+      }
+    }
+
+    const avgEntrySize = samples > 0 ? sampleBytes / sampleSize : 2048;
+    const estimatedBytes = avgEntrySize * entryCount;
+
     this.analytics.updateCacheStats({
-      entryCount: this.cache.size,
+      entryCount,
       estimatedMemoryMB: estimatedBytes / (1024 * 1024),
     });
+  }
+
+  /**
+   * @deprecated Use _scheduleStatsUpdate() instead for debounced updates
+   */
+  private _updateStats(): void {
+    this._scheduleStatsUpdate();
   }
 }
 

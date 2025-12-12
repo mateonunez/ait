@@ -1,3 +1,4 @@
+import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { PromptBuilderService } from "../../services/generation/prompt-builder.service";
 import { ToolExecutionService } from "../../services/generation/tool-execution.service";
@@ -5,6 +6,8 @@ import type { IPipelineStage, PipelineContext } from "../../services/rag/pipelin
 import { convertToOllamaTools } from "../../tools/tool.converter";
 import type { ToolExecutionInput, ToolExecutionOutput } from "../../types/stages";
 import type { Tool } from "../../types/tools";
+
+const logger = getLogger();
 
 export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, ToolExecutionOutput> {
   readonly name = "tool-execution";
@@ -56,8 +59,7 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
     });
 
     for (let round = 0; round < input.maxRounds; round++) {
-      // DEBUG: Log current messages state
-      console.log(`[ToolExecutionStage] Round ${round} messages payload:`, JSON.stringify(currentMessages, null, 2));
+      logger.debug(`Tool execution round ${round}`, { messageCount: currentMessages.length });
 
       const checkResult = await client.generateText({
         prompt: currentPrompt,
@@ -113,10 +115,7 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
         // No tools called - LLM returned a final text response
         // Capture this text so we don't need to call the LLM again
         if (checkResult.text?.trim()) {
-          console.log(
-            `[ToolExecutionStage] Round ${round} - LLM returned final text (no more tool calls):`,
-            checkResult.text.substring(0, 200),
-          );
+          logger.debug(`Round ${round} - LLM returned final text`, { length: checkResult.text.length });
           return {
             ...input,
             finalPrompt: currentPrompt,

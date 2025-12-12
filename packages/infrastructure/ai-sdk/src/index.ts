@@ -204,6 +204,19 @@ export {
   MemoryCacheProvider,
 } from "./services/cache/cache.service";
 
+export {
+  SemanticCacheService,
+  getSemanticCacheService,
+  resetSemanticCacheService,
+  type SemanticCacheConfig,
+} from "./services/cache/semantic-cache.service";
+
+export {
+  RedisCacheProvider,
+  createRedisCacheProvider,
+  type RedisCacheConfig,
+} from "./services/cache/redis-cache.provider";
+
 // Insights services
 export { InsightsService, getInsightsService, resetInsightsService } from "./services/insights/insights.service";
 export {
@@ -272,3 +285,14 @@ export {
   type MCPConnectOptions,
   type MCPTokenProvider,
 } from "./mcp";
+
+export {
+  CircuitBreaker,
+  CircuitBreakerOpenError,
+  getCircuitBreaker,
+  resetCircuitBreaker,
+  resetAllCircuitBreakers,
+  getCircuitBreakerStats,
+  type CircuitState,
+  type CircuitBreakerConfig,
+} from "./services/resilience/circuit-breaker.service";
