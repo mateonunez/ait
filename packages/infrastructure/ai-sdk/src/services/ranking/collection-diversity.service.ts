@@ -25,6 +25,7 @@ export interface ICollectionDiversityService {
   applyDiversityConstraints<TMetadata extends BaseMetadata>(
     documents: WeightedDocument<TMetadata>[],
     maxResults: number,
+    targetEntityTypes?: string[],
   ): WeightedDocument<TMetadata>[];
 }
 
@@ -107,6 +108,7 @@ export class CollectionDiversityService implements ICollectionDiversityService {
   applyDiversityConstraints<TMetadata extends BaseMetadata>(
     documents: WeightedDocument<TMetadata>[],
     maxResults: number,
+    targetEntityTypes?: string[],
   ): WeightedDocument<TMetadata>[] {
     if (documents.length === 0) {
       return [];
@@ -122,6 +124,24 @@ export class CollectionDiversityService implements ICollectionDiversityService {
       return documents.slice(0, maxResults);
     }
 
+    // If targeting specific entity types, filter to only matching documents first
+    // and skip aggressive diversity enforcement
+    const hasTargetedEntityTypes = targetEntityTypes && targetEntityTypes.length > 0;
+    if (hasTargetedEntityTypes) {
+      // Filter documents to those matching the target entity types
+      const filteredDocs = documents.filter((doc) => {
+        const docType = (doc.metadata as Record<string, unknown>).__type as string;
+        return targetEntityTypes.includes(docType);
+      });
+
+      // If we have enough matching documents, use them directly (sorted by score)
+      if (filteredDocs.length >= Math.min(maxResults, 10)) {
+        filteredDocs.sort((a, b) => b.finalScore - a.finalScore);
+        return filteredDocs.slice(0, maxResults);
+      }
+      // Otherwise fall through to normal diversity logic but with relaxed constraints
+    }
+
     // Calculate weights from existing documents
     const weights = this._calculateWeights(byCollection, documents.length);
 
@@ -134,8 +154,10 @@ export class CollectionDiversityService implements ICollectionDiversityService {
       result = this.enforceMinRepresentation(byCollection, minDocs, maxResults);
     }
 
-    // Ensure no collection dominates
-    result = this._capCollectionDominance(result, maxResults);
+    // Ensure no collection dominates (skip if we have targeted entity types)
+    if (!hasTargetedEntityTypes) {
+      result = this._capCollectionDominance(result, maxResults);
+    }
 
     return result.slice(0, maxResults);
   }

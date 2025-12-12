@@ -55,11 +55,12 @@ export default async function linearRoutes(fastify: FastifyInstance) {
       try {
         await linearService.connector.connect(code);
 
-        const issues = await linearService.fetchIssues();
-        await linearService.connector.store.save(issues);
+        // Data fetching is now handled separately via the /refresh endpoint or background jobs
+        // to avoid timeout issues during the auth callback.
 
         reply.send({
-          issues,
+          success: true,
+          message: "Authentication successful. You can close this window.",
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

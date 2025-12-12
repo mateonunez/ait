@@ -80,16 +80,28 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
 
 export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> {
   public getEmbeddingText(playlist: SpotifyPlaylistDataTarget): string {
-    let trackCount = 0;
-    if (playlist.tracks && Array.isArray(playlist.tracks)) {
-      const totalEntry = playlist.tracks.find((t) => t.startsWith("total:"));
-      if (totalEntry) {
-        const match = totalEntry.match(/total:\s*(\d+)/);
-        if (match) {
-          trackCount = Number.parseInt(match[1], 10);
-        }
-      }
-    }
+    // tracks is stored as JSONB - cast to expected structure
+    const tracks = playlist.tracks as Array<{
+      added_at?: string;
+      track?: {
+        id: string;
+        name: string;
+        artist: string;
+        album: string | null;
+        durationMs: number;
+        uri: string | null;
+      };
+    }> | null;
+    const trackCount = Array.isArray(tracks) ? tracks.length : 0;
+
+    // Get first few track names for context
+    const trackPreview = Array.isArray(tracks)
+      ? tracks
+          .slice(0, 5)
+          .map((t) => (t?.track ? `"${t.track.name}" by ${t.track.artist}` : null))
+          .filter(Boolean)
+          .join("; ")
+      : null;
 
     const visibilityLabel = playlist.collaborative ? "collaborative" : playlist.public ? "public" : "private";
 
@@ -99,6 +111,7 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
       playlist.owner ? `by ${playlist.owner}` : null,
       playlist.description ? `${playlist.description}` : null,
       trackCount > 0 ? `${trackCount} tracks` : null,
+      trackPreview ? `including: ${trackPreview}` : null,
       playlist.followers && playlist.followers > 0
         ? `${playlist.followers} follower${playlist.followers === 1 ? "" : "s"}`
         : null,
@@ -108,10 +121,38 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyPlaylistDataTarget): U {
-    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
+    // Exclude large arrays that would bloat the Qdrant payload
+    const { updatedAt: _updatedAt, tracks: rawTracks, ...entityWithoutLargeFields } = entity;
+
+    // Extract track data in COMPACT format - name + artist only
+    const tracks = rawTracks as Array<{
+      added_at?: string;
+      track?: {
+        id: string;
+        name: string;
+        artist: string;
+        album: string | null;
+        durationMs: number;
+        uri: string | null;
+      };
+    }> | null;
+
+    const trackCount = Array.isArray(tracks) ? tracks.length : 0;
+
+    const compactTracks = Array.isArray(tracks)
+      ? tracks
+          .filter((t) => t?.track?.name)
+          .map((t) => {
+            const artist = t.track!.artist || "Unknown";
+            return `${t.track!.name} by ${artist}`;
+          })
+      : [];
+
     return {
       __type: "playlist",
-      ...entityWithoutInternalTimestamps,
+      ...entityWithoutLargeFields,
+      trackCount,
+      tracks: compactTracks,
     } as unknown as U;
   }
 }

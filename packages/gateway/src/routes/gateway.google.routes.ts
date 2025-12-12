@@ -59,19 +59,12 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       try {
         await googleService.connector.connect(code);
 
-        const events = await googleService.fetchEvents();
-        await googleService.connector.store.save(events);
-
-        const calendars = await googleService.fetchCalendars();
-        await googleService.connector.store.save(calendars);
-
-        const subscriptions = await googleService.fetchSubscriptions();
-        await googleService.connector.store.save(subscriptions);
+        // Data fetching is now handled separately via the /refresh endpoint or background jobs
+        // to avoid timeout issues during the auth callback.
 
         reply.send({
-          events,
-          calendars,
-          subscriptions,
+          success: true,
+          message: "Authentication successful. You can close this window.",
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

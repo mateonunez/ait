@@ -67,10 +67,12 @@ export default async function slackRoutes(fastify: FastifyInstance) {
       try {
         await slackService.connector.connect(code);
 
-        const messages = await slackService.fetchMessages();
-        await slackService.connector.store.save(messages);
+        // Data fetching is now handled separately via the /refresh endpoint or background jobs
+        // to avoid timeout issues during the auth callback.
+
         reply.send({
-          messages,
+          success: true,
+          message: "Authentication successful. You can close this window.",
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

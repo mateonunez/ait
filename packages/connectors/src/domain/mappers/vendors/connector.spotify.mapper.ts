@@ -6,6 +6,7 @@ import type {
   SpotifyImage,
   SpotifyPlaylistEntity,
   SpotifyPlaylistExternal,
+  SpotifyPlaylistTrackItem,
   SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
   SpotifyTrackEntity,
@@ -295,27 +296,27 @@ const spotifyPlaylistMapping: ConnectorMapperDefinition<
   },
   tracks: {
     external: (external: SpotifyPlaylistExternal) => {
-      // Spotify API returns tracks as a paginated object with an 'items' array
       const tracksData = external.tracks;
-      if (!tracksData) return [];
+      if (!tracksData?.items || !Array.isArray(tracksData.items)) return [];
 
-      // Handle paginated response with items
-      if (tracksData.items && Array.isArray(tracksData.items)) {
-        return tracksData.items
-          .filter((item) => item?.track)
-          .map((item) => {
-            const track = item.track;
-            if (!track) return "";
-            // Store track ID or URI
-            return track.id || track.uri || "";
-          })
-          .filter((id) => id !== ""); // Remove empty strings
-      }
-
-      return [];
+      return tracksData.items
+        .filter((item) => item?.track)
+        .map((item) => ({
+          added_at: item.added_at ?? null,
+          track: item.track
+            ? {
+                id: item.track.id ?? "",
+                name: item.track.name ?? "",
+                artist: item.track.artists?.map((a) => a.name).join(", ") ?? "",
+                album: item.track.album?.name ?? null,
+                durationMs: item.track.duration_ms ?? 0,
+                uri: item.track.uri ?? null,
+              }
+            : null,
+        }));
     },
     domain: (domain: SpotifyPlaylistEntity) => domain.tracks,
-    dataTarget: (dataTarget: SpotifyPlaylistDataTarget) => dataTarget.tracks ?? [],
+    dataTarget: (dataTarget: SpotifyPlaylistDataTarget) => (dataTarget.tracks as SpotifyPlaylistTrackItem[]) ?? [],
   },
   followers: {
     external: (_external) => 0,

@@ -49,7 +49,7 @@ export const spotifyPlaylists = pgTable("spotify_playlists", {
   public: boolean("public").notNull().default(false),
   collaborative: boolean("collaborative").notNull().default(false),
   owner: varchar("owner", { length: 255 }).notNull(),
-  tracks: text("tracks").array(),
+  tracks: jsonb("tracks"),
   followers: integer("followers").notNull().default(0),
   snapshotId: varchar("snapshot_id", { length: 255 }).notNull(),
   uri: varchar("uri", { length: 255 }).notNull(),

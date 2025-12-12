@@ -64,27 +64,12 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
       try {
         await spotifyService.connector.connect(code);
 
-        const tracks = await spotifyService.fetchTracks();
-        await spotifyService.connector.store.save(tracks);
-
-        const artists = await spotifyService.fetchArtists();
-        await spotifyService.connector.store.save(artists);
-
-        const playlists = await spotifyService.fetchPlaylists();
-        await spotifyService.connector.store.save(playlists);
-
-        const albums = await spotifyService.fetchAlbums();
-        await spotifyService.connector.store.save(albums);
-
-        const recentlyPlayed = await spotifyService.fetchRecentlyPlayed();
-        await spotifyService.connector.store.save(recentlyPlayed);
+        // Data fetching is now handled separately via the /refresh endpoint or background jobs
+        // to avoid timeout issues during the auth callback.
 
         reply.send({
-          tracks,
-          artists,
-          playlists,
-          albums,
-          recentlyPlayed,
+          success: true,
+          message: "Authentication successful. You can close this window.",
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");

@@ -58,6 +58,22 @@ export const SpotifyArtistEntitySchema = z.object({
   __type: z.literal("artist"),
 });
 
+export const SpotifyPlaylistTrackItemSchema = z.object({
+  added_at: z.string().nullable(),
+  track: z
+    .object({
+      id: z.string(),
+      name: z.string(),
+      artist: z.string(),
+      album: z.string().nullable(),
+      durationMs: z.number(),
+      uri: z.string().nullable(),
+    })
+    .nullable(),
+});
+
+export type SpotifyPlaylistTrackItem = z.infer<typeof SpotifyPlaylistTrackItemSchema>;
+
 export const SpotifyPlaylistEntitySchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -65,7 +81,7 @@ export const SpotifyPlaylistEntitySchema = z.object({
   public: z.boolean(),
   collaborative: z.boolean(),
   owner: z.string(),
-  tracks: z.array(z.string()),
+  tracks: z.array(SpotifyPlaylistTrackItemSchema),
   followers: z.number(),
   snapshotId: z.string(),
   externalUrls: z.array(z.string()),
@@ -152,6 +168,21 @@ export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">
 
 export interface SpotifyRecentlyPlayedExternal extends Omit<SpotifyRecentlyPlayed, "__type">, BaseSpotifyEntity {
   __type: "recently_played";
+}
+
+export interface SpotifyPlaylistTrackExternal {
+  added_at: string;
+  added_by: {
+    id: string;
+    type: string;
+    uri: string;
+    href?: string;
+    external_urls?: {
+      spotify?: string;
+    };
+  };
+  is_local: boolean;
+  track: SpotifyTrackExternal | null;
 }
 
 export interface SpotifyCurrentlyPlayingExternal {
