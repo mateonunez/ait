@@ -99,4 +99,80 @@ describe("ConnectorSpotifyDataSource", () => {
       assert.equal(result[0]?.track.id, "1");
     });
   });
+
+  describe("playlists", () => {
+    it("should fetch playlist tracks", async () => {
+      const mockResponse = {
+        items: [
+          {
+            added_at: "2021-01-01T00:00:00Z",
+            added_by: { id: "user1", type: "user", uri: "spotify:user:user1" },
+            is_local: false,
+            track: {
+              id: "track1",
+              name: "Test Track",
+              artists: [{ name: "Artist1" }],
+              duration_ms: 180000,
+            },
+          },
+        ],
+        next: null,
+        total: 1,
+      };
+
+      const mockClient = agent.get(spotifyEndpoint);
+      mockClient
+        .intercept({
+          path: "/v1/playlists/playlist123/tracks?limit=50&offset=0",
+          method: "GET",
+          headers: {
+            authorization: `Bearer ${mockAccessToken}`,
+          },
+        })
+        .reply(200, mockResponse);
+
+      const result = await dataSource.fetchPlaylistTracks("playlist123");
+      assert.equal(result.items.length, 1);
+      assert.equal(result.items[0]?.track?.id, "track1");
+      assert.equal(result.items[0]?.added_at, "2021-01-01T00:00:00Z");
+      assert.equal(result.items[0]?.is_local, false);
+    });
+
+    it("should fetch all playlist tracks recursively", async () => {
+      const page1 = {
+        items: [{ track: { id: "track1" } }],
+        next: "https://api.spotify.com/v1/playlists/playlist123/tracks?limit=50&offset=50",
+        total: 2,
+      };
+
+      const page2 = {
+        items: [{ track: { id: "track2" } }],
+        next: null,
+        total: 2,
+      };
+
+      const mockClient = agent.get(spotifyEndpoint);
+
+      mockClient
+        .intercept({
+          path: "/v1/playlists/playlist123/tracks?limit=50&offset=0",
+          method: "GET",
+          headers: { authorization: `Bearer ${mockAccessToken}` },
+        })
+        .reply(200, page1);
+
+      mockClient
+        .intercept({
+          path: "/v1/playlists/playlist123/tracks?limit=50&offset=50",
+          method: "GET",
+          headers: { authorization: `Bearer ${mockAccessToken}` },
+        })
+        .reply(200, page2);
+
+      const result = await dataSource.fetchAllPlaylistTracks("playlist123");
+      assert.equal(result.length, 2);
+      assert.equal(result[0]?.track?.id, "track1");
+      assert.equal(result[1]?.track?.id, "track2");
+    });
+  });
 });

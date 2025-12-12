@@ -15,6 +15,7 @@ export interface ICollectionRerankService {
     userQuery: string,
     maxResults?: number,
     traceContext?: TraceContext,
+    targetEntityTypes?: string[],
   ): Promise<WeightedDocument<TMetadata>[]>;
 }
 
@@ -38,6 +39,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     userQuery: string,
     maxResults = 100,
     traceContext?: TraceContext,
+    targetEntityTypes?: string[],
   ): Promise<WeightedDocument<TMetadata>[]> {
     if (documents.length === 0) {
       logger.warn("No documents to rerank");
@@ -67,7 +69,7 @@ export class CollectionRerankService implements ICollectionRerankService {
 
     const rerankedGroups = await Promise.all(rerankPromises);
 
-    const mergedResults = this.mergeRerankedGroups(rerankedGroups);
+    const mergedResults = this.mergeRerankedGroups(rerankedGroups, targetEntityTypes);
     const finalResults = mergedResults.slice(0, maxResults);
 
     if (endSpan) {
@@ -159,10 +161,15 @@ export class CollectionRerankService implements ICollectionRerankService {
 
   private mergeRerankedGroups<TMetadata extends BaseMetadata>(
     groups: Array<WeightedDocument<TMetadata>[]>,
+    targetEntityTypes?: string[],
   ): WeightedDocument<TMetadata>[] {
     const allDocuments = groups.flat();
 
-    const diversified = this._diversityService.applyDiversityConstraints(allDocuments, allDocuments.length);
+    const diversified = this._diversityService.applyDiversityConstraints(
+      allDocuments,
+      allDocuments.length,
+      targetEntityTypes,
+    );
 
     return diversified;
   }

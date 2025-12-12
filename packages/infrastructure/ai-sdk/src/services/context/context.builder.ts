@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { EntityType } from "@ait/core";
+import { getLogger } from "@ait/core";
 import type { BaseMetadata, Document } from "../../types/documents";
 import { buildTitleFromMetadata } from "../../utils/context.utils";
 import { formatDocumentToXml, formatMetadataToXml } from "../../utils/xml.utils";
@@ -26,6 +27,8 @@ import {
 } from "./formatters/spotify.formatter";
 import { XTweetFormatter } from "./formatters/x.formatter";
 import { type ITemporalLabelService, TemporalLabelService } from "./temporal-label.service";
+
+const logger = getLogger();
 
 const entityFormatters: Record<EntityType, EntityFormatter<unknown>> = {
   track: SpotifyTrackFormatter,
@@ -220,6 +223,12 @@ export class ContextBuilder {
   public buildStructuredContext(documents: Document<BaseMetadata>[]): string {
     const { entityMap, metadataMap } = this._buildEntityMap(documents);
 
+    if (entityMap.size !== documents.length) {
+      logger.warn(
+        `[ContextBuilder] Document deduplication occurred: ${documents.length} docs → ${entityMap.size} unique entities`,
+      );
+    }
+
     const xmlParts: string[] = [];
 
     for (const [id, content] of entityMap.entries()) {
@@ -227,10 +236,15 @@ export class ContextBuilder {
       if (!meta) continue;
 
       const metadataXml = formatMetadataToXml(meta);
-      const documentXml = formatDocumentToXml(id, (meta.__type as string) || "unknown", metadataXml, content);
+      const title = buildTitleFromMetadata(meta);
+      const documentXml = formatDocumentToXml(id, (meta.__type as string) || "unknown", metadataXml, content, title);
 
       xmlParts.push(documentXml);
     }
+
+    logger.debug(
+      `[ContextBuilder] Built structured context: ${xmlParts.length} documents, ${xmlParts.join("").length} chars`,
+    );
 
     return xmlParts.join("\n\n");
   }

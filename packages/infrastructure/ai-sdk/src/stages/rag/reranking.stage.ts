@@ -51,7 +51,16 @@ export class RerankingStage implements IPipelineStage<RerankingInput, RerankingO
       finalScore: ((doc.metadata as Record<string, unknown>).score as number) || 0,
     }));
 
-    const reranked = await this.rerankService.rerankByCollection(weightedDocs, input.query, 100, context.traceContext);
+    // Extract target entity types from routing result for targeted filtering
+    const targetEntityTypes = input.routingResult?.suggestedEntityTypes;
+
+    const reranked = await this.rerankService.rerankByCollection(
+      weightedDocs,
+      input.query,
+      100,
+      context.traceContext,
+      targetEntityTypes,
+    );
 
     const rerankedDocuments = reranked.map((wd) => ({
       pageContent: wd.pageContent,

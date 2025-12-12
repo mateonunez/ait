@@ -3,10 +3,12 @@ import type {
   SpotifyArtistExternal,
   SpotifyCurrentlyPlayingExternal,
   SpotifyPlaylistExternal,
+  SpotifyPlaylistTrackExternal,
   SpotifyRecentlyPlayedExternal,
   SpotifyTrackExternal,
 } from "@ait/core";
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import { getLogger } from "@ait/core";
+import { RateLimitedHttpClient } from "../../../shared/utils/rate-limited-http-client";
 import type { IConnectorSpotifyDataSource } from "../../../types/infrastructure/connector.spotify.data-source.interface";
 
 interface SpotifyPaginatedResponse<T> {
@@ -15,13 +17,19 @@ interface SpotifyPaginatedResponse<T> {
 }
 
 export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
-  private readonly apiUrl: string;
-  private accessToken: string;
+  private readonly _httpClient: RateLimitedHttpClient;
   private _logger = getLogger();
 
   constructor(accessToken: string) {
-    this.apiUrl = process.env.SPOTIFY_API_ENDPOINT || "https://api.spotify.com/v1";
-    this.accessToken = accessToken;
+    const apiUrl = process.env.SPOTIFY_API_ENDPOINT || "https://api.spotify.com/v1";
+    this._httpClient = new RateLimitedHttpClient(accessToken, {
+      vendor: "spotify",
+      baseUrl: apiUrl,
+      maxRetries: 3,
+      initialDelayMs: 1000,
+      maxDelayMs: 30000,
+      chunkDelayMs: 200,
+    });
   }
 
   async fetchTracks(cursor?: string): Promise<SpotifyPaginatedResponse<SpotifyTrackExternal>> {
@@ -160,6 +168,47 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     };
   }
 
+  async fetchPlaylistTracks(
+    playlistId: string,
+    cursor?: string,
+  ): Promise<SpotifyPaginatedResponse<SpotifyPlaylistTrackExternal>> {
+    const limit = 50;
+    const offset = cursor ? Number.parseInt(cursor, 10) : 0;
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+      offset: offset.toString(),
+    });
+
+    const response = await this._fetchFromSpotify<{
+      items: SpotifyPlaylistTrackExternal[];
+      next: string | null;
+      total: number;
+    }>(`/playlists/${playlistId}/tracks?${params.toString()}`);
+
+    return {
+      items: response.items ?? [],
+      nextCursor: response.next ? (offset + limit).toString() : undefined,
+    };
+  }
+
+  async fetchAllPlaylistTracks(playlistId: string): Promise<SpotifyPlaylistTrackExternal[]> {
+    const allTracks: SpotifyPlaylistTrackExternal[] = [];
+    let nextCursor: string | undefined = undefined;
+
+    do {
+      const response = await this.fetchPlaylistTracks(playlistId, nextCursor);
+      allTracks.push(...response.items);
+      nextCursor = response.nextCursor;
+
+      // Small delay to be nice to the API if we are paginating heavily
+      if (nextCursor) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    } while (nextCursor);
+
+    return allTracks;
+  }
+
   async fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null> {
     const response = await this._fetchFromSpotify<{
       is_playing: boolean;
@@ -193,34 +242,6 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
     body?: Record<string, unknown>,
   ): Promise<T> {
-    const url = `${this.apiUrl}${endpoint}`;
-
-    try {
-      const result = await requestJson<T>(url, {
-        method,
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-
-      if (!result.ok) {
-        throw result.error;
-      }
-
-      return result.value.data as unknown as T;
-    } catch (error: any) {
-      if (error instanceof AItError) {
-        if (error.code === "HTTP_429" || error.meta?.status === 429) {
-          const headers = (error.meta?.headers as Record<string, string>) || {};
-          const retryAfter = headers["retry-after"];
-          const resetTime = retryAfter ? Date.now() + Number.parseInt(retryAfter, 10) * 1000 : Date.now() + 60 * 1000;
-          throw new RateLimitError("spotify", resetTime, "Spotify rate limit exceeded");
-        }
-        throw error;
-      }
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
-    }
+    return this._httpClient.request<T>(endpoint, { method, body });
   }
 }

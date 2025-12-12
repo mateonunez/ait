@@ -203,8 +203,50 @@ const spotifyEntityConfigs = {
     fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchPlaylists().then((res) => res.items),
     paginatedFetcher: async (connector: ConnectorSpotify, cursor?: string) => {
       const response = await connector.dataSource.fetchPlaylists(cursor);
+
+      // Process playlists in small chunks with delays to avoid rate limits
+      const CHUNK_SIZE = 3;
+      const DELAY_BETWEEN_CHUNKS_MS = 500;
+      const playlistsWithTracks: SpotifyPlaylistExternal[] = [];
+
+      for (let i = 0; i < response.items.length; i += CHUNK_SIZE) {
+        const chunk = response.items.slice(i, i + CHUNK_SIZE);
+
+        const chunkResults = await Promise.all(
+          chunk.map(async (playlist) => {
+            try {
+              if (!playlist.id) {
+                return playlist;
+              }
+              const tracks = await connector.dataSource.fetchAllPlaylistTracks(playlist.id);
+              return {
+                ...playlist,
+                tracks: {
+                  href: playlist.tracks?.href ?? "",
+                  limit: playlist.tracks?.limit ?? 0,
+                  next: playlist.tracks?.next ?? null,
+                  offset: playlist.tracks?.offset ?? 0,
+                  previous: playlist.tracks?.previous ?? null,
+                  total: playlist.tracks?.total ?? 0,
+                  items: tracks,
+                },
+              } as SpotifyPlaylistExternal;
+            } catch {
+              // If fetching tracks fails, return playlist without tracks
+              return playlist;
+            }
+          }),
+        );
+
+        playlistsWithTracks.push(...chunkResults);
+
+        if (i + CHUNK_SIZE < response.items.length) {
+          await new Promise((r) => setTimeout(r, DELAY_BETWEEN_CHUNKS_MS));
+        }
+      }
+
       return {
-        data: response.items,
+        data: playlistsWithTracks,
         nextCursor: response.nextCursor,
       };
     },

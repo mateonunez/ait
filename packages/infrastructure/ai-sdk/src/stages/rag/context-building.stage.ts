@@ -14,7 +14,7 @@ export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput
   constructor(config?: { temporalWindowHours?: number; maxContextChars?: number }) {
     this.contextBuilder = new ContextBuilder();
     this.temporalCorrelation = new TemporalCorrelationService(config?.temporalWindowHours ?? 3);
-    this.maxContextChars = config?.maxContextChars ?? 18000;
+    this.maxContextChars = config?.maxContextChars ?? 100000;
   }
 
   async execute(input: ContextBuildingInput, context: PipelineContext): Promise<ContextBuildingOutput> {

@@ -3,6 +3,7 @@ import type {
   SpotifyArtistExternal,
   SpotifyCurrentlyPlayingExternal,
   SpotifyPlaylistExternal,
+  SpotifyPlaylistTrackExternal,
   SpotifyRecentlyPlayedExternal,
   SpotifyTrackExternal,
 } from "@ait/core";
@@ -24,4 +25,9 @@ export interface IConnectorSpotifyDataSource {
     limit?: number,
   ): Promise<SpotifyPaginatedResponse<SpotifyRecentlyPlayedExternal>>;
   fetchCurrentlyPlaying(): Promise<SpotifyCurrentlyPlayingExternal | null>;
+  fetchPlaylistTracks(
+    playlistId: string,
+    cursor?: string,
+  ): Promise<SpotifyPaginatedResponse<SpotifyPlaylistTrackExternal>>;
+  fetchAllPlaylistTracks(playlistId: string): Promise<SpotifyPlaylistTrackExternal[]>;
 }

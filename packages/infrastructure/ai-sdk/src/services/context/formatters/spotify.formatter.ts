@@ -55,12 +55,21 @@ export const SpotifyPlaylistFormatter: EntityFormatter<SpotifyPlaylistEntity> = 
   format: (meta) => {
     const name = safeString(meta.name, "Unnamed Playlist");
     const description = safeString(meta.description);
-    const trackCount = safeArray(meta.tracks).length;
+    const normalizedTracks = safeArray(meta.tracks);
+    const trackCount = normalizedTracks.length;
+
+    // Create a preview of the first 5 tracks
+    const trackPreview = normalizedTracks
+      .slice(0, 5)
+      .map((t: any) => (t.track ? `"${safeString(t.track.name)}" by ${safeString(t.track.artist)}` : null))
+      .filter(Boolean)
+      .join(", ");
 
     return joinParts(
       `Playlist: "${name}"`,
       description ? ` - ${description}` : null,
       trackCount > 0 ? ` (${trackCount} tracks)` : null,
+      trackPreview ? ` including: ${trackPreview}...` : null,
     );
   },
 };
