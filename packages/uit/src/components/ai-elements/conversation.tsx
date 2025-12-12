@@ -7,16 +7,16 @@ interface ConversationProps {
   messages: ChatMessageWithMetadata[];
   streamingMessageId?: string;
   className?: string;
+  layoutTrigger?: boolean;
 }
 
-export function Conversation({ messages, streamingMessageId, className }: ConversationProps) {
+export function Conversation({ messages, streamingMessageId, className, layoutTrigger }: ConversationProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new messages
-  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to trigger on message count change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: We want to trigger on explicit signals
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+  }, [messages.length, messages[messages.length - 1]?.content, layoutTrigger]);
 
   if (messages.length === 0) {
     return (

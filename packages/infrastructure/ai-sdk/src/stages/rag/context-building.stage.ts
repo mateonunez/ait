@@ -1,5 +1,4 @@
-import { ContextBuilder } from "../../services/context/context.builder";
-import { TemporalCorrelationService } from "../../services/filtering/temporal-correlation.service";
+import { SmartContextManager } from "../../services/context/smart/smart-context.manager";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { ContextBuildingInput, ContextBuildingOutput } from "../../types/stages";
@@ -7,13 +6,13 @@ import type { ContextBuildingInput, ContextBuildingOutput } from "../../types/st
 export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput, ContextBuildingOutput> {
   readonly name = "context-building";
 
-  private readonly contextBuilder: ContextBuilder;
-  private readonly temporalCorrelation: TemporalCorrelationService;
+  private readonly contextManager: SmartContextManager;
   private readonly maxContextChars: number;
 
   constructor(config?: { temporalWindowHours?: number; maxContextChars?: number }) {
-    this.contextBuilder = new ContextBuilder();
-    this.temporalCorrelation = new TemporalCorrelationService(config?.temporalWindowHours ?? 3);
+    this.contextManager = new SmartContextManager({
+      totalTokenLimit: config?.maxContextChars ? Math.floor(config.maxContextChars / 4) : undefined,
+    });
     this.maxContextChars = config?.maxContextChars ?? 100000;
   }
 
@@ -27,37 +26,16 @@ export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput
         })
       : null;
 
-    let builtContext = "";
-    let usedTemporalCorrelation = false;
-
-    if (input.heuristics.isTemporalQuery && documents.length > 0) {
-      const entityTypes = new Set(documents.map((doc) => doc.metadata.__type).filter(Boolean));
-      const hasTimestamps = documents.some(
-        (doc) => doc.metadata.createdAt || doc.metadata.playedAt || doc.metadata.mergedAt || doc.metadata.pushedAt,
-      );
-
-      if (hasTimestamps && entityTypes.size > 1) {
-        const clusters = this.temporalCorrelation.correlateByTimeWindow(documents, 3);
-        if (clusters.length > 0) {
-          builtContext = this.contextBuilder.buildTemporalContext(clusters);
-          usedTemporalCorrelation = true;
-        }
-      }
-    }
-
-    if (!usedTemporalCorrelation) {
-      builtContext = this.contextBuilder.buildStructuredContext(documents);
-    }
-
-    if (builtContext.length > this.maxContextChars) {
-      const cut = builtContext.lastIndexOf("\n", this.maxContextChars);
-      builtContext = builtContext.slice(0, cut > 0 ? cut : this.maxContextChars);
-    }
+    const builtContext = await this.contextManager.assembleContext({
+      systemInstructions: "", // RAG pipeline usually doesn't strictly own the system prompt, or it's passed later.
+      messages: input.messages || [],
+      retrievedDocs: documents,
+    });
 
     if (endSpan) {
       endSpan({
         contextLength: builtContext.length,
-        usedTemporalCorrelation,
+        usedTemporalCorrelation: false,
       });
     }
 
@@ -67,7 +45,7 @@ export class ContextBuildingStage implements IPipelineStage<ContextBuildingInput
       contextMetadata: {
         documentCount: documents.length,
         contextLength: builtContext.length,
-        usedTemporalCorrelation,
+        usedTemporalCorrelation: false,
       },
     };
   }

@@ -14,6 +14,7 @@ export interface QueryAnalysisInput {
 export interface QueryAnalysisOutput {
   query: string;
   intent: QueryIntent;
+  messages?: ChatMessage[];
   heuristics: {
     isTemporalQuery: boolean;
     entityTypes: string[];

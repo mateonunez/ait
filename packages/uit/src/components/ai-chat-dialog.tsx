@@ -107,6 +107,8 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
     }
   };
 
+  const showSuggestions = hasSuggestions && !isLoading && messages.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="fixed! inset-0! top-0! left-0! translate-x-0! translate-y-0! h-dvh max-h-dvh w-screen max-w-none! p-0 gap-0 flex flex-col [&>button]:hidden rounded-none! border-0!">
@@ -202,12 +204,15 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
                   </div>
                 </div>
               ) : (
-                <Conversation messages={messages} streamingMessageId={streamingMessageId} />
+                <Conversation
+                  messages={messages}
+                  streamingMessageId={streamingMessageId}
+                  layoutTrigger={showSuggestions}
+                />
               )}
             </div>
 
-            {/* Dynamic Suggestions (after messages) */}
-            {hasSuggestions && !isLoading && messages.length > 0 && (
+            {showSuggestions && (
               <div className="px-3 sm:px-4 md:px-6 py-3 border-t border-border">
                 <Suggestions suggestions={suggestions} onSuggestionClick={handleSuggestionClick} />
               </div>
