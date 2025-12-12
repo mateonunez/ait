@@ -49,10 +49,14 @@ export default async function xRoutes(fastify: FastifyInstance) {
 
       try {
         await xService.connector.connect(code);
-        const tweets = await xService.fetchTweets();
-        await store.save(tweets);
 
-        reply.send({ tweets });
+        // Data fetching is now handled separately via the /refresh endpoint or background jobs
+        // to avoid timeout issues during the auth callback.
+
+        reply.send({
+          success: true,
+          message: "Authentication successful. You can close this window.",
+        });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "X authentication failed.");
         reply.status(500).send({ error: "X authentication failed." });

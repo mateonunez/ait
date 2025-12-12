@@ -67,11 +67,12 @@ export default async function notionRoutes(fastify: FastifyInstance) {
       try {
         await notionService.connector.connect(code);
 
-        const pages = await notionService.fetchPages();
-        await notionService.connector.store.save(pages);
+        // Data fetching is now handled separately via the /refresh endpoint or background jobs
+        // to avoid timeout issues during the auth callback.
 
         reply.send({
-          pages,
+          success: true,
+          message: "Authentication successful. You can close this window.",
         });
       } catch (err: any) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
