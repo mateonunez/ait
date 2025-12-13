@@ -105,22 +105,34 @@ export default async function notionRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Refresh endpoint
-  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const pages = await notionService.fetchPages();
-      await notionService.connector.store.save(pages);
+  // Refresh endpoint with optional entity filter
+  // Usage: POST /refresh?entities=pages or POST /refresh (all entities)
+  fastify.post(
+    "/refresh",
+    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+      try {
+        const { entities: entitiesParam } = request.query;
+        const entitiesToRefresh = entitiesParam
+          ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
+          : ["pages"];
 
-      reply.send({
-        success: true,
-        message: "Notion data refreshed successfully",
-        counts: {
-          pages: pages.length,
-        },
-      });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Notion data.");
-      reply.status(500).send({ error: "Failed to refresh Notion data." });
-    }
-  });
+        const counts: Record<string, number> = {};
+
+        if (entitiesToRefresh.includes("pages")) {
+          const pages = await notionService.fetchPages();
+          await notionService.connector.store.save(pages);
+          counts.pages = pages.length;
+        }
+
+        reply.send({
+          success: true,
+          message: "Notion data refreshed successfully",
+          counts,
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Notion data.");
+        reply.status(500).send({ error: "Failed to refresh Notion data." });
+      }
+    },
+  );
 }

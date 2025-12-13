@@ -159,39 +159,58 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Refresh endpoint
-  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const [tracks, artists, playlists, albums, recentlyPlayed] = await Promise.all([
-        spotifyService.fetchTracks(),
-        spotifyService.fetchArtists(),
-        spotifyService.fetchPlaylists(),
-        spotifyService.fetchAlbums(),
-        spotifyService.fetchRecentlyPlayed(),
-      ]);
+  // Refresh endpoint with optional entity filter
+  // Usage: POST /refresh?entities=tracks,artists or POST /refresh (all entities)
+  fastify.post(
+    "/refresh",
+    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+      try {
+        const { entities: entitiesParam } = request.query;
+        const entitiesToRefresh = entitiesParam
+          ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
+          : ["tracks", "artists", "playlists", "albums", "recently-played"];
 
-      await Promise.all([
-        spotifyService.connector.store.save(tracks),
-        spotifyService.connector.store.save(artists),
-        spotifyService.connector.store.save(playlists),
-        spotifyService.connector.store.save(albums),
-        spotifyService.connector.store.save(recentlyPlayed),
-      ]);
+        const counts: Record<string, number> = {};
 
-      reply.send({
-        success: true,
-        message: "Spotify data refreshed successfully",
-        counts: {
-          tracks: tracks.length,
-          artists: artists.length,
-          playlists: playlists.length,
-          albums: albums.length,
-          recentlyPlayed: recentlyPlayed.length,
-        },
-      });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Spotify data.");
-      reply.status(500).send({ error: "Failed to refresh Spotify data." });
-    }
-  });
+        if (entitiesToRefresh.includes("tracks")) {
+          const tracks = await spotifyService.fetchTracks();
+          await spotifyService.connector.store.save(tracks);
+          counts.tracks = tracks.length;
+        }
+
+        if (entitiesToRefresh.includes("artists")) {
+          const artists = await spotifyService.fetchArtists();
+          await spotifyService.connector.store.save(artists);
+          counts.artists = artists.length;
+        }
+
+        if (entitiesToRefresh.includes("playlists")) {
+          const playlists = await spotifyService.fetchPlaylists();
+          await spotifyService.connector.store.save(playlists);
+          counts.playlists = playlists.length;
+        }
+
+        if (entitiesToRefresh.includes("albums")) {
+          const albums = await spotifyService.fetchAlbums();
+          await spotifyService.connector.store.save(albums);
+          counts.albums = albums.length;
+        }
+
+        if (entitiesToRefresh.includes("recently-played") || entitiesToRefresh.includes("recentlyplayed")) {
+          const recentlyPlayed = await spotifyService.fetchRecentlyPlayed();
+          await spotifyService.connector.store.save(recentlyPlayed);
+          counts.recentlyPlayed = recentlyPlayed.length;
+        }
+
+        reply.send({
+          success: true,
+          message: "Spotify data refreshed successfully",
+          counts,
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Spotify data.");
+        reply.status(500).send({ error: "Failed to refresh Spotify data." });
+      }
+    },
+  );
 }

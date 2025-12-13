@@ -124,30 +124,117 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Refresh endpoint
-  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get("/data/files", async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
     try {
-      const repositories = await githubService.fetchRepositories();
-      await githubService.connector.store.save(repositories);
+      const page = Number.parseInt(request.query.page || "1", 10);
+      const limit = Number.parseInt(request.query.limit || "50", 10);
 
-      const pullRequests = await githubService.fetchPullRequests();
-      await githubService.connector.store.save(pullRequests);
-
-      const commits = await githubService.fetchCommits();
-      await githubService.connector.store.save(commits);
-
-      reply.send({
-        success: true,
-        message: "GitHub data refreshed successfully",
-        counts: {
-          repositories: repositories.length,
-          pullRequests: pullRequests.length,
-          commits: commits.length,
-        },
-      });
+      const result = await githubService.getFilesPaginated({ page, limit });
+      reply.send(result);
     } catch (err: unknown) {
-      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh GitHub data.");
-      reply.status(500).send({ error: "Failed to refresh GitHub data." });
+      fastify.log.error({ err, route: "/data/files" }, "Failed to fetch files from DB.");
+      reply.status(500).send({ error: "Failed to fetch files from database." });
     }
   });
+
+  // Refresh endpoint with optional entity filter
+  // Usage: POST /refresh?entities=repositories,files or POST /refresh (all entities)
+  fastify.post(
+    "/refresh",
+    async (
+      request: FastifyRequest<{ Querystring: { entities?: string; repo?: string; branch?: string } }>,
+      reply: FastifyReply,
+    ) => {
+      try {
+        const { entities: entitiesParam, repo, branch = "main" } = request.query;
+        const entitiesToRefresh = entitiesParam
+          ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
+          : ["repositories", "pull-requests", "commits", "files"];
+
+        const counts: Record<string, number | { added: number; updated: number; deleted: number }> = {};
+
+        // Repositories
+        if (entitiesToRefresh.includes("repositories")) {
+          const repositories = await githubService.fetchRepositories();
+          await githubService.connector.store.save(repositories);
+          counts.repositories = repositories.length;
+        }
+
+        // Pull Requests
+        if (entitiesToRefresh.includes("pull-requests") || entitiesToRefresh.includes("pullrequests")) {
+          const pullRequests = await githubService.fetchPullRequests();
+          await githubService.connector.store.save(pullRequests);
+          counts.pullRequests = pullRequests.length;
+        }
+
+        // Commits
+        if (entitiesToRefresh.includes("commits")) {
+          const commits = await githubService.fetchCommits();
+          await githubService.connector.store.save(commits);
+          counts.commits = commits.length;
+        }
+
+        // Files - uses syncFiles to handle deletions
+        if (entitiesToRefresh.includes("files")) {
+          const { CODE_INGESTION_REPOS, connectorGithubFileMapper } = await import("@ait/connectors");
+          const repos = repo ? [repo] : CODE_INGESTION_REPOS;
+          const dataSource = githubService.connector.dataSource;
+          const fileRepository = githubService.connector.repository.file;
+
+          let totalAdded = 0;
+          let totalUpdated = 0;
+          let totalDeleted = 0;
+
+          for (const repoFullName of repos) {
+            const [owner, repoName] = repoFullName.split("/");
+            if (!owner || !repoName) continue;
+
+            try {
+              // Fetch current file tree from GitHub
+              const tree = await dataSource.fetchRepositoryTree(owner, repoName, branch);
+              const files: Awaited<ReturnType<typeof connectorGithubFileMapper.externalToDomain>>[] = [];
+
+              // Fetch content for each text file
+              for (const item of tree) {
+                try {
+                  const content = await dataSource.fetchFileContent(owner, repoName, item.path, branch);
+                  if (dataSource.isTextFile(item.path, content)) {
+                    const entity = connectorGithubFileMapper.externalToDomain({
+                      ...item,
+                      content,
+                      repositoryId: repoFullName.replace("/", "-"),
+                      repositoryFullName: repoFullName,
+                      branch,
+                    });
+                    files.push(entity);
+                  }
+                } catch {
+                  // Skip files that fail to fetch
+                }
+              }
+
+              // Sync: add new, update changed, delete removed
+              const result = await fileRepository.syncFiles(repoFullName, branch, files);
+              totalAdded += result.added;
+              totalUpdated += result.updated;
+              totalDeleted += result.deleted;
+            } catch (repoError: any) {
+              fastify.log.warn(`Failed to process ${repoFullName}: ${repoError.message}`);
+            }
+          }
+
+          counts.files = { added: totalAdded, updated: totalUpdated, deleted: totalDeleted };
+        }
+
+        reply.send({
+          success: true,
+          message: "GitHub data refreshed successfully",
+          counts,
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/refresh" }, "Failed to refresh GitHub data.");
+        reply.status(500).send({ error: "Failed to refresh GitHub data." });
+      }
+    },
+  );
 }

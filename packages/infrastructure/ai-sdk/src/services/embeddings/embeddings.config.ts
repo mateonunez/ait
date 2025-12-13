@@ -2,8 +2,9 @@ import { z } from "zod";
 
 import { getEmbeddingModel } from "../../config/models.config";
 
-export const OPTIMAL_CHUNK_SIZE = 1500;
-export const OPTIMAL_CHUNK_OVERLAP = 100;
+// mxbai-embed-large has ~512 token context limit (~500-700 chars)
+export const OPTIMAL_CHUNK_SIZE = 500;
+export const OPTIMAL_CHUNK_OVERLAP = 50;
 
 export const embeddingsConfigSchema = z.object({
   model: z.string(),

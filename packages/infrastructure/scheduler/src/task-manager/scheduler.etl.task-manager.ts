@@ -7,6 +7,7 @@ import {
   runGitHubRepositoryETL,
   runGitHubPullRequestETL,
   runGitHubCommitETL,
+  runGitHubFileETL,
   runLinearETL,
   runXETL,
   SpotifyETLs,
@@ -380,6 +381,16 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         logger.info(`[${GitHubETLs.commit}] Running ETL to Qdrant...`);
         await runGitHubCommitETL(qdrant, postgres);
         logger.info(`[${GitHubETLs.commit}] Completed`);
+      });
+    });
+
+    schedulerRegistry.register(GitHubETLs.file, async (_data) => {
+      logger.info(`[${GitHubETLs.file}] Starting...`);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        logger.info(`[${GitHubETLs.file}] Running ETL to Qdrant (vectorizing code files)...`);
+        await runGitHubFileETL(qdrant, postgres);
+        logger.info(`[${GitHubETLs.file}] Completed`);
       });
     });
 

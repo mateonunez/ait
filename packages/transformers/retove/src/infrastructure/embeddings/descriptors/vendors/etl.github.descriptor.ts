@@ -1,6 +1,7 @@
 import type { GitHubCommitDataTarget, GitHubPullRequestDataTarget, GitHubRepositoryDataTarget } from "@ait/postgres";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import { ETLGitHubFileDescriptor } from "./etl.github.file.descriptor";
 
 export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> {
   public getEmbeddingText(repository: GitHubRepositoryDataTarget): string {
@@ -604,4 +605,5 @@ export const githubDescriptorsETL = {
   repository: new ETLGitHubRepositoryDescriptor(),
   pullRequest: new ETLGitHubPullRequestDescriptor(),
   commit: new ETLGitHubCommitDescriptor(),
+  file: new ETLGitHubFileDescriptor(),
 };

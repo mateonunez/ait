@@ -96,22 +96,34 @@ export default async function linearRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Refresh endpoint
-  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const issues = await linearService.fetchIssues();
-      await linearService.connector.store.save(issues);
+  // Refresh endpoint with optional entity filter
+  // Usage: POST /refresh?entities=issues or POST /refresh (all entities)
+  fastify.post(
+    "/refresh",
+    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+      try {
+        const { entities: entitiesParam } = request.query;
+        const entitiesToRefresh = entitiesParam
+          ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
+          : ["issues"];
 
-      reply.send({
-        success: true,
-        message: "Linear data refreshed successfully",
-        counts: {
-          issues: issues.length,
-        },
-      });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Linear data.");
-      reply.status(500).send({ error: "Failed to refresh Linear data." });
-    }
-  });
+        const counts: Record<string, number> = {};
+
+        if (entitiesToRefresh.includes("issues")) {
+          const issues = await linearService.fetchIssues();
+          await linearService.connector.store.save(issues);
+          counts.issues = issues.length;
+        }
+
+        reply.send({
+          success: true,
+          message: "Linear data refreshed successfully",
+          counts,
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Linear data.");
+        reply.status(500).send({ error: "Failed to refresh Linear data." });
+      }
+    },
+  );
 }

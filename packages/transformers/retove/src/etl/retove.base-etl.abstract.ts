@@ -36,7 +36,7 @@ export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 100;
   private readonly _vectorSize = embeddingModelConfig.vectorSize;
-  protected readonly _transformConcurrency: number = 5;
+  protected readonly _transformConcurrency: number = 2;
   protected readonly _batchUpsertConcurrency: number = 3;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
   protected readonly _syncStateService: ISyncStateService = new SyncStateService();
@@ -59,7 +59,7 @@ export abstract class RetoveBaseETLAbstract {
         // Use optimal chunk size from central config (single source of truth)
         chunkSize: OPTIMAL_CHUNK_SIZE,
         chunkOverlap: OPTIMAL_CHUNK_OVERLAP,
-        concurrencyLimit: 2,
+        concurrencyLimit: 1,
         weightChunks: true,
       },
     ),
