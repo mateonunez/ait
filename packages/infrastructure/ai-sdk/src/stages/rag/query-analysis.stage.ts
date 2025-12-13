@@ -56,6 +56,7 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
     const output: QueryAnalysisOutput = {
       query: queryToAnalyze, // Return the potentially rewritten query
       intent,
+      messages: input.messages,
       heuristics: {
         isTemporalQuery: analysis.isTemporalQuery,
         entityTypes: analysis.entityTypes,

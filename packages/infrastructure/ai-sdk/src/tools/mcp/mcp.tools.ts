@@ -8,11 +8,22 @@ import { createTool } from "../../utils/tool.utils";
  * Workflow hints for tools that require prerequisite information.
  * These help the LLM understand multi-step workflows AND correct parameter formats.
  */
-const TOOL_WORKFLOW_HINTS: Record<string, Record<string, string>> = {
+const TOOL_WORKFLOW_HINTS: Record<MCPVendor, Record<string, string>> = {
   notion: {
-    "API-post-search": `Search for a page by title. Query must not be empty.
-    IMPORTANT: If you are looking for a parent page to create a NEW page under, use the 'id' from the search result as the 'parent.page_id' in API-post-page.`,
-    "API-post-page": `Create a new Notion page. First use API-post-search to find a parent page ID.
+    "API-post-search": `Search Notion pages by title.
+REQUIREMENTS:
+- Query must not be empty.
+- Prefer tight queries first, broaden only if needed.
+OUTPUT:
+- Use the returned "id" as a page identifier.
+COMMON PATTERN:
+- Find parent page -> use its "id" as "parent.page_id" in API-post-page
+- Find target page -> use its "id" as "page_id" in API-patch-page`,
+
+    "API-post-page": `Create a new Notion page.
+PREREQ:
+- Always call API-post-search first to identify the parent page_id.
+- If multiple candidate parents exist, list them briefly and ask the user to pick one.
 
 FORMAT (with content):
 {
@@ -21,40 +32,142 @@ FORMAT (with content):
     "title": [{ "text": { "content": "Page Title" } }]
   },
   "children": [
-    { "paragraph": { "rich_text": [{ "text": { "content": "First paragraph of content here." } }] } },
+    { "paragraph": { "rich_text": [{ "text": { "content": "First paragraph." } }] } },
     { "heading_2": { "rich_text": [{ "text": { "content": "Section Title" } }] } },
-    { "bulleted_list_item": { "rich_text": [{ "text": { "content": "Bullet point item" } }] } },
+    { "bulleted_list_item": { "rich_text": [{ "text": { "content": "Bullet item" } }] } },
     {
-      "table": {
-        "table_width": 2,
-        "has_column_header": true,
-        "children": [
-          { "table_row": { "cells": [[{ "text": { "content": "Header 1" } }], [{ "text": { "content": "Header 2" } }]] } },
-          { "table_row": { "cells": [[{ "text": { "content": "Row 1 Col 1" } }], [{ "text": { "content": "Row 1 Col 2" } }]] } }
-        ]
+      "code": {
+        "rich_text": [{ "text": { "content": "pnpm test" } }],
+        "language": "bash"
       }
     }
   ]
 }
 
 RULES:
-- Do NOT include "type" field in rich_text items
-- Use RAG context to populate children with relevant content
-- Available block types: paragraph, heading_1, heading_2, heading_3, bulleted_list_item, numbered_list_item, to_do, quote, code`,
-    "API-patch-page": "IMPORTANT: Requires page_id. First use API-post-search to find the page.",
-    "API-post-comment": `Add a comment to a Notion page. First use API-post-search to find the page.
+- Do NOT include a "type" field inside rich_text items
+- Prefer simple blocks over complex ones, unless the user explicitly asks
+- Keep children content concrete and scoped, do not dump entire context
+- Available block types: paragraph, heading_1, heading_2, heading_3, bulleted_list_item, numbered_list_item, to_do, quote, code, table
+- For tables: keep them small, 2 to 5 columns max, avoid wide tables`,
+
+    "API-patch-page": `Update an existing Notion page.
+PREREQ:
+- Requires "page_id".
+- First call API-post-search to find the page and get its id.
+NOTES:
+- Patch is for properties, not for adding blocks.
+- If the user wants to append content blocks, create a new child page instead, or use the dedicated append blocks tool if available.`,
+
+    "API-post-comment": `Add a comment to a Notion page.
+PREREQ:
+- First call API-post-search to find the target page and get its id.
+
 FORMAT:
 {
   "parent": { "page_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
   "rich_text": [{ "text": { "content": "Your comment" } }]
-}`,
-    "API-post-database": "IMPORTANT: Requires parent.page_id. First use API-post-search to find a parent page.",
+}
+
+RULES:
+- Keep comments short, actionable, and specific.
+- Do NOT include a "type" field inside rich_text items.`,
+
+    "API-post-database": `Create a Notion database.
+PREREQ:
+- Requires "parent.page_id".
+- First call API-post-search to find a parent page and get its id.
+WORKFLOW:
+- Define properties first, then add rows separately (do not overload database creation with content).`,
   },
+
   github: {
-    create_issue: "IMPORTANT: Requires owner and repo. First use list_repos to find available repositories.",
-    create_pull_request: "IMPORTANT: Requires owner and repo. First use list_repos to find the repository.",
-    create_issue_comment: "IMPORTANT: Requires owner, repo, and issue_number. First find the issue.",
-    create_branch: "IMPORTANT: Requires owner and repo. First use list_repos to find the repository.",
+    list_repos: `List repositories the token can access.
+USE:
+- Always call before create_branch, create_issue, create_pull_request unless owner/repo is already known with certainty.
+OUTPUT:
+- Choose the repo explicitly as { owner, repo }.`,
+
+    create_issue: `Create a GitHub issue.
+PREREQ:
+- Requires "owner" and "repo".
+- First call list_repos to discover valid repositories.
+- If the repo is ambiguous, list top matches and ask the user to choose.
+
+RULES:
+- Title: short and concrete.
+- Body: include context, acceptance criteria, and a minimal repro or steps if relevant.
+- Add labels only if you know they exist, otherwise skip.`,
+
+    create_pull_request: `Create a GitHub pull request.
+PREREQ:
+- Requires "owner" and "repo".
+- Ensure the branch names are correct, ideally by listing branches first if the tool exists.
+RULES:
+- PR title should describe outcome, not activity.
+- Body should include: what changed, why, risk, how to test.`,
+
+    create_issue_comment: `Comment on an existing GitHub issue.
+PREREQ:
+- Requires "owner", "repo", "issue_number".
+- First locate the issue via search or list issues if the tool exists.
+RULES:
+- Keep it tight, propose next step, ask one question only if needed.`,
+
+    create_branch: `Create a GitHub branch.
+PREREQ:
+- Requires "owner" and "repo".
+- First call list_repos to confirm.
+- If a base ref is required, retrieve it first (main/master or default branch).
+NAMING:
+- Use kebab case, include intent, example: feat/rag-router, fix/oauth-timeout.`,
+  },
+
+  slack: {
+    list_channels: `List Slack channels visible to the bot token.
+USE:
+- Always call before posting unless channel_id is already known.`,
+
+    post_message: `Post a Slack message.
+PREREQ:
+- Requires "channel_id".
+- First call list_channels to get the correct channel_id.
+STYLE:
+- 1 to 5 lines, concrete.
+- If it's an announcement, include what changed, impact, and link if available.`,
+
+    post_thread_message: `Post a message in an existing Slack thread.
+PREREQ:
+- Requires "channel_id" and "thread_ts".
+- First confirm channel_id via list_channels.
+NOTES:
+- thread_ts must be the parent message ts, not a reply ts.`,
+
+    post_comment: `Alias for posting a message, same requirements as post_thread_message when used for threads.
+PREREQ:
+- Requires channel_id and potentially thread_ts, confirm tool signature before calling.`,
+
+    post_comment_thread: `Alias for posting in a thread.
+PREREQ:
+- Requires channel_id and thread_ts.
+- Confirm the correct thread_ts from the parent message.`,
+  },
+
+  linear: {
+    list_projects: `List Linear projects and teams.
+USE:
+- Call this before creating issues if team or project is ambiguous.
+OUTPUT:
+- Select a team_id or project_id explicitly.`,
+
+    create_issue: `Create a Linear issue.
+PREREQ:
+- Requires a team identifier (and project if applicable).
+- First call list_projects or list_teams if available.
+RULES:
+- Title: outcome focused.
+- Description: problem, constraints, acceptance criteria, and links.
+- Priority only if the team uses it consistently.`,
   },
 };
 

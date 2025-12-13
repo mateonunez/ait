@@ -4,6 +4,7 @@ import {
   type GenerationModelName,
   GenerationModels,
 } from "../../config/models.config";
+import { getTokenizer } from "../tokenizer/tokenizer.service";
 import type { CostBreakdown } from "./types";
 
 /**
@@ -76,9 +77,6 @@ const DEFAULT_COSTS: Record<GenerationModelName | EmbeddingModelName, ModelCosts
   },
 };
 
-/**
- * Service for tracking and calculating costs
- */
 export class CostTrackingService {
   private totalGenerationTokens = 0;
   private totalEmbeddingTokens = 0;
@@ -88,9 +86,6 @@ export class CostTrackingService {
     this.modelCosts = { ...DEFAULT_COSTS, ...customCosts };
   }
 
-  /**
-   * Record generation tokens used
-   */
   recordGeneration(tokens: number, model: string): number {
     this.totalGenerationTokens += tokens;
 
@@ -98,9 +93,6 @@ export class CostTrackingService {
     return (tokens / 1000) * costs.generationCostPer1KTokens;
   }
 
-  /**
-   * Record embedding tokens used
-   */
   recordEmbedding(tokens: number, model: string): number {
     this.totalEmbeddingTokens += tokens;
 
@@ -108,18 +100,10 @@ export class CostTrackingService {
     return (tokens / 1000) * costs.embeddingCostPer1KTokens;
   }
 
-  /**
-   * Estimate tokens from text (rough approximation)
-   * More accurate: use tiktoken library
-   */
   estimateTokens(text: string): number {
-    // Rough estimate: ~4 characters per token on average
-    return Math.ceil(text.length / 4);
+    return getTokenizer().countTokens(text);
   }
 
-  /**
-   * Calculate total cost
-   */
   getTotalCost(generationModel = "gpt-oss:20b", embeddingModel = "mxbai-embed-large"): CostBreakdown {
     const genCosts = this.modelCosts[generationModel] || DEFAULT_COSTS[GenerationModels.GPT_OSS_20B]!;
     const embCosts = this.modelCosts[embeddingModel] || DEFAULT_COSTS[EmbeddingModels.MXBAI_EMBED_LARGE]!;
@@ -137,38 +121,23 @@ export class CostTrackingService {
     };
   }
 
-  /**
-   * Get generation tokens count
-   */
   getGenerationTokens(): number {
     return this.totalGenerationTokens;
   }
 
-  /**
-   * Get embedding tokens count
-   */
   getEmbeddingTokens(): number {
     return this.totalEmbeddingTokens;
   }
 
-  /**
-   * Reset all counters
-   */
   reset(): void {
     this.totalGenerationTokens = 0;
     this.totalEmbeddingTokens = 0;
   }
 
-  /**
-   * Set custom model costs
-   */
   setModelCosts(model: string, costs: ModelCosts): void {
     this.modelCosts[model] = costs;
   }
 
-  /**
-   * Get cost for a specific number of tokens
-   */
   calculateCost(tokens: number, model: string, type: "generation" | "embedding"): number {
     const costs = this.modelCosts[model];
     if (!costs) return 0;
@@ -178,7 +147,6 @@ export class CostTrackingService {
   }
 }
 
-// Singleton instance
 let _costTrackingService: CostTrackingService | null = null;
 
 export function getCostTrackingService(): CostTrackingService {

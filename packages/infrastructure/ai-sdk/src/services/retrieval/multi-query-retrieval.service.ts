@@ -10,6 +10,7 @@ import type { MultiCollectionProvider } from "../rag/multi-collection.provider";
 import type { QdrantProvider } from "../rag/qdrant.provider";
 import type { IRankFusionService } from "../ranking/rank-fusion.service";
 import type { IRerankService } from "../ranking/rerank.service";
+import { WeightedRankFusionService } from "../ranking/weighted-rank-fusion.service";
 import type { IQueryHeuristicService } from "../routing/query-heuristic.service";
 import type { IQueryIntentService } from "../routing/query-intent.service";
 import type { IHyDEService } from "./hyde.service";
@@ -374,8 +375,6 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     }
 
     // Step 4: Apply Weighted Rank Fusion for proper multi-collection merging
-    // Import WeightedRankFusionService at the top if not already
-    const { WeightedRankFusionService } = await import("../ranking/weighted-rank-fusion.service");
     const weightedFusion = new WeightedRankFusionService({
       rrfK: 60,
       rrfWeight: 0.7,

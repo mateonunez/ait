@@ -2,8 +2,8 @@ import { getLogger } from "@ait/core";
 import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
 import type { ChatMessage } from "../../types/chat";
 import type { ConversationConfig, ConversationContext } from "../../types/text-generation";
-import { type ITokenEstimationService, TokenEstimationService } from "../metadata/token-estimation.service";
 import { buildSummarizationPrompt } from "../prompts/summarization.prompt";
+import { type TokenizerService, getTokenizer } from "../tokenizer/tokenizer.service";
 
 const logger = getLogger();
 
@@ -15,14 +15,14 @@ export class ConversationManagerService implements IConversationManagerService {
   private readonly _maxRecentMessages: number;
   private readonly _maxHistoryTokens: number;
   private readonly _enableSummarization: boolean;
-  private readonly _tokenEstimator: ITokenEstimationService;
+  private readonly _tokenizer: TokenizerService;
   private readonly _client: AItClient;
 
-  constructor(config: ConversationConfig = {}, tokenEstimator?: ITokenEstimationService, client?: AItClient) {
+  constructor(config: ConversationConfig = {}, tokenizer?: TokenizerService, client?: AItClient) {
     this._maxRecentMessages = Math.max(config.maxRecentMessages ?? 10, 1);
     this._maxHistoryTokens = Math.max(config.maxHistoryTokens ?? 2000, 100);
     this._enableSummarization = config.enableSummarization ?? true;
-    this._tokenEstimator = tokenEstimator || new TokenEstimationService();
+    this._tokenizer = tokenizer || getTokenizer();
     this._client = client || getAItClient();
   }
 
@@ -30,15 +30,15 @@ export class ConversationManagerService implements IConversationManagerService {
     if (!messages || messages.length === 0) {
       return {
         recentMessages: [],
-        estimatedTokens: this._tokenEstimator.estimateTokens(currentPrompt),
+        estimatedTokens: this._tokenizer.countTokens(currentPrompt),
       };
     }
 
     const recentMessages = messages.slice(-this._maxRecentMessages);
     const olderMessages = messages.slice(0, -this._maxRecentMessages);
 
-    const currentPromptTokens = this._tokenEstimator.estimateTokens(currentPrompt);
-    const recentTokens = this._tokenEstimator.estimateTokensForMessages(recentMessages);
+    const currentPromptTokens = this._tokenizer.countTokens(currentPrompt);
+    const recentTokens = this._tokenizer.countMessages(recentMessages);
 
     if (!this._enableSummarization || olderMessages.length === 0) {
       const totalTokens = currentPromptTokens + recentTokens;
@@ -53,12 +53,12 @@ export class ConversationManagerService implements IConversationManagerService {
       const truncatedMessages = this._truncateMessages(recentMessages, this._maxHistoryTokens - currentPromptTokens);
       return {
         recentMessages: truncatedMessages,
-        estimatedTokens: currentPromptTokens + this._tokenEstimator.estimateTokensForMessages(truncatedMessages),
+        estimatedTokens: currentPromptTokens + this._tokenizer.countMessages(truncatedMessages),
       };
     }
 
     const summary = await this._summarizeMessages(olderMessages);
-    const summaryTokens = this._tokenEstimator.estimateTokens(summary);
+    const summaryTokens = this._tokenizer.countTokens(summary);
 
     const totalTokensWithSummary = currentPromptTokens + summaryTokens + recentTokens;
 
@@ -76,8 +76,7 @@ export class ConversationManagerService implements IConversationManagerService {
     return {
       recentMessages: truncatedRecentMessages,
       summary,
-      estimatedTokens:
-        currentPromptTokens + summaryTokens + this._tokenEstimator.estimateTokensForMessages(truncatedRecentMessages),
+      estimatedTokens: currentPromptTokens + summaryTokens + this._tokenizer.countMessages(truncatedRecentMessages),
     };
   }
 
@@ -87,7 +86,7 @@ export class ConversationManagerService implements IConversationManagerService {
 
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i]!;
-      const msgTokens = this._tokenEstimator.estimateTokens(`${msg.role}: ${msg.content}`);
+      const msgTokens = this._tokenizer.countTokens(`${msg.role}: ${msg.content}`);
 
       if (currentTokens + msgTokens <= maxTokens) {
         truncated.unshift(msg);

@@ -1,5 +1,4 @@
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
-import { getCacheService } from "../../services/cache/cache.service";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../../services/prompts/system.prompt";
 import { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
 import { PipelineBuilder } from "../../services/rag/pipeline/pipeline.builder";
@@ -41,13 +40,11 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
         concurrency: 4,
       });
 
-      const cacheService = getCacheService();
-
       const ragPipeline = PipelineBuilder.create()
         .addStage(new QueryAnalysisStage())
         .addStage(new SimpleRetrievalStage(multiCollectionProvider, 100))
         .addStage(new CollectionRoutingStage())
-        .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider, cacheService))
+        .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
         .addStage(new FusionStage())
         .addStage(new RerankingStage())
         .addStage(new ContextBuildingStage())

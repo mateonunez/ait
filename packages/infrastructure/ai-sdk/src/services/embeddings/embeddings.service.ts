@@ -3,6 +3,7 @@ import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { recordSpan, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { type TokenizerService, getTokenizer } from "../tokenizer/tokenizer.service";
 import { type EmbeddingsConfig, createEmbeddingsConfig } from "./embeddings.config";
 import { type TextChunk, TextPreprocessor } from "./text-preprocessor";
 
@@ -23,6 +24,7 @@ export interface EmbeddingsServiceOptions {
 export class EmbeddingsService implements IEmbeddingsService {
   private readonly _config: EmbeddingsConfig;
   private readonly _textPreprocessor: TextPreprocessor;
+  private readonly _tokenizer: TokenizerService;
 
   constructor(model: string, expectedVectorSize: number, options?: EmbeddingsServiceOptions) {
     this._config = createEmbeddingsConfig({
@@ -32,6 +34,7 @@ export class EmbeddingsService implements IEmbeddingsService {
     });
 
     this._textPreprocessor = new TextPreprocessor(this._config);
+    this._tokenizer = getTokenizer();
   }
 
   public async generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]> {
@@ -80,7 +83,7 @@ export class EmbeddingsService implements IEmbeddingsService {
       const duration = Date.now() - startTime;
 
       // Track embedding tokens for cost analysis
-      const estimatedTokens = Math.ceil(text.length / 4); // Rough estimate: ~4 chars per token
+      const estimatedTokens = this._tokenizer.countTokens(text);
 
       if (enableTelemetry && traceContext) {
         recordSpan(

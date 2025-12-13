@@ -12,6 +12,7 @@ import {
   getModelSpec,
 } from "../config/models.config";
 import { type PresetName, getPreset, mergePresetWithOverrides } from "../config/presets.config";
+import { getCircuitBreaker } from "../services/resilience/circuit-breaker.service";
 import type { TextGenerationService } from "../services/text-generation/text-generation.service";
 import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 import type { ClientConfig } from "../types/config";
@@ -190,7 +191,13 @@ function buildAItClient(config: Required<AItClientConfig>): AItClient {
         tools: options.tools,
       };
 
-      return generationModel.doGenerate(generateOptions);
+      const circuitBreaker = getCircuitBreaker("llm-generation", {
+        failureThreshold: 3,
+        resetTimeout: 30000,
+        timeout: 120000,
+      });
+
+      return circuitBreaker.execute(() => generationModel.doGenerate(generateOptions));
     },
 
     async *streamText(options: LlmStreamOptions): AsyncGenerator<string> {
