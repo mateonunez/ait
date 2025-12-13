@@ -1,4 +1,5 @@
 import { getLogger } from "@ait/core";
+import { type AItClient, getAItClient } from "../../../client/ai-sdk.client";
 import type { ContextItem } from "./context.types";
 
 const logger = getLogger();
@@ -8,28 +9,39 @@ export interface IContextSummarizer {
 }
 
 export class RollingSummarizer implements IContextSummarizer {
+  private readonly _client: AItClient;
+
   constructor(
-    private readonly promptContext: string = "Summarize the following conversation tokens into a concise list of facts, decisions, and open questions.",
-  ) {}
+    client?: AItClient,
+    private readonly promptContext: string = "Summarize the following conversation parts into a concise list of key facts, user decisions, an open questions. discard trivial chitchat.",
+  ) {
+    this._client = client || getAItClient();
+  }
 
   public async summarize(items: ContextItem[]): Promise<string> {
     if (items.length === 0) return "";
 
-    // In a real implementation, this would call an LLM.
-    // For now, we'll just concatenate titles/content as a placeholder
-    // or return a mock summary.
+    // Sort by timestamp to keep chronological order in summary
+    const sortedItems = [...items].sort((a, b) => a.timestamp - b.timestamp);
 
-    // TODO: Integrate actual LLM call here using the SDK's existing capabilities
-    // But since this IS the SDK, we need to be careful about circular deps or just
-    // use a simple heuristic for now.
+    // Create a text representation
+    const textToSummarize = sortedItems.map((item) => `[${item.type.toUpperCase()}] ${item.content}`).join("\n\n");
 
-    logger.info(`[RollingSummarizer] Mock summarizing ${items.length} items`);
+    try {
+      logger.debug(`[RollingSummarizer] Summarizing ${items.length} items (${textToSummarize.length} chars)`);
 
-    const summaryLines = items.map((item) => {
-      const contentPreview = item.content.length > 50 ? `${item.content.slice(0, 50)}...` : item.content;
-      return `- ${item.type} (${item.id}): ${contentPreview}`;
-    });
+      const prompt = `${this.promptContext}\n\nCONTENT TO SUMMARIZE:\n${textToSummarize}\n\nSUMMARY:`;
 
-    return `Summary of ${items.length} items:\n${summaryLines.join("\n")}`;
+      const response = await this._client.generateText({
+        prompt,
+        temperature: 0.3,
+      });
+
+      return response.text.trim();
+    } catch (error) {
+      logger.error("Failed to summarize context items", { error });
+      // Fallback to simple concatenation of IDs or short preview
+      return items.map((i) => `[Dropped ${i.type}] ${i.content.slice(0, 50)}...`).join("\n");
+    }
   }
 }

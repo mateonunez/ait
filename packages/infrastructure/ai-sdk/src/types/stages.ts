@@ -30,10 +30,13 @@ export interface CollectionRoutingOutput extends QueryAnalysisOutput {
   routingResult: CollectionRouterResult;
 }
 
-export interface RetrievalInput extends CollectionRoutingOutput {}
+export interface RetrievalInput extends CollectionRoutingOutput {
+  retrievalQuery?: string;
+}
 
 export interface RetrievalOutput extends CollectionRoutingOutput {
   documents: Document<BaseMetadata>[];
+
   retrievalMetadata: {
     queriesExecuted: number;
     totalDuration: number;

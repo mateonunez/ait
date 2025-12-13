@@ -12,7 +12,7 @@ const logger = getLogger();
 export interface SemanticCacheConfig {
   similarityThreshold?: number;
   ttlMs?: number;
-  maxQueries?: number;
+  maxQueries?: number; // Deprecated in distributed mode
   cacheProvider?: ICacheProvider;
   useLlmNormalization?: boolean;
 }
@@ -27,15 +27,14 @@ interface SemanticCacheEntry {
 
 export class SemanticCacheService {
   private readonly config: Required<SemanticCacheConfig>;
-  private readonly queryIndex = new Map<string, string>(); // normalized -> hash
 
   constructor(config: SemanticCacheConfig = {}) {
     this.config = {
       similarityThreshold: config.similarityThreshold ?? 0.85,
       ttlMs: config.ttlMs ?? 15 * 60 * 1000, // 15 minutes default
-      maxQueries: config.maxQueries ?? 500,
+      maxQueries: config.maxQueries ?? 500, // No longer enforced locally
       cacheProvider: config.cacheProvider ?? getCacheService(),
-      useLlmNormalization: config.useLlmNormalization ?? true, // Enable by default
+      useLlmNormalization: config.useLlmNormalization ?? true,
     };
   }
 
@@ -47,55 +46,43 @@ export class SemanticCacheService {
    */
   async get<T>(query: string, context?: string, traceContext?: TraceContext): Promise<T | null> {
     const startTime = Date.now();
-    const normalizedQuery = await this._getNormalizedQuery(query);
-    const normalizedKey = context ? `${normalizedQuery}|${context}` : normalizedQuery;
-    const hash = this.queryIndex.get(normalizedKey);
     const analytics = getCacheAnalyticsService();
 
+    // 1. Normalize
+    const normalizedQuery = await this._getNormalizedQuery(query);
+    const normalizedKey = context ? `${normalizedQuery}|${context}` : normalizedQuery;
+
+    // 2. Lookup Hash in Index (Distributed)
+    const indexKey = this.buildIndexKey(normalizedKey);
+    const hash = await this.config.cacheProvider.get<string>(indexKey);
+
     if (!hash) {
-      const latency = Date.now() - startTime;
-      analytics.recordCacheMiss(query, latency);
-
-      if (traceContext) {
-        recordSpan(
-          "semantic-cache-miss",
-          "cache",
-          traceContext,
-          { query: query.slice(0, 100), normalizedKey },
-          { cacheHit: false, latencyMs: latency },
-        );
-      }
-
-      logger.debug("Semantic cache miss (no normalized match)", { query: query.slice(0, 50) });
+      this._recordMiss(query, normalizedKey, startTime, analytics, traceContext);
+      logger.debug("Semantic cache miss (index miss)", { query: query.slice(0, 50) });
       return null;
     }
 
+    // 3. Lookup Content
     const cacheKey = this.buildCacheKey(hash);
     const result = this.config.cacheProvider.get<SemanticCacheEntry>(cacheKey);
     const entry = result instanceof Promise ? await result : result;
 
     if (!entry) {
-      this.queryIndex.delete(normalizedKey);
-      const latency = Date.now() - startTime;
-      analytics.recordCacheMiss(query, latency);
+      // Index existed but content didn't (expiry race condition)
+      // We should clean up the index entry
+      await this.config.cacheProvider.delete(indexKey);
 
-      if (traceContext) {
-        recordSpan(
-          "semantic-cache-miss",
-          "cache",
-          traceContext,
-          { query: query.slice(0, 100), reason: "stale_entry" },
-          { cacheHit: false, latencyMs: latency },
-        );
-      }
+      this._recordMiss(query, normalizedKey, startTime, analytics, traceContext, "stale_entry");
       return null;
     }
 
+    // 4. Update Hit Count & Extend TTL
     entry.hitCount++;
-    const setResult = this.config.cacheProvider.set(cacheKey, entry, this.config.ttlMs);
-    if (setResult instanceof Promise) {
-      await setResult;
-    }
+    // Extend TTL for both valid entries
+    await Promise.all([
+      this.config.cacheProvider.set(cacheKey, entry, this.config.ttlMs),
+      this.config.cacheProvider.set(indexKey, hash, this.config.ttlMs),
+    ]);
 
     const latency = Date.now() - startTime;
     analytics.recordCacheHit(query, latency, 1);
@@ -125,11 +112,6 @@ export class SemanticCacheService {
     const normalizedKey = context ? `${normalizedQuery}|${context}` : normalizedQuery;
     const hash = this._hashQuery(normalizedKey);
 
-    // Evict old entries if at capacity
-    if (this.queryIndex.size >= this.config.maxQueries) {
-      this.evictOldest();
-    }
-
     const entry: SemanticCacheEntry = {
       query,
       queryHash: hash,
@@ -139,14 +121,37 @@ export class SemanticCacheService {
     };
 
     const cacheKey = this.buildCacheKey(hash);
-    this.queryIndex.set(normalizedKey, hash);
+    const indexKey = this.buildIndexKey(normalizedKey);
 
-    const setResult = this.config.cacheProvider.set(cacheKey, entry, this.config.ttlMs);
-    if (setResult instanceof Promise) {
-      await setResult;
-    }
+    // Save both Index and Content
+    await Promise.all([
+      this.config.cacheProvider.set(cacheKey, entry, this.config.ttlMs),
+      this.config.cacheProvider.set(indexKey, hash, this.config.ttlMs),
+    ]);
 
     logger.debug("Semantic cache set", { query: query.slice(0, 50), hash });
+  }
+
+  private _recordMiss(
+    query: string,
+    normalizedKey: string,
+    startTime: number,
+    analytics: ReturnType<typeof getCacheAnalyticsService>,
+    trace: TraceContext | undefined,
+    reason?: string,
+  ) {
+    const latency = Date.now() - startTime;
+    analytics.recordCacheMiss(query, latency);
+
+    if (trace) {
+      recordSpan(
+        "semantic-cache-miss",
+        "cache",
+        trace,
+        { query: query.slice(0, 100), normalizedKey, reason },
+        { cacheHit: false, latencyMs: latency },
+      );
+    }
   }
 
   /**
@@ -185,7 +190,7 @@ export class SemanticCacheService {
       "search",
       "look",
       "see",
-      // Qualifiers that don't change core intent
+      // Qualifiers
       "favorite",
       "favourite",
       "recent",
@@ -195,14 +200,14 @@ export class SemanticCacheService {
       "all",
       "some",
       "few",
-      // Filler words
+      // Filler
       "just",
       "only",
       "basically",
       "actually",
       "really",
       "simply",
-      // Time-related (handled by temporal filters elsewhere)
+      // Time (handled by temporal filters)
       "today",
       "yesterday",
       "week",
@@ -222,8 +227,6 @@ export class SemanticCacheService {
     const filtered = withoutStopwords.filter((word) => !stripWords.includes(word));
 
     const normalized = filtered.sort().join(" ").trim();
-    logger.debug("Query normalization (fallback)", { original: query.slice(0, 50), normalized });
-
     return normalized;
   }
 
@@ -241,33 +244,18 @@ export class SemanticCacheService {
     return `semantic:${hash}`;
   }
 
-  private evictOldest(): void {
-    const iterator = this.queryIndex.keys();
-    const oldest = iterator.next().value;
-    if (oldest) {
-      const hash = this.queryIndex.get(oldest);
-      this.queryIndex.delete(oldest);
-      if (hash) {
-        const cacheKey = this.buildCacheKey(hash);
-        this.config.cacheProvider.delete(cacheKey);
-      }
-    }
+  private buildIndexKey(normalizedKey: string): string {
+    return `semantic:index:${normalizedKey}`;
   }
 
+  // Deprecated/No-op in distributed mode
   async clear(): Promise<void> {
-    for (const hash of this.queryIndex.values()) {
-      const cacheKey = this.buildCacheKey(hash);
-      const result = this.config.cacheProvider.delete(cacheKey);
-      if (result instanceof Promise) {
-        await result;
-      }
-    }
-    this.queryIndex.clear();
+    logger.warn("SemanticCacheService.clear() called - in distributed mode this relies on TTL or manual flush");
   }
 
   getStats(): { entryCount: number; maxQueries: number } {
     return {
-      entryCount: this.queryIndex.size,
+      entryCount: -1, // Cannot easily count in distributed
       maxQueries: this.config.maxQueries,
     };
   }

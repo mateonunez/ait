@@ -48,15 +48,17 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
         })
       : null;
 
+    const effectiveQuery = input.retrievalQuery || input.query;
+
     // Build collection context for cache key (not normalized)
     const collectionContext = this._buildCollectionContext(input.routingResult.selectedCollections);
 
     if (this._enableCache) {
-      logger.debug("Checking semantic cache", { query: input.query.slice(0, 50), collectionContext });
+      logger.debug("Checking semantic cache", { query: effectiveQuery.slice(0, 50), collectionContext });
 
       // Pass query and context separately - query gets semantically normalized, context is preserved
       const cachedEntry = await this._semanticCache.get<SemanticRetrievalCacheEntry>(
-        input.query,
+        effectiveQuery,
         collectionContext,
         context.traceContext,
       );
@@ -122,7 +124,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     const documents = await this._multiQueryRetrieval.retrieveAcrossCollections(
       this._multiCollectionProvider,
       input.routingResult.selectedCollections,
-      input.query,
+      effectiveQuery,
       context.traceContext,
     );
 
@@ -133,9 +135,9 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
         documents,
         collections: input.routingResult.selectedCollections.map((c) => c.vendor),
       };
-      await this._semanticCache.set(input.query, cacheEntry, collectionContext);
+      await this._semanticCache.set(effectiveQuery, cacheEntry, collectionContext);
       logger.debug("Cached retrieval results (semantic)", {
-        query: input.query.slice(0, 50),
+        query: effectiveQuery.slice(0, 50),
         collectionContext,
         documentCount: documents.length,
       });

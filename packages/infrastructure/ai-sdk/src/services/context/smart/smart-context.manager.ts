@@ -1,8 +1,10 @@
 import { getLogger } from "@ait/core";
 import type { Document } from "../../../types/documents";
+import { type TokenizerService, getTokenizer } from "../../tokenizer/tokenizer.service";
 import { ContextBudgetManager } from "./budget.manager";
 import { type ContextBudget, type ContextItem, ContextTier, type IContextManager } from "./context.types";
 import { ContextDriftMonitor } from "./drift.monitor";
+import { RollingSummarizer } from "./summarizer.service";
 import { ContextTierManager } from "./tier.manager";
 
 const logger = getLogger();
@@ -11,6 +13,8 @@ export class SmartContextManager implements IContextManager {
   private budgetManager: ContextBudgetManager;
   private tierManager: ContextTierManager;
   private driftMonitor: ContextDriftMonitor;
+  private tokenizer: TokenizerService;
+  private summarizer: RollingSummarizer;
 
   constructor(customBudget?: Partial<ContextBudget>) {
     this.budgetManager = new ContextBudgetManager();
@@ -19,6 +23,8 @@ export class SmartContextManager implements IContextManager {
     }
     this.tierManager = new ContextTierManager();
     this.driftMonitor = new ContextDriftMonitor();
+    this.tokenizer = getTokenizer();
+    this.summarizer = new RollingSummarizer();
   }
 
   public async assembleContext(request: {
@@ -30,33 +36,31 @@ export class SmartContextManager implements IContextManager {
 
     // 1. Reset and Populate Tiers
     this.tierManager.reset();
-    this.populateTiers(request);
+    this._populateTiers(request);
 
     // 2. Budget Allocation
     // In reality, we'd query the model's limit or use config
 
     // 3. Selection & Pruning
-    this.pruneToBudget();
+    await this._pruneToBudget();
 
-    // 4. Summarization (if needed)
-    // If Working Set was heavily pruned, we might want to generate a summary of the dropped items
-    // and add it to Tier 3. For now, we'll assume the inputs might already contain previous summaries.
+    // 4. Summarization (Handled inside _pruneToBudget now)
 
     // 5. Build Final String
-    const finalContext = this.buildFinalContextString();
+    const finalContext = this._buildFinalContextString();
 
-    logger.info(`[SmartContextManager] Context assembled. Length: ${finalContext.length} items.`);
+    logger.info(`[SmartContextManager] Context assembled. Length: ${finalContext.length} chars.`);
     return finalContext;
   }
 
-  private populateTiers(request: { systemInstructions: string; messages: any[]; retrievedDocs?: Document[] }): void {
+  private _populateTiers(request: { systemInstructions: string; messages: any[]; retrievedDocs?: Document[] }): void {
     // Tier 0: System Instructions
     this.tierManager.addItem({
       id: "system-instructions",
       tier: ContextTier.IMMUTABLE,
       content: request.systemInstructions,
       type: "system",
-      tokens: request.systemInstructions.length / 4, // Rough est
+      tokens: this.tokenizer.countTokens(request.systemInstructions),
       timestamp: Date.now(),
     });
 
@@ -72,41 +76,31 @@ export class SmartContextManager implements IContextManager {
         tier: ContextTier.WORKING_SET,
         content: content,
         type: "message",
-        tokens: content.length / 4,
+        tokens: this.tokenizer.countTokens(content),
         timestamp: Date.now() - (request.messages.length - index) * 1000,
       });
     });
 
     // Tier 4: Retrieved Docs
     if (request.retrievedDocs && request.retrievedDocs.length > 0) {
-      // Use ContextBuilder to format documents beautifully (XML/etc)
-      // We can either format them individually or as a block.
-      // For budgeting, individual is better.
       request.retrievedDocs.forEach((doc, index) => {
-        // HACK: Use ContextBuilder's private/protected methods or just build simple content?
-        // Ideally replace with: this.contextBuilder.formatDocument(doc) if it existed exposed.
-        // We will use a simple fallback or reusing buildNaturalContent if accessible.
-        // Since it is private, we will just use pageContent for now but wrap it.
-
         const content = `Source: ${doc.metadata.title || doc.metadata.source || "Unknown"}\n${doc.pageContent}`;
-
         this.tierManager.addItem({
           id: `doc-${doc.metadata.id || index}`,
           tier: ContextTier.LONG_TERM_MEMORY,
           content: content,
           type: "document",
-          tokens: content.length / 4,
+          tokens: this.tokenizer.countTokens(content),
           timestamp: Date.now(),
         });
       });
     }
   }
 
-  private pruneToBudget(): void {
+  private async _pruneToBudget(): Promise<void> {
     // Very simple top-down pruning for now
     // 1. Check Tier 2 usage
     const tier2Limit = this.budgetManager.getTierLimit(ContextTier.WORKING_SET);
-    // const tier2Usage = this.tierManager.getTierUsage(ContextTier.WORKING_SET); // Unused
 
     const tier2Items = this.tierManager.getItems(ContextTier.WORKING_SET);
     // Sort: Newest first (we want to keep newest)
@@ -127,16 +121,26 @@ export class SmartContextManager implements IContextManager {
 
     if (droppedTier2.length > 0) {
       this.driftMonitor.logDrop(ContextTier.WORKING_SET, droppedTier2);
+
+      // Summarize dropped items into Tier 3
+      const summary = await this.summarizer.summarize(droppedTier2);
+      if (summary) {
+        this.tierManager.addItem({
+          id: `summary-${Date.now()}`,
+          tier: ContextTier.CONDENSED_HISTORY,
+          content: `[Previous Context Summary]: ${summary}`,
+          type: "summary",
+          tokens: this.tokenizer.countTokens(summary),
+          timestamp: Date.now(), // Treat as fresh info
+        });
+        logger.debug("Added summary of dropped context items to Tier 3");
+      }
     }
 
     this.tierManager.setItems(ContextTier.WORKING_SET, keptTier2);
   }
 
-  private buildFinalContextString(): string {
-    // Sort by timestamp? Or by Tier Logic?
-    // usually System -> (Context/RAG) -> History -> Newest
-
-    // Let's rely on standard ordering:
+  private _buildFinalContextString(): string {
     // Tier 0 (System)
     // Tier 3 (Summaries)
     // Tier 4 (RAG)
@@ -145,7 +149,7 @@ export class SmartContextManager implements IContextManager {
 
     const tier0 = this.tierManager.getItems(ContextTier.IMMUTABLE);
     const tier4 = this.tierManager.getItems(ContextTier.LONG_TERM_MEMORY);
-    const tier3 = this.tierManager.getItems(ContextTier.CONDENSED_HISTORY);
+    const tier3 = this.tierManager.getItems(ContextTier.CONDENSED_HISTORY).sort((a, b) => a.timestamp - b.timestamp);
     const tier2 = this.tierManager.getItems(ContextTier.WORKING_SET).sort((a, b) => a.timestamp - b.timestamp);
 
     const sections = [...tier0, ...tier3, ...tier4, ...tier2];

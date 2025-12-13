@@ -5,6 +5,7 @@ import { createMultiQueryRetrievalService } from "../services/retrieval/multi-qu
 import { CollectionRoutingStage } from "../stages/rag/collection-routing.stage";
 import { ContextBuildingStage } from "../stages/rag/context-building.stage";
 import { FusionStage } from "../stages/rag/fusion.stage";
+import { HyDEStage } from "../stages/rag/hyde.stage";
 import { QueryAnalysisStage } from "../stages/rag/query-analysis.stage";
 import { RerankingStage } from "../stages/rag/reranking.stage";
 import { RetrievalStage } from "../stages/rag/retrieval.stage";
@@ -17,6 +18,7 @@ export interface RAGPipelineConfig {
   maxDocs?: number;
   queriesCount?: number;
   concurrency?: number;
+  enableHyDE?: boolean;
   collectionRouting?: {
     temperature?: number;
     minConfidenceThreshold?: number;
@@ -51,10 +53,16 @@ export function createRAGPipeline(
     concurrency: config.concurrency ?? 4,
   });
 
-  return PipelineBuilder.create<QueryAnalysisInput, ContextBuildingOutput>()
+  const pipeline = PipelineBuilder.create<QueryAnalysisInput, ContextBuildingOutput>()
     .addStage(new QueryAnalysisStage())
     .addStage(new SimpleRetrievalStage(multiCollectionProvider, config.maxDocs))
-    .addStage(new CollectionRoutingStage(config.collectionRouting))
+    .addStage(new CollectionRoutingStage(config.collectionRouting));
+
+  if (config.enableHyDE) {
+    pipeline.addStage(new HyDEStage());
+  }
+
+  return pipeline
     .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
     .addStage(new FusionStage())
     .addStage(new RerankingStage(config.reranking))
