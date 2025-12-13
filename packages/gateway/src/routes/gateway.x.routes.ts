@@ -91,22 +91,34 @@ export default async function xRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Refresh endpoint
-  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const tweets = await xService.fetchTweets();
-      await store.save(tweets);
+  // Refresh endpoint with optional entity filter
+  // Usage: POST /refresh?entities=tweets or POST /refresh (all entities)
+  fastify.post(
+    "/refresh",
+    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+      try {
+        const { entities: entitiesParam } = request.query;
+        const entitiesToRefresh = entitiesParam
+          ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
+          : ["tweets"];
 
-      reply.send({
-        success: true,
-        message: "X data refreshed successfully",
-        counts: {
-          tweets: tweets.length,
-        },
-      });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh X data.");
-      reply.status(500).send({ error: "Failed to refresh X data." });
-    }
-  });
+        const counts: Record<string, number> = {};
+
+        if (entitiesToRefresh.includes("tweets")) {
+          const tweets = await xService.fetchTweets();
+          await store.save(tweets);
+          counts.tweets = tweets.length;
+        }
+
+        reply.send({
+          success: true,
+          message: "X data refreshed successfully",
+          counts,
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/refresh" }, "Failed to refresh X data.");
+        reply.status(500).send({ error: "Failed to refresh X data." });
+      }
+    },
+  );
 }

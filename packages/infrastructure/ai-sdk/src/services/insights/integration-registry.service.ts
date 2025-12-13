@@ -7,15 +7,25 @@ export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "
 const logger = getLogger();
 
 /**
- * Integration metadata for activity tracking
+ * Entity metadata for activity tracking
+ */
+export interface EntityMetadata {
+  entityType: string;
+  displayName: string;
+  dateField: string | string[];
+  fetchMethod: string;
+  goalType?: string;
+}
+
+/**
+ * Integration metadata for activity tracking - supports multiple entities per vendor
  */
 export interface IntegrationMetadata {
   connectorType: ConnectorType;
   displayName: string;
+  entities: EntityMetadata[];
+  // Primary entity for backward compatibility and default display
   primaryEntityType: string;
-  dateField: string | string[]; // Field name(s) to extract date from entity
-  goalType?: string; // Goal type mapping (e.g., "commits", "songs", "messages")
-  fetchMethod: string; // Method name on connector service to fetch entities
 }
 
 /**
@@ -27,65 +37,152 @@ export class IntegrationRegistryService {
       connectorType: "github",
       displayName: "GitHub",
       primaryEntityType: "commit",
-      dateField: "committerDate",
-      goalType: "commits",
-      fetchMethod: "getCommitsPaginated",
+      entities: [
+        {
+          entityType: "repository",
+          displayName: "Repositories",
+          dateField: "updatedAt",
+          fetchMethod: "getRepositoriesPaginated",
+        },
+        {
+          entityType: "pull_request",
+          displayName: "Pull Requests",
+          dateField: "updatedAt",
+          fetchMethod: "getPullRequestsPaginated",
+        },
+        {
+          entityType: "commit",
+          displayName: "Commits",
+          dateField: "committerDate",
+          fetchMethod: "getCommitsPaginated",
+          goalType: "commits",
+        },
+        {
+          entityType: "repository_file",
+          displayName: "Code Files",
+          dateField: "updatedAt",
+          fetchMethod: "getFilesPaginated",
+        },
+      ],
     },
     linear: {
       connectorType: "linear",
       displayName: "Linear",
       primaryEntityType: "issue",
-      dateField: "updatedAt",
-      goalType: "tasks",
-      fetchMethod: "getIssuesPaginated",
+      entities: [
+        {
+          entityType: "issue",
+          displayName: "Issues",
+          dateField: "updatedAt",
+          fetchMethod: "getIssuesPaginated",
+          goalType: "tasks",
+        },
+      ],
     },
     spotify: {
       connectorType: "spotify",
       displayName: "Spotify",
       primaryEntityType: "recently_played",
-      dateField: "playedAt",
-      goalType: "songs",
-      fetchMethod: "getRecentlyPlayedPaginated",
+      entities: [
+        { entityType: "track", displayName: "Tracks", dateField: "updatedAt", fetchMethod: "getTracksPaginated" },
+        { entityType: "artist", displayName: "Artists", dateField: "updatedAt", fetchMethod: "getArtistsPaginated" },
+        {
+          entityType: "playlist",
+          displayName: "Playlists",
+          dateField: "updatedAt",
+          fetchMethod: "getPlaylistsPaginated",
+        },
+        { entityType: "album", displayName: "Albums", dateField: "updatedAt", fetchMethod: "getAlbumsPaginated" },
+        {
+          entityType: "recently_played",
+          displayName: "Recently Played",
+          dateField: "playedAt",
+          fetchMethod: "getRecentlyPlayedPaginated",
+          goalType: "songs",
+        },
+      ],
     },
     x: {
       connectorType: "x",
       displayName: "X (Twitter)",
       primaryEntityType: "tweet",
-      dateField: "createdAt",
-      goalType: "tweets",
-      fetchMethod: "getTweetsPaginated",
+      entities: [
+        {
+          entityType: "tweet",
+          displayName: "Tweets",
+          dateField: "createdAt",
+          fetchMethod: "getTweetsPaginated",
+          goalType: "tweets",
+        },
+      ],
     },
     notion: {
       connectorType: "notion",
       displayName: "Notion",
       primaryEntityType: "page",
-      dateField: "updatedAt",
-      goalType: "documents",
-      fetchMethod: "getPagesPaginated",
+      entities: [
+        {
+          entityType: "page",
+          displayName: "Pages",
+          dateField: "updatedAt",
+          fetchMethod: "getPagesPaginated",
+          goalType: "documents",
+        },
+      ],
     },
     slack: {
       connectorType: "slack",
       displayName: "Slack",
       primaryEntityType: "message",
-      dateField: ["ts", "createdAt"], // Prefer ts (message time) over createdAt (DB time)
-      goalType: "messages",
-      fetchMethod: "getMessagesPaginated",
+      entities: [
+        {
+          entityType: "message",
+          displayName: "Messages",
+          dateField: ["ts", "createdAt"],
+          fetchMethod: "getMessagesPaginated",
+          goalType: "messages",
+        },
+      ],
     },
     google: {
       connectorType: "google",
       displayName: "Google",
       primaryEntityType: "event",
-      dateField: "startTime",
-      goalType: "events",
-      fetchMethod: "getEventsPaginated",
+      entities: [
+        {
+          entityType: "event",
+          displayName: "Events",
+          dateField: "startTime",
+          fetchMethod: "getEventsPaginated",
+          goalType: "events",
+        },
+        {
+          entityType: "calendar",
+          displayName: "Calendars",
+          dateField: "updatedAt",
+          fetchMethod: "getCalendarsPaginated",
+        },
+        {
+          entityType: "subscription",
+          displayName: "YouTube Subscriptions",
+          dateField: "publishedAt",
+          fetchMethod: "getSubscriptionsPaginated",
+        },
+      ],
     },
     youtube: {
       connectorType: "youtube",
       displayName: "YouTube",
       primaryEntityType: "subscription",
-      dateField: "publishedAt",
-      goalType: "subscription",
-      fetchMethod: "getSubscriptionsPaginated",
+      entities: [
+        {
+          entityType: "subscription",
+          displayName: "Subscriptions",
+          dateField: "publishedAt",
+          fetchMethod: "getSubscriptionsPaginated",
+          goalType: "subscription",
+        },
+      ],
     },
   };
 
@@ -111,16 +208,27 @@ export class IntegrationRegistryService {
   }
 
   /**
-   * Extract date from an entity based on connector type and date field
+   * Get all entities for a connector type
    */
-  extractDate(entity: any, connectorType: ConnectorType): Date | null {
+  getEntities(connectorType: ConnectorType): EntityMetadata[] {
     const metadata = this.getMetadata(connectorType);
-    if (!metadata) {
-      logger.warn("Unknown connector type for date extraction", { connectorType });
-      return null;
-    }
+    return metadata?.entities || [];
+  }
 
-    const fields = Array.isArray(metadata.dateField) ? metadata.dateField : [metadata.dateField];
+  /**
+   * Get primary entity metadata for a connector (for backward compatibility)
+   */
+  getPrimaryEntityMetadata(connectorType: ConnectorType): EntityMetadata | null {
+    const metadata = this.getMetadata(connectorType);
+    if (!metadata) return null;
+    return metadata.entities.find((e) => e.entityType === metadata.primaryEntityType) || metadata.entities[0] || null;
+  }
+
+  /**
+   * Extract date from an entity based on date field configuration
+   */
+  extractDateFromEntity(entity: any, dateField: string | string[]): Date | null {
+    const fields = Array.isArray(dateField) ? dateField : [dateField];
 
     for (const field of fields) {
       const fieldValue = entity[field];
@@ -136,26 +244,23 @@ export class IntegrationRegistryService {
         if (typeof fieldValue === "string") {
           const timestamp = Number.parseFloat(fieldValue);
           if (!Number.isNaN(timestamp) && timestamp > 0) {
-            // Handle both seconds and milliseconds
             const ms = timestamp > 1e10 ? timestamp : timestamp * 1000;
             return new Date(ms);
           }
         } else if (typeof fieldValue === "number") {
-          // Handle numeric timestamp
           const ms = fieldValue > 1e10 ? fieldValue : fieldValue * 1000;
           return new Date(ms);
         }
         continue;
       }
 
-      // Handle Date objects (direct or serialized)
+      // Handle Date objects
       if (fieldValue instanceof Date) {
         return fieldValue;
       }
 
-      // Handle string dates (ISO format or other)
+      // Handle string dates (ISO format)
       if (typeof fieldValue === "string") {
-        // Try parsing as ISO date string
         const date = new Date(fieldValue);
         if (!Number.isNaN(date.getTime())) {
           return date;
@@ -172,11 +277,23 @@ export class IntegrationRegistryService {
   }
 
   /**
-   * Get goal type for a connector type
+   * Extract date from an entity based on connector type (backward compatible)
+   */
+  extractDate(entity: any, connectorType: ConnectorType): Date | null {
+    const entityMeta = this.getPrimaryEntityMetadata(connectorType);
+    if (!entityMeta) {
+      logger.warn("Unknown connector type for date extraction", { connectorType });
+      return null;
+    }
+    return this.extractDateFromEntity(entity, entityMeta.dateField);
+  }
+
+  /**
+   * Get goal type for a connector type (uses primary entity)
    */
   getGoalType(connectorType: ConnectorType): string | null {
-    const metadata = this.getMetadata(connectorType);
-    return metadata?.goalType || null;
+    const entityMeta = this.getPrimaryEntityMetadata(connectorType);
+    return entityMeta?.goalType || null;
   }
 
   /**

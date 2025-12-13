@@ -3,6 +3,7 @@ import { closePostgresConnection, getPostgresClient } from "@ait/postgres";
 import { getQdrantClient } from "@ait/qdrant";
 import {
   runGitHubCommitETL,
+  runGitHubFileETL,
   runGitHubPullRequestETL,
   runGitHubRepositoryETL,
   runGoogleYouTubeSubscriptionETL,
@@ -25,17 +26,17 @@ async function main() {
     const qdrantClient = getQdrantClient();
     const pgClient = getPostgresClient();
 
-    // Run all Spotify ETLs
     await runSpotifyTrackETL(qdrantClient, pgClient);
     await runSpotifyArtistETL(qdrantClient, pgClient);
     await runSpotifyPlaylistETL(qdrantClient, pgClient);
     await runSpotifyAlbumETL(qdrantClient, pgClient);
     await runSpotifyRecentlyPlayedETL(qdrantClient, pgClient);
 
-    // Run other vendor ETLs
     await runGitHubRepositoryETL(qdrantClient, pgClient);
     await runGitHubPullRequestETL(qdrantClient, pgClient);
     await runGitHubCommitETL(qdrantClient, pgClient);
+    await runGitHubFileETL(qdrantClient, pgClient);
+
     await runXETL(qdrantClient, pgClient);
     await runLinearETL(qdrantClient, pgClient);
     await runNotionETL(qdrantClient, pgClient);

@@ -1,6 +1,7 @@
 import type {
   GitHubCommitEntity,
   GitHubCommitExternal,
+  GitHubFileEntity,
   GitHubPullRequestEntity,
   GitHubPullRequestExternal,
   GitHubRepositoryEntity,
@@ -25,6 +26,7 @@ export interface IConnectorGitHubService extends ConnectorServiceBase<ConnectorG
   getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>>;
   getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>>;
   getCommitsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubCommitEntity>>;
+  getFilesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubFileEntity>>;
 }
 
 export class ConnectorGitHubService
@@ -87,5 +89,9 @@ export class ConnectorGitHubService
 
   async getCommitsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubCommitEntity>> {
     return this.connector.repository.commit.getCommitsPaginated(params);
+  }
+
+  async getFilesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubFileEntity>> {
+    return this.connector.repository.file.getFilesPaginated(params);
   }
 }

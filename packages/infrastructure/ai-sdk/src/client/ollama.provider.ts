@@ -296,16 +296,37 @@ export class OllamaProvider {
       provider: "ollama",
 
       async doEmbed(text: string): Promise<number[]> {
+        // Basic sanitization only - chunking is handled by EmbeddingsService
+        let sanitizedText = text
+          // Remove control characters that can crash Ollama
+          // biome-ignore lint/suspicious/noControlCharactersInRegex: intentionally removing control chars
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+          // Normalize whitespace
+          .replace(/\s+/g, " ")
+          .trim();
+
+        if (!sanitizedText) {
+          logger.warn("[OllamaProvider] Empty text after sanitization, using placeholder");
+          sanitizedText = "empty content";
+        }
+
         const response = await fetch(`${baseURL}/api/embeddings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             model: modelName,
-            prompt: text,
+            prompt: sanitizedText,
           } as OllamaEmbedRequest),
         });
 
         if (!response.ok) {
+          const errorDetail = await response.text().catch(() => "");
+          logger.error("[OllamaProvider] Embedding error", {
+            status: response.status,
+            textLength: sanitizedText.length,
+            textPreview: sanitizedText.substring(0, 100),
+            errorDetail,
+          });
           throw new AItError("OLLAMA_HTTP", `Ollama API error: ${response.status} ${response.statusText}`, {
             status: response.status,
           });

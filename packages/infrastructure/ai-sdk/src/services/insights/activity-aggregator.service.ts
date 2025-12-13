@@ -1,7 +1,7 @@
 import { getLogger } from "@ait/core";
 import { getCacheService } from "../cache/cache.service";
-import type { ActivityData, IntegrationActivity } from "./insights.types";
-import { type ConnectorType, getIntegrationRegistryService } from "./integration-registry.service";
+import type { ActivityData, EntityActivityBreakdown, IntegrationActivity } from "./insights.types";
+import { type ConnectorType, type EntityMetadata, getIntegrationRegistryService } from "./integration-registry.service";
 
 const logger = getLogger();
 
@@ -32,6 +32,7 @@ export class ActivityAggregatorService {
 
     const connectorTypes = this.registry.getAvailableConnectorTypes();
     const activityData: ActivityData = {};
+
     for (const connectorType of connectorTypes) {
       try {
         const result = await this._fetchIntegrationActivity(connectorType, days);
@@ -40,11 +41,13 @@ export class ActivityAggregatorService {
           logger.info(`Successfully fetched ${connectorType} activity`, {
             total: result.activity.total,
             dailyEntries: result.activity.daily.length,
+            entityCount: Object.keys(result.activity.byEntity || {}).length,
           });
         } else {
           activityData[connectorType] = {
             total: 0,
             daily: this._generateEmptyDateRange(days),
+            byEntity: {},
           };
         }
       } catch (error: any) {
@@ -56,6 +59,7 @@ export class ActivityAggregatorService {
         activityData[connectorType] = {
           total: 0,
           daily: this._generateEmptyDateRange(days),
+          byEntity: {},
         };
       }
     }
@@ -77,7 +81,6 @@ export class ActivityAggregatorService {
 
   private _getCacheKey(range: "week" | "month" | "year"): string {
     const now = new Date();
-    // Cache key includes date and hour, so cache refreshes hourly
     const dateHour = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${now.getHours()}`;
     return `activity:${range}:${dateHour}`;
   }
@@ -91,46 +94,58 @@ export class ActivityAggregatorService {
       throw new Error(`No metadata found for connector type: ${connectorType}`);
     }
 
+    const entities = this.registry.getEntities(connectorType);
+    if (entities.length === 0) {
+      throw new Error(`No entities found for connector type: ${connectorType}`);
+    }
+
     try {
       const service = this.connectorServiceFactory.getService(connectorType);
-      const fetchMethodName = metadata.fetchMethod;
+      const byEntity: Record<string, EntityActivityBreakdown> = {};
+      let grandTotal = 0;
+      const aggregatedDaily = new Map<string, number>();
 
-      if (typeof (service as any)[fetchMethodName] !== "function") {
-        throw new Error(`Method ${fetchMethodName} not found on ${connectorType} service`);
+      // Initialize date range
+      for (const date of this._generateDateRange(days)) {
+        aggregatedDaily.set(date, 0);
       }
 
-      const response = await service[fetchMethodName]({ limit: 10000, page: 1 });
-      const entities = response?.data || [];
+      // Fetch activity for each entity type
+      for (const entityMeta of entities) {
+        try {
+          const entityActivity = await this._fetchEntityActivity(service, entityMeta, days);
+          byEntity[entityMeta.entityType] = entityActivity;
+          grandTotal += entityActivity.total;
 
-      const apiTotal = response?.total ?? response?.totalCount ?? response?.total_count ?? null;
+          // Aggregate daily counts
+          for (const { date, count } of entityActivity.daily) {
+            aggregatedDaily.set(date, (aggregatedDaily.get(date) || 0) + count);
+          }
 
-      logger.debug(`Fetched ${entities.length} entities for ${connectorType}`, {
-        connectorType,
-        entityCount: entities.length,
-        apiTotal,
-        dateField: metadata.dateField,
-      });
+          logger.debug(`Fetched ${entityMeta.entityType} for ${connectorType}`, {
+            total: entityActivity.total,
+          });
+        } catch (entityError: any) {
+          logger.warn(`Failed to fetch ${entityMeta.entityType} for ${connectorType}`, {
+            error: entityError.message,
+          });
+          // Add empty entry for this entity
+          byEntity[entityMeta.entityType] = {
+            total: 0,
+            daily: this._generateEmptyDateRange(days),
+            displayName: entityMeta.displayName,
+          };
+        }
+      }
 
-      const daily = this._groupByDay(entities, connectorType, days);
-      const dailyTotal = daily.reduce((sum, day) => sum + day.count, 0);
-
-      // Use dailyTotal as the source of truth for activity in the requested range.
-      // apiTotal represents the total count in the DB/API, which might include historical data outside the range.
-      // entities.length represents the number of fetched items, which also might include out-of-range items.
-      const total = dailyTotal;
-
-      logger.debug(`Activity calculated for ${connectorType}`, {
-        connectorType,
-        total,
-        dailyTotal,
-        apiTotal,
-        dailyEntries: daily.length,
-        entitiesWithValidDates: daily.reduce((sum, d) => sum + (d.count > 0 ? 1 : 0), 0),
-      });
+      const daily = Array.from(aggregatedDaily.entries())
+        .map(([date, count]) => ({ date, count }))
+        .sort((a, b) => a.date.localeCompare(b.date));
 
       const activity: IntegrationActivity = {
-        total,
+        total: grandTotal,
         daily,
+        byEntity,
       };
 
       return { connectorType, activity };
@@ -146,14 +161,41 @@ export class ActivityAggregatorService {
         activity: {
           total: 0,
           daily: this._generateEmptyDateRange(days),
+          byEntity: {},
         },
       };
     }
   }
 
+  private async _fetchEntityActivity(
+    service: any,
+    entityMeta: EntityMetadata,
+    days: number,
+  ): Promise<EntityActivityBreakdown> {
+    if (typeof service[entityMeta.fetchMethod] !== "function") {
+      throw new Error(`Method ${entityMeta.fetchMethod} not found on service`);
+    }
+
+    const response = await service[entityMeta.fetchMethod]({ limit: 10000, page: 1 });
+    const entities = response?.data || [];
+
+    logger.debug(`Fetched ${entities.length} ${entityMeta.entityType} entities`, {
+      fetchMethod: entityMeta.fetchMethod,
+    });
+
+    const daily = this._groupByDay(entities, entityMeta.dateField, days);
+    const total = daily.reduce((sum, day) => sum + day.count, 0);
+
+    return {
+      total,
+      daily,
+      displayName: entityMeta.displayName,
+    };
+  }
+
   private _groupByDay(
     entities: any[],
-    connectorType: ConnectorType,
+    dateField: string | string[],
     days: number,
   ): Array<{ date: string; count: number }> {
     const grouped = new Map<string, number>();
@@ -167,7 +209,7 @@ export class ActivityAggregatorService {
     let invalidDatesCount = 0;
 
     for (const entity of entities) {
-      const date = this.registry.extractDate(entity, connectorType);
+      const date = this.registry.extractDateFromEntity(entity, dateField);
       if (date) {
         const dateKey = date.toISOString().split("T")[0]!;
         if (grouped.has(dateKey)) {
@@ -178,25 +220,11 @@ export class ActivityAggregatorService {
         }
       } else {
         invalidDatesCount++;
-        if (invalidDatesCount <= 3) {
-          const metadata = this.registry.getMetadata(connectorType);
-          logger.debug(`Failed to extract date for ${connectorType} entity`, {
-            connectorType,
-            dateField: metadata?.dateField,
-            entityKeys: Object.keys(entity || {}),
-            fieldValue: entity?.[(metadata?.dateField as string) || ""],
-          });
-        }
       }
     }
 
     if (invalidDatesCount > 0) {
-      logger.warn(`Date extraction issues for ${connectorType}`, {
-        connectorType,
-        totalEntities: entities.length,
-        validDates: validDatesCount,
-        invalidDates: invalidDatesCount,
-      });
+      logger.debug(`Date extraction: ${validDatesCount} valid, ${invalidDatesCount} invalid`);
     }
 
     return Array.from(grouped.entries())

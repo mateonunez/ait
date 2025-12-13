@@ -80,6 +80,14 @@ export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
     description: "GitHub commits with diffs and file changes (timestamps: authorDate, committerDate)",
     timestampFields: ["authorDate", "committerDate", "createdAt", "updatedAt"],
   },
+  repository_file: {
+    label: "Code File",
+    labelPlural: "Code Files",
+    keywords: ["file", "code", "source", "implementation", "class", "function", "module", "github"],
+    vendor: "github",
+    description: "Repository source code files (timestamps: createdAt, updatedAt)",
+    timestampFields: ["createdAt", "updatedAt"],
+  },
 
   // Linear entities
   issue: {

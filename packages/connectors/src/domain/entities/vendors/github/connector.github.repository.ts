@@ -4,18 +4,21 @@ import { clearOAuthData, getOAuthData, saveOAuthData } from "../../../../shared/
 import type { IConnectorGitHubRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
 import { ConnectorGitHubRepoRepository } from "./connector.github-repo.repository";
 import { ConnectorGitHubCommitRepository } from "./connector.github.commit.repository";
+import { ConnectorGitHubFileRepository } from "./connector.github.file.repository";
 import { ConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.repository";
 
 export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository implements IConnectorGitHubRepository {
   private _gitHubRepositoryRepository: ConnectorGitHubRepoRepository;
   private _gitHubPullRequestRepository: ConnectorGitHubPullRequestRepository;
   private _gitHubCommitRepository: ConnectorGitHubCommitRepository;
+  private _gitHubFileRepository: ConnectorGitHubFileRepository;
 
   constructor() {
     super();
     this._gitHubRepositoryRepository = new ConnectorGitHubRepoRepository();
     this._gitHubPullRequestRepository = new ConnectorGitHubPullRequestRepository();
     this._gitHubCommitRepository = new ConnectorGitHubCommitRepository();
+    this._gitHubFileRepository = new ConnectorGitHubFileRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
@@ -52,5 +55,13 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
 
   set commit(commit: ConnectorGitHubCommitRepository) {
     this._gitHubCommitRepository = commit;
+  }
+
+  get file(): ConnectorGitHubFileRepository {
+    return this._gitHubFileRepository;
+  }
+
+  set file(file: ConnectorGitHubFileRepository) {
+    this._gitHubFileRepository = file;
   }
 }
