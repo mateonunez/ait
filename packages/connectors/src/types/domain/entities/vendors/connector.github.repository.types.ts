@@ -1,4 +1,5 @@
 import type { GitHubRepositoryEntity, PaginatedResponse, PaginationParams } from "@ait/core";
+import type { IConnectorGitHubFileRepository } from "../../../../domain/entities/vendors/github/connector.github.file.repository";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 import type { IConnectorGitHubCommitRepository } from "./connector.github.commit.types";
 import type { IConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.types";
@@ -15,4 +16,5 @@ export interface IConnectorGitHubRepository extends IConnectorRepository {
   repo: IConnectorGitHubRepoRepository;
   pullRequest: IConnectorGitHubPullRequestRepository;
   commit: IConnectorGitHubCommitRepository;
+  file: IConnectorGitHubFileRepository;
 }

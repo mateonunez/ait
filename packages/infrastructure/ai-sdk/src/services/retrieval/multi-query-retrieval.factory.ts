@@ -21,7 +21,7 @@ export function createMultiQueryRetrievalService(config: MultiQueryConfig = {}):
 
   const embeddingModelConfig = getEmbeddingModelConfig();
   const embeddingsService = new EmbeddingsService(embeddingModelConfig.name, embeddingModelConfig.vectorSize, {
-    concurrencyLimit: 4,
+    concurrencyLimit: 2,
   });
 
   const hyde = new HyDEService(embeddingsService);

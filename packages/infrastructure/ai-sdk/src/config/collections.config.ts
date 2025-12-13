@@ -23,8 +23,8 @@ const SPOTIFY_COLLECTION: CollectionConfig = {
 const GITHUB_COLLECTION: CollectionConfig = {
   vendor: "github",
   name: "ait_github_collection",
-  description: "GitHub repositories, pull requests, issues, and code-related activities",
-  entityTypes: ["repository", "pull_request"],
+  description: "GitHub repositories, pull requests, commits, and repository code files",
+  entityTypes: ["repository", "pull_request", "commit", "repository_file"],
   defaultWeight: 1.0,
   enabled: true,
 };

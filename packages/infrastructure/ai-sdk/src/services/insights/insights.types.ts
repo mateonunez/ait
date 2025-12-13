@@ -175,6 +175,7 @@ export const CreateGoalSchema = z.object({
     "repository",
     "pull_request",
     "commit",
+    "repository_file",
     "issue",
     "tweet",
     "page",
@@ -209,11 +210,21 @@ export const UpdateGoalSchema = z.object({
 export type UpdateGoalRequest = z.infer<typeof UpdateGoalSchema>;
 
 /**
- * Integration Activity - Activity data for a single integration
+ * Entity Activity Breakdown - Activity data for a single entity type within an integration
+ */
+export interface EntityActivityBreakdown {
+  total: number;
+  daily: Array<{ date: string; count: number }>;
+  displayName: string;
+}
+
+/**
+ * Integration Activity - Activity data for a single integration with per-entity breakdown
  */
 export interface IntegrationActivity {
   total: number;
   daily: Array<{ date: string; count: number }>;
+  byEntity?: Record<string, EntityActivityBreakdown>;
 }
 
 /**

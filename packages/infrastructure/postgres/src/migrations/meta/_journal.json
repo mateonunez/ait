@@ -211,6 +211,13 @@
       "when": 1765571352387,
       "tag": "0029_brainy_jasper_sitwell",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1765635676274,
+      "tag": "0030_first_bucky",
+      "breakpoints": true
     }
   ]
 }

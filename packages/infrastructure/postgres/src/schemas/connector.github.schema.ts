@@ -129,6 +129,24 @@ export const githubCommits = pgTable("github_commits", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const githubRepositoryFiles = pgTable("github_repository_files", {
+  id: varchar("id", { length: 512 }).primaryKey(), // repoId:path:sha
+  repositoryId: varchar("repository_id", { length: 255 }).notNull(),
+  repositoryFullName: varchar("repository_full_name", { length: 512 }).notNull(),
+  branch: varchar("branch", { length: 255 }).notNull(),
+  path: varchar("path", { length: 1024 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  sha: varchar("sha", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  size: integer("size").default(0),
+  language: varchar("language", { length: 100 }),
+  extension: varchar("extension", { length: 50 }),
+  linesOfCode: integer("lines_of_code").default(0),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 /**
  * DATA TARGET
  * Represents how we store the domain entity in a data layer (DB)
@@ -136,3 +154,4 @@ export const githubCommits = pgTable("github_commits", {
 export type GitHubRepositoryDataTarget = typeof githubRepositories.$inferInsert;
 export type GitHubPullRequestDataTarget = typeof githubPullRequests.$inferInsert;
 export type GitHubCommitDataTarget = typeof githubCommits.$inferInsert;
+export type GitHubFileDataTarget = typeof githubRepositoryFiles.$inferInsert;
