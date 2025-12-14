@@ -48,7 +48,7 @@ export {
 } from "./services/vendors/connector.vendors.config";
 
 // GitHub code ingestion
-export { CODE_INGESTION_REPOS } from "./infrastructure/vendors/github/connector.github.data-source";
+export { CODE_INGESTION_REPOS } from "./shared/constants/code-ingestion.constants";
 export {
   connectorGithubFileMapper,
   type GitHubFileExternalWithContent,

@@ -1,4 +1,6 @@
+import type { EntityType } from "@ait/core";
 import type { BaseMetadata, Document } from "../../types/documents";
+import { getTextTokenizer } from "../tokenizer/strategies";
 import type { IRerankService } from "./rerank.service";
 
 export interface FastRerankConfig {
@@ -29,12 +31,14 @@ export class FastRerankService implements IRerankService {
     if (documents.length === 0) return [];
     if (documents.length === 1) return documents;
 
-    const queryTerms = this._tokenize(query);
+    // Use default tokenizer for query
+    const queryTokenizer = getTextTokenizer();
+    const queryTerms = queryTokenizer.tokenize(query);
     const now = Date.now();
 
     // Score all documents
     const scored = documents.map((doc) => {
-      const keywordScore = this._computeKeywordScore(queryTerms, doc.pageContent);
+      const keywordScore = this._computeKeywordScore(queryTerms, doc);
       const vectorScore = this._getExistingScore(doc);
       const recencyScore = this._computeRecencyScore(doc, now);
 
@@ -66,29 +70,45 @@ export class FastRerankService implements IRerankService {
   }
 
   /**
-   * Tokenize text into lowercase terms
+   * Get entity type from document metadata for tokenizer selection.
    */
-  private _tokenize(text: string): Set<string> {
-    const tokens = text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, " ")
-      .split(/\s+/)
-      .filter((t) => t.length > 2); // Filter short words
+  private _getEntityType<TMetadata extends BaseMetadata>(doc: Document<TMetadata>): EntityType | undefined {
+    const metadata = doc.metadata as Record<string, unknown>;
+    const type = metadata.__type as EntityType | undefined;
 
-    return new Set(tokens);
+    // Map known types to EntityType
+    if (type === "repository_file" || type === "commit" || type === "pull_request" || type === "repository") {
+      return type as EntityType;
+    }
+
+    // Fallback: check for code-like indicators
+    if (metadata.extension !== undefined) {
+      return "repository_file";
+    }
+
+    return undefined;
   }
 
   /**
-   * Compute keyword overlap score using Jaccard-like similarity
+   * Compute keyword overlap score using Jaccard-like similarity.
+   * Uses appropriate tokenizer based on document entity type.
    */
-  private _computeKeywordScore(queryTerms: Set<string>, content: string): number {
+  private _computeKeywordScore<TMetadata extends BaseMetadata>(
+    queryTerms: Set<string>,
+    doc: Document<TMetadata>,
+  ): number {
     if (queryTerms.size === 0) return 0;
 
-    const contentLower = content.toLowerCase();
-    let matchCount = 0;
+    const content = doc.pageContent;
+    const entityType = this._getEntityType(doc);
 
+    // Get appropriate tokenizer for this document type
+    const tokenizer = getTextTokenizer(entityType);
+    const contentTerms = tokenizer.tokenize(content);
+
+    let matchCount = 0;
     for (const term of queryTerms) {
-      if (contentLower.includes(term)) {
+      if (contentTerms.has(term)) {
         matchCount++;
       }
     }
@@ -97,10 +117,24 @@ export class FastRerankService implements IRerankService {
     const score = matchCount / queryTerms.size;
 
     // Boost for exact phrase matches
+    const contentLower = content.toLowerCase();
     const queryPhrase = Array.from(queryTerms).join(" ");
     const phraseBoost = contentLower.includes(queryPhrase) ? 0.2 : 0;
 
-    return Math.min(score + phraseBoost, 1.0);
+    // Additional boost for exact identifier matches in code
+    let identifierBoost = 0;
+    if (entityType) {
+      for (const term of queryTerms) {
+        // Check for exact identifier match (word boundaries)
+        const identifierPattern = new RegExp(`\\b${term}\\b`, "i");
+        if (identifierPattern.test(content)) {
+          identifierBoost += 0.1;
+        }
+      }
+      identifierBoost = Math.min(identifierBoost, 0.3); // Cap at 0.3
+    }
+
+    return Math.min(score + phraseBoost + identifierBoost, 1.0);
   }
 
   /**

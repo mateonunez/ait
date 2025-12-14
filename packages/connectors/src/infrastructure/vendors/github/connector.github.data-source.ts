@@ -12,11 +12,7 @@ import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
 import ignore, { type Ignore } from "ignore";
 import { isText } from "istextorbinary";
 
-/**
- * Repositories to ingest code from.
- * Only selected repositories as for now
- */
-export const CODE_INGESTION_REPOS: string[] = ["mateonunez/ait"];
+import { IGNORED_PATHS, MAX_FILE_SIZE } from "../../../shared/constants/code-ingestion.constants";
 
 export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];
@@ -452,18 +448,33 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         this._logger.warn(`Tree for ${owner}/${repo} was truncated (>100k files)`);
       }
 
-      return response.data.tree
-        .filter((item) => item.type === "blob")
-        .filter((item) => item.path && !ig.ignores(item.path))
-        .map((item) => ({
-          path: item.path || "",
-          mode: item.mode || "",
-          type: item.type || "blob",
-          sha: item.sha || "",
-          size: item.size,
-          url: item.url || "",
-          __type: "tree_item" as const,
-        }));
+      return (
+        response.data.tree
+          .filter((item) => item.type === "blob")
+          .filter((item) => item.path && !ig.ignores(item.path))
+          // Apply safety limits: skip large files and ignored paths
+          .filter((item) => {
+            // Skip files larger than MAX_FILE_SIZE
+            if (item.size && item.size > MAX_FILE_SIZE) {
+              this._logger.debug(`Skipping large file: ${item.path} (${item.size} bytes)`);
+              return false;
+            }
+            // Skip ignored paths (vendored, generated, lock files)
+            if (IGNORED_PATHS.some((pattern) => pattern.test(item.path || ""))) {
+              return false;
+            }
+            return true;
+          })
+          .map((item) => ({
+            path: item.path || "",
+            mode: item.mode || "",
+            type: item.type || "blob",
+            sha: item.sha || "",
+            size: item.size,
+            url: item.url || "",
+            __type: "tree_item" as const,
+          }))
+      );
     } catch (error: any) {
       this._handleError(error, "GITHUB_FETCH_TREE");
     }

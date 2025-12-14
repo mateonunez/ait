@@ -1,5 +1,5 @@
 import type { GitHubFileDataTarget } from "@ait/postgres";
-import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import { CodeSanitizer } from "../../../../utils/code-sanitizer.util";
 import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 /**
@@ -11,20 +11,15 @@ export class ETLGitHubFileDescriptor implements IETLEmbeddingDescriptor<GitHubFi
   public getEmbeddingText(file: GitHubFileDataTarget): string {
     const parts: string[] = [];
 
-    // File identity with path
     parts.push(`File: \`${file.path}\``);
 
-    // Repository context
     if (file.repositoryFullName) {
       parts.push(`Repository: ${file.repositoryFullName}`);
     }
 
-    // Branch context
     if (file.branch) {
       parts.push(`Branch: ${file.branch}`);
     }
-
-    // Language and metadata
     if (file.language) {
       parts.push(`Language: ${file.language}`);
     }
@@ -37,33 +32,29 @@ export class ETLGitHubFileDescriptor implements IETLEmbeddingDescriptor<GitHubFi
       parts.push(`Extension: ${file.extension}`);
     }
 
-    // Separator before content
     parts.push("---");
 
-    // Include file content for semantic search
-    // Truncate very large files to avoid embedding size limits
     const maxContentLength = 10_000;
     const content = file.content || "";
     if (content.length > maxContentLength) {
-      parts.push(TextSanitizer.sanitize(content.substring(0, maxContentLength), maxContentLength));
+      parts.push(CodeSanitizer.sanitizeForEmbedding(content.substring(0, maxContentLength)));
       parts.push(`... (truncated, ${file.linesOfCode} total lines)`);
     } else {
-      parts.push(TextSanitizer.sanitize(content, maxContentLength));
+      parts.push(CodeSanitizer.sanitizeForEmbedding(content));
     }
 
     return parts.join("\n");
   }
 
   public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubFileDataTarget): U {
-    // Exclude the content from payload to reduce storage size
-    // (content is included in embedding text)
-    const { content: _content, updatedAt: _updatedAt, ...entityWithoutContent } = entity;
+    const { updatedAt: _updatedAt, ...entityWithoutUpdatedAt } = entity;
+    const sanitizedContent = entity.content ? CodeSanitizer.sanitize(entity.content) : null;
 
     return {
       __type: "repository_file",
-      ...entityWithoutContent,
-      // Include truncated content summary for display purposes
-      contentPreview: entity.content?.substring(0, 1_000) || null,
+      ...entityWithoutUpdatedAt,
+      content: sanitizedContent,
+      title: CodeSanitizer.formatChunkTitle(entity.repositoryFullName || "unknown", entity.path || "unknown"),
     } as unknown as U;
   }
 }
