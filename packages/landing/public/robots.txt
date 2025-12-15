@@ -1,0 +1,27 @@
+# AIt Landing Page
+# https://ait.rocks
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://ait.rocks/sitemap.xml
+
+# AI Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Anthropic-AI
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+# LLMs.txt location
+# https://ait.rocks/llms.txt

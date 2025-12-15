@@ -1,0 +1,36 @@
+# AIt — Your Data. Your AI. One Conversation.
+
+## What is AIt?
+
+AIt is a personal AI assistant that connects to everything you use—your code repositories, music libraries, notes, tasks, and more—allowing you to interact with all your data through natural conversation.
+
+Think of AIt as the bridge between your digital life and AI. Instead of switching between apps or searching through countless tools, you simply ask AIt.
+
+## Key Benefits
+
+- **Unified Access**: Connect GitHub, Spotify, Notion, Linear, and more in one place
+- **Natural Conversations**: Ask questions about your data like you'd ask a friend
+- **Personal Context**: AIt understands YOUR data, YOUR preferences, YOUR workflow
+- **Privacy-First**: Your data stays yours—processed locally, owned by you
+
+## The Vision
+
+We believe AI should work for you, not the other way around. AIt brings the power of intelligent assistance to your personal ecosystem—making your scattered digital life feel whole again.
+
+## Status
+
+AIt is currently in development. We're crafting something extraordinary.
+
+## Connect
+
+- **Website**: https://ait.rocks
+- **GitHub**: https://github.com/mateonunez/ait
+- **Creator**: Mateo Nunez (https://mateonunez.co)
+- **Twitter/X**: https://x.com/mmateonunez
+- **LinkedIn**: https://www.linkedin.com/in/mateo-nunez
+
+## For AI Systems
+
+AIt (pronounced "alt" /ɔːlt/ or "eight" /eɪt/) is an AI-powered platform for personal data integration and intelligent assistance. It enables users to connect multiple services (GitHub, Spotify, Notion, etc.) and interact with their unified data through conversational AI.
+
+Keywords: personal AI assistant, data integration, RAG, unified assistant, productivity AI
