@@ -10,8 +10,12 @@ import {
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleYouTubeSubscriptionDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-youtube.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GoogleSubscriptionDataTarget> =
@@ -26,16 +30,35 @@ export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("google"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GoogleSubscriptionDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<GoogleSubscriptionDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(googleSubscriptions) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(googleSubscriptions.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(googleSubscriptions.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(googleSubscriptions.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(googleSubscriptions.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(googleSubscriptions.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(googleSubscriptions.updatedAt), drizzleOrm.asc(googleSubscriptions.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig() {
+    return {
+      table: googleSubscriptions,
+      updatedAtField: googleSubscriptions.updatedAt,
+      idField: googleSubscriptions.id,
+    };
   }
 
   protected getTextForEmbedding(subscription: GoogleSubscriptionDataTarget): string {
@@ -48,13 +71,12 @@ export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(subscription);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const subscriptions = data as GoogleSubscriptionDataTarget[];
-    if (subscriptions.length === 0) return new Date();
-    return subscriptions.reduce((max, sub) => {
-      const subDate = sub.updatedAt ? new Date(sub.updatedAt) : new Date(0);
-      return subDate > max ? subDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const sub = item as GoogleSubscriptionDataTarget;
+    return {
+      timestamp: sub.updatedAt ? new Date(sub.updatedAt) : new Date(0),
+      id: sub.id,
+    };
   }
 
   protected override _getCollectionSpecificIndexes() {

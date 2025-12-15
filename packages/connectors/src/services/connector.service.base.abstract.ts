@@ -9,7 +9,10 @@ import { SyncStateService } from "./shared/sync/sync-state.service";
 
 interface EntityConfig<TEntityMap, K extends keyof TEntityMap, E> {
   fetcher?: () => Promise<E[]>;
-  paginatedFetcher?: (cursor?: string) => Promise<{ data: E[]; nextCursor?: string }>;
+  paginatedFetcher?: (cursor?: { id: string; timestamp: Date }) => Promise<{
+    data: E[];
+    nextCursor?: { id: string; timestamp: Date };
+  }>;
   mapper: (entity: E) => TEntityMap[K];
   schema?: ValidationSchema<E>;
   cacheTtl?: number;
@@ -51,7 +54,13 @@ export abstract class ConnectorServiceBase<
   protected registerPaginatedEntityConfig<K extends keyof TEntityMap, E>(
     entityType: K,
     config: {
-      paginatedFetcher: (connector: TConnector, cursor?: string) => Promise<{ data: E[]; nextCursor?: string }>;
+      paginatedFetcher: (
+        connector: TConnector,
+        cursor?: { id: string; timestamp: Date },
+      ) => Promise<{
+        data: E[];
+        nextCursor?: { id: string; timestamp: Date };
+      }>;
       mapper: (external: E) => TEntityMap[K];
       schema?: ValidationSchema<E>;
       cacheTtl?: number;
@@ -60,7 +69,7 @@ export abstract class ConnectorServiceBase<
     },
   ): void {
     this.entityConfigs.set(entityType, {
-      paginatedFetcher: (cursor?: string) => config.paginatedFetcher(this._connector, cursor),
+      paginatedFetcher: (cursor?: { id: string; timestamp: Date }) => config.paginatedFetcher(this._connector, cursor),
       mapper: config.mapper,
       schema: config.schema,
       cacheTtl: config.cacheTtl,

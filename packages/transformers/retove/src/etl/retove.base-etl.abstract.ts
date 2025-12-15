@@ -12,7 +12,7 @@ import {
 } from "@ait/ai-sdk";
 import { type ISyncStateService, SyncStateService } from "@ait/connectors";
 import { type EntityType, getLogger } from "@ait/core";
-import type { getPostgresClient } from "@ait/postgres";
+import { drizzleOrm, type getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 
 const logger = getLogger();
@@ -31,6 +31,24 @@ export interface RetryOptions {
 }
 
 const embeddingModelConfig = getEmbeddingModelConfig();
+
+export interface ETLCursor {
+  timestamp: Date;
+  id: string;
+}
+
+/**
+ * Configuration for cursor-based ETL operations.
+ * Provides the Drizzle table and column references for count/extract queries.
+ */
+export interface ETLTableConfig {
+  /** Drizzle table reference (e.g., spotifyTracks) */
+  table: any;
+  /** Column reference for updatedAt field (e.g., spotifyTracks.updatedAt) */
+  updatedAtField: any;
+  /** Column reference for id field (e.g., spotifyTracks.id) */
+  idField: any;
+}
 
 export abstract class RetoveBaseETLAbstract {
   protected readonly retryOptions: RetryOptions;
@@ -82,23 +100,39 @@ export abstract class RetoveBaseETLAbstract {
       logger.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
 
-      // Get validated timestamp - checks actual vectors in collection vs sync state
-      let lastProcessedTimestamp = await this._getValidatedLastTimestamp();
+      // Get validated cursor - logic similar to timestamp validation but using cursor object
+      let currentCursor = await this._getValidatedCursor();
 
-      if (lastProcessedTimestamp) {
-        logger.info(`Processing records updated after: ${lastProcessedTimestamp.toISOString()}`);
+      if (currentCursor) {
+        logger.info(`Processing records after: ${currentCursor.timestamp.toISOString()} (ID > ${currentCursor.id})`);
       } else {
-        logger.info("No previous ETL run found, processing all records");
+        logger.info("No previous ETL cursor found, processing all records");
+      }
+
+      // Calculate total pending items (Delta)
+      const pendingCount = await this.count(currentCursor);
+      const hasPendingCount = pendingCount !== Number.MAX_SAFE_INTEGER;
+      if (hasPendingCount) {
+        logger.info(
+          `📊 Found ${pendingCount.toLocaleString()} pending items to process (limit: ${limit.toLocaleString()})`,
+        );
+      } else {
+        logger.info(`📊 Processing items in streaming mode (limit: ${limit.toLocaleString()})`);
       }
 
       let remainingLimit = limit;
       let totalProcessed = 0;
+      let batchNumber = 0;
 
+      // Loop as long as we have limit budget AND there are pending items (or if count is partial)
+      // If count returns 0, we shouldn't run unless limit > 0 allows discovery (handled by extract length check)
       while (remainingLimit > 0) {
+        batchNumber++;
         const batchLimit = Math.min(remainingLimit, this._progressiveBatchSize);
-        const data = await this.extract(batchLimit, lastProcessedTimestamp);
+        // Pass the full cursor object to extract
+        const data = await this.extract(batchLimit, currentCursor);
 
-        logger.info(`Extracted batch of ${data.length} records (Limit: ${batchLimit})`);
+        logger.info(`📦 Batch #${batchNumber}: Extracted ${data.length.toLocaleString()} records`);
 
         if (data.length === 0) {
           logger.info("No more records to process");
@@ -107,39 +141,41 @@ export abstract class RetoveBaseETLAbstract {
 
         const transformedData = await this.transform(data);
 
-        // CRITICAL CHECK: If we extracted data but transformed NONE, we have a systemic failure.
-        // We must NOT update the sync state to prevent "skipping" this range or triggering
-        // the "sync state newer than vector" rewind loop.
         if (data.length > 0 && transformedData.length === 0) {
-          logger.error(
-            `❌ Batch Total Failure: Extracted ${data.length} items but 0 were transformed. Stopping ETL to prevent state corruption.`,
+          logger.warn(
+            `⚠️ Batch #${batchNumber}: Extracted ${data.length} items but 0 were transformed (duplicates/filtered). Advancing cursor.`,
           );
-          break;
+          // Do not break; allow cursor update to skip these bad/filtered items
+        } else if (transformedData.length > 0) {
+          logger.info(`   └─ Transformed: ${transformedData.length.toLocaleString()} vector points`);
         }
 
-        logger.info(`Transformed ${transformedData.length} vector points in this batch`);
-
-        // Update timestamps for next iteration
         if (data.length > 0) {
-          const latestTimestamp = this.getLatestTimestamp(data);
+          // Determine the new cursor from the *extracted* data (to ensure we move forward past these items)
+          const lastItem = data[data.length - 1];
+          const newCursor = this.getCursorFromItem(lastItem);
 
-          // If we successfully transformed at least one item (or if we decide partial success is enough to move forward),
-          // we update the sync state.
-          await this._syncStateService.updateETLTimestamp(this._collectionName, "etl", latestTimestamp);
-          logger.info(`Checkpoint: Updated last processed timestamp to: ${latestTimestamp.toISOString()}`);
+          // Update Sync State with new Cursor and Timestamp
+          await this._updateSyncState(newCursor);
+          logger.debug(
+            `   └─ Cursor updated: ${newCursor.timestamp.toISOString()} (${newCursor.id.substring(0, 20)}...)`,
+          );
 
-          // Advance the cursor for the next local batch extraction
-          lastProcessedTimestamp = latestTimestamp;
+          currentCursor = newCursor;
         }
 
         totalProcessed += data.length;
         remainingLimit -= data.length;
 
-        logger.info(`Progress: ${totalProcessed} processed, ${remainingLimit} remaining`);
+        // Show progress
+        const progressInfo = hasPendingCount
+          ? `${totalProcessed.toLocaleString()}/${Math.min(pendingCount, limit).toLocaleString()} (${Math.round((totalProcessed / Math.min(pendingCount, limit)) * 100)}%)`
+          : `${totalProcessed.toLocaleString()} processed (${remainingLimit.toLocaleString()} remaining in limit)`;
+        logger.info(`📊 Progress: ${progressInfo}`);
       }
 
       logger.info(
-        `✅ ETL process completed successfully for collection: ${this._collectionName}. Total processed: ${totalProcessed}`,
+        `✅ ETL completed for ${this._collectionName}. Total records processed: ${totalProcessed.toLocaleString()}`,
       );
     } catch (error) {
       logger.error(`ETL process failed for collection: ${this._collectionName}`, { error });
@@ -148,47 +184,59 @@ export abstract class RetoveBaseETLAbstract {
   }
 
   /**
-   * Get validated last processed timestamp by checking:
-   * 1. Sync state from database
-   * 2. Actual vectors in collection (reality check)
-   *
-   * If sync state exists but collection is empty/has no matching vectors,
-   * reset sync state to process all records.
+   * Updates the sync state with the new cursor and timestamp.
+   * Manually constructs the state to avoid changing ISyncStateService interface for now.
    */
-  private async _getValidatedLastTimestamp(): Promise<Date | undefined> {
+  private async _updateSyncState(cursor: ETLCursor): Promise<void> {
     const entityType = this._getEntityType();
-    const syncState = await this._syncStateService.getState(this._collectionName, "etl");
-    const syncTimestamp = syncState?.lastProcessedTimestamp;
+    // Use proper entityType instead of generic "etl"
+    let currentState = await this._syncStateService.getState(this._collectionName, entityType);
+    if (!currentState) {
+      currentState = {
+        connectorName: this._collectionName,
+        entityType: entityType,
+        lastSyncTime: new Date(),
+        checksums: {},
+      };
+    }
 
-    // Check actual collection state
+    // Always update cursor and timestamp
+    currentState.cursor = cursor;
+    currentState.lastETLRun = new Date();
+
+    await this._syncStateService.saveState(currentState);
+  }
+
+  /**
+   * Validates and retrieves the initial cursor.
+   */
+  private async _getValidatedCursor(): Promise<ETLCursor | undefined> {
+    const entityType = this._getEntityType();
+    // Use proper entityType instead of generic "etl"
+    const syncState = await this._syncStateService.getState(this._collectionName, entityType);
+
+    let cursor: ETLCursor | undefined;
+
+    if (syncState?.cursor) {
+      try {
+        const rawCursor = syncState.cursor;
+        cursor = { timestamp: new Date(rawCursor.timestamp), id: rawCursor.id };
+      } catch (e) {
+        logger.warn("Failed to parse sync state cursor", { error: e });
+      }
+    }
+
+    // Validation against Qdrant (similar to before)
     const collectionInfo = await this._getCollectionVectorCount(entityType);
-
-    // If collection has no vectors for this entity type, reset sync state
     if (collectionInfo.count === 0) {
-      if (syncTimestamp) {
-        logger.warn(
-          `Sync state exists (${syncTimestamp.toISOString()}) but collection has no vectors for type '${entityType}'. Resetting to process all records.`,
-        );
+      if (cursor) {
+        logger.warn("Sync state exists but collection has no vectors. Resetting.");
         await this._syncStateService.clearState(this._collectionName, "etl");
       }
       return undefined;
     }
 
-    // If sync state exists, validate against actual latest vector timestamp
-    if (syncTimestamp && collectionInfo.latestTimestamp) {
-      const actualLatest = new Date(collectionInfo.latestTimestamp);
-
-      // If sync state is significantly newer than actual vectors, something is wrong
-      // Use the actual latest timestamp from vectors instead
-      if (syncTimestamp > actualLatest) {
-        logger.warn(
-          `Sync state (${syncTimestamp.toISOString()}) is newer than latest vector (${actualLatest.toISOString()}). Using actual vector timestamp.`,
-        );
-        return actualLatest;
-      }
-    }
-
-    return syncTimestamp;
+    return cursor;
   }
 
   /**
@@ -386,7 +434,8 @@ export abstract class RetoveBaseETLAbstract {
       if (allPoints.length >= this._batchSize) {
         const batchToLoad = allPoints.splice(0, this._batchSize);
         await this.load(batchToLoad);
-        logger.debug(`Loaded batch of ${batchToLoad.length} points, ${data.length - i - concurrency} remaining`);
+        const processed = Math.min(i + concurrency, data.length);
+        logger.debug(`   └─ Upserting: ${batchToLoad.length} points (${processed}/${data.length} items processed)`);
       }
 
       // Yield to event loop
@@ -581,8 +630,33 @@ export abstract class RetoveBaseETLAbstract {
     }
   }
 
-  protected abstract extract(limit: number, lastProcessedTimestamp?: Date): Promise<unknown[]>;
+  protected async count(cursor?: ETLCursor): Promise<number> {
+    const tableConfig = this._getTableConfig();
+    if (!tableConfig) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    const { table, updatedAtField, idField } = tableConfig;
+    const result = await this._pgClient.db.transaction(async (tx) => {
+      let query = tx.select({ count: drizzleOrm.count() }).from(table) as any;
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(updatedAtField, cursor.timestamp),
+            drizzleOrm.and(drizzleOrm.eq(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
+          ),
+        );
+      }
+      return query.execute();
+    });
+    return Number(result[0]?.count ?? 0);
+  }
+
+  protected _getTableConfig(): ETLTableConfig | null {
+    return null;
+  }
+  protected abstract extract(limit: number, cursor?: ETLCursor): Promise<unknown[]>;
   protected abstract getTextForEmbedding(item: Record<string, unknown>): string;
   protected abstract getPayload(item: Record<string, unknown>): Record<string, unknown>;
-  protected abstract getLatestTimestamp(data: unknown[]): Date;
+  protected abstract getCursorFromItem(item: unknown): ETLCursor;
 }

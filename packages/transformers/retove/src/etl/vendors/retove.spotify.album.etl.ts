@@ -6,7 +6,12 @@ import type { SpotifyAlbumDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyAlbumDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveSpotifyAlbumETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> = new ETLSpotifyAlbumDescriptor();
@@ -20,14 +25,31 @@ export class RetoveSpotifyAlbumETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyAlbumDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<SpotifyAlbumDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyAlbums) as any;
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(spotifyAlbums.updatedAt, lastProcessedTimestamp));
+
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(spotifyAlbums.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(spotifyAlbums.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(spotifyAlbums.id, cursor.id),
+            ),
+          ),
+        );
       }
-      return query.orderBy(drizzleOrm.asc(spotifyAlbums.updatedAt)).limit(limit).execute();
+
+      return query
+        .orderBy(drizzleOrm.asc(spotifyAlbums.updatedAt), drizzleOrm.asc(spotifyAlbums.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig() {
+    return { table: spotifyAlbums, updatedAtField: spotifyAlbums.updatedAt, idField: spotifyAlbums.id };
   }
 
   protected getTextForEmbedding(album: SpotifyAlbumDataTarget): string {
@@ -38,13 +60,12 @@ export class RetoveSpotifyAlbumETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(album);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const albums = data as SpotifyAlbumDataTarget[];
-    if (albums.length === 0) return new Date();
-    return albums.reduce((max, album) => {
-      const albumDate = album.updatedAt ? new Date(album.updatedAt) : new Date(0);
-      return albumDate > max ? albumDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const album = item as SpotifyAlbumDataTarget;
+    return {
+      timestamp: album.updatedAt ? new Date(album.updatedAt) : new Date(0),
+      id: album.id,
+    };
   }
 
   protected override _getCollectionSpecificIndexes() {

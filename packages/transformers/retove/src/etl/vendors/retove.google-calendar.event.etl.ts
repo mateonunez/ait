@@ -10,8 +10,12 @@ import {
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleCalendarEventDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-calendar.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GoogleCalendarEventDataTarget> =
@@ -26,16 +30,35 @@ export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("google"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GoogleCalendarEventDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<GoogleCalendarEventDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(googleCalendarEvents) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(googleCalendarEvents.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(googleCalendarEvents.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(googleCalendarEvents.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(googleCalendarEvents.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(googleCalendarEvents.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(googleCalendarEvents.updatedAt), drizzleOrm.asc(googleCalendarEvents.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig() {
+    return {
+      table: googleCalendarEvents,
+      updatedAtField: googleCalendarEvents.updatedAt,
+      idField: googleCalendarEvents.id,
+    };
   }
 
   protected getTextForEmbedding(event: GoogleCalendarEventDataTarget): string {
@@ -46,13 +69,12 @@ export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(event);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const events = data as GoogleCalendarEventDataTarget[];
-    if (events.length === 0) return new Date();
-    return events.reduce((max, event) => {
-      const eventDate = event.updatedAt ? new Date(event.updatedAt) : new Date(0);
-      return eventDate > max ? eventDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const event = item as GoogleCalendarEventDataTarget;
+    return {
+      timestamp: event.updatedAt ? new Date(event.updatedAt) : new Date(0),
+      id: event.id,
+    };
   }
 
   protected override _getCollectionSpecificIndexes() {

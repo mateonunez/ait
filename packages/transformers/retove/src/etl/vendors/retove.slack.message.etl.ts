@@ -5,8 +5,12 @@ import { type SlackMessageDataTarget, drizzleOrm, type getPostgresClient, slackM
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSlackMessageDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.slack.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SlackMessageDataTarget> = new ETLSlackMessageDescriptor();
@@ -20,16 +24,31 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("slack"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SlackMessageDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<SlackMessageDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(slackMessages) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(slackMessages.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(slackMessages.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(slackMessages.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(slackMessages.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(slackMessages.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(slackMessages.updatedAt), drizzleOrm.asc(slackMessages.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig() {
+    return { table: slackMessages, updatedAtField: slackMessages.updatedAt, idField: slackMessages.id };
   }
 
   protected getTextForEmbedding(message: SlackMessageDataTarget): string {
@@ -40,13 +59,12 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(message);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const messages = data as SlackMessageDataTarget[];
-    if (messages.length === 0) return new Date();
-    return messages.reduce((max, message) => {
-      const messageDate = message.updatedAt ? new Date(message.updatedAt) : new Date(0);
-      return messageDate > max ? messageDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const message = item as SlackMessageDataTarget;
+    return {
+      timestamp: message.updatedAt ? new Date(message.updatedAt) : new Date(0),
+      id: message.id,
+    };
   }
 
   protected override _getCollectionSpecificIndexes() {

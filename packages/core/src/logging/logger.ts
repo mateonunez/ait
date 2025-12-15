@@ -21,24 +21,33 @@ class ConsoleLogger implements Logger {
     return Object.keys(merged).length > 0 ? merged : undefined;
   }
 
+  private logWithMeta(logFn: (...args: unknown[]) => void, message: string, meta?: LoggerMeta): void {
+    const formattedMeta = formatMeta(this.mergeMeta(meta));
+    if (formattedMeta !== undefined) {
+      logFn(message, formattedMeta);
+    } else {
+      logFn(message);
+    }
+  }
+
   log(message: string, meta?: LoggerMeta): void {
-    console.log(message, formatMeta(this.mergeMeta(meta)));
+    this.logWithMeta(console.log.bind(console), message, meta);
   }
 
   info(message: string, meta?: LoggerMeta): void {
-    console.info(message, formatMeta(this.mergeMeta(meta)));
+    this.logWithMeta(console.info.bind(console), message, meta);
   }
 
   warn(message: string, meta?: LoggerMeta): void {
-    console.warn(message, formatMeta(this.mergeMeta(meta)));
+    this.logWithMeta(console.warn.bind(console), message, meta);
   }
 
   error(message: string, meta?: LoggerMeta): void {
-    console.error(message, formatMeta(this.mergeMeta(meta)));
+    this.logWithMeta(console.error.bind(console), message, meta);
   }
 
   debug(message: string, meta?: LoggerMeta): void {
-    console.debug(message, formatMeta(this.mergeMeta(meta)));
+    this.logWithMeta(console.debug.bind(console), message, meta);
   }
 
   child(meta: LoggerMeta): Logger {

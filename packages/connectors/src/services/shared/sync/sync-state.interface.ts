@@ -2,7 +2,10 @@ export interface ISyncState {
   connectorName: string;
   entityType: string;
   lastSyncTime: Date;
-  cursor?: string;
+  cursor?: {
+    id: string;
+    timestamp: Date;
+  };
   checksums: Record<string, string>; // entityId -> checksum
   // ETL tracking
   lastETLRun?: Date;

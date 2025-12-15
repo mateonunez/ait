@@ -1,4 +1,4 @@
-import { getLogger } from "@ait/core";
+import { type EntityType, getLogger } from "@ait/core";
 import { closePostgresConnection, getPostgresClient } from "@ait/postgres";
 import { getQdrantClient } from "@ait/qdrant";
 import {
@@ -6,6 +6,7 @@ import {
   runGitHubFileETL,
   runGitHubPullRequestETL,
   runGitHubRepositoryETL,
+  runGoogleCalendarEventETL,
   runGoogleYouTubeSubscriptionETL,
   runLinearETL,
   runNotionETL,
@@ -20,32 +21,96 @@ import {
 
 const logger = getLogger();
 
+const etlRunners: Record<EntityType, any> = {
+  track: runSpotifyTrackETL,
+  artist: runSpotifyArtistETL,
+  playlist: runSpotifyPlaylistETL,
+  album: runSpotifyAlbumETL,
+  recently_played: runSpotifyRecentlyPlayedETL,
+  repository: runGitHubRepositoryETL,
+  pull_request: runGitHubPullRequestETL,
+  commit: runGitHubCommitETL,
+  repository_file: runGitHubFileETL,
+  tweet: runXETL,
+  issue: runLinearETL,
+  page: runNotionETL,
+  message: runSlackETL,
+  subscription: runGoogleYouTubeSubscriptionETL,
+  event: undefined,
+  calendar: runGoogleCalendarEventETL,
+};
+
 async function main() {
-  logger.info("🚀 Starting ETL process...");
+  const args = process.argv.slice(2);
+  const isManualRun = args.includes("--manual");
+  const jobArg = args.find((arg) => arg.startsWith("--etl="));
+  const etlName = jobArg ? jobArg.split("=")[1] : args.find((arg) => !arg.startsWith("-") && arg !== "manual");
+
+  if (isManualRun && etlName) {
+    logger.info(`🚀 Starting ETL process (Manual: ${etlName})...`);
+  } else if (isManualRun && !etlName) {
+    logger.error("❌ --manual requires --etl=<name> argument");
+    logger.info(`Available ETLs: ${Object.keys(etlRunners).join(", ")}`);
+    process.exit(1);
+  } else {
+    logger.info("🚀 Starting ETL process (All)...");
+  }
+
+  const results: { name: string; status: "success" | "failure"; error?: any }[] = [];
+
+  const runETL = async (name: string, runner: (q: any, p: any) => Promise<void>, qdrantClient: any, pgClient: any) => {
+    logger.info(`⏳ Starting ${name}...`);
+    try {
+      await runner(qdrantClient, pgClient);
+      logger.info(`✅ ${name} completed successfully`);
+      results.push({ name, status: "success" });
+    } catch (error) {
+      logger.error(`❌ ${name} failed`, { error });
+      results.push({ name, status: "failure", error });
+    }
+  };
+
   try {
     const qdrantClient = getQdrantClient();
     const pgClient = getPostgresClient();
 
-    await runSpotifyTrackETL(qdrantClient, pgClient);
-    await runSpotifyArtistETL(qdrantClient, pgClient);
-    await runSpotifyPlaylistETL(qdrantClient, pgClient);
-    await runSpotifyAlbumETL(qdrantClient, pgClient);
-    await runSpotifyRecentlyPlayedETL(qdrantClient, pgClient);
+    if (isManualRun && etlName) {
+      const runner = etlRunners[etlName as keyof typeof etlRunners];
+      if (!runner) {
+        logger.warn(`Unknown ETL: ${etlName}. Available: ${Object.keys(etlRunners).join(", ")}`);
+        return;
+      }
+      await runETL(etlName, runner, qdrantClient, pgClient);
+    } else {
+      for (const [name, runner] of Object.entries(etlRunners)) {
+        if (!runner) {
+          logger.warn(`⚠️ Skipping ${name} (No runner implementation)`);
+          continue;
+        }
+        await runETL(name, runner, qdrantClient, pgClient);
+      }
+    }
 
-    await runGitHubRepositoryETL(qdrantClient, pgClient);
-    await runGitHubPullRequestETL(qdrantClient, pgClient);
-    await runGitHubCommitETL(qdrantClient, pgClient);
-    await runGitHubFileETL(qdrantClient, pgClient);
+    logger.info("\n📊 ETL Execution Summary:");
+    const failureCount = results.filter((r) => r.status === "failure").length;
 
-    await runXETL(qdrantClient, pgClient);
-    await runLinearETL(qdrantClient, pgClient);
-    await runNotionETL(qdrantClient, pgClient);
-    await runSlackETL(qdrantClient, pgClient);
-    await runGoogleYouTubeSubscriptionETL(qdrantClient, pgClient);
+    console.table(
+      results.map((r) => ({
+        ETL: r.name,
+        Status: r.status === "success" ? "✅ Success" : "❌ Failure",
+        Error: r.error ? String(r.error) : "-",
+      })),
+    );
 
-    logger.info("✅ ETL process completed successfully!");
+    if (failureCount > 0) {
+      logger.warn(`⚠️ Completed with ${failureCount} failures.`);
+      process.exit(1);
+    } else {
+      logger.info("✅ All ETLs completed successfully!");
+    }
   } catch (error) {
-    logger.error("❌ ETL error:", { error });
+    logger.error("❌ Critical ETL error:", { error });
+    process.exit(1);
   } finally {
     logger.info("🔒 Closing Postgres connection...");
     await closePostgresConnection();

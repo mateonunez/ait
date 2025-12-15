@@ -6,7 +6,13 @@ import { drizzleOrm, spotifyRecentlyPlayed } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyRecentlyPlayedDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyRecentlyPlayedDataTarget> =
@@ -34,14 +40,33 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
     return "recently_played";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyRecentlyPlayedDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<SpotifyRecentlyPlayedDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyRecentlyPlayed) as any;
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(spotifyRecentlyPlayed.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(spotifyRecentlyPlayed.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(spotifyRecentlyPlayed.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(spotifyRecentlyPlayed.id, cursor.id),
+            ),
+          ),
+        );
       }
-      return query.orderBy(drizzleOrm.asc(spotifyRecentlyPlayed.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(spotifyRecentlyPlayed.updatedAt), drizzleOrm.asc(spotifyRecentlyPlayed.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig {
+    return {
+      table: spotifyRecentlyPlayed,
+      updatedAtField: spotifyRecentlyPlayed.updatedAt,
+      idField: spotifyRecentlyPlayed.id,
+    };
   }
 
   protected getTextForEmbedding(item: SpotifyRecentlyPlayedDataTarget): string {
@@ -52,13 +77,12 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(item);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const items = data as SpotifyRecentlyPlayedDataTarget[];
-    if (items.length === 0) return new Date();
-    return items.reduce((max, item) => {
-      const itemDate = item.updatedAt ? new Date(item.updatedAt) : new Date(0);
-      return itemDate > max ? itemDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const record = item as SpotifyRecentlyPlayedDataTarget;
+    return {
+      timestamp: record.updatedAt ? new Date(record.updatedAt) : new Date(0),
+      id: record.id,
+    };
   }
 }
 

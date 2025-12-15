@@ -9,6 +9,7 @@
     "prepare": "pnpm build",
     "clean": "rm -rf dist coverage",
     "etl": "NODE_OPTIONS='--max_old_space_size=8192' tsx src/etl.retove.main.ts",
+    "etl:manual": "NODE_OPTIONS='--max_old_space_size=8192' tsx src/etl.retove.main.ts --manual",
     "example:etl": "tsx src/etl/example.etl.ts",
     "lint": "biome format && biome lint && biome check",
     "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write"

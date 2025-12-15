@@ -5,7 +5,12 @@ import { type XTweetDataTarget, drizzleOrm, type getPostgresClient, xTweets } fr
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLXTweetDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.x.descriptor";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveXTweetETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<XTweetDataTarget> = new ETLXTweetDescriptor();
@@ -30,16 +35,25 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
     return "tweet";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<XTweetDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<XTweetDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(xTweets) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(xTweets.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(xTweets.updatedAt, cursor.timestamp),
+            drizzleOrm.and(drizzleOrm.eq(xTweets.updatedAt, cursor.timestamp), drizzleOrm.gt(xTweets.id, cursor.id)),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(xTweets.updatedAt)).limit(limit).execute();
+      return query.orderBy(drizzleOrm.asc(xTweets.updatedAt), drizzleOrm.asc(xTweets.id)).limit(limit).execute();
     });
+  }
+
+  protected override _getTableConfig() {
+    return { table: xTweets, updatedAtField: xTweets.updatedAt, idField: xTweets.id };
   }
 
   protected getTextForEmbedding(tweet: XTweetDataTarget): string {
@@ -50,13 +64,12 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(tweet);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const tweets = data as XTweetDataTarget[];
-    if (tweets.length === 0) return new Date();
-    return tweets.reduce((max, tweet) => {
-      const tweetDate = tweet.updatedAt ? new Date(tweet.updatedAt) : new Date(0);
-      return tweetDate > max ? tweetDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const tweet = item as XTweetDataTarget;
+    return {
+      timestamp: tweet.updatedAt ? new Date(tweet.updatedAt) : new Date(0),
+      id: tweet.id,
+    };
   }
 }
 
