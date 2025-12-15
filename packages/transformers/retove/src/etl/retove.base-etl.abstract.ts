@@ -11,7 +11,7 @@ import {
   getSparseVectorService,
 } from "@ait/ai-sdk";
 import { type ISyncStateService, SyncStateService } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import { type EntityType, getLogger } from "@ait/core";
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 
@@ -75,13 +75,15 @@ export abstract class RetoveBaseETLAbstract {
     }
   }
 
+  protected readonly _progressiveBatchSize: number = 1000;
+
   public async run(limit: number): Promise<void> {
     try {
       logger.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
 
       // Get validated timestamp - checks actual vectors in collection vs sync state
-      const lastProcessedTimestamp = await this._getValidatedLastTimestamp();
+      let lastProcessedTimestamp = await this._getValidatedLastTimestamp();
 
       if (lastProcessedTimestamp) {
         logger.info(`Processing records updated after: ${lastProcessedTimestamp.toISOString()}`);
@@ -89,24 +91,56 @@ export abstract class RetoveBaseETLAbstract {
         logger.info("No previous ETL run found, processing all records");
       }
 
-      const data = await this.extract(limit, lastProcessedTimestamp);
-      logger.info(`Extracted ${data.length} records from source`);
+      let remainingLimit = limit;
+      let totalProcessed = 0;
 
-      if (data.length === 0) {
-        logger.info("No records to process");
-        return;
+      while (remainingLimit > 0) {
+        const batchLimit = Math.min(remainingLimit, this._progressiveBatchSize);
+        const data = await this.extract(batchLimit, lastProcessedTimestamp);
+
+        logger.info(`Extracted batch of ${data.length} records (Limit: ${batchLimit})`);
+
+        if (data.length === 0) {
+          logger.info("No more records to process");
+          break;
+        }
+
+        const transformedData = await this.transform(data);
+
+        // CRITICAL CHECK: If we extracted data but transformed NONE, we have a systemic failure.
+        // We must NOT update the sync state to prevent "skipping" this range or triggering
+        // the "sync state newer than vector" rewind loop.
+        if (data.length > 0 && transformedData.length === 0) {
+          logger.error(
+            `❌ Batch Total Failure: Extracted ${data.length} items but 0 were transformed. Stopping ETL to prevent state corruption.`,
+          );
+          break;
+        }
+
+        logger.info(`Transformed ${transformedData.length} vector points in this batch`);
+
+        // Update timestamps for next iteration
+        if (data.length > 0) {
+          const latestTimestamp = this.getLatestTimestamp(data);
+
+          // If we successfully transformed at least one item (or if we decide partial success is enough to move forward),
+          // we update the sync state.
+          await this._syncStateService.updateETLTimestamp(this._collectionName, "etl", latestTimestamp);
+          logger.info(`Checkpoint: Updated last processed timestamp to: ${latestTimestamp.toISOString()}`);
+
+          // Advance the cursor for the next local batch extraction
+          lastProcessedTimestamp = latestTimestamp;
+        }
+
+        totalProcessed += data.length;
+        remainingLimit -= data.length;
+
+        logger.info(`Progress: ${totalProcessed} processed, ${remainingLimit} remaining`);
       }
 
-      const transformedData = await this.transform(data);
-      logger.info(`Transformed ${transformedData.length} vector points`);
-
-      if (data.length > 0) {
-        const latestTimestamp = this.getLatestTimestamp(data);
-        await this._syncStateService.updateETLTimestamp(this._collectionName, "etl", latestTimestamp);
-        logger.info(`Updated last processed timestamp to: ${latestTimestamp.toISOString()}`);
-      }
-
-      logger.info(`✅ ETL process completed successfully for collection: ${this._collectionName}`);
+      logger.info(
+        `✅ ETL process completed successfully for collection: ${this._collectionName}. Total processed: ${totalProcessed}`,
+      );
     } catch (error) {
       logger.error(`ETL process failed for collection: ${this._collectionName}`, { error });
       throw error;
@@ -220,7 +254,7 @@ export abstract class RetoveBaseETLAbstract {
    * Get the entity type for this ETL (e.g., "repository", "pull_request", "track").
    * Override in subclasses if needed.
    */
-  protected _getEntityType(): string {
+  protected _getEntityType(): EntityType | "unknown" {
     // Default implementation tries to infer from a sample payload
     // Subclasses should override for accuracy
     return "unknown";

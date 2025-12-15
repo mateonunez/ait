@@ -10,6 +10,7 @@
     "clean": "rm -rf dist coverage",
     "start": "node ./dist/scheduler.entrypoint.js",
     "start:manual": "tsx src/scheduler.entrypoint.ts --manual",
+    "clean:state": "tsx src/scripts/clean-state.ts",
     "lint": "biome format && biome lint && biome check",
     "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write",
     "pretest": "test -f .env.test || cp .env.example .env.test",

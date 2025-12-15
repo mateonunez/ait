@@ -172,10 +172,20 @@ class SchedulerEntrypoint {
     logger.info(`📅 Scheduled ${SCHEDULED_JOBS.length} jobs with priorities`);
   }
 
-  async runJobsManually(): Promise<void> {
+  async runJobsManually(jobName?: string): Promise<void> {
     logger.info("🔧 Running jobs manually...");
 
-    const sortedJobs = [...SCHEDULED_JOBS].sort((a, b) => (a.priority || 99) - (b.priority || 99));
+    let sortedJobs = [...SCHEDULED_JOBS].sort((a, b) => (a.priority || 99) - (b.priority || 99));
+
+    if (jobName) {
+      const originalCount = sortedJobs.length;
+      sortedJobs = sortedJobs.filter((job) => job.name === jobName);
+      if (sortedJobs.length === 0) {
+        logger.warn(`⚠️ Job "${jobName}" not found. Available jobs: ${SCHEDULED_JOBS.map((j) => j.name).join(", ")}`);
+        return;
+      }
+      logger.info(`🎯 Targeting specific job: ${jobName} (Filtered from ${originalCount} jobs)`);
+    }
 
     for (const job of sortedJobs) {
       logger.info(`⏳ Starting ${job.name} (priority: ${job.priority || "default"})...`);
@@ -224,9 +234,11 @@ async function main() {
     // Handle command line arguments
     const args = process.argv.slice(2);
     const isManualRun = args.includes("--manual");
+    const jobArg = args.find((arg) => arg.startsWith("--job="));
+    const manualJobName = jobArg ? jobArg.split("=")[1] : undefined;
 
     if (isManualRun) {
-      await schedulerEntrypoint.runJobsManually();
+      await schedulerEntrypoint.runJobsManually(manualJobName);
 
       logger.info("🔒 Closing database connections...");
       await closePostgresConnection();
