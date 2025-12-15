@@ -7,6 +7,7 @@ export type EntityType =
   | "repository"
   | "pull_request"
   | "commit"
+  | "repository_file"
   | "issue"
   | "tweet"
   | "page"
@@ -24,6 +25,7 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "repository",
   "pull_request",
   "commit",
+  "repository_file",
   "tweet",
   "issue",
   "page",

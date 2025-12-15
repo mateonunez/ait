@@ -3,6 +3,7 @@ import { getLogger } from "@ait/core";
 import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { RetoveGitHubCommitETL } from "../../etl/vendors/retove.github.commit.etl";
+import { RetoveGitHubFileETL } from "../../etl/vendors/retove.github.file.etl";
 import { RetoveGitHubPullRequestETL } from "../../etl/vendors/retove.github.pull-request.etl";
 import { RetoveGitHubRepositoryETL } from "../../etl/vendors/retove.github.repository.etl";
 import { RetoveGoogleCalendarEventETL } from "../../etl/vendors/retove.google-calendar.event.etl";
@@ -31,6 +32,7 @@ export const GitHubETLs = {
   repository: "RetoveGitHubRepositoryETL",
   pullRequest: "RetoveGitHubPullRequestETL",
   commit: "RetoveGitHubCommitETL",
+  file: "RetoveGitHubFileETL",
 };
 
 export const XETLs = {
@@ -138,6 +140,18 @@ export async function runGitHubCommitETL(
   logger.info(`🔍 Running RetoveGitHubCommitETL → ${collection} with limit of ${LIMIT}...`);
   await etl.run(LIMIT);
   logger.info(`✅ RetoveGitHubCommitETL → ${collection} completed successfully!`);
+}
+
+export async function runGitHubFileETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const collection = getCollectionNameByVendor("github");
+  const etl = new RetoveGitHubFileETL(pgClient, qdrantClient);
+
+  logger.info(`🔍 Running RetoveGitHubFileETL → ${collection} with limit of ${LIMIT}...`);
+  await etl.run(LIMIT);
+  logger.info(`✅ RetoveGitHubFileETL → ${collection} completed successfully!`);
 }
 
 export async function runXETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {

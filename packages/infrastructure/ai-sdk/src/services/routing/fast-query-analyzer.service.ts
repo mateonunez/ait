@@ -42,21 +42,61 @@ const ENTITY_KEYWORDS: Record<string, EntityType[]> = {
   playlists: ["playlist"],
   spotify: ["track", "artist", "album", "playlist", "recently_played"],
 
-  // GitHub
+  // GitHub - Repository
   repo: ["repository"],
   repos: ["repository"],
   repository: ["repository"],
   repositories: ["repository"],
-  code: ["repository", "pull_request"],
-  commit: ["repository"],
-  commits: ["repository"],
+  branch: ["repository"],
+
+  // GitHub - Code/Files (repository_file)
+  code: ["repository", "pull_request", "repository_file"],
+  file: ["repository_file"],
+  files: ["repository_file"],
+  function: ["repository_file"],
+  functions: ["repository_file"],
+  class: ["repository_file"],
+  classes: ["repository_file"],
+  method: ["repository_file"],
+  methods: ["repository_file"],
+  module: ["repository_file"],
+  modules: ["repository_file"],
+  interface: ["repository_file"],
+  interfaces: ["repository_file"],
+  type: ["repository_file"],
+  types: ["repository_file"],
+  import: ["repository_file"],
+  imports: ["repository_file"],
+  export: ["repository_file"],
+  exports: ["repository_file"],
+  source: ["repository_file"],
+  implementation: ["repository_file"],
+  // Language-specific
+  typescript: ["repository_file"],
+  javascript: ["repository_file"],
+  python: ["repository_file"],
+  tsx: ["repository_file"],
+  jsx: ["repository_file"],
+  ts: ["repository_file"],
+  js: ["repository_file"],
+  py: ["repository_file"],
+
+  // GitHub - Commits
+  commit: ["commit"],
+  commits: ["commit"],
+  pushed: ["commit"],
+  push: ["commit"],
+
+  // GitHub - Pull Requests
   pr: ["pull_request"],
   prs: ["pull_request"],
   "pull request": ["pull_request"],
   "pull requests": ["pull_request"],
   merge: ["pull_request"],
-  branch: ["repository"],
-  github: ["repository", "pull_request"],
+  merged: ["pull_request"],
+
+  // GitHub - General (routes to multiple types)
+  github: ["repository", "pull_request", "repository_file", "commit"],
 
   // Linear
   task: ["issue"],

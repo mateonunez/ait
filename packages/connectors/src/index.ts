@@ -46,3 +46,14 @@ export {
   SLACK_ENTITY_TYPES_ENUM,
   GOOGLE_ENTITY_TYPES_ENUM,
 } from "./services/vendors/connector.vendors.config";
+
+// GitHub code ingestion
+export { CODE_INGESTION_REPOS } from "./shared/constants/code-ingestion.constants";
+export {
+  connectorGithubFileMapper,
+  type GitHubFileExternalWithContent,
+} from "./domain/mappers/vendors/connector.github.file.mapper";
+export {
+  ConnectorGitHubFileRepository,
+  type IConnectorGitHubFileRepository,
+} from "./domain/entities/vendors/github/connector.github.file.repository";

@@ -1,5 +1,6 @@
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { GitHubPullRequestEntity as GitHubPullRequest } from "@ait/core";
 import { motion } from "framer-motion";
 import { Eye, FileCode, GitMerge, GitPullRequest, MessageSquare, User, XCircle } from "lucide-react";
@@ -198,11 +199,12 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
               </Badge>
             )}
           </ConnectorCardFooterBadges>
-          {pullRequest.mergedAt ? (
-            <ConnectorCardTimestamp>Merged {formatRelativeTime(pullRequest.mergedAt)}</ConnectorCardTimestamp>
-          ) : pullRequest.prUpdatedAt ? (
-            <ConnectorCardTimestamp>Updated {formatRelativeTime(pullRequest.prUpdatedAt)}</ConnectorCardTimestamp>
-          ) : null}
+          {getEntityDate(pullRequest) && (
+            <ConnectorCardTimestamp>
+              {pullRequest.merged ? "Merged " : pullRequest.state === "closed" ? "Closed " : "Updated "}
+              {formatRelativeTime(getEntityDate(pullRequest)!)}
+            </ConnectorCardTimestamp>
+          )}
         </ConnectorCardFooter>
       </ConnectorCardContent>
     </ConnectorCardBase>

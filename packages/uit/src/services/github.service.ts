@@ -1,6 +1,7 @@
 import { requestJson } from "@ait/core";
 import type {
   GitHubCommitEntity as GitHubCommit,
+  GitHubFileEntity as GitHubFile,
   GitHubPullRequestEntity as GitHubPullRequest,
   GitHubRepositoryEntity as GitHubRepository,
   PaginatedResponse,
@@ -33,6 +34,13 @@ export class GithubService {
   async fetchCommits(params?: PaginationParams) {
     const url = `${this.baseUrl}/data/commits${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<GitHubCommit>>(url);
+    if (!result.ok) throw result.error;
+    return result.value.data;
+  }
+
+  async fetchFiles(params?: PaginationParams) {
+    const url = `${this.baseUrl}/data/files${buildQueryString(params)}`;
+    const result = await requestJson<PaginatedResponse<GitHubFile>>(url);
     if (!result.ok) throw result.error;
     return result.value.data;
   }

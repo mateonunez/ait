@@ -1,5 +1,6 @@
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { SpotifyTrackEntity as SpotifyTrack } from "@ait/core";
 import { motion } from "framer-motion";
 import { Clock, Disc3, TrendingUp } from "lucide-react";
@@ -93,8 +94,8 @@ export function TrackCard({ track, onClick, className }: TrackCardProps) {
               )}
               <SpotifyLogo />
             </ConnectorCardFooterBadges>
-            {track.addedAt && (
-              <ConnectorCardTimestamp>Added {formatRelativeTime(track.addedAt)}</ConnectorCardTimestamp>
+            {getEntityDate(track) && (
+              <ConnectorCardTimestamp>Added {formatRelativeTime(getEntityDate(track)!)}</ConnectorCardTimestamp>
             )}
           </ConnectorCardFooter>
         </ConnectorCardContent>

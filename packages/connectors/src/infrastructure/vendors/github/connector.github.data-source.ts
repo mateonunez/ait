@@ -3,11 +3,16 @@ import {
   type GitHubCommitExternal,
   type GitHubPullRequestExternal,
   type GitHubRepositoryExternal,
+  type GitHubTreeItemExternal,
   type PaginationParams,
   RateLimitError,
   getLogger,
 } from "@ait/core";
 import { Octokit, type RestEndpointMethodTypes } from "@octokit/rest";
+import ignore, { type Ignore } from "ignore";
+import { isText } from "istextorbinary";
+
+import { IGNORED_PATHS, MAX_FILE_SIZE } from "../../../shared/constants/code-ingestion.constants";
 
 export type ConnectorGitHubFetchRepositoriesResponse =
   RestEndpointMethodTypes["repos"]["listForAuthenticatedUser"]["response"]["data"];
@@ -19,6 +24,10 @@ export interface IConnectorGitHubDataSource {
   fetchAllRepositories(): Promise<GitHubRepositoryExternal[]>;
   fetchPullRequestsPaginated(cursor?: string): Promise<{ data: GitHubPullRequestExternal[]; nextCursor?: string }>;
   fetchCommitsPaginated(cursor?: string): Promise<{ data: GitHubCommitExternal[]; nextCursor?: string }>;
+  fetchRepositoryTree(owner: string, repo: string, ref?: string): Promise<GitHubTreeItemExternal[]>;
+  fetchFileContent(owner: string, repo: string, path: string, ref?: string): Promise<string>;
+  fetchGitignore(owner: string, repo: string): Promise<Ignore>;
+  isTextFile(filename: string, content: Buffer | string): boolean;
 }
 
 export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
@@ -26,6 +35,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
   private _logger = getLogger();
   private _repositoryCache: GitHubRepositoryExternal[] | null = null;
   private _authenticatedUserCache: string | null = null;
+  private _gitignoreCache: Map<string, Ignore> = new Map();
 
   constructor(accessToken: string) {
     this.octokit = new Octokit({ auth: accessToken });
@@ -402,6 +412,93 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
           __type: "pull_request" as const,
         }) as GitHubPullRequestExternal,
     );
+  }
+
+  async fetchGitignore(owner: string, repo: string): Promise<Ignore> {
+    const cacheKey = `${owner}/${repo}`;
+    if (this._gitignoreCache.has(cacheKey)) {
+      return this._gitignoreCache.get(cacheKey)!;
+    }
+
+    const ig = ignore();
+    try {
+      const content = await this.fetchFileContent(owner, repo, ".gitignore");
+      ig.add(content);
+      this._logger.debug(`Loaded .gitignore for ${cacheKey}`);
+    } catch {
+      this._logger.debug(`No .gitignore found for ${cacheKey}`);
+    }
+
+    this._gitignoreCache.set(cacheKey, ig);
+    return ig;
+  }
+
+  async fetchRepositoryTree(owner: string, repo: string, ref = "HEAD"): Promise<GitHubTreeItemExternal[]> {
+    try {
+      const ig = await this.fetchGitignore(owner, repo);
+
+      const response = await this.octokit.git.getTree({
+        owner,
+        repo,
+        tree_sha: ref,
+        recursive: "1",
+      });
+
+      if (response.data.truncated) {
+        this._logger.warn(`Tree for ${owner}/${repo} was truncated (>100k files)`);
+      }
+
+      return (
+        response.data.tree
+          .filter((item) => item.type === "blob")
+          .filter((item) => item.path && !ig.ignores(item.path))
+          // Apply safety limits: skip large files and ignored paths
+          .filter((item) => {
+            // Skip files larger than MAX_FILE_SIZE
+            if (item.size && item.size > MAX_FILE_SIZE) {
+              this._logger.debug(`Skipping large file: ${item.path} (${item.size} bytes)`);
+              return false;
+            }
+            // Skip ignored paths (vendored, generated, lock files)
+            if (IGNORED_PATHS.some((pattern) => pattern.test(item.path || ""))) {
+              return false;
+            }
+            return true;
+          })
+          .map((item) => ({
+            path: item.path || "",
+            mode: item.mode || "",
+            type: item.type || "blob",
+            sha: item.sha || "",
+            size: item.size,
+            url: item.url || "",
+            __type: "tree_item" as const,
+          }))
+      );
+    } catch (error: any) {
+      this._handleError(error, "GITHUB_FETCH_TREE");
+    }
+  }
+
+  async fetchFileContent(owner: string, repo: string, path: string, ref?: string): Promise<string> {
+    try {
+      const response = await this.octokit.repos.getContent({
+        owner,
+        repo,
+        path,
+        ref,
+        mediaType: { format: "raw" },
+      });
+
+      return response.data as unknown as string;
+    } catch (error: any) {
+      this._handleError(error, "GITHUB_FETCH_FILE_CONTENT");
+    }
+  }
+
+  isTextFile(filename: string, content: Buffer | string): boolean {
+    const buffer = typeof content === "string" ? Buffer.from(content) : content;
+    return isText(filename, buffer) ?? false;
   }
 
   private _handleError(error: any, context: string): never {

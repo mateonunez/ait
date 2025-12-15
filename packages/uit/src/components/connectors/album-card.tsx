@@ -1,5 +1,6 @@
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { SpotifyAlbumEntity as SpotifyAlbum } from "@ait/core";
 import { motion } from "framer-motion";
 import { Disc, Music, TrendingUp } from "lucide-react";
@@ -106,8 +107,8 @@ export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
                 {album.albumType}
               </Badge>
             </ConnectorCardFooterBadges>
-            {album.createdAt && (
-              <ConnectorCardTimestamp>Added {formatRelativeTime(album.createdAt)}</ConnectorCardTimestamp>
+            {getEntityDate(album) && (
+              <ConnectorCardTimestamp>Added {formatRelativeTime(getEntityDate(album)!)}</ConnectorCardTimestamp>
             )}
           </ConnectorCardFooter>
         </ConnectorCardContent>

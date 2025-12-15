@@ -199,3 +199,22 @@ export function getModelSpec(modelName: ModelName, type: ModelType): ModelSpec |
     ...spec,
   };
 }
+
+export function getModelCapabilities(modelName?: string): { contextWindow: number; supportsTools: boolean } {
+  const DEFAULT_CONTEXT_WINDOW = 120_000;
+  const DEFAULT_SUPPORTS_TOOLS = true;
+
+  if (!modelName) {
+    return { contextWindow: DEFAULT_CONTEXT_WINDOW, supportsTools: DEFAULT_SUPPORTS_TOOLS };
+  }
+
+  const spec = GENERATION_MODELS[modelName as GenerationModelName];
+  if (!spec) {
+    return { contextWindow: DEFAULT_CONTEXT_WINDOW, supportsTools: DEFAULT_SUPPORTS_TOOLS };
+  }
+
+  return {
+    contextWindow: spec.contextWindow ?? DEFAULT_CONTEXT_WINDOW,
+    supportsTools: spec.supportsTools ?? DEFAULT_SUPPORTS_TOOLS,
+  };
+}

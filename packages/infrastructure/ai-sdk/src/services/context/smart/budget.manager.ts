@@ -1,23 +1,38 @@
+import { getModelCapabilities } from "../../../config/models.config";
 import { type ContextBudget, ContextTier } from "./context.types";
 
+/**
+ * Context budget manager with model-aware token limits.
+ * Uses getModelCapabilities to determine appropriate context window.
+ */
 export class ContextBudgetManager {
-  private readonly defaultBudget: ContextBudget = {
-    totalTokenLimit: 128000,
-    reservedTokens: {
-      [ContextTier.IMMUTABLE]: 1000,
-      [ContextTier.ACTIVE_TASK]: 1000,
-    },
-    tierLimits: {
-      [ContextTier.WORKING_SET]: 60000,
-      [ContextTier.CONDENSED_HISTORY]: 10000,
-      [ContextTier.LONG_TERM_MEMORY]: 40000,
-    },
-  };
+  private budget: ContextBudget;
 
-  constructor(private budget: ContextBudget = { ...this.defaultBudget }) {}
+  constructor(modelName?: string, customBudget?: Partial<ContextBudget>) {
+    const { contextWindow } = getModelCapabilities(modelName);
+
+    // Calculate proportional tier limits based on actual context window
+    this.budget = {
+      totalTokenLimit: contextWindow,
+      reservedTokens: {
+        [ContextTier.IMMUTABLE]: Math.min(2000, Math.floor(contextWindow * 0.02)),
+        [ContextTier.ACTIVE_TASK]: Math.min(2000, Math.floor(contextWindow * 0.02)),
+      },
+      tierLimits: {
+        [ContextTier.WORKING_SET]: Math.floor(contextWindow * 0.45),
+        [ContextTier.CONDENSED_HISTORY]: Math.floor(contextWindow * 0.1),
+        [ContextTier.LONG_TERM_MEMORY]: Math.floor(contextWindow * 0.35),
+      },
+      ...customBudget,
+    };
+  }
 
   public updateBudget(newBudget: Partial<ContextBudget>): void {
     this.budget = { ...this.budget, ...newBudget };
+  }
+
+  public getTotalTokenLimit(): number {
+    return this.budget.totalTokenLimit;
   }
 
   public canFit(tier: ContextTier, itemTokens: number, currentTierUsage: number): boolean {

@@ -1,5 +1,6 @@
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import type { EntityType } from "@ait/core";
 import {
   type GitHubPullRequestDataTarget,
   drizzleOrm,
@@ -35,7 +36,7 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
     ];
   }
 
-  protected override _getEntityType(): string {
+  protected override _getEntityType(): EntityType {
     return "pull_request";
   }
 

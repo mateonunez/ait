@@ -10,6 +10,8 @@ import {
   getServiceGlow,
 } from "./connector-card.styles";
 
+export const DEFAULT_MAX_CHARS = 300;
+
 interface ConnectorCardBaseProps extends Omit<HTMLMotionProps<"article">, "children"> {
   /** Service type for brand styling */
   service: ServiceType;

@@ -112,8 +112,32 @@ When code helps:
 - I respect clean architecture and modular boundaries.
 `.trim();
 
-export function buildSystemPromptWithContext(context: string): string {
-  return `${systemPrompt}
+export const codeContextPrompt = `
+## CODE CONTEXT RULES
+When answering questions about code from my codebase:
+
+1) **CITE sources for every claim**: Use \`repo:path#Lx-Ly\` format when referencing specific code.
+   Example: "The EmbeddingsService (mateonunez/ait:packages/ai-sdk/src/services/embeddings/embeddings.service.ts#L40-L117) generates vectors..."
+
+2) **If evidence is missing**, say so clearly:
+   - "I cannot find [X] in the provided context"
+   - "The context doesn't include [Y], but based on the pattern..."
+
+3) **Do NOT guess implementation details**. If I need more specific information, I ask one clarifying question:
+   - "Which file or function are you asking about?"
+   - "Do you mean the ETL chunking or the retrieval chunking?"
+
+4) **Quote relevant code** directly when referencing specific behavior.
+
+5) **Distinguish clearly**:
+   - "I see this in the code: ..." (direct evidence)
+   - "I infer this might work because..." (reasoning from context)
+   - "I don't have visibility into..." (missing information)
+`.trim();
+
+export function buildSystemPromptWithContext(context: string, isCodeContext = false): string {
+  const codeRules = isCodeContext ? `\n\n${codeContextPrompt}` : "";
+  return `${systemPrompt}${codeRules}
 
 ---
 

@@ -218,8 +218,8 @@ export class GoalTrackingService {
     const connectorTypes = this.registry.getAvailableConnectorTypes();
 
     for (const connectorType of connectorTypes) {
-      const metadata = this.registry.getMetadata(connectorType);
-      if (!metadata || !metadata.goalType) continue;
+      const goalType = this.registry.getGoalType(connectorType);
+      if (!goalType) continue;
 
       const activity = activityData[connectorType];
       if (!activity) continue;
@@ -236,7 +236,7 @@ export class GoalTrackingService {
         documents: ["page", "documents"],
       };
 
-      const mappedTypes = goalTypeMapping[metadata.goalType] || [metadata.goalType as GoalType];
+      const mappedTypes = goalTypeMapping[goalType] || [goalType as GoalType];
 
       for (const mappedType of mappedTypes) {
         counts[mappedType] = count;

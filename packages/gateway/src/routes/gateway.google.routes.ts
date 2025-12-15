@@ -155,30 +155,46 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     },
   );
 
-  // Refresh endpoint
-  fastify.post("/refresh", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const events = await googleService.fetchEvents();
-      await googleService.connector.store.save(events);
+  // Refresh endpoint with optional entity filter
+  // Usage: POST /refresh?entities=events,calendars or POST /refresh (all entities)
+  fastify.post(
+    "/refresh",
+    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+      try {
+        const { entities: entitiesParam } = request.query;
+        const entitiesToRefresh = entitiesParam
+          ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
+          : ["events", "calendars", "subscriptions"];
 
-      const calendars = await googleService.fetchCalendars();
-      await googleService.connector.store.save(calendars);
+        const counts: Record<string, number> = {};
 
-      const subscriptions = await googleService.fetchSubscriptions();
-      await googleService.connector.store.save(subscriptions);
+        if (entitiesToRefresh.includes("events")) {
+          const events = await googleService.fetchEvents();
+          await googleService.connector.store.save(events);
+          counts.events = events.length;
+        }
 
-      reply.send({
-        success: true,
-        message: "Google data refreshed successfully",
-        counts: {
-          events: events.length,
-          calendars: calendars.length,
-          subscriptions: subscriptions.length,
-        },
-      });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Google data.");
-      reply.status(500).send({ error: "Failed to refresh Google data." });
-    }
-  });
+        if (entitiesToRefresh.includes("calendars")) {
+          const calendars = await googleService.fetchCalendars();
+          await googleService.connector.store.save(calendars);
+          counts.calendars = calendars.length;
+        }
+
+        if (entitiesToRefresh.includes("subscriptions")) {
+          const subscriptions = await googleService.fetchSubscriptions();
+          await googleService.connector.store.save(subscriptions);
+          counts.subscriptions = subscriptions.length;
+        }
+
+        reply.send({
+          success: true,
+          message: "Google data refreshed successfully",
+          counts,
+        });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Google data.");
+        reply.status(500).send({ error: "Failed to refresh Google data." });
+      }
+    },
+  );
 }

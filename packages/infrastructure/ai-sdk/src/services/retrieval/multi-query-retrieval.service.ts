@@ -214,6 +214,9 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
       finalResults = this._diversity.applyMMR(finalResults, this._maxDocs);
     }
 
+    // Sort final results by date (newest first)
+    finalResults = this._sortDocumentsByDate(finalResults);
+
     logger.debug("Final results", {
       finalResults: finalResults.length,
       finalResultsPreview: finalResults.slice(0, 3).map((r: Document<TMetadata>) => r.pageContent.slice(0, 200)),
@@ -402,6 +405,9 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     // Instead, just apply MMR for diversity within the fused results
     finalResults = this._diversity.applyMMR(finalResults, this._maxDocs);
 
+    // Sort final results by date (newest first)
+    finalResults = this._sortDocumentsByDate(finalResults);
+
     // Record telemetry
     if (traceContext) {
       recordSpan(
@@ -452,5 +458,58 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     // Fallback ID generation
     const src = doc.metadata.__type || "unknown";
     return `${src}:${doc.pageContent.slice(0, 80)}`;
+  }
+
+  private _sortDocumentsByDate<TMetadata extends BaseMetadata>(
+    documents: Document<TMetadata>[],
+  ): Document<TMetadata>[] {
+    return documents.sort((a, b) => {
+      const dateA = this._extractDate(a.metadata);
+      const dateB = this._extractDate(b.metadata);
+
+      if (!dateA && !dateB) return 0;
+      if (!dateA) return 1;
+      if (!dateB) return -1;
+
+      return dateB.getTime() - dateA.getTime();
+    });
+  }
+
+  private _extractDate(metadata: BaseMetadata): Date | null {
+    const candidates = [
+      // Primary Event Times (User Context)
+      metadata.startTime, // Calendar
+      metadata.playedAt, // Spotify
+      metadata.mergedAt, // GitHub PR
+      metadata.closedAt, // GitHub Issue/PR
+      metadata.committerDate, // GitHub Commit
+      metadata.publishedAt, // Generic Content
+
+      // Creation/Fallback Times (Stable anchors)
+      metadata.createdAt, // Generic
+      metadata.addedAt, // Spotify Library
+      metadata.authorDate, // GitHub Author
+      metadata.eventCreatedAt, // Calendar Metadata
+      metadata.timestamp, // Generic
+      metadata.date, // Generic
+
+      // Modification Times (Lowest priority due to ETL noise)
+      metadata.updatedAt, // Generic
+      metadata.eventUpdatedAt, // Calendar Metadata
+    ];
+
+    for (const candidate of candidates) {
+      if (candidate instanceof Date) {
+        return candidate;
+      }
+      if (typeof candidate === "string" || typeof candidate === "number") {
+        const date = new Date(candidate);
+        if (!Number.isNaN(date.getTime())) {
+          return date;
+        }
+      }
+    }
+
+    return null;
   }
 }

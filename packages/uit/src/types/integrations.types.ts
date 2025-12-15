@@ -1,39 +1,27 @@
 import type {
   EntityType,
-  GitHubCommitEntity,
-  GitHubPullRequestEntity,
-  GitHubRepositoryEntity,
-  GoogleCalendarCalendarEntity,
-  GoogleCalendarEventEntity,
-  GoogleYouTubeSubscriptionEntity,
-  LinearIssueEntity,
-  NotionPageEntity,
+  GitHubEntity,
+  GoogleEntity,
+  LinearEntity,
+  NotionEntity,
   PaginationMeta,
-  SlackMessageEntity,
-  SpotifyAlbumEntity,
-  SpotifyArtistEntity,
-  SpotifyPlaylistEntity,
-  SpotifyRecentlyPlayedEntity,
-  SpotifyTrackEntity,
-  XTweetEntity,
+  SlackEntity,
+  SpotifyEntity,
+  XEntity,
 } from "@ait/core";
 
+/**
+ * Union of all integration entity types.
+ * Composed from vendor-specific union types defined in @ait/core.
+ */
 export type IntegrationEntity =
-  | SpotifyTrackEntity
-  | SpotifyArtistEntity
-  | SpotifyPlaylistEntity
-  | SpotifyAlbumEntity
-  | SpotifyRecentlyPlayedEntity
-  | GitHubRepositoryEntity
-  | GitHubPullRequestEntity
-  | GitHubCommitEntity
-  | LinearIssueEntity
-  | XTweetEntity
-  | NotionPageEntity
-  | SlackMessageEntity
-  | GoogleCalendarEventEntity
-  | GoogleCalendarCalendarEntity
-  | GoogleYouTubeSubscriptionEntity;
+  | SpotifyEntity
+  | GitHubEntity
+  | LinearEntity
+  | XEntity
+  | NotionEntity
+  | SlackEntity
+  | GoogleEntity;
 
 export interface CachedEntityData {
   data: IntegrationEntity[];

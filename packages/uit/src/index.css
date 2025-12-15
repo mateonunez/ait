@@ -178,6 +178,10 @@
     @apply bg-transparent p-0 text-xs;
   }
 
+  .dark .streamdown-wrapper pre code {
+    filter: invert(0.98) hue-rotate(180deg);
+  }
+
   .streamdown-wrapper blockquote {
     @apply border-l-4 border-primary/30 pl-4 my-3 italic text-muted-foreground;
   }

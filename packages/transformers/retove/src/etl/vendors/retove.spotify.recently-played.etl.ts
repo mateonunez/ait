@@ -1,5 +1,6 @@
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import type { EntityType } from "@ait/core";
 import type { SpotifyRecentlyPlayedDataTarget, getPostgresClient } from "@ait/postgres";
 import { drizzleOrm, spotifyRecentlyPlayed } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
@@ -29,7 +30,7 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
     ];
   }
 
-  protected override _getEntityType(): string {
+  protected override _getEntityType(): EntityType {
     return "recently_played";
   }
 

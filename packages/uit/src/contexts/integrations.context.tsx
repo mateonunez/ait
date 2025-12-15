@@ -96,6 +96,9 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
               case "commit":
                 response = await githubService.fetchCommits(params);
                 break;
+              case "repository_file":
+                response = await githubService.fetchFiles(params);
+                break;
               default:
                 throw new Error(`Unknown GitHub entity type: ${entityType}`);
             }

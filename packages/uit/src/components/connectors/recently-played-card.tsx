@@ -1,4 +1,5 @@
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { SpotifyRecentlyPlayedEntity as SpotifyRecentlyPlayed } from "@ait/core";
 import { motion } from "framer-motion";
 import { Clock, Disc3, TrendingUp } from "lucide-react";
@@ -92,7 +93,11 @@ export function RecentlyPlayedCard({ recentlyPlayed, onClick, className }: Recen
                 Recently Played
               </Badge>
             </ConnectorCardFooterBadges>
-            <ConnectorCardTimestamp>Played {formatRelativeTime(recentlyPlayed.playedAt)}</ConnectorCardTimestamp>
+            {getEntityDate(recentlyPlayed) && (
+              <ConnectorCardTimestamp>
+                Played {formatRelativeTime(getEntityDate(recentlyPlayed)!)}
+              </ConnectorCardTimestamp>
+            )}
           </ConnectorCardFooter>
         </ConnectorCardContent>
       </div>

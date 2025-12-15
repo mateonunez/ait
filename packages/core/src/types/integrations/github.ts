@@ -341,8 +341,48 @@ export const GitHubCommitEntitySchema = z.object({
   __type: z.literal("commit"),
 });
 
+// --- Repository File Types (for code ingestion) ---
+
+export interface GitHubTreeItemExternal {
+  path: string;
+  mode: string;
+  type: string;
+  sha: string;
+  size?: number;
+  url: string;
+  __type: "tree_item";
+}
+
+export interface GitHubFileContentExternal {
+  path: string;
+  sha: string;
+  content: string;
+  size: number;
+  encoding?: string;
+  __type: "file_content";
+}
+
+export const GitHubFileEntitySchema = z.object({
+  id: z.string(), // Composite: repoId:path:sha
+  repositoryId: z.string(),
+  repositoryFullName: z.string(),
+  branch: z.string(),
+  path: z.string(),
+  name: z.string(),
+  sha: z.string(),
+  content: z.string(),
+  size: z.number(),
+  language: z.string().nullable(),
+  extension: z.string().nullable(),
+  linesOfCode: z.number(),
+  createdAt: z.string().nullable(),
+  updatedAt: z.string().nullable(),
+  __type: z.literal("repository_file"),
+});
+
 export type GitHubRepositoryEntity = z.infer<typeof GitHubRepositoryEntitySchema>;
 export type GitHubPullRequestEntity = z.infer<typeof GitHubPullRequestEntitySchema>;
 export type GitHubCommitEntity = z.infer<typeof GitHubCommitEntitySchema>;
+export type GitHubFileEntity = z.infer<typeof GitHubFileEntitySchema>;
 
-export type GitHubEntity = GitHubRepositoryEntity | GitHubPullRequestEntity | GitHubCommitEntity;
+export type GitHubEntity = GitHubRepositoryEntity | GitHubPullRequestEntity | GitHubCommitEntity | GitHubFileEntity;
