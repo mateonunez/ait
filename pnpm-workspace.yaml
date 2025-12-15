@@ -7,7 +7,7 @@ packages:
   - packages/transformers/*
   - packages/gateway/*
   - packages/uit/*
-  - packages/landing/*
+  - packages/rocks/*
 
 ignoredBuiltDependencies:
   - '@tailwindcss/oxide'
