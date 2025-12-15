@@ -1,5 +1,6 @@
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import type { EntityType } from "@ait/core";
 import type { SpotifyArtistDataTarget, getPostgresClient } from "@ait/postgres";
 import { drizzleOrm, spotifyArtists } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
@@ -53,7 +54,7 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     ];
   }
 
-  protected override _getEntityType(): string {
+  protected override _getEntityType(): EntityType {
     return "artist";
   }
 }

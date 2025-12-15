@@ -1,5 +1,6 @@
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import type { EntityType } from "@ait/core";
 import {
   type GoogleCalendarEventDataTarget,
   drizzleOrm,
@@ -64,7 +65,7 @@ export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
     ];
   }
 
-  protected override _getEntityType(): string {
+  protected override _getEntityType(): EntityType {
     return "event";
   }
 }

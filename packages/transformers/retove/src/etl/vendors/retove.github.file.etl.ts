@@ -1,5 +1,6 @@
 import type { IEmbeddingsService } from "@ait/ai-sdk";
 import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import type { EntityType } from "@ait/core";
 import { type GitHubFileDataTarget, drizzleOrm, type getPostgresClient, githubRepositoryFiles } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
@@ -33,7 +34,7 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract {
     ];
   }
 
-  protected override _getEntityType(): string {
+  protected override _getEntityType(): EntityType {
     return "repository_file";
   }
 
