@@ -6,7 +6,7 @@ import { ThemeProvider } from "./components/theme-provider";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="system" storageKey="ait-landing-theme">
+    <ThemeProvider defaultTheme="system" storageKey="ait-rocks-theme">
       <App />
     </ThemeProvider>
   </StrictMode>,
