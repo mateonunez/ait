@@ -15,6 +15,8 @@ import {
   User,
   Video,
 } from "lucide-react";
+import { getEntityDate } from "../../utils/entity-date.utils";
+import { DEFAULT_MAX_CHARS, truncateText } from "../../utils/text.utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
@@ -63,6 +65,9 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
   const hasLocation = tweet.placeData !== null && tweet.placeData !== undefined;
   const location = tweet.placeData as any;
 
+  // Date helper
+  const date = getEntityDate(tweet);
+
   return (
     <ConnectorCardBase service="x" onClick={onClick} externalUrl={tweetUrl} className={className}>
       <ConnectorCardContent>
@@ -102,7 +107,7 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
 
         {/* Tweet Content */}
         <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed line-clamp-4 transition-colors whitespace-pre-wrap break-words">
-          {tweet.text}
+          {truncateText(tweet.text, DEFAULT_MAX_CHARS)}
         </p>
 
         {/* Media Attachments */}
@@ -134,6 +139,7 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
                       src={media.preview_image_url || media.url}
                       alt={media.alt_text || "Media"}
                       className="w-full h-full object-cover transition-transform group-hover/media:scale-105"
+                      loading="lazy"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover/media:opacity-100 transition-opacity" />
                     <div className="absolute bottom-2 left-2 flex items-center gap-1.5 text-white text-xs font-medium opacity-0 group-hover/media:opacity-100 transition-opacity">
@@ -264,7 +270,7 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
               </Badge>
             )}
           </ConnectorCardFooterBadges>
-          {tweet.createdAt && <ConnectorCardTimestamp>{formatRelativeTime(tweet.createdAt)}</ConnectorCardTimestamp>}
+          {date && <ConnectorCardTimestamp>Posted {formatRelativeTime(date.toISOString())}</ConnectorCardTimestamp>}
         </ConnectorCardFooter>
       </ConnectorCardContent>
     </ConnectorCardBase>

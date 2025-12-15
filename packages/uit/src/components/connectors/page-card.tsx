@@ -1,5 +1,7 @@
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
+import { truncateText } from "@/utils/text.utils";
 import type { NotionPageEntity as NotionPage } from "@ait/core";
 import { motion } from "framer-motion";
 import { Archive, FileText } from "lucide-react";
@@ -13,6 +15,7 @@ import {
   ConnectorCardHeader,
   ConnectorCardTimestamp,
   ConnectorCardTitle,
+  DEFAULT_MAX_CHARS,
 } from "./connector-card-base";
 
 interface PageCardProps {
@@ -74,7 +77,11 @@ export function PageCard({ page, onClick, className }: PageCardProps) {
         </ConnectorCardHeader>
 
         {/* Content Preview */}
-        {page.content && <ConnectorCardDescription className="line-clamp-3">{page.content}</ConnectorCardDescription>}
+        {page.content && (
+          <ConnectorCardDescription className="line-clamp-3">
+            {truncateText(page.content, DEFAULT_MAX_CHARS)}
+          </ConnectorCardDescription>
+        )}
 
         {/* Footer */}
         <ConnectorCardFooter>
@@ -94,8 +101,8 @@ export function PageCard({ page, onClick, className }: PageCardProps) {
               </Badge>
             )}
           </ConnectorCardFooterBadges>
-          {page.updatedAt && (
-            <ConnectorCardTimestamp>Updated {formatRelativeTime(page.updatedAt)}</ConnectorCardTimestamp>
+          {getEntityDate(page) && (
+            <ConnectorCardTimestamp>Created {formatRelativeTime(getEntityDate(page)!)}</ConnectorCardTimestamp>
           )}
         </ConnectorCardFooter>
       </ConnectorCardContent>

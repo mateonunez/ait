@@ -1,5 +1,6 @@
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { LinearIssueEntity as LinearIssue } from "@ait/core";
 import { motion } from "framer-motion";
 import { AlertCircle, CheckCircle2, Circle, Tag, User, Zap } from "lucide-react";
@@ -165,8 +166,8 @@ export function IssueCard({ issue, onClick, className }: IssueCardProps) {
               {issue.state}
             </Badge>
           </ConnectorCardFooterBadges>
-          {issue.updatedAt && (
-            <ConnectorCardTimestamp>Updated {formatRelativeTime(issue.updatedAt)}</ConnectorCardTimestamp>
+          {getEntityDate(issue) && (
+            <ConnectorCardTimestamp>Updated {formatRelativeTime(getEntityDate(issue)!)}</ConnectorCardTimestamp>
           )}
         </ConnectorCardFooter>
       </ConnectorCardContent>

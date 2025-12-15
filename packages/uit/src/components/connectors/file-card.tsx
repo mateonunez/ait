@@ -1,4 +1,5 @@
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { GitHubFileEntity as GitHubFile } from "@ait/core";
 import { motion } from "framer-motion";
 import { Code, FileCode, FolderGit, Hash } from "lucide-react";
@@ -54,7 +55,7 @@ export function FileCard({ file, onClick, className }: FileCardProps) {
             <FileCode className="h-5 w-5 text-slate-200" />
           </div>
           <div className="flex-1 min-w-0 pr-6">
-            <ConnectorCardTitle service="github" className="font-mono text-sm">
+            <ConnectorCardTitle service="github" className="font-mono text-sm truncate">
               {fileName}
             </ConnectorCardTitle>
             {directory && (
@@ -124,7 +125,9 @@ export function FileCard({ file, onClick, className }: FileCardProps) {
               </code>
             )}
           </ConnectorCardFooterBadges>
-          {file.updatedAt && <ConnectorCardTimestamp>{formatRelativeTime(file.updatedAt)}</ConnectorCardTimestamp>}
+          {getEntityDate(file) && (
+            <ConnectorCardTimestamp>Updated {formatRelativeTime(getEntityDate(file)!)}</ConnectorCardTimestamp>
+          )}
         </ConnectorCardFooter>
       </ConnectorCardContent>
     </ConnectorCardBase>

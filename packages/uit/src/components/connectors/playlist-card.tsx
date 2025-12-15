@@ -1,4 +1,5 @@
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { SpotifyPlaylistEntity as SpotifyPlaylist } from "@ait/core";
 import { motion } from "framer-motion";
 import { ListMusic, Lock, Music, Users, Users2 } from "lucide-react";
@@ -100,8 +101,8 @@ export function PlaylistCard({ playlist, onClick, className }: PlaylistCardProps
                 </Badge>
               )}
             </ConnectorCardFooterBadges>
-            {playlist.createdAt && (
-              <ConnectorCardTimestamp>{formatRelativeTime(playlist.createdAt)}</ConnectorCardTimestamp>
+            {getEntityDate(playlist) && (
+              <ConnectorCardTimestamp>Created {formatRelativeTime(getEntityDate(playlist)!)}</ConnectorCardTimestamp>
             )}
           </ConnectorCardFooter>
         </ConnectorCardContent>

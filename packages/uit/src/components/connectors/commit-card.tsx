@@ -1,4 +1,5 @@
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { GitHubCommitEntity as GitHubCommit } from "@ait/core";
 import { motion } from "framer-motion";
 import { CheckCircle2, FileCode, GitCommit, User } from "lucide-react";
@@ -122,10 +123,8 @@ export function CommitCard({ commit, onClick, className }: CommitCardProps) {
               </Badge>
             )}
           </ConnectorCardFooterBadges>
-          {(commit.committerDate || commit.authorDate) && (
-            <ConnectorCardTimestamp>
-              {formatRelativeTime(commit.committerDate || commit.authorDate!)}
-            </ConnectorCardTimestamp>
+          {getEntityDate(commit) && (
+            <ConnectorCardTimestamp>Committed {formatRelativeTime(getEntityDate(commit)!)}</ConnectorCardTimestamp>
           )}
         </ConnectorCardFooter>
       </ConnectorCardContent>

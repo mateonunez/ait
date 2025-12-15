@@ -1,4 +1,5 @@
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { SpotifyArtistEntity as SpotifyArtist } from "@ait/core";
 import { motion } from "framer-motion";
 import { Mic2, TrendingUp } from "lucide-react";
@@ -111,8 +112,8 @@ export function ArtistCard({ artist, onClick, className }: ArtistCardProps) {
                 Artist
               </Badge>
             </ConnectorCardFooterBadges>
-            {artist.createdAt && (
-              <ConnectorCardTimestamp>Added {formatRelativeTime(artist.createdAt)}</ConnectorCardTimestamp>
+            {getEntityDate(artist) && (
+              <ConnectorCardTimestamp>Added {formatRelativeTime(getEntityDate(artist)!)}</ConnectorCardTimestamp>
             )}
           </ConnectorCardFooter>
         </ConnectorCardContent>

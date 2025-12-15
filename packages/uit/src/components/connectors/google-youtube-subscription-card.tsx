@@ -1,4 +1,5 @@
 import { formatRelativeTime } from "@/utils/date.utils";
+import { getEntityDate } from "@/utils/entity-date.utils";
 import type { GoogleYouTubeSubscriptionEntity } from "@ait/core";
 import { motion } from "framer-motion";
 import { Video, Youtube } from "lucide-react";
@@ -10,6 +11,7 @@ import {
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
   ConnectorCardHeader,
+  ConnectorCardTimestamp,
   ConnectorCardTitle,
 } from "./connector-card-base";
 
@@ -23,6 +25,8 @@ export function GoogleYouTubeSubscriptionCard({ subscription, onClick, className
   const channelUrl = subscription.resourceChannelId
     ? `https://www.youtube.com/channel/${subscription.resourceChannelId}`
     : undefined;
+
+  const date = getEntityDate(subscription);
 
   return (
     <ConnectorCardBase service="youtube" onClick={onClick} externalUrl={channelUrl} className={className}>
@@ -40,9 +44,11 @@ export function GoogleYouTubeSubscriptionCard({ subscription, onClick, className
             <ConnectorCardTitle service="youtube" className="line-clamp-2">
               {subscription.title || "Untitled Channel"}
             </ConnectorCardTitle>
-            <p className="text-xs text-muted-foreground mt-1 font-medium">
-              Subscribed {formatRelativeTime(new Date(subscription.publishedAt))}
-            </p>
+            {date && (
+              <p className="text-xs text-muted-foreground mt-1 font-medium">
+                Subscribed {formatRelativeTime(date.toISOString())}
+              </p>
+            )}
           </div>
         </ConnectorCardHeader>
 
@@ -62,6 +68,11 @@ export function GoogleYouTubeSubscriptionCard({ subscription, onClick, className
                 className="w-12 h-12 rounded-full object-cover border-2 border-border/50 ring-2 ring-red-500/20 group-hover:ring-red-500/40 transition-all"
               />
             </motion.div>
+          )}
+          {getEntityDate(subscription) && (
+            <ConnectorCardTimestamp className="ml-auto">
+              Subscribed {formatRelativeTime(getEntityDate(subscription)!)}
+            </ConnectorCardTimestamp>
           )}
           {subscription.description && (
             <ConnectorCardDescription className="line-clamp-2 flex-1">

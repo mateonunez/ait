@@ -1,7 +1,10 @@
 import { cn } from "@/styles/utils";
+import { formatRelativeTime } from "@/utils/date.utils";
 import type { SlackFile, SlackMessageEntity as SlackMessage, SlackReaction } from "@ait/core";
 import { motion } from "framer-motion";
 import { Archive, File, FileText, Hash, Image, MessageSquare, Music, Pin, Reply, Video } from "lucide-react";
+import { getEntityDate } from "../../utils/entity-date.utils";
+import { DEFAULT_MAX_CHARS, truncateText } from "../../utils/text.utils";
 import { Badge } from "../ui/badge";
 import {
   ConnectorCardBase,
@@ -9,6 +12,7 @@ import {
   ConnectorCardFooter,
   ConnectorCardFooterBadges,
   ConnectorCardHeader,
+  ConnectorCardTimestamp,
   ConnectorCardTitle,
 } from "./connector-card-base";
 
@@ -124,6 +128,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
   };
 
   const messageUrl = message.permalink;
+  const date = getEntityDate(message) || new Date(Number.parseFloat(message.ts) * 1000);
 
   return (
     <ConnectorCardBase service="slack" onClick={onClick} externalUrl={messageUrl!} className={className}>
@@ -148,7 +153,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                   {userName}
                 </ConnectorCardTitle>
                 <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 flex-wrap">
-                  <span className="text-xs text-muted-foreground">{formatSlackTime(message.createdAt)}</span>
+                  <span className="text-xs text-muted-foreground">{formatSlackTime(date)}</span>
                   {message.edited && <span className="text-xs text-muted-foreground/50 italic">(edited)</span>}
                   {message.pinnedTo && message.pinnedTo.length > 0 && (
                     <motion.div
@@ -173,7 +178,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
         {/* Message Text */}
         {message.text && (
           <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed break-words whitespace-pre-wrap">
-            {message.text}
+            {truncateText(message.text, DEFAULT_MAX_CHARS)}
           </p>
         )}
 
@@ -344,7 +349,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
               </Badge>
             )}
           </ConnectorCardFooterBadges>
-          <span className="text-xs text-muted-foreground whitespace-nowrap">{formatSlackTime(message.createdAt)}</span>
+          <ConnectorCardTimestamp>Sent {formatRelativeTime(date.toISOString())}</ConnectorCardTimestamp>
         </ConnectorCardFooter>
       </ConnectorCardContent>
     </ConnectorCardBase>
