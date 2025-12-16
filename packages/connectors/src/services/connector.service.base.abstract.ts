@@ -6,12 +6,13 @@ import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
 
 import { createHash } from "node:crypto";
 import { SyncStateService } from "./shared/sync/sync-state.service";
+import type { ConnectorCursor } from "./vendors/connector.vendors.config";
 
 interface EntityConfig<TEntityMap, K extends keyof TEntityMap, E> {
   fetcher?: () => Promise<E[]>;
-  paginatedFetcher?: (cursor?: { id: string; timestamp: Date }) => Promise<{
+  paginatedFetcher?: (cursor?: ConnectorCursor) => Promise<{
     data: E[];
-    nextCursor?: { id: string; timestamp: Date };
+    nextCursor?: ConnectorCursor;
   }>;
   mapper: (entity: E) => TEntityMap[K];
   schema?: ValidationSchema<E>;
@@ -56,10 +57,10 @@ export abstract class ConnectorServiceBase<
     config: {
       paginatedFetcher: (
         connector: TConnector,
-        cursor?: { id: string; timestamp: Date },
+        cursor?: ConnectorCursor,
       ) => Promise<{
         data: E[];
-        nextCursor?: { id: string; timestamp: Date };
+        nextCursor?: ConnectorCursor;
       }>;
       mapper: (external: E) => TEntityMap[K];
       schema?: ValidationSchema<E>;
@@ -69,7 +70,7 @@ export abstract class ConnectorServiceBase<
     },
   ): void {
     this.entityConfigs.set(entityType, {
-      paginatedFetcher: (cursor?: { id: string; timestamp: Date }) => config.paginatedFetcher(this._connector, cursor),
+      paginatedFetcher: (cursor?: ConnectorCursor) => config.paginatedFetcher(this._connector, cursor),
       mapper: config.mapper,
       schema: config.schema,
       cacheTtl: config.cacheTtl,

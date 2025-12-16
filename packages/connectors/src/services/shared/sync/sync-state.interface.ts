@@ -1,11 +1,10 @@
+import type { ConnectorCursor } from "../../vendors/connector.vendors.config";
+
 export interface ISyncState {
   connectorName: string;
   entityType: string;
   lastSyncTime: Date;
-  cursor?: {
-    id: string;
-    timestamp: Date;
-  };
+  cursor?: ConnectorCursor;
   checksums: Record<string, string>; // entityId -> checksum
   // ETL tracking
   lastETLRun?: Date;
