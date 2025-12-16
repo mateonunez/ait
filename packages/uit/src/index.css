@@ -175,11 +175,28 @@
   }
 
   .streamdown-wrapper pre code {
-    @apply bg-transparent p-0 text-xs;
+    @apply bg-transparent p-0 text-sm leading-relaxed;
+    font-family: inherit;
   }
 
-  .dark .streamdown-wrapper pre code {
-    filter: invert(0.98) hue-rotate(180deg);
+  .streamdown-wrapper div + pre {
+    @apply mt-0 rounded-t-none;
+  }
+
+  .dark .streamdown-wrapper pre[data-streamdown="code-block"] {
+    background-color: #0d1117 !important; /* GitHub Dark Dimmed background */
+    margin: 0 !important;
+    border: 0 !important;
+  }
+
+  .dark .streamdown-wrapper div + pre[data-streamdown="code-block"] {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-top: 0 !important; /* Let the header's bottom border handle the separator */
+  }
+
+  .dark .streamdown-wrapper pre[data-streamdown="code-block"] span {
+    color: var(--shiki-dark) !important;
   }
 
   .streamdown-wrapper blockquote {

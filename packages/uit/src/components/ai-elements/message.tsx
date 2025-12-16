@@ -172,7 +172,12 @@ export function Message({ message, isStreaming = false }: MessageProps) {
             <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
           ) : (
             <div className="streamdown-wrapper">
-              <Streamdown className="prose prose-sm dark:prose-invert max-w-none">{message.content}</Streamdown>
+              <Streamdown
+                className="prose prose-sm dark:prose-invert max-w-none"
+                shikiTheme={["github-light", "github-dark"]}
+              >
+                {message.content}
+              </Streamdown>
               {isStreaming && (
                 <motion.span
                   animate={{ opacity: [1, 0.3, 1] }}

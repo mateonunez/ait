@@ -127,9 +127,15 @@ export abstract class RetoveBaseETLAbstract {
         batchNumber++;
         const batchLimit = Math.min(remainingLimit, this._progressiveBatchSize);
         // Pass the full cursor object to extract
+        logger.debug(
+          `[ETL Debug] Loop state: remainingLimit=${remainingLimit}, progressiveBatchSize=${this._progressiveBatchSize}, batchLimit=${batchLimit}`,
+        );
+
         const data = await this.extract(batchLimit, currentCursor);
 
-        logger.info(`📦 Batch #${batchNumber}: Extracted ${data.length.toLocaleString()} records`);
+        logger.info(
+          `📦 Batch #${batchNumber}: Extracted ${data.length.toLocaleString()} records (Requested: ${batchLimit})`,
+        );
 
         if (data.length === 0) {
           logger.info("No more records to process");
@@ -166,7 +172,9 @@ export abstract class RetoveBaseETLAbstract {
 
         // Show progress
         const progressInfo = hasPendingCount
-          ? `${totalProcessed.toLocaleString()}/${Math.min(pendingCount, limit).toLocaleString()} (${Math.round((totalProcessed / Math.min(pendingCount, limit)) * 100)}%)`
+          ? `${totalProcessed.toLocaleString()}/${pendingCount.toLocaleString()} (${
+              pendingCount > 0 ? Math.min(100, Math.round((totalProcessed / pendingCount) * 100)) : 0
+            }%)`
           : `${totalProcessed.toLocaleString()} processed (${remainingLimit.toLocaleString()} remaining in limit)`;
         logger.info(`📊 Progress: ${progressInfo}`);
       }
@@ -646,7 +654,9 @@ export abstract class RetoveBaseETLAbstract {
       }
       return query.execute();
     });
-    return Number(result[0]?.count ?? 0);
+    const countVal = Number(result[0]?.count ?? 0);
+    logger.debug(`[ETL Debug] Count query result: ${countVal} (Cursor: ${cursor ? JSON.stringify(cursor) : "None"})`);
+    return countVal;
   }
 
   protected _getTableConfig(): ETLTableConfig | null {
