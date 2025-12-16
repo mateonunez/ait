@@ -8,6 +8,7 @@ import { ETLGitHubRepositoryDescriptor } from "../../infrastructure/embeddings/d
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -62,7 +63,7 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: githubRepositories, updatedAtField: githubRepositories.updatedAt, idField: githubRepositories.id };
   }
 

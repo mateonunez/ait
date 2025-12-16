@@ -9,6 +9,7 @@ import { ETLSpotifyAlbumDescriptor } from "../../infrastructure/embeddings/descr
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -48,7 +49,7 @@ export class RetoveSpotifyAlbumETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: spotifyAlbums, updatedAtField: spotifyAlbums.updatedAt, idField: spotifyAlbums.id };
   }
 

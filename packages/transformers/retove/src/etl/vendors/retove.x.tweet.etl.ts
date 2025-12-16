@@ -8,6 +8,7 @@ import { ETLXTweetDescriptor } from "../../infrastructure/embeddings/descriptors
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -52,7 +53,7 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: xTweets, updatedAtField: xTweets.updatedAt, idField: xTweets.id };
   }
 

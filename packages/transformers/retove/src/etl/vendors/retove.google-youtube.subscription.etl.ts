@@ -13,6 +13,7 @@ import { ETLGoogleYouTubeSubscriptionDescriptor } from "../../infrastructure/emb
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -53,7 +54,7 @@ export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return {
       table: googleSubscriptions,
       updatedAtField: googleSubscriptions.updatedAt,

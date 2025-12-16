@@ -8,6 +8,7 @@ import { ETLSlackMessageDescriptor } from "../../infrastructure/embeddings/descr
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -47,7 +48,7 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: slackMessages, updatedAtField: slackMessages.updatedAt, idField: slackMessages.id };
   }
 

@@ -8,6 +8,7 @@ import { ETLNotionPageDescriptor } from "../../infrastructure/embeddings/descrip
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -47,7 +48,7 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: notionPages, updatedAtField: notionPages.updatedAt, idField: notionPages.id };
   }
 

@@ -8,6 +8,7 @@ import { ETLLinearIssueDescriptor } from "../../infrastructure/embeddings/descri
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -60,7 +61,7 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: linearIssues, updatedAtField: linearIssues.updatedAt, idField: linearIssues.id };
   }
 

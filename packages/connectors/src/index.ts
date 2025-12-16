@@ -47,6 +47,8 @@ export {
   GOOGLE_ENTITY_TYPES_ENUM,
 } from "./services/vendors/connector.vendors.config";
 
+export type { ConnectorCursor } from "./services/vendors/connector.vendors.config";
+
 // GitHub code ingestion
 export { CODE_INGESTION_REPOS } from "./shared/constants/code-ingestion.constants";
 export {

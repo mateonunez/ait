@@ -9,6 +9,7 @@ import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descr
 import {
   type BaseVectorPoint,
   type ETLCursor,
+  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
@@ -61,7 +62,7 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig() {
+  protected override _getTableConfig(): ETLTableConfig | null {
     return { table: spotifyTracks, updatedAtField: spotifyTracks.updatedAt, idField: spotifyTracks.id };
   }
 

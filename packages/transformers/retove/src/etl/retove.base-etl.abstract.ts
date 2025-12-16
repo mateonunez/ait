@@ -10,7 +10,7 @@ import {
   getEmbeddingModelConfig,
   getSparseVectorService,
 } from "@ait/ai-sdk";
-import { type ISyncStateService, SyncStateService } from "@ait/connectors";
+import { type ConnectorCursor, type ISyncStateService, SyncStateService } from "@ait/connectors";
 import { type EntityType, getLogger } from "@ait/core";
 import { drizzleOrm, type getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
@@ -32,10 +32,7 @@ export interface RetryOptions {
 
 const embeddingModelConfig = getEmbeddingModelConfig();
 
-export interface ETLCursor {
-  timestamp: Date;
-  id: string;
-}
+export type ETLCursor = ConnectorCursor;
 
 /**
  * Configuration for cursor-based ETL operations.
