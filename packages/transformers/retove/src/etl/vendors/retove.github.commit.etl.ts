@@ -5,8 +5,13 @@ import { type GitHubCommitDataTarget, drizzleOrm, type getPostgresClient, github
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubCommitDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubCommitDataTarget> = new ETLGitHubCommitDescriptor();
@@ -22,23 +27,37 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
 
   protected override _getCollectionSpecificIndexes() {
     return [
-      { field_name: "metadata.repositoryFullName", field_schema: "keyword" as const },
-      { field_name: "metadata.authorDate", field_schema: "datetime" as const },
       { field_name: "metadata.authorName", field_schema: "keyword" as const },
+      { field_name: "metadata.message", field_schema: "keyword" as const },
     ];
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return { table: githubCommits, updatedAtField: githubCommits.updatedAt, idField: githubCommits.sha };
   }
 
   protected override _getEntityType(): EntityType {
     return "commit";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GitHubCommitDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubCommitDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubCommits) as any;
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(githubCommits.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(githubCommits.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(githubCommits.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(githubCommits.sha, cursor.id),
+            ),
+          ),
+        );
       }
-      return query.orderBy(drizzleOrm.asc(githubCommits.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(githubCommits.updatedAt), drizzleOrm.asc(githubCommits.sha))
+        .limit(limit)
+        .execute();
     });
   }
 
@@ -47,16 +66,20 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
   }
 
   protected getPayload(commit: GitHubCommitDataTarget): RetoveGitHubCommitVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(commit);
+    const payload = this._descriptor.getEmbeddingPayload(commit);
+    // Ensure we have an 'id' for the base ETL to use (polyfill sha as id if missing)
+    if (!("id" in commit)) {
+      payload.id = commit.sha;
+    }
+    return { ...payload, __type: "commit" } as RetoveGitHubCommitVectorPoint["payload"];
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const commits = data as GitHubCommitDataTarget[];
-    if (commits.length === 0) return new Date();
-    return commits.reduce((max, commit) => {
-      const commitDate = commit.updatedAt ? new Date(commit.updatedAt) : new Date(0);
-      return commitDate > max ? commitDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const commit = item as GitHubCommitDataTarget;
+    return {
+      timestamp: commit.updatedAt ? new Date(commit.updatedAt) : new Date(0),
+      id: commit.sha,
+    };
   }
 }
 

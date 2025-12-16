@@ -6,7 +6,13 @@ import { drizzleOrm, spotifyArtists } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyArtistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyArtistDataTarget> = new ETLSpotifyArtistDescriptor();
@@ -20,14 +26,31 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("spotify"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyArtistDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<SpotifyArtistDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyArtists) as any;
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(spotifyArtists.updatedAt, lastProcessedTimestamp));
+
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(spotifyArtists.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(spotifyArtists.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(spotifyArtists.id, cursor.id),
+            ),
+          ),
+        );
       }
-      return query.orderBy(drizzleOrm.asc(spotifyArtists.updatedAt)).limit(limit).execute();
+
+      return query
+        .orderBy(drizzleOrm.asc(spotifyArtists.updatedAt), drizzleOrm.asc(spotifyArtists.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return { table: spotifyArtists, updatedAtField: spotifyArtists.updatedAt, idField: spotifyArtists.id };
   }
 
   protected getTextForEmbedding(track: SpotifyArtistDataTarget): string {
@@ -38,13 +61,12 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(track);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const artists = data as SpotifyArtistDataTarget[];
-    if (artists.length === 0) return new Date();
-    return artists.reduce((max, artist) => {
-      const artistDate = artist.updatedAt ? new Date(artist.updatedAt) : new Date(0);
-      return artistDate > max ? artistDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const artist = item as SpotifyArtistDataTarget;
+    return {
+      timestamp: artist.updatedAt ? new Date(artist.updatedAt) : new Date(0),
+      id: artist.id,
+    };
   }
 
   protected override _getCollectionSpecificIndexes() {

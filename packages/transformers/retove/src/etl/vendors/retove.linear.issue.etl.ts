@@ -5,8 +5,13 @@ import { type LinearIssueDataTarget, drizzleOrm, type getPostgresClient, linearI
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLLinearIssueDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.linear.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<LinearIssueDataTarget> = new ETLLinearIssueDescriptor();
@@ -33,16 +38,31 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     return "issue";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<LinearIssueDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<LinearIssueDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(linearIssues) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(linearIssues.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(linearIssues.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(linearIssues.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(linearIssues.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(linearIssues.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(linearIssues.updatedAt), drizzleOrm.asc(linearIssues.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return { table: linearIssues, updatedAtField: linearIssues.updatedAt, idField: linearIssues.id };
   }
 
   protected getTextForEmbedding(issue: LinearIssueDataTarget): string {
@@ -53,13 +73,12 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(issue);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const issues = data as LinearIssueDataTarget[];
-    if (issues.length === 0) return new Date();
-    return issues.reduce((max, issue) => {
-      const issueDate = issue.updatedAt ? new Date(issue.updatedAt) : new Date(0);
-      return issueDate > max ? issueDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const issue = item as LinearIssueDataTarget;
+    return {
+      timestamp: issue.updatedAt ? new Date(issue.updatedAt) : new Date(0),
+      id: issue.id,
+    };
   }
 }
 

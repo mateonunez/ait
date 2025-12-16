@@ -10,8 +10,13 @@ import {
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubPullRequestDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> =
@@ -40,14 +45,29 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
     return "pull_request";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GitHubPullRequestDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubPullRequestDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubPullRequests) as any;
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(githubPullRequests.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(githubPullRequests.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(githubPullRequests.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(githubPullRequests.id, cursor.id),
+            ),
+          ),
+        );
       }
-      return query.orderBy(drizzleOrm.asc(githubPullRequests.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(githubPullRequests.updatedAt), drizzleOrm.asc(githubPullRequests.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return { table: githubPullRequests, updatedAtField: githubPullRequests.updatedAt, idField: githubPullRequests.id };
   }
 
   protected getTextForEmbedding(pullRequest: GitHubPullRequestDataTarget): string {
@@ -58,13 +78,12 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(pullRequest);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const pullRequests = data as GitHubPullRequestDataTarget[];
-    if (pullRequests.length === 0) return new Date();
-    return pullRequests.reduce((max, pr) => {
-      const prDate = pr.updatedAt ? new Date(pr.updatedAt) : new Date(0);
-      return prDate > max ? prDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const pr = item as GitHubPullRequestDataTarget;
+    return {
+      timestamp: pr.updatedAt ? new Date(pr.updatedAt) : new Date(0),
+      id: pr.id,
+    };
   }
 }
 

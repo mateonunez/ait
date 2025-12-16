@@ -5,8 +5,13 @@ import { type NotionPageDataTarget, drizzleOrm, type getPostgresClient, notionPa
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLNotionPageDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.notion.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<NotionPageDataTarget> = new ETLNotionPageDescriptor();
@@ -20,16 +25,31 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     super(pgClient, qdrantClient, getCollectionNameByVendor("notion"), retryOptions, embeddingsService);
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<NotionPageDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<NotionPageDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(notionPages) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(notionPages.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(notionPages.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(notionPages.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(notionPages.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(notionPages.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(notionPages.updatedAt), drizzleOrm.asc(notionPages.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return { table: notionPages, updatedAtField: notionPages.updatedAt, idField: notionPages.id };
   }
 
   protected getTextForEmbedding(page: NotionPageDataTarget): string {
@@ -40,13 +60,12 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(page);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const pages = data as NotionPageDataTarget[];
-    if (pages.length === 0) return new Date();
-    return pages.reduce((max, page) => {
-      const pageDate = page.updatedAt ? new Date(page.updatedAt) : new Date(0);
-      return pageDate > max ? pageDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const page = item as NotionPageDataTarget;
+    return {
+      timestamp: page.updatedAt ? new Date(page.updatedAt) : new Date(0),
+      id: page.id,
+    };
   }
 
   protected override _getCollectionSpecificIndexes() {

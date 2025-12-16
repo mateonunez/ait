@@ -6,7 +6,13 @@ import { drizzleOrm, spotifyTracks } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
-import { type BaseVectorPoint, RetoveBaseETLAbstract, type RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
   private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
@@ -33,16 +39,31 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
     return "track";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<SpotifyTrackDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<SpotifyTrackDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyTracks) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(spotifyTracks.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(spotifyTracks.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(spotifyTracks.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(spotifyTracks.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(spotifyTracks.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(spotifyTracks.updatedAt), drizzleOrm.asc(spotifyTracks.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return { table: spotifyTracks, updatedAtField: spotifyTracks.updatedAt, idField: spotifyTracks.id };
   }
 
   protected getTextForEmbedding(track: SpotifyTrackDataTarget): string {
@@ -53,13 +74,12 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(track);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const tracks = data as SpotifyTrackDataTarget[];
-    if (tracks.length === 0) return new Date();
-    return tracks.reduce((max, track) => {
-      const trackDate = track.updatedAt ? new Date(track.updatedAt) : new Date(0);
-      return trackDate > max ? trackDate : max;
-    }, new Date(0));
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const track = item as SpotifyTrackDataTarget;
+    return {
+      timestamp: track.updatedAt ? new Date(track.updatedAt) : new Date(0),
+      id: track.id,
+    };
   }
 }
 

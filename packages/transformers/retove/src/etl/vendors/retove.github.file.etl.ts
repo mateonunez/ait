@@ -5,8 +5,13 @@ import { type GitHubFileDataTarget, drizzleOrm, type getPostgresClient, githubRe
 import type { qdrant } from "@ait/qdrant";
 import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubFileDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.file.descriptor";
-import { RetoveBaseETLAbstract } from "../retove.base-etl.abstract";
-import type { BaseVectorPoint, RetryOptions } from "../retove.base-etl.abstract";
+import {
+  type BaseVectorPoint,
+  type ETLCursor,
+  type ETLTableConfig,
+  RetoveBaseETLAbstract,
+  type RetryOptions,
+} from "../retove.base-etl.abstract";
 
 /**
  * ETL job for GitHub repository files.
@@ -38,16 +43,35 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract {
     return "repository_file";
   }
 
-  protected async extract(limit: number, lastProcessedTimestamp?: Date): Promise<GitHubFileDataTarget[]> {
+  protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubFileDataTarget[]> {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubRepositoryFiles) as any;
 
-      if (lastProcessedTimestamp) {
-        query = query.where(drizzleOrm.gt(githubRepositoryFiles.updatedAt, lastProcessedTimestamp));
+      if (cursor) {
+        query = query.where(
+          drizzleOrm.or(
+            drizzleOrm.gt(githubRepositoryFiles.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(githubRepositoryFiles.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(githubRepositoryFiles.id, cursor.id),
+            ),
+          ),
+        );
       }
 
-      return query.orderBy(drizzleOrm.asc(githubRepositoryFiles.updatedAt)).limit(limit).execute();
+      return query
+        .orderBy(drizzleOrm.asc(githubRepositoryFiles.updatedAt), drizzleOrm.asc(githubRepositoryFiles.id))
+        .limit(limit)
+        .execute();
     });
+  }
+
+  protected override _getTableConfig(): ETLTableConfig | null {
+    return {
+      table: githubRepositoryFiles,
+      updatedAtField: githubRepositoryFiles.updatedAt,
+      idField: githubRepositoryFiles.id,
+    };
   }
 
   protected getTextForEmbedding(file: GitHubFileDataTarget): string {
@@ -58,16 +82,12 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract {
     return this._descriptor.getEmbeddingPayload(file);
   }
 
-  protected getLatestTimestamp(data: unknown[]): Date {
-    const files = data as GitHubFileDataTarget[];
-    if (files.length === 0) {
-      return new Date();
-    }
-    const latest = files.reduce((max, file) => {
-      const fileDate = file.updatedAt ? new Date(file.updatedAt) : new Date(0);
-      return fileDate > max ? fileDate : max;
-    }, new Date(0));
-    return latest;
+  protected getCursorFromItem(item: unknown): ETLCursor {
+    const file = item as GitHubFileDataTarget;
+    return {
+      timestamp: file.updatedAt ? new Date(file.updatedAt) : new Date(0),
+      id: file.id,
+    };
   }
 }
 
