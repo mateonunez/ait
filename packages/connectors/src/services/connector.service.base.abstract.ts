@@ -105,12 +105,7 @@ export abstract class ConnectorServiceBase<
     // Background ETL jobs should pass forceRefresh=false to resume from stored cursor
     let cursor = forceRefresh ? undefined : syncState?.cursor;
 
-    this._logger.info(`[ConnectorService] fetchEntitiesPaginated for ${String(entityType)}`, {
-      forceRefresh,
-      storedCursor: syncState?.cursor ? "present" : "none",
-      usingCursor: cursor ? "yes" : "no (fresh fetch)",
-      connectorName,
-    });
+    this._logger.info(`🔗 Fetching ${String(entityType)}${cursor ? " (resuming from cursor)" : " (fresh fetch)"}`);
 
     let hasMore = true;
     const checksums = syncState?.checksums || {};
@@ -140,7 +135,7 @@ export abstract class ConnectorServiceBase<
       hasMore = !!cursor;
 
       totalFetched += entities.length;
-      this._logger.debug(`[ConnectorService] Fetched ${entities.length} entities, hasMore: ${hasMore}`);
+      this._logger.debug(`   └─ Batch: ${entities.length.toLocaleString()} items${hasMore ? " (more available)" : ""}`);
 
       if (config.schema && entities.length > 0) {
         entities = this.validateEntities(entities, config.schema, String(entityType));
@@ -188,12 +183,9 @@ export abstract class ConnectorServiceBase<
       }
     }
 
-    this._logger.info(`[ConnectorService] Completed fetching ${String(entityType)}`, {
-      totalFetched,
-      totalSkipped,
-      totalYielded,
-      forceRefresh,
-    });
+    this._logger.info(
+      `✅ Completed ${String(entityType)}: ${totalYielded.toLocaleString()} items yielded (${totalSkipped.toLocaleString()} unchanged, ${totalFetched.toLocaleString()} total)`,
+    );
   }
 
   private async fetchEntitiesLegacy<K extends keyof TEntityMap, E>(
@@ -244,14 +236,12 @@ export abstract class ConnectorServiceBase<
         validEntities.push(result.value);
       } else {
         invalidCount++;
-        this.getLogger().warn(`[ConnectorService] Validation failed for entity in ${entityType}`, {
-          error: result.error,
-        });
+        this.getLogger().debug(`   └─ Skipped invalid entity in ${entityType}`);
       }
     }
 
     if (invalidCount > 0) {
-      this.getLogger().info(`[ConnectorService] Skipped ${invalidCount} invalid entities for ${entityType}`);
+      this.getLogger().warn(`⚠️ Skipped ${invalidCount.toLocaleString()} invalid entities for ${entityType}`);
     }
     return validEntities;
   }

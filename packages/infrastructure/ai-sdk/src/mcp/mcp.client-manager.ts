@@ -65,7 +65,7 @@ export class MCPClientManager {
     }
     const existing = this._clients.get(vendor);
     if (existing?.state === "connected") {
-      logger.debug(`[MCP] Already connected to ${vendor}`);
+      logger.debug(`🔌 MCP: Already connected to ${vendor}`);
       return;
     }
 
@@ -83,9 +83,9 @@ export class MCPClientManager {
     const config = getMCPServerConfig(vendor);
 
     if (config.transport === "stdio") {
-      logger.info(`[MCP] Connecting to ${vendor} via stdio (${config.npmPackage})`);
+      logger.info(`🔌 MCP: Connecting to ${vendor} (stdio)`);
     } else {
-      logger.info(`[MCP] Connecting to ${vendor} at ${config.url}`);
+      logger.info(`🔌 MCP: Connecting to ${vendor} (http)`);
     }
 
     const client = new Client({
@@ -122,11 +122,11 @@ export class MCPClientManager {
       connection.connectedAt = new Date();
       connection.tools = tools;
 
-      logger.info(`[MCP] Connected to ${vendor}, ${tools.length} tools available`);
+      logger.info(`✅ MCP: ${vendor} ready (${tools.length} tools)`);
     } catch (error) {
       connection.state = "error";
       connection.lastError = error instanceof Error ? error.message : String(error);
-      logger.error(`[MCP] Failed to connect to ${vendor}:`, { error: connection.lastError });
+      logger.error(`❌ MCP: Failed to connect to ${vendor}`, { error: connection.lastError });
       throw error;
     }
   }
@@ -201,9 +201,9 @@ export class MCPClientManager {
         }
       }
 
-      logger.info(`[MCP] Disconnected from ${vendor}`);
+      logger.info(`🔌 MCP: Disconnected from ${vendor}`);
     } catch (error) {
-      logger.warn(`[MCP] Error disconnecting from ${vendor}:`, { error });
+      logger.warn(`⚠️ MCP: Error disconnecting from ${vendor}`, { error });
     } finally {
       this._clients.delete(vendor);
     }
@@ -273,7 +273,7 @@ export class MCPClientManager {
     }
 
     try {
-      logger.debug(`[MCP] Executing tool ${toolName} on ${vendor}`, { args });
+      logger.debug(`🛠️ Tool: ${vendor}.${toolName}`);
 
       const result = await connection.client.callTool({
         name: toolName,
@@ -285,7 +285,7 @@ export class MCPClientManager {
         text: c.text,
       }));
 
-      logger.debug(`[MCP] Tool ${toolName} completed on ${vendor}`, { isError: result.isError });
+      logger.debug(`   └─ ${result.isError ? "Failed" : "Success"}`);
 
       return {
         success: !result.isError,
@@ -294,7 +294,7 @@ export class MCPClientManager {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      logger.error(`[MCP] Tool ${toolName} failed on ${vendor}:`, { error: errorMessage });
+      logger.error(`❌ Tool ${vendor}.${toolName} failed`, { error: errorMessage });
 
       return {
         success: false,

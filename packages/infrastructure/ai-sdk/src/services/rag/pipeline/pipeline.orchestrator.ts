@@ -39,7 +39,7 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
 
     for (const stage of this._stages) {
       if (skipStages.has(stage.name)) {
-        this.logInfo(`Skipping stage: ${stage.name}`);
+        this.logInfo(`⏭️ Skipping stage: ${stage.name}`);
         stageResults.push({
           stageName: stage.name,
           success: true,
@@ -57,11 +57,11 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
         pipelineError = stageResult.error;
 
         if (this._failureMode === "fail-fast") {
-          this.logError(`Pipeline failed at stage: ${stage.name}`, stageResult.error!);
+          this.logError(`❌ Pipeline failed at stage: ${stage.name}`, stageResult.error!);
           break;
         }
 
-        this.logWarn(`Stage ${stage.name} failed, continuing pipeline`, {
+        this.logWarn(`⚠️ Stage ${stage.name} failed, continuing pipeline`, {
           error: stageResult.error?.message,
         });
 
@@ -85,12 +85,9 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
       totalDuration,
     };
 
-    this.logInfo("Pipeline execution completed", {
-      success: result.success,
-      totalDuration,
-      stagesExecuted: stageResults.length,
-      stagesFailed: stageResults.filter((s) => !s.success).length,
-    });
+    this.logInfo(
+      `✅ Pipeline completed: ${stageResults.length} stages in ${totalDuration}ms (${stageResults.filter((s) => !s.success).length} failed)`,
+    );
 
     return result;
   }
@@ -106,7 +103,7 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
       if (stage.canExecute) {
         const canExecute = await stage.canExecute(input, context);
         if (!canExecute) {
-          this.logInfo(`Stage ${stage.name} skipped (canExecute returned false)`);
+          this.logInfo(`⏭️ Stage ${stage.name} skipped (canExecute: false)`);
           return {
             stageName: stage.name,
             success: true,
@@ -117,7 +114,7 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
         }
       }
 
-      this.logInfo(`Executing stage: ${stage.name}`);
+      this.logInfo(`🔄 ${stage.name}`);
 
       const output = await stage.execute(input, context);
       const duration = Date.now() - stageStartTime;
@@ -126,7 +123,7 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
         context.telemetry.recordStage(stage.name, input, output, duration);
       }
 
-      this.logInfo(`Stage ${stage.name} completed`, { duration });
+      this.logInfo(`   └─ Completed in ${duration}ms`);
 
       return {
         stageName: stage.name,
@@ -139,17 +136,17 @@ export class PipelineOrchestrator<TInput = unknown, TOutput = unknown> {
       const duration = Date.now() - stageStartTime;
       const err = error instanceof Error ? error : new Error(String(error));
 
-      this.logError(`Stage ${stage.name} failed`, err);
+      this.logError(`❌ Stage ${stage.name} failed`, err);
 
       let recoveredOutput: unknown = undefined;
       if (stage.onError) {
         try {
           recoveredOutput = await stage.onError(err, context);
-          this.logInfo(`Stage ${stage.name} recovered from error`, {
+          this.logInfo("   └─ Recovered from error", {
             hasRecoveredOutput: recoveredOutput !== null,
           });
         } catch (recoveryError) {
-          this.logError(`Stage ${stage.name} error recovery failed`, recoveryError as Error);
+          this.logError(`❌ Stage ${stage.name} error recovery failed`, recoveryError as Error);
         }
       }
 

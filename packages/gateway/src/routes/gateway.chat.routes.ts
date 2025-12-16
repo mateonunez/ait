@@ -105,7 +105,7 @@ async function initializeMCPConnections(
     const notionAuth = await notionService.connector.store.getAuthenticationData();
     if (notionAuth?.accessToken) {
       await mcpManager.connect("notion", { accessToken: notionAuth.accessToken });
-      logger.info("[MCP] Connected to Notion MCP server");
+      logger.info("🔌 MCP: Connected to Notion");
     }
   } catch (error) {
     logger.debug("[MCP] Notion not authenticated, skipping MCP connection", {
@@ -119,7 +119,7 @@ async function initializeMCPConnections(
     const githubAuth = await githubService.connector.store.getAuthenticationData();
     if (githubAuth?.accessToken) {
       await mcpManager.connect("github", { accessToken: githubAuth.accessToken });
-      logger.info("[MCP] Connected to GitHub MCP server");
+      logger.info("🔌 MCP: Connected to GitHub");
     }
   } catch (error) {
     logger.debug("[MCP] GitHub not authenticated, skipping MCP connection", {
@@ -133,7 +133,7 @@ async function initializeMCPConnections(
     const linearAuth = await linearService.connector.store.getAuthenticationData();
     if (linearAuth?.accessToken) {
       await mcpManager.connect("linear", { accessToken: linearAuth.accessToken });
-      logger.info("[MCP] Connected to Linear MCP server");
+      logger.info("🔌 MCP: Connected to Linear");
     }
   } catch (error) {
     logger.debug("[MCP] Linear not authenticated, skipping MCP connection", {
@@ -152,7 +152,7 @@ async function initializeMCPConnections(
         env.SLACK_TEAM_ID = teamId;
       }
       await mcpManager.connect("slack", { accessToken: slackAuth.accessToken, env });
-      logger.info("[MCP] Connected to Slack MCP server");
+      logger.info("🔌 MCP: Connected to Slack");
     }
   } catch (error) {
     logger.debug("[MCP] Slack not authenticated, skipping MCP connection", {
@@ -202,7 +202,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
     fastify.linearService,
     fastify.slackService,
   ).catch((error) => {
-    logger.warn("[MCP] Failed to initialize MCP connections:", {
+    logger.warn("⚠️ MCP: Failed to initialize connections", {
       error: error instanceof Error ? error.message : String(error),
     });
   });
@@ -241,16 +241,9 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         const hasMCPConnected = mcpManager.getConnectedVendors().length > 0;
         const maxToolRounds = hasMCPConnected ? 3 : 1;
 
-        logger.info("Generating stream with MCP tools", {
-          prompt,
-          conversationHistory,
-          toolCount: Object.keys(tools).length,
-          mcpConnected: mcpManager.getConnectedVendors(),
-          maxToolRounds,
-          enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
-          enableMetadata,
-          traceId,
-        });
+        logger.info(
+          `💬 Chat: Processing (${Object.keys(tools).length} tools, ${mcpManager.getConnectedVendors().length} MCP vendors)`,
+        );
 
         const stream = textGenerationService.generateStream({
           prompt,
