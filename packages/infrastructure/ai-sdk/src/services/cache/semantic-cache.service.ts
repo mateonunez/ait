@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
 import { eng, removeStopwords } from "stopword";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { getCacheAnalyticsService } from "../analytics/cache-analytics.service";
 import type { ICacheProvider } from "./cache.service";
@@ -88,13 +88,17 @@ export class SemanticCacheService {
     analytics.recordCacheHit(query, latency, 1);
 
     if (traceContext) {
-      recordSpan(
+      const endSpan = createSpanWithTiming(
         "semantic-cache-hit",
         "cache",
         traceContext,
         { query: query.slice(0, 100), hash },
-        { cacheHit: true, hitCount: entry.hitCount, latencyMs: latency },
+        undefined,
+        new Date(startTime),
       );
+      if (endSpan) {
+        endSpan({ cacheHit: true, hitCount: entry.hitCount, latencyMs: latency });
+      }
     }
 
     logger.debug("Semantic cache hit", { query: query.slice(0, 50), hitCount: entry.hitCount });
@@ -144,13 +148,17 @@ export class SemanticCacheService {
     analytics.recordCacheMiss(query, latency);
 
     if (trace) {
-      recordSpan(
+      const endSpan = createSpanWithTiming(
         "semantic-cache-miss",
         "cache",
         trace,
         { query: query.slice(0, 100), normalizedKey, reason },
-        { cacheHit: false, latencyMs: latency },
+        undefined,
+        new Date(startTime),
       );
+      if (endSpan) {
+        endSpan({ cacheHit: false, latencyMs: latency });
+      }
     }
   }
 

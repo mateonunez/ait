@@ -3,6 +3,7 @@ import type { QueryIntent } from "../services/routing/query-intent.service";
 import type { ChatMessage } from "./chat";
 import type { CollectionRouterResult } from "./collections";
 import type { BaseMetadata, Document } from "./documents";
+import type { TypeFilter } from "./rag";
 import type { TraceContext } from "./telemetry";
 
 export interface QueryAnalysisInput {
@@ -15,13 +16,9 @@ export interface QueryAnalysisOutput {
   query: string;
   intent: QueryIntent;
   messages?: ChatMessage[];
-  heuristics: {
-    isTemporalQuery: boolean;
-    entityTypes: string[];
-    complexity: "simple" | "moderate" | "complex";
-  };
-  shouldUseFastPath: boolean;
+  needsRAG: boolean;
   traceContext?: TraceContext;
+  routingResult?: CollectionRouterResult;
 }
 
 export interface CollectionRoutingInput extends QueryAnalysisOutput {}
@@ -32,6 +29,8 @@ export interface CollectionRoutingOutput extends QueryAnalysisOutput {
 
 export interface RetrievalInput extends CollectionRoutingOutput {
   retrievalQuery?: string;
+  /** Optional type filter for the retrieval query, computed by QueryAnalysisStage */
+  typeFilter?: TypeFilter;
 }
 
 export interface RetrievalOutput extends CollectionRoutingOutput {
@@ -67,9 +66,16 @@ export interface RerankingOutput extends FusionInput {
   };
 }
 
-export interface ContextBuildingInput extends RerankingOutput {}
+export interface ContextBuildingInput extends RetrievalOutput {
+  rerankedDocuments?: Document<BaseMetadata>[];
+  rerankMetadata?: {
+    strategy: string;
+    inputCount: number;
+    outputCount: number;
+  };
+}
 
-export interface ContextBuildingOutput extends RerankingOutput {
+export interface ContextBuildingOutput extends ContextBuildingInput {
   context: string;
   contextMetadata: {
     documentCount: number;
@@ -92,10 +98,17 @@ export interface ConversationProcessingOutput extends ConversationProcessingInpu
 
 export interface ContextPreparationInput extends ConversationProcessingOutput {
   enableRAG: boolean;
+  ragContext?: {
+    context: string;
+    documents: Document<BaseMetadata>[];
+    timestamp: number;
+    query: string;
+    fallbackUsed: boolean;
+    fallbackReason?: string;
+  };
 }
 
-export interface ContextPreparationOutput extends ConversationProcessingOutput {
-  systemMessage: string;
+export interface ContextPreparationOutput extends ContextPreparationInput {
   ragContext?: {
     context: string;
     documents: Document<BaseMetadata>[];
@@ -109,6 +122,7 @@ export interface ContextPreparationOutput extends ConversationProcessingOutput {
 export interface ToolExecutionInput extends ContextPreparationOutput {
   tools?: Record<string, unknown>;
   maxRounds: number;
+  systemMessage: string;
 }
 
 export interface ToolExecutionOutput extends ContextPreparationOutput {
@@ -138,8 +152,5 @@ export interface MetadataExtractionInput {
 }
 
 export interface MetadataExtractionOutput extends MetadataExtractionInput {
-  reasoning: unknown[];
-  tasks: unknown[];
   suggestions: Suggestion[];
-  modelInfo?: unknown;
 }

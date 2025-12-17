@@ -1,6 +1,7 @@
 import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { createRAGPipeline } from "../../pipelines/rag.pipeline";
+import { ContextPreparationStage } from "../../stages/generation/context-preparation.stage";
 import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
 import {
   createTraceContext,
@@ -17,6 +18,7 @@ import type { Tool } from "../../types/tools";
 import { getAnalyticsService } from "../analytics/analytics.service";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { PromptOrchestrationService } from "../orchestration/prompt-orchestration.service";
+import { type IQueryIntentService, QueryIntentService } from "../routing/query-intent.service";
 import { MetadataEmitterService, type RAGContextMetadata } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
@@ -81,6 +83,7 @@ export class TextGenerationService implements ITextGenerationService {
   private readonly _ragPipeline: ReturnType<typeof createRAGPipeline>;
   private readonly _metadataEmitter: MetadataEmitterService;
   private readonly _promptOrchestrator: PromptOrchestrationService;
+  private readonly _intentService: IQueryIntentService;
 
   constructor(config: TextGenerationConfig = {}) {
     const client = getAItClient();
@@ -91,18 +94,15 @@ export class TextGenerationService implements ITextGenerationService {
     this._ragPipeline = createRAGPipeline({
       embeddingsModel: config.embeddingsModel || client.embeddingModelConfig.name,
       vectorSize: client.embeddingModelConfig.vectorSize,
-      maxDocs: config.multipleQueryPlannerConfig?.maxDocs ?? 100,
+      maxDocs: config.multipleQueryPlannerConfig?.maxDocs ?? 50,
       queriesCount: config.multipleQueryPlannerConfig?.queriesCount ?? 12,
       concurrency: config.multipleQueryPlannerConfig?.concurrency ?? 4,
       enableTelemetry: true,
-      reranking: {
-        enableLLMReranking: config.reranking?.enableLLMReranking ?? false,
-        useCollectionSpecificPrompts: config.reranking?.useCollectionSpecificPrompts ?? true,
-      },
     });
 
     this._metadataEmitter = new MetadataEmitterService();
     this._promptOrchestrator = new PromptOrchestrationService(config.conversationConfig);
+    this._intentService = new QueryIntentService();
   }
 
   public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string | StreamEvent> {
@@ -151,35 +151,85 @@ export class TextGenerationService implements ITextGenerationService {
           { traceContext: traceContext || undefined },
         );
 
-        if (enableMetadata) {
-          if (ragResult.success && ragResult.data) {
-            const ragMetadata = ragResult.data as RAGContextMetadata;
+        if (ragResult.success && ragResult.data) {
+          const retrievalData = ragResult.data;
+          const documents = retrievalData.documents || [];
 
-            if (ragMetadata.context) {
-              contextToUse = ragMetadata.context;
-            }
+          // Use ContextPreparationStage to build smart context
+          const contextPrepStage = new ContextPreparationStage({
+            maxContextChars: 128000, // default limit or from config
+          });
 
-            const metadataEvent = this._metadataEmitter.createContextMetadataEvent(ragMetadata, options.prompt);
-            yield metadataEvent;
-          } else {
-            const emptyRagMetadata: RAGContextMetadata = {
-              context: "",
-              documents: [],
-              contextMetadata: {
-                documentCount: 0,
-                contextLength: 0,
-                usedTemporalCorrelation: false,
+          const contextResult = await contextPrepStage.execute(
+            {
+              messages: options.messages || [],
+              currentPrompt: options.prompt,
+              recentMessages: options.messages || [], // Pass raw messages as recent for now
+              enableRAG: true,
+              estimatedTokens: 0, // Placeholder
+              ragContext: {
+                context: "",
+                documents: documents,
+                timestamp: Date.now(),
+                query: options.prompt,
+                fallbackUsed: false,
               },
-            };
-            const metadataEvent = this._metadataEmitter.createContextMetadataEvent(emptyRagMetadata, options.prompt);
-            yield metadataEvent;
+            },
+            {
+              traceContext: traceContext || undefined,
+              metadata: {},
+              state: new Map(),
+              telemetry: { recordStage: () => {} },
+            },
+          );
+
+          // Extract context and metadata
+          if (contextResult.ragContext) {
+            contextToUse = contextResult.ragContext.context;
+
+            if (enableMetadata) {
+              const ragMetadata: RAGContextMetadata = {
+                context: contextToUse,
+                documents: contextResult.ragContext.documents,
+                contextMetadata: {
+                  documentCount: contextResult.ragContext.documents.length,
+                  contextLength: contextToUse.length,
+                  usedTemporalCorrelation: false,
+                },
+              };
+              const metadataEvent = this._metadataEmitter.createContextMetadataEvent(ragMetadata, options.prompt);
+              yield metadataEvent;
+            }
           }
-        } else if (ragResult.success && ragResult.data) {
-          const ragMetadata = ragResult.data as RAGContextMetadata;
-          if (ragMetadata.context) {
-            contextToUse = ragMetadata.context;
-          }
+        } else if (enableMetadata) {
+          // Failed or no data, emit empty if metadata enabled
+          const emptyRagMetadata: RAGContextMetadata = {
+            context: "",
+            documents: [],
+            contextMetadata: {
+              documentCount: 0,
+              contextLength: 0,
+              usedTemporalCorrelation: false,
+            },
+          };
+          const metadataEvent = this._metadataEmitter.createContextMetadataEvent(emptyRagMetadata, options.prompt);
+          yield metadataEvent;
         }
+      }
+
+      // Analyze intent to determine if tools are needed (LLM-orchestrated decision)
+      let enableToolExecution = false;
+      if (options.tools && Object.keys(options.tools).length > 0) {
+        const intent = await this._intentService.analyzeIntent(
+          options.prompt,
+          options.messages || [],
+          traceContext || undefined,
+        );
+        enableToolExecution = intent.needsTools;
+        logger.debug("Intent analysis for tool execution", {
+          needsTools: intent.needsTools,
+          primaryFocus: intent.primaryFocus,
+        });
       }
 
       const promptResult = await this._promptOrchestrator.orchestrate({
@@ -188,6 +238,7 @@ export class TextGenerationService implements ITextGenerationService {
         messages: options.messages,
         tools: options.tools,
         maxToolRounds: options.maxToolRounds ?? this._maxToolRounds,
+        enableToolExecution,
         traceContext: traceContext,
       });
 
@@ -246,34 +297,10 @@ export class TextGenerationService implements ITextGenerationService {
 
         // Emit metadata events only if enableMetadata is true
         if (enableMetadata) {
-          // Emit reasoning metadata events
-          if (metadataResult.reasoning && metadataResult.reasoning.length > 0) {
-            const reasoningEvents = this._metadataEmitter.createReasoningMetadataEvent(metadataResult.reasoning);
-            for (const event of reasoningEvents) {
-              yield event;
-            }
-          }
-
-          // Emit task metadata events
-          if (metadataResult.tasks && metadataResult.tasks.length > 0) {
-            const taskEvents = this._metadataEmitter.createTaskMetadataEvent(metadataResult.tasks);
-            for (const event of taskEvents) {
-              yield event;
-            }
-          }
-
           // Emit suggestions metadata event
           if (metadataResult.suggestions && metadataResult.suggestions.length > 0) {
             const suggestionEvent = this._metadataEmitter.createSuggestionMetadataEvent(metadataResult.suggestions);
             yield suggestionEvent;
-          }
-
-          // Emit model metadata event
-          if (metadataResult.modelInfo) {
-            const modelEvent = this._metadataEmitter.createModelMetadataEvent(metadataResult.modelInfo);
-            if (modelEvent) {
-              yield modelEvent;
-            }
           }
         }
       } catch (error) {

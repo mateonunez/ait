@@ -1,11 +1,13 @@
 import { getLogger } from "@ait/core";
 import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { ChatMessage } from "../../types/chat";
+import type { TraceContext } from "../../types/telemetry";
 
 const logger = getLogger();
 
 export interface IQueryRewriterService {
-  rewriteQuery(query: string, messages: ChatMessage[]): Promise<string>;
+  rewriteQuery(query: string, messages: ChatMessage[], traceContext?: TraceContext): Promise<string>;
 }
 
 export class QueryRewriterService implements IQueryRewriterService {
@@ -15,10 +17,18 @@ export class QueryRewriterService implements IQueryRewriterService {
     this._client = client || getAItClient();
   }
 
-  async rewriteQuery(query: string, messages: ChatMessage[]): Promise<string> {
+  async rewriteQuery(query: string, messages: ChatMessage[], traceContext?: TraceContext): Promise<string> {
     if (!messages || messages.length === 0) {
       return query;
     }
+
+    const startTime = Date.now();
+    const endSpan = traceContext
+      ? createSpanWithTiming("query-rewriting", "task", traceContext, {
+          originalQuery: query.slice(0, 100),
+          historyLength: messages.length,
+        })
+      : null;
 
     // Simple heuristic: if query is long and specific, it might not need rewriting
     // But "Who of them..." is short, so we rely on the LLM to decide.
@@ -34,14 +44,37 @@ export class QueryRewriterService implements IQueryRewriterService {
       });
 
       const rewritten = response.text.trim();
+      const wasRewritten = rewritten.toLowerCase() !== query.toLowerCase();
 
-      if (rewritten.toLowerCase() !== query.toLowerCase()) {
-        logger.debug("Query rewritten", { original: query, rewritten });
+      if (wasRewritten) {
+        logger.debug("[✍️] Query rewritten", { original: query, rewritten });
       }
 
+      const duration = Date.now() - startTime;
+      const toSpanAndLog = {
+        rewrittenQuery: rewritten.slice(0, 100),
+        wasRewritten,
+        originalLength: query.length,
+        rewrittenLength: rewritten.length,
+        duration,
+      };
+      if (endSpan) {
+        endSpan(toSpanAndLog);
+      }
+
+      logger.info("[✍️] Query rewritten", toSpanAndLog);
       return rewritten;
     } catch (error) {
-      logger.warn("Failed to rewrite query, using original", { error });
+      const duration = Date.now() - startTime;
+      logger.warn("[✍️] Failed to rewrite query, using original", { error });
+
+      if (endSpan) {
+        endSpan({
+          error: error instanceof Error ? error.message : String(error),
+          duration,
+        });
+      }
+
       return query;
     }
   }

@@ -18,7 +18,7 @@ export interface MultiCollectionQuery {
 export interface CollectionRouterResult {
   selectedCollections: CollectionWeight[];
   reasoning: string;
-  strategy: "single-collection" | "multi-collection" | "all-collections";
+  strategy: "single-collection" | "multi-collection" | "all-collections" | "no-retrieval";
   confidence: number;
   suggestedEntityTypes?: EntityType[];
 }

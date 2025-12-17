@@ -1,13 +1,25 @@
-import { getLogger } from "@ait/core";
-import { type QueryRewriterService, getQueryRewriter } from "../../services/generation/query-rewriter.service";
+import type { EntityType } from "@ait/core";
+import { VALID_ENTITY_TYPES, getLogger } from "@ait/core";
+import {
+  type CollectionVendor,
+  getAllCollections,
+  getCollectionsByEntityTypes,
+  getEnabledVendors,
+} from "../../config/collections.config";
+import { QueryRewriterService } from "../../services/generation/query-rewriter.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import {
   type FastQueryAnalysis,
+  FastQueryAnalyzerService,
   type IFastQueryAnalyzerService,
-  getFastQueryAnalyzer,
 } from "../../services/routing/fast-query-analyzer.service";
-import type { QueryIntent } from "../../services/routing/query-intent.service";
+import {
+  type IQueryIntentService,
+  type QueryIntent,
+  QueryIntentService,
+} from "../../services/routing/query-intent.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
 import type { QueryAnalysisInput, QueryAnalysisOutput } from "../../types/stages";
 
 const logger = getLogger();
@@ -15,84 +27,208 @@ const logger = getLogger();
 export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, QueryAnalysisOutput> {
   readonly name = "query-analysis";
 
-  private readonly fastAnalyzer: IFastQueryAnalyzerService;
-  private readonly queryRewriter: QueryRewriterService;
+  private readonly _fastAnalyzer: IFastQueryAnalyzerService;
+  private readonly _intentService: IQueryIntentService;
+  private readonly _queryRewriter: QueryRewriterService;
 
-  constructor(fastAnalyzer?: IFastQueryAnalyzerService, queryRewriter?: QueryRewriterService) {
-    this.fastAnalyzer = fastAnalyzer || getFastQueryAnalyzer();
-    this.queryRewriter = queryRewriter || getQueryRewriter();
+  constructor(
+    _fastAnalyzer?: IFastQueryAnalyzerService,
+    _intentService?: IQueryIntentService,
+    _queryRewriter?: QueryRewriterService,
+  ) {
+    this._fastAnalyzer = _fastAnalyzer || new FastQueryAnalyzerService();
+    this._intentService = _intentService || new QueryIntentService();
+    this._queryRewriter = _queryRewriter || new QueryRewriterService();
   }
 
   async execute(input: QueryAnalysisInput, context: PipelineContext): Promise<QueryAnalysisOutput> {
     const startTime = Date.now();
     const endSpan = context.traceContext
-      ? createSpanWithTiming(this.name, "rag", context.traceContext, { query: input.query.slice(0, 100) })
+      ? createSpanWithTiming("rag/query-analysis", "routing", context.traceContext, {
+          query: input.query.slice(0, 100),
+          messageCount: input.messages?.length || 0,
+        })
       : null;
 
     let queryToAnalyze = input.query;
-    let analysis = this.fastAnalyzer.analyze(queryToAnalyze);
+    const enabledVendors = getEnabledVendors();
+    const heuristicAnalysis = this._fastAnalyzer.analyze(queryToAnalyze);
+    const hasHistory = !!(input.messages && input.messages.length > 0);
 
-    // Check for pronouns that indicate context dependency
-    const hasPronouns = /\b(it|them|that|those|these|he|she|they|him|her)\b/i.test(queryToAnalyze);
+    let intent: QueryIntent | undefined;
+    let analysisMethod: "llm" | "heuristic" = "llm";
 
-    // If query is ambiguous/broad or simple, and we have history, try to rewrite it
-    if (
-      input.messages &&
-      input.messages.length > 0 &&
-      (analysis.isBroadQuery || analysis.complexity === "simple" || analysis.entityTypes.length === 0 || hasPronouns)
-    ) {
-      const rewrittenQuery = await this.queryRewriter.rewriteQuery(input.query, input.messages);
+    try {
+      intent = await this._intentService.analyzeIntent(queryToAnalyze, input.messages, context.traceContext);
+    } catch (error) {
+      logger.warn("LLM intent analysis failed, falling back to heuristics", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      intent = this._toQueryIntent(heuristicAnalysis);
+      analysisMethod = "heuristic";
+    }
+
+    const needsRewrite = this._shouldRewriteQuery(queryToAnalyze, intent, hasHistory);
+    let wasRewritten = false;
+    if (needsRewrite) {
+      const rewrittenQuery = await this._queryRewriter.rewriteQuery(input.query, input.messages!);
 
       if (rewrittenQuery !== queryToAnalyze) {
         queryToAnalyze = rewrittenQuery;
-        // Re-analyze with the rewritten query
-        analysis = this.fastAnalyzer.analyze(queryToAnalyze);
+        wasRewritten = true;
+        try {
+          intent = await this._intentService.analyzeIntent(queryToAnalyze, input.messages, context.traceContext);
+          analysisMethod = "llm";
+        } catch (error) {
+          logger.warn("Rewritten LLM intent analysis failed, using current intent", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
       }
     }
 
-    const intent = this._toQueryIntent(analysis);
-    const shouldUseFastPath = this._determineFastPath(analysis);
+    const needsRAG = intent.needsRAG;
+    const routingResult = await this._buildRoutingResult(intent, queryToAnalyze, enabledVendors);
 
     const output: QueryAnalysisOutput = {
-      query: queryToAnalyze, // Return the potentially rewritten query
+      query: queryToAnalyze,
       intent,
       messages: input.messages,
-      heuristics: {
-        isTemporalQuery: analysis.isTemporalQuery,
-        entityTypes: analysis.entityTypes,
-        complexity: analysis.complexity,
-      },
-      shouldUseFastPath,
+      needsRAG,
       traceContext: input.traceContext,
+      routingResult,
     };
 
-    if (shouldUseFastPath) {
-      logger.info("Fast path selected for simple query", {
-        complexity: analysis.complexity,
-        entityTypes: analysis.entityTypes,
-        isTemporalQuery: analysis.isTemporalQuery,
-      });
-    }
-
     const duration = Date.now() - startTime;
-    if (endSpan) {
-      endSpan({
-        primaryFocus: intent.primaryFocus,
-        entityCount: intent.entityTypes?.length || 0,
-        isTemporalQuery: intent.isTemporalQuery,
-        isBroadQuery: analysis.isBroadQuery,
-        complexity: analysis.complexity,
-        shouldUseFastPath,
-        duration,
-        method: "heuristic",
-        originalQuery: input.query !== queryToAnalyze ? input.query : undefined,
-      });
-    }
+    const telemetryData = {
+      analysisMethod,
+      needsRAG,
+      strategy: routingResult.strategy,
+      collections: routingResult.selectedCollections.map((c) => c.vendor),
+      wasRewritten,
+      queryLength: queryToAnalyze.length,
+      duration,
+    };
+
+    if (endSpan) endSpan(telemetryData);
+
+    logger.info(`Stage [${this.name}] completed`, telemetryData);
 
     return output;
   }
 
+  private async _buildRoutingResult(
+    intent: QueryIntent,
+    _query: string,
+    enabledVendors: Set<CollectionVendor>,
+  ): Promise<CollectionRouterResult> {
+    if (!intent.needsRAG) {
+      return {
+        selectedCollections: [],
+        reasoning: "Query does not require RAG - skipping retrieval",
+        strategy: "no-retrieval",
+        confidence: 1.0,
+        suggestedEntityTypes: undefined,
+      };
+    }
+
+    // Intent has no entity types → all enabled collections
+    if (intent.entityTypes.length === 0) {
+      const selectedCollections = this._mapCollectionsToWeights(
+        getAllCollections(),
+        enabledVendors,
+        "No specific entity types detected - all collections",
+      );
+
+      return {
+        selectedCollections,
+        reasoning: "No specific entity types detected - searching all collections",
+        strategy: "all-collections",
+        confidence: 0.6,
+        suggestedEntityTypes: intent.entityTypes,
+      };
+    }
+
+    const validEntityTypes = this._validateEntityTypes(intent.entityTypes);
+    const targetCollections = getCollectionsByEntityTypes(validEntityTypes);
+    const selectedCollections = this._mapCollectionsToWeights(
+      targetCollections,
+      enabledVendors,
+      `Entity-based routing: ${validEntityTypes.join(", ")}`,
+      1.0,
+    );
+
+    // Fallback if no collections matched
+    if (selectedCollections.length === 0) {
+      const selectedCollections = this._mapCollectionsToWeights(
+        getAllCollections(),
+        enabledVendors,
+        "Fallback - no matching collections for entity types",
+      );
+
+      return {
+        selectedCollections,
+        reasoning: `Entity types [${validEntityTypes.join(", ")}] did not match any collections`,
+        strategy: "all-collections",
+        confidence: 0.4,
+        suggestedEntityTypes: validEntityTypes,
+      };
+    }
+
+    return {
+      selectedCollections,
+      reasoning: `Entity-based routing for: ${validEntityTypes.join(", ")}`,
+      strategy: selectedCollections.length === 1 ? "single-collection" : "multi-collection",
+      confidence: 0.9,
+      suggestedEntityTypes: validEntityTypes,
+    };
+  }
+
+  private _mapCollectionsToWeights(
+    collections: readonly { vendor: CollectionVendor; defaultWeight: number }[],
+    enabledVendors: Set<CollectionVendor>,
+    reasoning: string,
+    weight?: number,
+  ): CollectionWeight[] {
+    return collections
+      .filter((c) => enabledVendors.has(c.vendor))
+      .map((c) => ({
+        vendor: c.vendor,
+        weight: weight ?? c.defaultWeight,
+        reasoning,
+      }));
+  }
+
+  private _shouldRewriteQuery(query: string, intent: QueryIntent, hasHistory: boolean): boolean {
+    if (!hasHistory) return false;
+
+    // 1. Never rewrite greetings or simple capability questions (No RAG = No Context needed usually)
+    if (!intent.needsRAG) return false;
+
+    // 2. Check for explicit context markers (pronouns, demonstratives)
+    const contextMarkers = /\b(it|them|that|those|these|he|she|they|him|her|this|previous|following)\b/i;
+    if (contextMarkers.test(query)) return true;
+
+    // 3. If LLM explicitly detected a continuation (topicShift: false), we likely need to rewrite
+    // to include the context in the query string for better retrieval.
+    if (intent.topicShift === false) return true;
+
+    // 4. Ambiguity check: Short query + No entities detected -> Likely depends on context
+    // e.g. "Why?" or "Explain more" or "Show code"
+    const wordCount = query.trim().split(/\s+/).length;
+    if (intent.entityTypes.length === 0 && wordCount <= 3) return true;
+
+    return false;
+  }
+
+  private _validateEntityTypes(entityTypes: string[]): EntityType[] {
+    const validTypesSet = new Set<string>(VALID_ENTITY_TYPES);
+    return entityTypes.filter((type): type is EntityType => validTypesSet.has(type));
+  }
+
   private _toQueryIntent(analysis: FastQueryAnalysis): QueryIntent {
+    const needsRAG = analysis.entityTypes.length > 0 || !analysis.isGreeting;
+
     return {
       entityTypes: analysis.entityTypes,
       isTemporalQuery: analysis.isTemporalQuery,
@@ -100,16 +236,9 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
       primaryFocus: analysis.primaryFocus,
       complexityScore: analysis.complexity === "simple" ? 2 : analysis.complexity === "moderate" ? 5 : 8,
       requiredStyle: analysis.requiredStyle,
-      topicShift: false,
+      topicShift: true,
+      needsRAG: needsRAG,
+      needsTools: false, // Heuristic fallback: can't determine tool needs, default to false
     };
-  }
-
-  private _determineFastPath(analysis: FastQueryAnalysis): boolean {
-    if (analysis.isBroadQuery) return false;
-    if (analysis.complexity !== "simple") return false;
-    if (analysis.isTemporalQuery) return false;
-    if (analysis.entityTypes.length > 1) return false;
-
-    return true;
   }
 }

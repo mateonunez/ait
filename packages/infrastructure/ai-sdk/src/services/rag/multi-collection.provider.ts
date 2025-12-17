@@ -1,23 +1,14 @@
 import { getLogger } from "@ait/core";
 import type { EntityType } from "@ait/core";
-import { z } from "zod";
 import type { CollectionVendor } from "../../config/collections.config";
 import { getCollectionConfig } from "../../config/collections.config";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { CollectionSearchResult, CollectionWeight, MultiCollectionSearchResult } from "../../types/collections";
 import type { BaseMetadata, Document } from "../../types/documents";
 import type { TraceContext } from "../../types/telemetry";
-import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
-import { buildQueryAdaptationPrompt } from "../prompts/routing.prompts";
 import { QdrantProvider } from "./qdrant.provider";
 
 const logger = getLogger();
-
-const QueryAdaptationSchema = z.object({
-  adaptedQuery: z.string().min(5).max(200),
-});
-
-type QueryAdaptationResponse = z.infer<typeof QueryAdaptationSchema>;
 
 export interface MultiCollectionProviderConfig {
   url?: string;
@@ -26,21 +17,21 @@ export interface MultiCollectionProviderConfig {
   enableTelemetry?: boolean;
 }
 
+/**
+ * MultiCollectionProvider is a **pure vector search fetcher**.
+ * It executes searches across multiple Qdrant collections.
+ * Query adaptation, planning, and collection discovery are handled by upstream stages.
+ */
 export class MultiCollectionProvider {
   private readonly _providers: Map<CollectionVendor, QdrantProvider>;
   private readonly _config: MultiCollectionProviderConfig;
-  private readonly _discoveryService: ICollectionDiscoveryService;
-  private _queryAdaptationCache: Map<string, string> = new Map();
-  private _queryCacheTimestamp: Map<string, number> = new Map();
-  private readonly _queryCacheTTL: number = 300000; // 5 minutes cache
 
-  constructor(config?: MultiCollectionProviderConfig, discoveryService?: ICollectionDiscoveryService) {
+  constructor(config?: MultiCollectionProviderConfig) {
     this._config = config || {};
     this._providers = new Map();
-    this._discoveryService = discoveryService || new CollectionDiscoveryService();
   }
 
-  private getOrCreateProvider(vendor: CollectionVendor): QdrantProvider {
+  private _getOrCreateProvider(vendor: CollectionVendor): QdrantProvider {
     let provider = this._providers.get(vendor);
 
     if (!provider) {
@@ -61,17 +52,6 @@ export class MultiCollectionProvider {
     return provider;
   }
 
-  private async _ensureCollectionsExist(collections: CollectionWeight[]): Promise<CollectionWeight[]> {
-    let filteredCollections = await this._discoveryService.filterExistingCollections(collections);
-    if (filteredCollections.length === 0) {
-      logger.warn("No selected collections exist in Qdrant, falling back to all existing collections", {
-        originalCollections: collections.map((c) => c.vendor),
-      });
-      filteredCollections = await this._discoveryService.getAllExistingCollections();
-    }
-    return filteredCollections;
-  }
-
   private _filterTypesForCollection(vendor: CollectionVendor, types?: string[]): { types: string[] } | undefined {
     if (!types || types.length === 0) {
       return undefined;
@@ -90,67 +70,6 @@ export class MultiCollectionProvider {
     return { types: filteredTypes };
   }
 
-  private async _adaptQueryForCollection(
-    originalQuery: string,
-    vendor: CollectionVendor,
-    traceContext?: TraceContext,
-  ): Promise<string> {
-    const collectionConfig = getCollectionConfig(vendor);
-
-    // For collections with no entity types (like general), use original query
-    if (collectionConfig.entityTypes.length === 0) {
-      return originalQuery;
-    }
-
-    // Check cache
-    const cacheKey = `${originalQuery}:${vendor}`;
-    const cached = this._queryAdaptationCache.get(cacheKey);
-    const cacheTime = this._queryCacheTimestamp.get(cacheKey);
-    if (cached && cacheTime && Date.now() - cacheTime < this._queryCacheTTL) {
-      return cached;
-    }
-
-    try {
-      const { getAItClient } = await import("../../client/ai-sdk.client");
-      const client = getAItClient();
-
-      const prompt = buildQueryAdaptationPrompt(collectionConfig, originalQuery);
-
-      const adaptedQuery = await client.generateStructured<QueryAdaptationResponse>({
-        schema: QueryAdaptationSchema,
-        temperature: 0.3,
-        prompt,
-      });
-
-      const result = adaptedQuery.adaptedQuery.trim();
-
-      // Cache the result
-      this._queryAdaptationCache.set(cacheKey, result);
-      this._queryCacheTimestamp.set(cacheKey, Date.now());
-
-      if (traceContext) {
-        recordSpan(
-          "query-adaptation",
-          "rag",
-          traceContext,
-          { originalQuery: originalQuery.slice(0, 100), vendor },
-          {
-            adaptedQuery: result.slice(0, 100),
-            entityTypes: collectionConfig.entityTypes,
-          },
-        );
-      }
-
-      return result;
-    } catch (error) {
-      logger.warn(`Failed to adapt query for collection ${vendor}, using original query`, {
-        error: error instanceof Error ? error.message : String(error),
-        vendor,
-      });
-      return originalQuery;
-    }
-  }
-
   private _handleSearchError(vendor: CollectionVendor, error: unknown): void {
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes("Not Found") || errorMessage.includes("not found")) {
@@ -158,7 +77,6 @@ export class MultiCollectionProvider {
         collection: vendor,
         error: errorMessage,
       });
-      this._discoveryService.invalidateCache();
     } else {
       logger.error(`Search failed for collection ${vendor}`, {
         error: errorMessage,
@@ -177,10 +95,8 @@ export class MultiCollectionProvider {
     let totalDocuments = 0;
     let queriesExecuted = 0;
 
-    const filteredCollections = await this._ensureCollectionsExist(collections);
-
-    if (filteredCollections.length === 0) {
-      logger.warn("No collections exist in Qdrant", {
+    if (collections.length === 0) {
+      logger.warn("No collections provided for search", {
         query: query.slice(0, 100),
       });
       return {
@@ -191,31 +107,19 @@ export class MultiCollectionProvider {
       };
     }
 
-    const searchPromises = filteredCollections.map(async (collectionWeight) => {
+    const searchPromises = collections.map(async (collectionWeight) => {
       const searchStartTime = Date.now();
 
       try {
-        const provider = this.getOrCreateProvider(collectionWeight.vendor);
+        const provider = this._getOrCreateProvider(collectionWeight.vendor);
         const collectionLimit = Math.ceil(limit * collectionWeight.weight);
-
-        // Adapt query for this specific collection
-        const adaptedQuery = await this._adaptQueryForCollection(query, collectionWeight.vendor, traceContext);
-        const queryWasAdapted = adaptedQuery !== query;
-
-        if (queryWasAdapted) {
-          logger.debug(`Using adapted query for collection ${collectionWeight.vendor}`, {
-            collection: collectionWeight.vendor,
-            originalQuery: query.slice(0, 100),
-            adaptedQuery: adaptedQuery.slice(0, 100),
-          });
-        }
 
         logger.debug(`Searching ${collectionWeight.vendor}`, {
           weight: collectionWeight.weight,
           limit: collectionLimit,
         });
 
-        const documents = await provider.similaritySearch(adaptedQuery, collectionLimit, {
+        const documents = await provider.similaritySearch(query, collectionLimit, {
           enableTelemetry: this._config.enableTelemetry,
           traceContext,
         });
@@ -257,28 +161,23 @@ export class MultiCollectionProvider {
 
     const totalDuration = Date.now() - startTime;
     if (traceContext) {
-      recordSpan(
-        "multi-collection-search",
-        "search",
-        traceContext,
-        {
-          query: query.slice(0, 100),
-          collections: filteredCollections.map((c) => c.vendor),
-          originalCollections: collections.map((c) => c.vendor),
-        },
-        {
+      const endSpan = createSpanWithTiming("multi-collection-search", "search", traceContext, {
+        query: query.slice(0, 100),
+        collections: collections.map((c) => c.vendor),
+      });
+      if (endSpan) {
+        endSpan({
           totalDocuments,
           queriesExecuted,
           collectionsQueried: results.length,
           duration: totalDuration,
-          usedFallback: filteredCollections.length !== collections.length,
           resultsByCollection: results.map((r) => ({
             vendor: r.vendor,
             documentCount: r.totalResults,
             duration: r.searchDuration,
           })),
-        },
-      );
+        });
+      }
     }
 
     return {
@@ -299,10 +198,8 @@ export class MultiCollectionProvider {
   ): Promise<Array<{ vendor: CollectionVendor; documents: Array<[Document<TMetadata>, number]> }>> {
     const startTime = Date.now();
 
-    const filteredCollections = await this._ensureCollectionsExist(collections);
-
-    if (filteredCollections.length === 0) {
-      logger.warn("No collections exist in Qdrant", {
+    if (collections.length === 0) {
+      logger.warn("No collections provided for search", {
         query: query.slice(0, 100),
       });
       return [];
@@ -311,7 +208,7 @@ export class MultiCollectionProvider {
     // First attempt: search with filters
     let results = await this._executeSearchAcrossCollections<TMetadata>(
       query,
-      filteredCollections,
+      collections,
       limit,
       scoreThreshold,
       filter,
@@ -329,7 +226,7 @@ export class MultiCollectionProvider {
       const filterWithoutTime = filter.types ? { types: filter.types } : undefined;
       results = await this._executeSearchAcrossCollections<TMetadata>(
         query,
-        filteredCollections,
+        collections,
         limit,
         scoreThreshold,
         filterWithoutTime,
@@ -338,23 +235,18 @@ export class MultiCollectionProvider {
     }
 
     if (traceContext) {
-      recordSpan(
-        "multi-collection-search-with-score",
-        "search",
-        traceContext,
-        {
-          query: query.slice(0, 100),
-          collections: filteredCollections.map((c) => c.vendor),
-          originalCollections: collections.map((c) => c.vendor),
-        },
-        {
+      const endSpan = createSpanWithTiming("multi-collection-search-with-score", "search", traceContext, {
+        query: query.slice(0, 100),
+        collections: collections.map((c) => c.vendor),
+      });
+      if (endSpan) {
+        endSpan({
           duration: Date.now() - startTime,
           collectionsQueried: results.length,
           totalDocuments: results.reduce((sum, r) => sum + r.documents.length, 0),
-          usedFallback: filteredCollections.length !== collections.length,
           retriedWithoutTimeFilter: totalDocuments === 0 && filter?.timeRange !== undefined,
-        },
-      );
+        });
+      }
     }
 
     return results;
@@ -370,20 +262,8 @@ export class MultiCollectionProvider {
   ): Promise<Array<{ vendor: CollectionVendor; documents: Array<[Document<TMetadata>, number]> }>> {
     const searchPromises = filteredCollections.map(async (collectionWeight) => {
       try {
-        const provider = this.getOrCreateProvider(collectionWeight.vendor);
+        const provider = this._getOrCreateProvider(collectionWeight.vendor);
         const collectionLimit = Math.ceil(limit * collectionWeight.weight);
-
-        // Adapt query for this specific collection
-        const adaptedQuery = await this._adaptQueryForCollection(query, collectionWeight.vendor, traceContext);
-        const queryWasAdapted = adaptedQuery !== query;
-
-        if (queryWasAdapted) {
-          logger.debug(`Using adapted query for collection ${collectionWeight.vendor}`, {
-            collection: collectionWeight.vendor,
-            originalQuery: query.slice(0, 100),
-            adaptedQuery: adaptedQuery.slice(0, 100),
-          });
-        }
 
         // Filter types to only include those that exist in this collection
         const typeFilterResult = this._filterTypesForCollection(collectionWeight.vendor, filter?.types);
@@ -426,7 +306,7 @@ export class MultiCollectionProvider {
         }
 
         const documents = await provider.similaritySearchWithScore(
-          adaptedQuery,
+          query,
           collectionLimit,
           effectiveFilter,
           scoreThreshold,
@@ -453,15 +333,10 @@ export class MultiCollectionProvider {
     return await Promise.all(searchPromises);
   }
 
-  invalidateCollectionCache(): void {
-    this._discoveryService.invalidateCache();
-  }
-
   reset(): void {
     for (const provider of this._providers.values()) {
       provider.reset();
     }
     this._providers.clear();
-    this.invalidateCollectionCache();
   }
 }

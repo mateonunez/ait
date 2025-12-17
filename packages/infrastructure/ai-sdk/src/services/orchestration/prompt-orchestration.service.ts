@@ -13,6 +13,7 @@ export interface PromptOrchestrationInput {
   messages?: ChatMessage[];
   tools?: Record<string, Tool>;
   maxToolRounds?: number;
+  enableToolExecution?: boolean;
   conversationConfig?: ConversationConfig;
   traceContext?: TraceContext | null;
 }
@@ -63,13 +64,14 @@ export class PromptOrchestrationService {
     let accumulatedMessages: ChatMessage[] | undefined;
     let finalTextResponse: string | undefined;
 
-    if (input.tools && maxToolRounds > 0) {
+    if (input.enableToolExecution && input.tools && maxToolRounds > 0) {
       const toolResult = await this.toolStage.execute(
         {
           ...conversationResult,
           systemMessage: systemPrompt,
           tools: input.tools,
           maxRounds: maxToolRounds,
+          enableRAG: !!input.ragContext,
         },
         {
           traceContext: input.traceContext || undefined,
