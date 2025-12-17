@@ -100,6 +100,7 @@
     background: linear-gradient(135deg, var(--violet-400) 0%, var(--amber-500) 50%, var(--violet-500) 100%);
     -webkit-background-clip: text;
     background-clip: text;
+    -webkit-text-fill-color: transparent;
     color: transparent;
     background-size: 200% 200%;
   }
@@ -116,9 +117,12 @@
     );
     -webkit-background-clip: text;
     background-clip: text;
+    -webkit-text-fill-color: transparent;
     color: transparent;
     background-size: 300% 300%;
     animation: gradient-shift 8s ease-in-out infinite;
+    will-change: background-position;
+    transform: translateZ(0);
   }
 
   /* Glass effect */

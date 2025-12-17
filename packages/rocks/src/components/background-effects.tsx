@@ -24,18 +24,23 @@ const colorClasses = {
 export function FloatingOrb({ className, size = "md", color = "mixed", delay = 0 }: FloatingOrbProps) {
   return (
     <motion.div
-      className={cn("absolute rounded-full blur-3xl", sizeClasses[size], colorClasses[color], className)}
+      className={cn(
+        "absolute rounded-full blur-3xl will-change-[transform]",
+        sizeClasses[size],
+        colorClasses[color],
+        className,
+      )}
       animate={{
         y: [0, -30, 0],
         x: [0, 15, -10, 0],
-        scale: [1, 1.1, 0.95, 1],
-        opacity: [0.4, 0.6, 0.5, 0.4],
+        scale: [1, 1.05, 0.95, 1],
+        opacity: [0.3, 0.5, 0.3],
       }}
       transition={{
         duration: 8 + Math.random() * 4,
         repeat: Number.POSITIVE_INFINITY,
         repeatType: "reverse",
-        ease: "easeInOut",
+        ease: "linear",
         delay,
       }}
     />
