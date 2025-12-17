@@ -90,7 +90,7 @@ export function LandingPage() {
               "mb-8",
             )}
           >
-            Your data. Your AI. <span className="font-semibold text-gradient">One conversation.</span>
+            Your data. Your AI. <span className="font-semibold text-gradient">One Platform.</span>
           </motion.p>
 
           <motion.p

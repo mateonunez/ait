@@ -38,7 +38,7 @@ export function CookieConsent() {
         >
           <div className="glass p-5 rounded-2xl border border-white/10 shadow-2xl flex flex-col sm:flex-row gap-4 items-center justify-between bg-black/40 backdrop-blur-xl ring-1 ring-white/5">
             <div className="text-sm text-foreground/90 text-center sm:text-left">
-              <span className="font-semibold block sm:inline">We use cookies 🍪</span>
+              <span className="font-semibold block sm:inline">Cookies 🍪?</span>
               <span className="text-muted-foreground text-xs sm:text-sm block sm:inline sm:ml-2">
                 To see how you interact with our shiny new website.
               </span>
@@ -62,7 +62,7 @@ export function CookieConsent() {
                   "bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 active:scale-95",
                 )}
               >
-                AIt!
+                Oki
               </button>
             </div>
           </div>
