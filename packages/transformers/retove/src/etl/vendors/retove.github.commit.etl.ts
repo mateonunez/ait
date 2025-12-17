@@ -44,13 +44,11 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubCommits) as any;
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(githubCommits.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(githubCommits.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(githubCommits.sha, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(githubCommits.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(githubCommits.sha, cursor.id),
           ),
         );
       }

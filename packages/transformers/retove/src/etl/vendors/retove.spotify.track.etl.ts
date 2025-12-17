@@ -44,13 +44,11 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
       let query = tx.select().from(spotifyTracks) as any;
 
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(spotifyTracks.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(spotifyTracks.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(spotifyTracks.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(spotifyTracks.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(spotifyTracks.id, cursor.id),
           ),
         );
       }

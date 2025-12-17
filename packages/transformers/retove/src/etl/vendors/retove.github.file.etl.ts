@@ -48,13 +48,11 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract {
       let query = tx.select().from(githubRepositoryFiles) as any;
 
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(githubRepositoryFiles.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(githubRepositoryFiles.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(githubRepositoryFiles.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(githubRepositoryFiles.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(githubRepositoryFiles.id, cursor.id),
           ),
         );
       }

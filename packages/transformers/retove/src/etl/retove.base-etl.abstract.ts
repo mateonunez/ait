@@ -645,11 +645,10 @@ export abstract class RetoveBaseETLAbstract {
     const result = await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select({ count: drizzleOrm.count() }).from(table) as any;
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
+        // This must match the extract() query logic in each vendor ETL
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(updatedAtField, cursor.timestamp),
-            drizzleOrm.and(drizzleOrm.eq(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
-          ),
+          drizzleOrm.and(drizzleOrm.gte(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
         );
       }
       return query.execute();
