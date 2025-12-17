@@ -45,6 +45,7 @@
     "openapi-typescript": "^7.10.1",
     "pino-pretty": "^13.1.2",
     "sinon": "^21.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
 }
