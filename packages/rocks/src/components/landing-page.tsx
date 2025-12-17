@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Github, Linkedin, Twitter } from "lucide-react";
+import { trackEvent } from "../lib/analytics";
 import { BackgroundEffects } from "./background-effects";
 import { ThemeToggle } from "./theme-toggle";
 
@@ -89,7 +90,7 @@ export function LandingPage() {
               "mb-8",
             )}
           >
-            Your data. Your AI. <span className="font-semibold text-gradient">One conversation.</span>
+            Your data. Your AI. <span className="font-semibold text-gradient">One Platform.</span>
           </motion.p>
 
           <motion.p
@@ -130,6 +131,13 @@ export function LandingPage() {
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-foreground transition-colors underline-offset-4 hover:underline"
+              onClick={() =>
+                trackEvent({
+                  action: "click",
+                  category: "footer",
+                  label: "personal_site",
+                })
+              }
             >
               Mateo Nunez
             </a>
@@ -148,6 +156,14 @@ interface SocialLinkProps {
 }
 
 function SocialLink({ href, icon, label }: SocialLinkProps) {
+  const handleClick = () => {
+    trackEvent({
+      action: "click",
+      category: "social",
+      label: label.toLowerCase(),
+    });
+  };
+
   return (
     <motion.a
       href={href}
@@ -162,6 +178,7 @@ function SocialLink({ href, icon, label }: SocialLinkProps) {
       whileHover={{ y: -2 }}
       whileTap={{ scale: 0.95 }}
       aria-label={label}
+      onClick={handleClick}
     >
       {icon}
     </motion.a>
