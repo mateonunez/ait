@@ -220,7 +220,7 @@ export function AIChatDialog({ open, onOpenChange }: AIChatDialogProps) {
 
             {/* Input */}
             <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-t border-border">
-              <PromptInput onSubmit={sendMessage} disabled={isLoading} />
+              <PromptInput onSubmit={sendMessage} disabled={isLoading} focusOnEnable={true} />
             </div>
           </div>
 

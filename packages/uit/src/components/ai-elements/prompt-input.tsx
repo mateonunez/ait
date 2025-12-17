@@ -2,6 +2,7 @@ import { cn } from "@/styles/utils";
 import { motion } from "framer-motion";
 import { Loader2, Mic, Paperclip, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { applyInputReplacements } from "../../utils/input-replacements";
 
 interface PromptInputProps {
   onSubmit: (message: string) => void;
@@ -9,6 +10,7 @@ interface PromptInputProps {
   placeholder?: string;
   className?: string;
   variant?: "default" | "floating";
+  focusOnEnable?: boolean;
 }
 
 export function PromptInput({
@@ -17,6 +19,7 @@ export function PromptInput({
   placeholder = "Ask AIt anything...",
   className,
   variant = "default",
+  focusOnEnable = false,
 }: PromptInputProps) {
   const [value, setValue] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -29,6 +32,17 @@ export function PromptInput({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   });
+
+  // Focus on enable
+  useEffect(() => {
+    if (!disabled && focusOnEnable && textareaRef.current) {
+      // Small timeout to ensure the DOM is ready and accessible
+      const timer = setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 10);
+      return () => clearTimeout(timer);
+    }
+  }, [disabled, focusOnEnable]);
 
   const handleSubmit = () => {
     if (!value.trim() || disabled) return;
@@ -87,7 +101,7 @@ export function PromptInput({
           <textarea
             ref={textareaRef}
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => setValue(applyInputReplacements(e.target.value))}
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
