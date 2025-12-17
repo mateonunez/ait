@@ -122,6 +122,10 @@
     @apply overflow-y-auto;
   }
 
+  .dark .streamdown-wrapper pre code {
+    filter: invert(0.98) hue-rotate(180deg);
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     @apply w-2;
   }
