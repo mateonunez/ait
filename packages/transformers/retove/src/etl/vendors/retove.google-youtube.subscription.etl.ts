@@ -36,13 +36,11 @@ export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
       let query = tx.select().from(googleSubscriptions) as any;
 
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(googleSubscriptions.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(googleSubscriptions.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(googleSubscriptions.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(googleSubscriptions.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(googleSubscriptions.id, cursor.id),
           ),
         );
       }

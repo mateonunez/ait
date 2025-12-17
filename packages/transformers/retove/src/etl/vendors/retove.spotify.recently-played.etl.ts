@@ -44,13 +44,11 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(spotifyRecentlyPlayed) as any;
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(spotifyRecentlyPlayed.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(spotifyRecentlyPlayed.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(spotifyRecentlyPlayed.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(spotifyRecentlyPlayed.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(spotifyRecentlyPlayed.id, cursor.id),
           ),
         );
       }

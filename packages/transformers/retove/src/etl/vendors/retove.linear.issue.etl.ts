@@ -43,13 +43,11 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
       let query = tx.select().from(linearIssues) as any;
 
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(linearIssues.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(linearIssues.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(linearIssues.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(linearIssues.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(linearIssues.id, cursor.id),
           ),
         );
       }

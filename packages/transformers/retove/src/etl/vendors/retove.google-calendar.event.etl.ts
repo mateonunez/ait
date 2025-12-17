@@ -36,13 +36,11 @@ export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
       let query = tx.select().from(googleCalendarEvents) as any;
 
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(googleCalendarEvents.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(googleCalendarEvents.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(googleCalendarEvents.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(googleCalendarEvents.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(googleCalendarEvents.id, cursor.id),
           ),
         );
       }

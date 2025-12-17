@@ -30,13 +30,11 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
       let query = tx.select().from(notionPages) as any;
 
       if (cursor) {
+        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(notionPages.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(notionPages.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(notionPages.id, cursor.id),
-            ),
+          drizzleOrm.and(
+            drizzleOrm.gte(notionPages.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(notionPages.id, cursor.id),
           ),
         );
       }
