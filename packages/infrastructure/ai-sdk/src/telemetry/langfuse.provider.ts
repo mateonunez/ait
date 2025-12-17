@@ -27,6 +27,7 @@ interface SpanState {
 }
 
 export class LangfuseProvider {
+  readonly name = "langfuse-provider";
   private client: Langfuse | null = null;
   private config: Required<TelemetryConfig>;
   private activeTraces = new Map<string, TraceState>();
@@ -59,12 +60,12 @@ export class LangfuseProvider {
           flushInterval: this.config.flushInterval,
         });
       } catch (error) {
-        logger.warn("[Langfuse] Failed to initialize client:", { error });
+        logger.warn(`[${this.name}] Failed to initialize client:`, { error });
         this.config.enabled = false;
       }
     } else {
       if (this.config.enabled) {
-        logger.warn("[Langfuse] Telemetry enabled but missing credentials", {
+        logger.warn(`[${this.name}] Telemetry enabled but missing credentials`, {
           hasPublicKey: !!this.config.publicKey,
           hasSecretKey: !!this.config.secretKey,
         });
@@ -105,7 +106,7 @@ export class LangfuseProvider {
         metadata,
       };
     } catch (error) {
-      logger.warn("[Langfuse] Failed to create trace:", { error });
+      logger.warn(`[${this.name}] Failed to create trace:`, { error });
       return null;
     }
   }
@@ -116,6 +117,7 @@ export class LangfuseProvider {
     traceContext: TraceContext,
     type: SpanType = "generation",
     metadata?: SpanMetadata,
+    explicitStartTime?: Date,
   ): string | null {
     if (!this.isEnabled() || !this.client) {
       return null;
@@ -124,12 +126,13 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceContext.traceId);
       if (!traceState) {
-        logger.warn(`Trace ${traceContext.traceId} not found for span ${spanId}`);
+        logger.warn(`[${this.name}] Trace ${traceContext.traceId} not found for span ${spanId}`);
         return null;
       }
 
-      const startTime = new Date();
-      const span = traceState.trace.span({
+      const startTime = explicitStartTime || new Date();
+      const parentSpan = traceContext.parentSpanId ? this.activeSpans.get(traceContext.parentSpanId)?.span : null;
+      const span = (parentSpan || traceState.trace).span({
         id: spanId,
         name,
         startTime,
@@ -144,7 +147,7 @@ export class LangfuseProvider {
 
       return spanId;
     } catch (error) {
-      logger.warn("Failed to create span:", { error });
+      logger.warn(`[${this.name}] Failed to create span:`, { error });
       return null;
     }
   }
@@ -180,7 +183,7 @@ export class LangfuseProvider {
         });
       }
     } catch (error) {
-      logger.warn("Failed to update span:", { error });
+      logger.warn(`[${this.name}] Failed to update span:`, { error });
     }
   }
 
@@ -240,7 +243,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceId);
       if (!traceState) {
-        logger.warn(`[Langfuse] Trace ${traceId} not found for input update`);
+        logger.warn(`[${this.name}] Trace ${traceId} not found for input update`);
         return;
       }
 
@@ -249,7 +252,7 @@ export class LangfuseProvider {
       });
       traceState.hasInput = true;
     } catch (error) {
-      logger.warn("[Langfuse] Failed to update trace input:", { error });
+      logger.warn(`[${this.name}] Failed to update trace input:`, { error });
     }
   }
 
@@ -261,7 +264,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceId);
       if (!traceState) {
-        logger.warn(`[Langfuse] Trace ${traceId} not found for output update`);
+        logger.warn(`[${this.name}] Trace ${traceId} not found for output update`);
         return;
       }
 
@@ -270,7 +273,7 @@ export class LangfuseProvider {
       });
       traceState.hasOutput = true;
     } catch (error) {
-      logger.warn("[Langfuse] Failed to update trace output:", { error });
+      logger.warn(`[${this.name}] Failed to update trace output:`, { error });
     }
   }
 
@@ -282,7 +285,7 @@ export class LangfuseProvider {
     try {
       const traceState = this.activeTraces.get(traceId);
       if (!traceState) {
-        logger.warn(`[Langfuse] Trace ${traceId} not found for ending`);
+        logger.warn(`[${this.name}] Trace ${traceId} not found for ending`);
         return;
       }
 
@@ -378,7 +381,7 @@ export class LangfuseProvider {
 
     for (const [traceId, state] of this.activeTraces.entries()) {
       if (!state.isComplete) {
-        warnings.push(`Trace ${traceId} is not marked complete`);
+        warnings.push(`[Trace ${traceId} is not marked complete`);
         invalid++;
         continue;
       }

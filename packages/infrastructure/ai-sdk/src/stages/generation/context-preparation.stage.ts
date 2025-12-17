@@ -1,104 +1,84 @@
-import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
-import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../../services/prompts/system.prompt";
-import { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
-import { PipelineBuilder } from "../../services/rag/pipeline/pipeline.builder";
+import { getLogger } from "@ait/core";
+import { SmartContextManager } from "../../services/context/smart/smart-context.manager";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
-import { createMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.factory";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { BaseMetadata, Document } from "../../types/documents";
 import type { ContextPreparationInput, ContextPreparationOutput } from "../../types/stages";
-import { CollectionRoutingStage } from "../rag/collection-routing.stage";
-import { ContextBuildingStage } from "../rag/context-building.stage";
-import { FusionStage } from "../rag/fusion.stage";
-import { QueryAnalysisStage } from "../rag/query-analysis.stage";
-import { RerankingStage } from "../rag/reranking.stage";
-import { RetrievalStage } from "../rag/retrieval.stage";
-import { SimpleRetrievalStage } from "../rag/simple-retrieval.stage";
 
 export class ContextPreparationStage implements IPipelineStage<ContextPreparationInput, ContextPreparationOutput> {
   readonly name = "context-preparation";
 
+  private readonly contextManager: SmartContextManager;
+  private readonly logger = getLogger();
+
+  constructor(config?: { maxContextChars?: number }) {
+    this.contextManager = new SmartContextManager({
+      totalTokenLimit: config?.maxContextChars ? Math.floor(config.maxContextChars / 4) : undefined,
+    });
+  }
+
   async execute(input: ContextPreparationInput, context: PipelineContext): Promise<ContextPreparationOutput> {
+    const startTime = Date.now();
     if (!input.enableRAG) {
       return {
         ...input,
-        systemMessage: buildSystemPromptWithoutContext(),
         ragContext: undefined,
       };
     }
 
+    // Input documents come from the RAG pipeline execution in TextGenerationService
+    const documents = input.ragContext?.documents || [];
+
+    const endSpan = context.traceContext
+      ? createSpanWithTiming("generation/context-preparation", "context_preparation", context.traceContext, {
+          documentCount: documents.length,
+        })
+      : null;
+
     try {
-      const embeddingModelConfig = getEmbeddingModelConfig();
-      const multiCollectionProvider = new MultiCollectionProvider({
-        embeddingsModel: embeddingModelConfig.name,
-        expectedVectorSize: embeddingModelConfig.vectorSize,
-        enableTelemetry: true,
+      const builtContext = await this.contextManager.assembleContext({
+        systemInstructions: "", // System prompt is handled separately or passed here if needed
+        messages: input.recentMessages || [],
+        retrievedDocs: documents as Document<BaseMetadata>[],
       });
 
-      const multiQueryRetrieval = createMultiQueryRetrievalService({
-        maxDocs: 100,
-        queryPlanner: { queriesCount: 12 },
-        concurrency: 4,
-      });
+      const telemetryData = {
+        documentCount: documents.length,
+        messageCount: input.recentMessages?.length || 0,
+        contextLength: builtContext.length,
+        duration: Date.now() - startTime,
+      };
 
-      const ragPipeline = PipelineBuilder.create()
-        .addStage(new QueryAnalysisStage())
-        .addStage(new SimpleRetrievalStage(multiCollectionProvider, 100))
-        .addStage(new CollectionRoutingStage())
-        .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
-        .addStage(new FusionStage())
-        .addStage(new RerankingStage())
-        .addStage(new ContextBuildingStage())
-        .withFailureMode("continue-on-error")
-        .withTelemetry(true)
-        .build();
+      if (endSpan) endSpan(telemetryData);
 
-      const ragResult = await ragPipeline.execute(
-        {
-          query: input.currentPrompt,
-          messages: input.recentMessages,
-          traceContext: context.traceContext,
-        },
-        { traceContext: context.traceContext },
-      );
-
-      if (ragResult.success && ragResult.data) {
-        const contextData = ragResult.data as {
-          context: string;
-          documents: unknown[];
-          query: string;
-        };
-
-        return {
-          ...input,
-          systemMessage: contextData.context
-            ? buildSystemPromptWithContext(contextData.context)
-            : buildSystemPromptWithoutContext(),
-          ragContext: {
-            context: contextData.context,
-            documents: contextData.documents as Document<BaseMetadata>[],
-            timestamp: Date.now(),
-            query: contextData.query,
-            fallbackUsed: false,
-          },
-        };
-      }
+      this.logger.info(`Stage [${this.name}] completed`, telemetryData);
 
       return {
         ...input,
-        systemMessage: buildSystemPromptWithoutContext(),
         ragContext: {
-          context: "",
-          documents: [],
-          timestamp: Date.now(),
-          query: input.currentPrompt,
-          fallbackUsed: true,
-          fallbackReason: ragResult.error?.message || "RAG pipeline failed",
+          ...input.ragContext!, // Preserve existing metadata like timestamp/query
+          context: builtContext,
+          documents: documents as Document<BaseMetadata>[],
+          fallbackUsed: false,
         },
       };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      if (endSpan) {
+        endSpan({
+          error: error instanceof Error ? error.message : String(error),
+          duration,
+        });
+      }
+
+      this.logger.error(`Stage [${this.name}] failed`, {
+        duration,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Fallback
       return {
         ...input,
-        systemMessage: buildSystemPromptWithoutContext(),
         ragContext: {
           context: "",
           documents: [],

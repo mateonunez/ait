@@ -134,6 +134,21 @@ export function createTraceContext(name: string, metadata?: SpanMetadata): Trace
   return provider.createTrace(name, traceId, metadata);
 }
 
+/**
+ * Create a child trace context that nests spans under a parent span.
+ * This enables hierarchical span grouping in Langfuse.
+ * @param parent The parent trace context
+ * @param parentSpanId The ID of the parent span to nest under
+ */
+export function createChildContext(parent: TraceContext, parentSpanId: string): TraceContext {
+  return {
+    traceId: parent.traceId,
+    parentSpanId,
+    spanId: parent.spanId,
+    metadata: parent.metadata,
+  };
+}
+
 export function recordSpan(
   name: string,
   type: SpanType,
@@ -141,6 +156,7 @@ export function recordSpan(
   input?: SpanInput,
   output?: SpanOutput,
   metadata?: SpanMetadata,
+  startTime?: Date,
 ): void {
   const provider = getLangfuseProvider();
 
@@ -149,7 +165,7 @@ export function recordSpan(
   }
 
   const spanId = randomUUID();
-  const createdSpanId = provider.createSpan(name, spanId, traceContext, type, metadata);
+  const createdSpanId = provider.createSpan(name, spanId, traceContext, type, metadata, startTime);
 
   if (!createdSpanId) {
     return;
@@ -169,6 +185,7 @@ export function recordSpan(
 /**
  * Create a span at the start of execution and return a function to end it
  * This ensures proper timing tracking in Langfuse
+ * @param startTime Optional explicit start time for retroactive span creation
  */
 export function createSpanWithTiming(
   name: string,
@@ -176,6 +193,7 @@ export function createSpanWithTiming(
   traceContext: TraceContext,
   input?: SpanInput,
   metadata?: SpanMetadata,
+  startTime?: Date,
 ): ((output?: SpanOutput) => void) | null {
   const provider = getLangfuseProvider();
 
@@ -184,7 +202,7 @@ export function createSpanWithTiming(
   }
 
   const spanId = randomUUID();
-  const createdSpanId = provider.createSpan(name, spanId, traceContext, type, metadata);
+  const createdSpanId = provider.createSpan(name, spanId, traceContext, type, metadata, startTime);
 
   if (!createdSpanId) {
     return null;
@@ -273,6 +291,7 @@ export function recordGeneration(
   input: SpanInput,
   output?: SpanOutput,
   metadata?: SpanMetadata,
+  startTime?: Date,
 ): void {
   const provider = getLangfuseProvider();
 
@@ -281,7 +300,7 @@ export function recordGeneration(
   }
 
   const spanId = randomUUID();
-  const createdSpanId = provider.createSpan(name, spanId, traceContext, "generation", metadata);
+  const createdSpanId = provider.createSpan(name, spanId, traceContext, "generation", metadata, startTime);
 
   if (!createdSpanId) {
     return;

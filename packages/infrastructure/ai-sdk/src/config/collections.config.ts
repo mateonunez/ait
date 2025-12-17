@@ -112,6 +112,10 @@ export function getCollectionsNames(): string[] {
   return getAllCollections().map((c) => c.name);
 }
 
+export function getEnabledVendors(): Set<CollectionVendor> {
+  return new Set(getAllCollections().map((c) => c.vendor));
+}
+
 export function getCollectionByEntityType(entityType: EntityType): CollectionConfig | undefined {
   return Object.values(COLLECTIONS_REGISTRY).find((config) => config.entityTypes.includes(entityType));
 }

@@ -1,5 +1,4 @@
 import { getLogger } from "@ait/core";
-import { recordSpan } from "../../../telemetry/telemetry.middleware";
 import type { IPipelineStage, PipelineContext } from "./pipeline.types";
 
 const logger = getLogger();
@@ -8,29 +7,6 @@ export abstract class PipelineStageAbstract<TInput = unknown, TOutput = unknown>
   implements IPipelineStage<TInput, TOutput>
 {
   abstract readonly name: string;
-
-  protected recordTelemetry(
-    stageName: string,
-    input: unknown,
-    output: unknown,
-    duration: number,
-    context: PipelineContext,
-  ): void {
-    if (context.traceContext) {
-      recordSpan(
-        `stage-${stageName}`,
-        "pipeline",
-        context.traceContext,
-        { stageName, input: this.sanitizeForTelemetry(input) },
-        {
-          output: this.sanitizeForTelemetry(output),
-          duration,
-        },
-      );
-    }
-
-    context.telemetry.recordStage(stageName, input, output, duration);
-  }
 
   protected sanitizeForTelemetry(data: unknown): unknown {
     if (typeof data === "string" && data.length > 500) {

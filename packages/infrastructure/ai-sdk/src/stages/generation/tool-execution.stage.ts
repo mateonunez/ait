@@ -3,6 +3,7 @@ import { getAItClient } from "../../client/ai-sdk.client";
 import { PromptBuilderService } from "../../services/generation/prompt-builder.service";
 import { ToolExecutionService } from "../../services/generation/tool-execution.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { convertToOllamaTools } from "../../tools/tool.converter";
 import type { ToolExecutionInput, ToolExecutionOutput } from "../../types/stages";
 import type { Tool } from "../../types/tools";
@@ -21,6 +22,14 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
   }
 
   async execute(input: ToolExecutionInput, context: PipelineContext): Promise<ToolExecutionOutput> {
+    const startTime = Date.now();
+    const endSpan = context.traceContext
+      ? createSpanWithTiming("generation/tool-execution", "tool", context.traceContext, {
+          availableTools: input.tools ? Object.keys(input.tools) : [],
+          maxRounds: input.maxRounds,
+        })
+      : null;
+
     const client = getAItClient();
     const modelSupportsTools = client.generationModelConfig.supportsTools ?? true;
 
@@ -31,19 +40,30 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
         userMessage: input.currentPrompt,
       });
 
-      return {
+      const output: ToolExecutionOutput = {
         ...input,
         finalPrompt,
         toolCalls: [],
         toolResults: [],
         hasToolCalls: false,
       };
+
+      if (endSpan) {
+        endSpan({
+          hasToolCalls: false,
+          toolCallsCount: 0,
+          duration: Date.now() - startTime,
+        });
+      }
+
+      return output;
     }
 
     const ollamaTools = convertToOllamaTools(input.tools as Record<string, Tool>);
     const toolCalls: unknown[] = [];
     const toolResults: unknown[] = [];
     let hasToolCalls = false;
+    let finalRoundText: string | undefined;
 
     // Initialize messages with full context (system + history + user)
     const currentMessages: any[] = this.promptBuilder.buildMessages(
@@ -92,8 +112,6 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
         });
 
         // Append assistant's tool calls to history
-        // We convert tool calls to text to avoid 500 errors with Ollama which usually
-        // doesn't support the 'tool' role correctly in history without IDs (which are missing)
         const toolNames = checkResult.toolCalls.map((tc) => tc.function.name).join(", ");
         const toolCallDetails = checkResult.toolCalls
           .map((tc) => `Tool Call: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`)
@@ -109,36 +127,38 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
           role: "user",
           content: formattedToolResults,
         });
-
-        // Continue to next round
       } else {
-        // No tools called - LLM returned a final text response
-        // Capture this text so we don't need to call the LLM again
         if (checkResult.text?.trim()) {
           logger.debug(`Round ${round} - LLM returned final text`, { length: checkResult.text.length });
-          return {
-            ...input,
-            finalPrompt: currentPrompt,
-            toolCalls,
-            toolResults,
-            hasToolCalls,
-            accumulatedMessages: hasToolCalls ? currentMessages : undefined,
-            finalTextResponse: checkResult.text,
-          };
+          finalRoundText = checkResult.text;
         }
-        // No text either, just break
         break;
       }
     }
 
-    return {
+    const output: ToolExecutionOutput = {
       ...input,
       finalPrompt: currentPrompt,
       toolCalls,
       toolResults,
       hasToolCalls,
       accumulatedMessages: hasToolCalls ? currentMessages : undefined,
+      finalTextResponse: finalRoundText,
     };
+
+    const telemetryData = {
+      hasToolCalls,
+      toolCallsCount: toolCalls.length,
+      toolResultsCount: toolResults.length,
+      wasFinalTextReturned: !!finalRoundText,
+      duration: Date.now() - startTime,
+    };
+
+    if (endSpan) endSpan(telemetryData);
+
+    logger.info(`Stage [${this.name}] completed`, telemetryData);
+
+    return output;
   }
 
   private formatConversation(messages: ToolExecutionInput["recentMessages"], summary?: string): string {

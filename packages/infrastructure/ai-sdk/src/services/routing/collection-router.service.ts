@@ -8,7 +8,6 @@ import { getAllCollections, getCollectionsByEntityTypes } from "../../config/col
 import { createSpanWithTiming, recordGeneration, recordSpan } from "../../telemetry/telemetry.middleware";
 import type { CollectionRouterResult, CollectionWeight } from "../../types/collections";
 import type { TraceContext } from "../../types/telemetry";
-import { CollectionDiscoveryService, type ICollectionDiscoveryService } from "../metadata/collection-discovery.service";
 import { buildCollectionRouterPrompt, buildFallbackRoutingReason } from "../prompts/routing.prompts";
 import type { QueryIntent } from "./query-intent.service";
 
@@ -49,20 +48,19 @@ export class CollectionRouterService implements ICollectionRouterService {
   private readonly _minConfidenceThreshold: number;
   private readonly _enableLLMRouting: boolean;
   private readonly _llmRoutingConfidenceThreshold: number;
-  private readonly _discoveryService: ICollectionDiscoveryService;
   private readonly _client: AItClient;
 
-  constructor(config?: CollectionRouterConfig, discoveryService?: ICollectionDiscoveryService, client?: AItClient) {
+  constructor(config?: CollectionRouterConfig, client?: AItClient) {
     this._temperature = config?.temperature ?? 0.3;
     this._minConfidenceThreshold = config?.minConfidenceThreshold ?? 0.4;
     this._enableLLMRouting = config?.enableLLMRouting ?? false;
     this._llmRoutingConfidenceThreshold = config?.llmRoutingConfidenceThreshold ?? 0.5;
-    this._discoveryService = discoveryService || new CollectionDiscoveryService();
     this._client = client || getAItClient();
   }
 
-  private async _getExistingCollectionVendors(): Promise<Set<CollectionVendor>> {
-    return this._discoveryService.getExistingCollectionVendors();
+  private _getEnabledCollectionVendors(): Set<CollectionVendor> {
+    const allCollections = getAllCollections();
+    return new Set(allCollections.map((c) => c.vendor));
   }
 
   /**
@@ -129,27 +127,26 @@ export class CollectionRouterService implements ICollectionRouterService {
         })
       : null;
 
-    const existingVendors = await this._getExistingCollectionVendors();
+    const enabledVendors = this._getEnabledCollectionVendors();
 
     // Fast heuristic-based broad query detection (no LLM call)
     const isBroad = this._isBroadQueryHeuristic(userQuery);
     if (isBroad) {
-      if (existingVendors.size > 0) {
+      if (enabledVendors.size > 0) {
         const allCollections = getAllCollections();
-        const existingCollections = allCollections.filter((c) => existingVendors.has(c.vendor));
 
-        logger.info("Broad query detected (heuristic), selecting all existing collections", {
+        logger.info("Broad query detected (heuristic), selecting all enabled collections", {
           query: userQuery.slice(0, 100),
-          collections: Array.from(existingVendors),
+          collections: Array.from(enabledVendors),
         });
 
         const result: CollectionRouterResult = {
-          selectedCollections: existingCollections.map((c) => ({
+          selectedCollections: allCollections.map((c) => ({
             vendor: c.vendor,
             weight: c.defaultWeight,
-            reasoning: "Broad query - all existing collections",
+            reasoning: "Broad query - all enabled collections",
           })),
-          reasoning: "Broad/ambiguous query detected - searching all existing collections",
+          reasoning: "Broad/ambiguous query detected - searching all enabled collections",
           strategy: "all-collections",
           confidence: 0.8,
           suggestedEntityTypes: queryIntent?.entityTypes
@@ -173,7 +170,7 @@ export class CollectionRouterService implements ICollectionRouterService {
     }
 
     // Try heuristic routing first (always fast)
-    const heuristicResult = this._buildHeuristicRouting(userQuery, queryIntent, existingVendors);
+    const heuristicResult = this._buildHeuristicRouting(userQuery, queryIntent, enabledVendors);
 
     // If heuristics are confident enough OR LLM routing is disabled, use heuristic result
     if (!this._enableLLMRouting || heuristicResult.confidence >= this._llmRoutingConfidenceThreshold) {
@@ -216,7 +213,7 @@ export class CollectionRouterService implements ICollectionRouterService {
     // Only use LLM if enabled AND heuristics have low confidence
     try {
       const intentHints = this.extractIntentHints(queryIntent);
-      const prompt = buildCollectionRouterPrompt(userQuery, intentHints, existingVendors);
+      const prompt = buildCollectionRouterPrompt(userQuery, intentHints, enabledVendors);
 
       const client = this._client;
       const response = await client.generateStructured<CollectionRouterResponse>({
@@ -225,7 +222,7 @@ export class CollectionRouterService implements ICollectionRouterService {
         prompt,
       });
 
-      const validatedResult = await this.validateAndNormalizeResult(response, queryIntent, existingVendors);
+      const validatedResult = this.validateAndNormalizeResult(response, queryIntent, enabledVendors);
 
       logger.info("Collection routing completed (LLM)", {
         strategy: validatedResult.strategy,
@@ -245,6 +242,7 @@ export class CollectionRouterService implements ICollectionRouterService {
             reasoning: validatedResult.reasoning,
           },
           { model: client.generationModelConfig.name, temperature: this._temperature },
+          new Date(startTime),
         );
       }
 
@@ -297,14 +295,14 @@ export class CollectionRouterService implements ICollectionRouterService {
     return hints;
   }
 
-  private async validateAndNormalizeResult(
+  private validateAndNormalizeResult(
     response: CollectionRouterResponse,
     queryIntent?: QueryIntent,
-    existingVendors?: Set<CollectionVendor>,
-  ): Promise<CollectionRouterResult> {
+    enabledVendors?: Set<CollectionVendor>,
+  ): CollectionRouterResult {
     const allCollections = getAllCollections();
     const validVendors = new Set(allCollections.map((c) => c.vendor));
-    const existing = existingVendors || (await this._getExistingCollectionVendors());
+    const enabled = enabledVendors || this._getEnabledCollectionVendors();
 
     const normalizedCollections: CollectionWeight[] = response.selectedCollections
       .filter((c) => {
@@ -312,8 +310,8 @@ export class CollectionRouterService implements ICollectionRouterService {
           logger.warn(`Invalid vendor in LLM response: ${c.vendor}`);
           return false;
         }
-        if (!existing.has(c.vendor as CollectionVendor)) {
-          logger.warn(`Collection ${c.vendor} does not exist in Qdrant, filtering out`);
+        if (!enabled.has(c.vendor as CollectionVendor)) {
+          logger.warn(`Collection ${c.vendor} is not enabled, filtering out`);
           return false;
         }
         return c.weight >= this._minConfidenceThreshold;
@@ -326,8 +324,8 @@ export class CollectionRouterService implements ICollectionRouterService {
       .sort((a, b) => b.weight - a.weight);
 
     if (normalizedCollections.length === 0) {
-      logger.warn("No valid collections after normalization, using all existing collections");
-      return this.buildAllExistingCollectionsFallback(response.reasoning || "No collections met threshold", existing);
+      logger.warn("No valid collections after normalization, using all enabled collections");
+      return this.buildAllEnabledCollectionsFallback(response.reasoning || "No collections met threshold", enabled);
     }
 
     const suggestedEntityTypes = queryIntent?.entityTypes
@@ -349,10 +347,10 @@ export class CollectionRouterService implements ICollectionRouterService {
   private _buildHeuristicRouting(
     userQuery: string,
     queryIntent?: QueryIntent,
-    existingVendors?: Set<CollectionVendor>,
+    enabledVendors?: Set<CollectionVendor>,
   ): CollectionRouterResult {
     const lowerQuery = userQuery.toLowerCase();
-    const existing = existingVendors || new Set<CollectionVendor>();
+    const enabled = enabledVendors || new Set<CollectionVendor>();
 
     const heuristics: Array<{ vendor: CollectionVendor; keywords: readonly string[]; weight: number }> = [
       { vendor: "spotify", keywords: getVendorKeywords("spotify"), weight: 1.0 },
@@ -368,7 +366,7 @@ export class CollectionRouterService implements ICollectionRouterService {
     let totalMatches = 0;
 
     for (const { vendor, keywords, weight } of heuristics) {
-      if (!existing.has(vendor)) {
+      if (!enabled.has(vendor)) {
         continue;
       }
 
@@ -390,7 +388,7 @@ export class CollectionRouterService implements ICollectionRouterService {
       const intentCollections = getCollectionsByEntityTypes(validEntityTypes);
 
       for (const collection of intentCollections) {
-        if (!existing.has(collection.vendor)) {
+        if (!enabled.has(collection.vendor)) {
           continue;
         }
 
@@ -408,9 +406,9 @@ export class CollectionRouterService implements ICollectionRouterService {
       }
     }
 
-    // If no matches, return all existing collections with lower confidence
+    // If no matches, return all enabled collections with lower confidence
     if (selectedCollections.length === 0) {
-      return this.buildAllExistingCollectionsFallback("No keyword or intent matches", existing);
+      return this.buildAllEnabledCollectionsFallback("No keyword or intent matches", enabled);
     }
 
     // Normalize weights for multi-collection queries to prevent dominance
@@ -444,20 +442,20 @@ export class CollectionRouterService implements ICollectionRouterService {
     }));
   }
 
-  private buildAllExistingCollectionsFallback(
+  private buildAllEnabledCollectionsFallback(
     reason: string,
-    existingVendors: Set<CollectionVendor>,
+    enabledVendors: Set<CollectionVendor>,
   ): CollectionRouterResult {
     const allCollections = getAllCollections();
-    const existingCollections = allCollections.filter((c) => existingVendors.has(c.vendor));
+    const enabledCollections = allCollections.filter((c) => enabledVendors.has(c.vendor));
 
     return {
-      selectedCollections: existingCollections.map((c) => ({
+      selectedCollections: enabledCollections.map((c) => ({
         vendor: c.vendor,
         weight: c.defaultWeight,
-        reasoning: "Fallback to all existing collections",
+        reasoning: "Fallback to all enabled collections",
       })),
-      reasoning: `All existing collections selected: ${reason}`,
+      reasoning: `All enabled collections selected: ${reason}`,
       strategy: "all-collections",
       confidence: 0.5,
     };

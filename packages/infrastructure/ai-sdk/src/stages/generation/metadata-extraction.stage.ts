@@ -1,40 +1,45 @@
-import { getAItClient } from "../../client/ai-sdk.client";
+import { getLogger } from "@ait/core";
 import { getSuggestionService } from "../../services/generation/suggestion.service";
-import { getModelInfoService } from "../../services/metadata/model-info.service";
-import { getReasoningExtractionService } from "../../services/metadata/reasoning-extraction.service";
-import { getTaskBreakdownService } from "../../services/metadata/task-breakdown.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { MetadataExtractionInput, MetadataExtractionOutput } from "../../types/stages";
+
+const logger = getLogger();
 
 export class MetadataExtractionStage implements IPipelineStage<MetadataExtractionInput, MetadataExtractionOutput> {
   readonly name = "metadata-extraction";
 
-  async canExecute(input: MetadataExtractionInput): Promise<boolean> {
+  async canExecute(_input: MetadataExtractionInput): Promise<boolean> {
     return true;
   }
 
   async execute(input: MetadataExtractionInput, context: PipelineContext): Promise<MetadataExtractionOutput> {
-    const reasoningService = getReasoningExtractionService();
-    const taskService = getTaskBreakdownService();
-    const suggestionsService = getSuggestionService();
-    const modelInfoService = getModelInfoService();
+    const startTime = Date.now();
+    const endSpan = context.traceContext
+      ? createSpanWithTiming("generation/metadata-extraction", "task", context.traceContext, {
+          responseLength: input.fullResponse.length,
+        })
+      : null;
 
-    const reasoning = reasoningService.extractReasoning(input.fullResponse);
-    const tasks = taskService.isComplexQuery(input.prompt) ? taskService.breakdownQuery(input.prompt) : [];
+    const suggestionsService = getSuggestionService();
+
     const suggestions = await suggestionsService.generateSuggestions({
       context: input.prompt,
       history: input.fullResponse,
     });
 
-    const client = getAItClient();
-    const modelInfo = modelInfoService.getModelInfo(client.generationModelConfig.name);
+    const telemetryData = {
+      suggestionsCount: suggestions.length,
+      duration: Date.now() - startTime,
+    };
+
+    if (endSpan) endSpan(telemetryData);
+
+    logger.info(`Stage [${this.name}] completed`, telemetryData);
 
     return {
       ...input,
-      reasoning,
-      tasks,
       suggestions,
-      modelInfo,
     };
   }
 }

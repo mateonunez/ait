@@ -1,7 +1,7 @@
 import { AItError } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
-import { recordSpan, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { type TokenizerService, getTokenizer } from "../tokenizer/tokenizer.service";
 import { type EmbeddingsConfig, createEmbeddingsConfig } from "./embeddings.config";
@@ -55,17 +55,14 @@ export class EmbeddingsService implements IEmbeddingsService {
       }
 
       if (enableTelemetry && traceContext) {
-        recordSpan(
-          "text-chunking",
-          "embedding",
-          traceContext,
-          {
-            text: text.slice(0, 100),
-          },
-          {
+        const endChunkSpan = createSpanWithTiming("text-chunking", "embedding", traceContext, {
+          text: text.slice(0, 100),
+        });
+        if (endChunkSpan) {
+          endChunkSpan({
             chunkCount: chunks.length,
-          },
-        );
+          });
+        }
       }
 
       const chunkVectors = await this._processChunks(chunks, correlationId);
@@ -86,7 +83,7 @@ export class EmbeddingsService implements IEmbeddingsService {
       const estimatedTokens = this._tokenizer.countTokens(text);
 
       if (enableTelemetry && traceContext) {
-        recordSpan(
+        const endEmbedSpan = createSpanWithTiming(
           "embedding-generation",
           "embedding",
           traceContext,
@@ -95,14 +92,16 @@ export class EmbeddingsService implements IEmbeddingsService {
             chunkCount: chunks.length,
           },
           {
-            vectorSize: averagedVector.length,
-            duration,
-            estimatedTokens,
-          },
-          {
             model: this._config.model,
           },
         );
+        if (endEmbedSpan) {
+          endEmbedSpan({
+            vectorSize: averagedVector.length,
+            duration,
+            estimatedTokens,
+          });
+        }
       }
 
       return averagedVector;

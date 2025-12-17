@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, describe, it, mock } from "node:test";
 import type { AItClient } from "../../../src/client/ai-sdk.client";
-import type { ICollectionDiscoveryService } from "../../../src/services/metadata/collection-discovery.service";
 import { CollectionRouterService } from "../../../src/services/routing/collection-router.service";
 
 describe("CollectionRouterService", () => {
@@ -12,16 +11,12 @@ describe("CollectionRouterService", () => {
     generationModelConfig: { name: "test-model" },
   } as unknown as AItClient;
 
-  const mockDiscoveryService = {
-    getExistingCollectionVendors: mock.fn(async () => new Set(["spotify", "github"])),
-  } as unknown as ICollectionDiscoveryService;
-
   afterEach(() => {
     mockGenerateStructured.mock.resetCalls();
   });
 
   it("should route to single collection when intent is clear", async () => {
-    const service = new CollectionRouterService({}, mockDiscoveryService, mockClient);
+    const service = new CollectionRouterService({ enableLLMRouting: true }, mockClient);
 
     mockGenerateStructured.mock.mockImplementationOnce(async () => ({
       strategy: "single-collection",
@@ -38,7 +33,7 @@ describe("CollectionRouterService", () => {
   });
 
   it("should handle broad queries", async () => {
-    const service = new CollectionRouterService({}, mockDiscoveryService, mockClient);
+    const service = new CollectionRouterService({}, mockClient);
 
     // Mock broad query check
     mockGenerateStructured.mock.mockImplementationOnce(async () => ({
@@ -57,7 +52,6 @@ describe("CollectionRouterService", () => {
     // Enable LLM routing with threshold higher than heuristic confidence (0.6) to force LLM path
     const service = new CollectionRouterService(
       { enableLLMRouting: true, llmRoutingConfidenceThreshold: 0.7 },
-      mockDiscoveryService,
       mockClient,
     );
 
@@ -76,7 +70,6 @@ describe("CollectionRouterService", () => {
   it("should normalize weights for multi-collection heuristic routing", async () => {
     const service = new CollectionRouterService(
       { enableLLMRouting: false }, // Force heuristic
-      mockDiscoveryService,
       mockClient,
     );
 

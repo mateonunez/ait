@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
 import type { OllamaToolCall } from "../../client/ollama.provider";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import type { ToolExecutionConfig, ToolExecutionResult } from "../../types/text-generation";
 import type { Tool } from "../../types/tools";
@@ -91,20 +91,21 @@ export class ToolExecutionService implements IToolExecutionService {
 
             // Record successful tool execution
             if (traceContext) {
-              recordSpan(
+              const endSpan = createSpanWithTiming(
                 `tool-${toolName}`,
                 "tool",
                 traceContext,
-                {
-                  toolName,
-                  parameters: toolCall.function.arguments,
-                },
-                {
+                { toolName, parameters: toolCall.function.arguments },
+                undefined,
+                new Date(startTime),
+              );
+              if (endSpan) {
+                endSpan({
                   result: typeof result === "object" ? JSON.stringify(result).slice(0, 500) : String(result),
                   executionTimeMs,
                   success: true,
-                },
-              );
+                });
+              }
             }
 
             return finalResult;
@@ -125,20 +126,21 @@ export class ToolExecutionService implements IToolExecutionService {
 
               // Record failed tool execution
               if (traceContext) {
-                recordSpan(
+                const endSpan = createSpanWithTiming(
                   `tool-${toolName}`,
                   "tool",
                   traceContext,
-                  {
-                    toolName,
-                    parameters: toolCall.function.arguments,
-                  },
-                  {
+                  { toolName, parameters: toolCall.function.arguments },
+                  undefined,
+                  new Date(startTime),
+                );
+                if (endSpan) {
+                  endSpan({
                     error: errMsg,
                     executionTimeMs,
                     success: false,
-                  },
-                );
+                  });
+                }
               }
 
               return finalResult;

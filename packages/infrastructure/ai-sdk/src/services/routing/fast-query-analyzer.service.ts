@@ -1,5 +1,12 @@
 import type { EntityType } from "@ait/core";
 import { VALID_ENTITY_TYPES } from "@ait/core";
+import {
+  BROAD_QUERY_PATTERNS,
+  ENTITY_KEYWORDS,
+  GREETING_PATTERNS,
+  TECHNICAL_PATTERNS,
+  TEMPORAL_PATTERNS,
+} from "./fast-query-analyzer.service.const";
 
 /**
  * Query analysis result from fast heuristic-based analysis
@@ -12,171 +19,14 @@ export interface FastQueryAnalysis {
   primaryFocus: string;
   complexity: "simple" | "moderate" | "complex";
   isBroadQuery: boolean;
+  /** True if the query is a greeting or simple conversational message (skip RAG) */
+  isGreeting: boolean;
   requiredStyle: "concise" | "technical" | "creative" | "detailed";
 }
 
 export interface IFastQueryAnalyzerService {
   analyze(query: string): FastQueryAnalysis;
 }
-
-/**
- * Keyword patterns for entity type detection
- * Maps keywords to their corresponding entity types
- */
-const ENTITY_KEYWORDS: Record<string, EntityType[]> = {
-  // Spotify
-  song: ["track"],
-  songs: ["track"],
-  track: ["track"],
-  tracks: ["track"],
-  music: ["track", "artist", "album", "playlist"],
-  listening: ["recently_played"],
-  listened: ["recently_played"],
-  played: ["recently_played"],
-  playing: ["recently_played"],
-  artist: ["artist"],
-  artists: ["artist"],
-  album: ["album"],
-  albums: ["album"],
-  playlist: ["playlist"],
-  playlists: ["playlist"],
-  spotify: ["track", "artist", "album", "playlist", "recently_played"],
-
-  // GitHub - Repository
-  repo: ["repository"],
-  repos: ["repository"],
-  repository: ["repository"],
-  repositories: ["repository"],
-  branch: ["repository"],
-
-  // GitHub - Code/Files (repository_file)
-  code: ["repository", "pull_request", "repository_file"],
-  file: ["repository_file"],
-  files: ["repository_file"],
-  function: ["repository_file"],
-  functions: ["repository_file"],
-  class: ["repository_file"],
-  classes: ["repository_file"],
-  method: ["repository_file"],
-  methods: ["repository_file"],
-  module: ["repository_file"],
-  modules: ["repository_file"],
-  interface: ["repository_file"],
-  interfaces: ["repository_file"],
-  type: ["repository_file"],
-  types: ["repository_file"],
-  import: ["repository_file"],
-  imports: ["repository_file"],
-  export: ["repository_file"],
-  exports: ["repository_file"],
-  source: ["repository_file"],
-  implementation: ["repository_file"],
-  // Language-specific
-  typescript: ["repository_file"],
-  javascript: ["repository_file"],
-  python: ["repository_file"],
-  tsx: ["repository_file"],
-  jsx: ["repository_file"],
-  ts: ["repository_file"],
-  js: ["repository_file"],
-  py: ["repository_file"],
-
-  // GitHub - Commits
-  commit: ["commit"],
-  commits: ["commit"],
-  pushed: ["commit"],
-  push: ["commit"],
-
-  // GitHub - Pull Requests
-  pr: ["pull_request"],
-  prs: ["pull_request"],
-  "pull request": ["pull_request"],
-  "pull requests": ["pull_request"],
-  merge: ["pull_request"],
-  merged: ["pull_request"],
-
-  // GitHub - General (routes to multiple types)
-  github: ["repository", "pull_request", "repository_file", "commit"],
-
-  // Linear
-  task: ["issue"],
-  tasks: ["issue"],
-  issue: ["issue"],
-  issues: ["issue"],
-  ticket: ["issue"],
-  tickets: ["issue"],
-  project: ["issue"],
-  projects: ["issue"],
-  linear: ["issue"],
-  backlog: ["issue"],
-  sprint: ["issue"],
-
-  // X/Twitter
-  tweet: ["tweet"],
-  tweets: ["tweet"],
-  twitter: ["tweet"],
-  posted: ["tweet"],
-  x: ["tweet"],
-
-  // Notion
-  note: ["page"],
-  notes: ["page"],
-  page: ["page"],
-  pages: ["page"],
-  document: ["page"],
-  documents: ["page"],
-  notion: ["page"],
-  wiki: ["page"],
-  docs: ["page"],
-
-  // Slack
-  slack: ["message"],
-  channel: ["message"],
-  message: ["message"],
-  messages: ["message"],
-  team: ["message"],
-};
-
-/**
- * Temporal patterns for detecting time-related queries
- */
-const TEMPORAL_PATTERNS: Array<{ pattern: RegExp; reference: string }> = [
-  { pattern: /\b(today|tonight)\b/i, reference: "today" },
-  { pattern: /\byesterday\b/i, reference: "yesterday" },
-  { pattern: /\blast\s+(week|month|year)\b/i, reference: "last $1" },
-  { pattern: /\bthis\s+(week|month|year)\b/i, reference: "this $1" },
-  { pattern: /\b(\d+)\s+(day|week|month|year)s?\s+ago\b/i, reference: "$1 $2 ago" },
-  { pattern: /\brecently?\b/i, reference: "recent" },
-  { pattern: /\blast\s+(\d+)\s+(day|hour|minute)s?\b/i, reference: "last $1 $2" },
-  { pattern: /\b(morning|afternoon|evening|night)\b/i, reference: "today" },
-  { pattern: /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i, reference: "$1" },
-  {
-    pattern: /\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/i,
-    reference: "$1",
-  },
-];
-
-/**
- * Patterns that indicate broad/ambiguous queries
- */
-const BROAD_QUERY_PATTERNS: RegExp[] = [
-  /^(what|who|how)\s+(are|is)\s+(you|ait|this)/i,
-  /^(tell|show)\s+me\s+(about\s+)?(yourself|you|everything)/i,
-  /^(hello|hi|hey|help)/i,
-  /^what\s+can\s+you\s+do/i,
-  /^(give|show)\s+me\s+(an?\s+)?overview/i,
-  /^summarize\s+(everything|all|my\s+data)/i,
-];
-
-/**
- * Patterns for technical queries
- */
-const TECHNICAL_PATTERNS: RegExp[] = [
-  /\b(debug|fix|error|bug|issue|problem)\b/i,
-  /\b(code|function|class|method|api|endpoint)\b/i,
-  /\b(implement|refactor|optimize|performance)\b/i,
-  /\b(test|spec|unit|integration)\b/i,
-];
 
 /**
  * Fast, heuristic-based query analyzer
@@ -189,9 +39,12 @@ export class FastQueryAnalyzerService implements IFastQueryAnalyzerService {
     const normalizedQuery = query.trim().toLowerCase();
     const words = normalizedQuery.split(/\s+/);
 
+    // Check for greetings FIRST - these skip RAG entirely
+    const isGreeting = this._isGreeting(normalizedQuery);
+
     const entityTypes = this._extractEntityTypes(normalizedQuery);
     const temporalInfo = this._extractTemporalInfo(normalizedQuery);
-    const isBroadQuery = this._isBroadQuery(normalizedQuery, entityTypes);
+    const isBroadQuery = isGreeting ? false : this._isBroadQuery(normalizedQuery, entityTypes);
     const complexity = this._determineComplexity(words, entityTypes);
     const requiredStyle = this._determineStyle(normalizedQuery, complexity);
     const primaryFocus = this._extractPrimaryFocus(query, entityTypes, temporalInfo.isTemporalQuery);
@@ -203,6 +56,7 @@ export class FastQueryAnalyzerService implements IFastQueryAnalyzerService {
       primaryFocus,
       complexity,
       isBroadQuery,
+      isGreeting,
       requiredStyle,
     };
   }
@@ -245,6 +99,15 @@ export class FastQueryAnalyzerService implements IFastQueryAnalyzerService {
     }
 
     return { isTemporalQuery: false };
+  }
+
+  private _isGreeting(query: string): boolean {
+    for (const pattern of GREETING_PATTERNS) {
+      if (pattern.test(query)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private _isBroadQuery(query: string, entityTypes: EntityType[]): boolean {

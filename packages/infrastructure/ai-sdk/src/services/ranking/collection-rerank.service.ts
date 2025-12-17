@@ -20,6 +20,7 @@ export interface ICollectionRerankService {
 }
 
 export class CollectionRerankService implements ICollectionRerankService {
+  private readonly name = "collection-rerank";
   private readonly _reranker?: IRerankService;
   private readonly _useCollectionSpecificPrompts: boolean;
   private readonly _diversityService: ICollectionDiversityService;
@@ -42,25 +43,25 @@ export class CollectionRerankService implements ICollectionRerankService {
     targetEntityTypes?: string[],
   ): Promise<WeightedDocument<TMetadata>[]> {
     if (documents.length === 0) {
-      logger.warn("No documents to rerank");
+      logger.warn(`Service [${this.name}] No documents to rerank`);
       return [];
     }
 
     const endSpan = traceContext
-      ? createSpanWithTiming("collection-rerank", "rag", traceContext, {
+      ? createSpanWithTiming(this.name, "rag", traceContext, {
           query: userQuery.slice(0, 100),
           inputDocuments: documents.length,
         })
       : null;
 
-    const documentsByCollection = this.groupByCollection(documents);
+    const documentsByCollection = this._groupByCollection(documents);
 
     // Process collections in parallel
     const rerankPromises = Object.entries(documentsByCollection).map(async ([vendor, collectionDocs]) => {
       try {
-        return await this.rerankCollectionGroup(vendor as CollectionVendor, collectionDocs, userQuery, traceContext);
+        return await this._rerankCollectionGroup(vendor as CollectionVendor, collectionDocs, userQuery, traceContext);
       } catch (error) {
-        logger.error(`Reranking failed for collection ${vendor}`, {
+        logger.error(`Service [${this.name}] Reranking failed for collection ${vendor}`, {
           error: error instanceof Error ? error.message : String(error),
         });
         return collectionDocs;
@@ -69,21 +70,24 @@ export class CollectionRerankService implements ICollectionRerankService {
 
     const rerankedGroups = await Promise.all(rerankPromises);
 
-    const mergedResults = this.mergeRerankedGroups(rerankedGroups, targetEntityTypes);
+    const mergedResults = this._mergeRerankedGroups(rerankedGroups, targetEntityTypes);
     const finalResults = mergedResults.slice(0, maxResults);
 
-    if (endSpan) {
-      endSpan({
-        outputDocuments: finalResults.length,
-        collectionsProcessed: Object.keys(documentsByCollection).length,
-        collectionDistribution: this.getCollectionDistribution(finalResults),
-      });
-    }
+    const telemetryData = {
+      inputDocuments: documents.length,
+      outputDocuments: finalResults.length,
+      collectionsProcessed: Object.keys(documentsByCollection).length,
+      collectionDistribution: this._getCollectionDistribution(finalResults),
+    };
+
+    if (endSpan) endSpan(telemetryData);
+
+    logger.info(`Service [${this.name}] completed`, telemetryData);
 
     return finalResults;
   }
 
-  private groupByCollection<TMetadata extends BaseMetadata>(
+  private _groupByCollection<TMetadata extends BaseMetadata>(
     documents: WeightedDocument<TMetadata>[],
   ): Record<string, WeightedDocument<TMetadata>[]> {
     const groups: Record<string, WeightedDocument<TMetadata>[]> = {};
@@ -99,19 +103,19 @@ export class CollectionRerankService implements ICollectionRerankService {
     return groups;
   }
 
-  private async rerankCollectionGroup<TMetadata extends BaseMetadata>(
+  private async _rerankCollectionGroup<TMetadata extends BaseMetadata>(
     vendor: CollectionVendor,
     documents: WeightedDocument<TMetadata>[],
     userQuery: string,
     traceContext?: TraceContext,
   ): Promise<WeightedDocument<TMetadata>[]> {
     if (!this._reranker) {
-      logger.debug(`No reranker available for ${vendor}, using original order`);
+      logger.debug(`Service [${this.name}]: no reranker available for ${vendor}, using original order`);
       return documents;
     }
 
     const collectionSpecificQuery = this._useCollectionSpecificPrompts
-      ? this.buildCollectionSpecificQuery(vendor, userQuery)
+      ? this._buildCollectionSpecificQuery(vendor, userQuery)
       : userQuery;
 
     try {
@@ -125,7 +129,7 @@ export class CollectionRerankService implements ICollectionRerankService {
       const rerankedDocs = await this._reranker.rerank(collectionSpecificQuery, plainDocuments, documents.length);
 
       return rerankedDocs.map((doc, index) => {
-        const originalDoc = documents.find((d) => this.isSameDocument(d, doc));
+        const originalDoc = documents.find((d) => this._isSameDocument(d, doc));
         return {
           ...doc,
           collectionVendor: originalDoc?.collectionVendor || vendor,
@@ -141,7 +145,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     }
   }
 
-  private buildCollectionSpecificQuery(vendor: CollectionVendor, userQuery: string): string {
+  private _buildCollectionSpecificQuery(vendor: CollectionVendor, userQuery: string): string {
     const collectionContext: Record<CollectionVendor, string> = {
       spotify: "music and audio content",
       github: "code repositories and development activity",
@@ -159,7 +163,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     return `Considering ${context}: ${userQuery}`;
   }
 
-  private mergeRerankedGroups<TMetadata extends BaseMetadata>(
+  private _mergeRerankedGroups<TMetadata extends BaseMetadata>(
     groups: Array<WeightedDocument<TMetadata>[]>,
     targetEntityTypes?: string[],
   ): WeightedDocument<TMetadata>[] {
@@ -174,7 +178,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     return diversified;
   }
 
-  private isSameDocument<TMetadata extends BaseMetadata>(
+  private _isSameDocument<TMetadata extends BaseMetadata>(
     doc1: WeightedDocument<TMetadata>,
     doc2: Document<TMetadata>,
   ): boolean {
@@ -185,7 +189,7 @@ export class CollectionRerankService implements ICollectionRerankService {
     return doc1.pageContent.slice(0, 100) === doc2.pageContent.slice(0, 100);
   }
 
-  private getCollectionDistribution<TMetadata extends BaseMetadata>(
+  private _getCollectionDistribution<TMetadata extends BaseMetadata>(
     documents: WeightedDocument<TMetadata>[],
   ): Record<string, number> {
     const distribution: Record<string, number> = {};

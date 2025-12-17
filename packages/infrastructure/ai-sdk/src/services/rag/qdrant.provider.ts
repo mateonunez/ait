@@ -1,7 +1,7 @@
 import { getLogger } from "@ait/core";
 import { getQdrantClient, type qdrant } from "@ait/qdrant";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
-import { recordSpan } from "../../telemetry/telemetry.middleware";
+import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { BaseMetadata, Document } from "../../types/documents";
 import { extractContentFromPayload, extractMetadataFromPayload } from "../../types/qdrant";
 import type { TraceContext } from "../../types/telemetry";
@@ -149,19 +149,16 @@ export class QdrantProvider {
     const results = await this.similaritySearchWithVector(queryVector, k);
 
     if (options?.enableTelemetry && options?.traceContext) {
-      recordSpan(
-        "similarity-search",
-        "search",
-        options.traceContext,
-        {
-          query: query.slice(0, 100),
-          k,
-        },
-        {
+      const endSpan = createSpanWithTiming("similarity-search", "search", options.traceContext, {
+        query: query.slice(0, 100),
+        k,
+      });
+      if (endSpan) {
+        endSpan({
           resultCount: results.length,
           duration: Date.now() - startTime,
-        },
-      );
+        });
+      }
     }
 
     return results;
@@ -242,18 +239,15 @@ export class QdrantProvider {
     ]);
 
     if (options?.enableTelemetry && options?.traceContext) {
-      recordSpan(
-        "vector-search",
-        "search",
-        options.traceContext,
-        {
-          query: query.slice(0, 100),
-          k,
-          scoreThreshold: effectiveThreshold,
-          filterTypes: filter?.types,
-          hasTimeRange: !!filter?.timeRange,
-        },
-        {
+      const endSpan = createSpanWithTiming("vector-search", "search", options.traceContext, {
+        query: query.slice(0, 100),
+        k,
+        scoreThreshold: effectiveThreshold,
+        filterTypes: filter?.types,
+        hasTimeRange: !!filter?.timeRange,
+      });
+      if (endSpan) {
+        endSpan({
           resultCount: results.length,
           avgScore:
             results.length > 0
@@ -262,8 +256,8 @@ export class QdrantProvider {
           maxScore: results.length > 0 ? (results[0]?.[1] ?? 0) : 0,
           minScore: results.length > 0 ? (results[results.length - 1]?.[1] ?? 0) : 0,
           duration: Date.now() - startTime,
-        },
-      );
+        });
+      }
     }
 
     return results as Array<[Document<BaseMetadata>, number]>;

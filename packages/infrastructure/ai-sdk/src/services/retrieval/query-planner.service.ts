@@ -142,6 +142,7 @@ export class QueryPlannerService implements IQueryPlannerService {
             model: client.generationModelConfig.name,
             temperature: this._temperature,
           },
+          new Date(startTime),
         );
 
         recordSpan(
@@ -158,6 +159,8 @@ export class QueryPlannerService implements IQueryPlannerService {
             usedFallback: fallbackApplied,
             duration: Date.now() - startTime,
           },
+          undefined,
+          new Date(startTime),
         );
       }
 

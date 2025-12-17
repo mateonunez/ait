@@ -99,6 +99,7 @@ export {
 } from "./tools/connectors.tools";
 export type { SpotifySearchResult } from "./tools/domains/spotify.tools";
 export type { ModelMetadata, ModelCapabilities, ModelParameters } from "./types/models/model.metadata";
+export { getAllModels, getModelMetadata, MODEL_REGISTRY } from "./services/metadata/model-registry";
 
 export {
   STREAM_EVENT,
@@ -112,10 +113,7 @@ export {
 } from "./types";
 
 export { createRAGPipeline, type RAGPipelineConfig } from "./pipelines/rag.pipeline";
-export { createGenerationPipeline, type GenerationPipelineConfig } from "./pipelines/generation.pipeline";
-export { createCompletePipeline, type CompletePipelineConfig } from "./pipelines/complete.pipeline";
 
-export { PipelineBuilder } from "./services/rag/pipeline/pipeline.builder";
 export { PipelineOrchestrator } from "./services/rag/pipeline/pipeline.orchestrator";
 export type {
   IPipelineStage,
@@ -130,6 +128,7 @@ export type {
 export { initLangfuseProvider, resetLangfuseProvider, getLangfuseProvider } from "./telemetry/langfuse.provider";
 export {
   createTraceContext,
+  createChildContext,
   recordSpan,
   recordGeneration,
   createSpanWithTiming,
@@ -176,12 +175,9 @@ export {
   type ICollectionRerankService,
 } from "./services/ranking/collection-rerank.service";
 
-export type { RerankingStageConfig } from "./stages/rag/reranking.stage";
 export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
 export { getAnalyticsService } from "./services/analytics/analytics.service";
-
-export { getModelInfoService, type IModelInfoService } from "./services/metadata/model-info.service";
 
 export { getFeedbackService, resetFeedbackService, FeedbackService } from "./services/feedback/feedback.service";
 export type {
