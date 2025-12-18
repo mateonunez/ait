@@ -37,10 +37,25 @@ export const setConsent = (consented: boolean) => {
 
 export type GTagCommand = "config" | "event" | "consent" | "js";
 
+// Vercel Analytics utility functions
+export const trackVercelEvent = (eventName: string, eventData?: Record<string, any>) => {
+  // Vercel Analytics uses the Web Analytics API
+  // The Analytics component automatically tracks page views and web vitals
+  // For custom events, we can use this function if needed
+  if (typeof window.va !== "undefined") {
+    window.va("event", {
+      name: eventName,
+      ...(eventData && { data: eventData }),
+    });
+  }
+};
+
 // Add gtag to window
 declare global {
   interface Window {
     gtag: (command: GTagCommand, targetId: string, config?: Record<string, any>) => void;
     dataLayer: any[];
+    va?: (command: string, eventData?: Record<string, any>) => void;
+    vaq?: any[];
   }
 }
