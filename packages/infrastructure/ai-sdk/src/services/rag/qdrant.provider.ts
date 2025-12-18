@@ -140,6 +140,19 @@ export class QdrantProvider {
   ): Promise<Document<BaseMetadata>[]> {
     const startTime = Date.now();
 
+    // Create span at start for accurate timing
+    const endSpan =
+      options?.enableTelemetry && options?.traceContext
+        ? createSpanWithTiming(
+            "rag/similarity-search",
+            "search",
+            options.traceContext,
+            { query: query.slice(0, 100), k },
+            undefined,
+            new Date(startTime),
+          )
+        : null;
+
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
       enableTelemetry: options?.enableTelemetry,
@@ -148,18 +161,17 @@ export class QdrantProvider {
 
     const results = await this.similaritySearchWithVector(queryVector, k);
 
-    if (options?.enableTelemetry && options?.traceContext) {
-      const endSpan = createSpanWithTiming("similarity-search", "search", options.traceContext, {
-        query: query.slice(0, 100),
-        k,
-      });
-      if (endSpan) {
-        endSpan({
-          resultCount: results.length,
-          duration: Date.now() - startTime,
-        });
-      }
+    const duration = Date.now() - startTime;
+    const telemetryData = {
+      resultCount: results.length,
+      duration,
+    };
+
+    if (endSpan) {
+      endSpan(telemetryData);
     }
+
+    logger.debug("Similarity search completed", telemetryData);
 
     return results;
   }
@@ -192,6 +204,25 @@ export class QdrantProvider {
     options?: { enableTelemetry?: boolean; traceContext?: TraceContext },
   ): Promise<Array<[Document<BaseMetadata>, number]>> {
     const startTime = Date.now();
+
+    // Create span at start for accurate timing
+    const endSpan =
+      options?.enableTelemetry && options?.traceContext
+        ? createSpanWithTiming(
+            "rag/vector-search",
+            "search",
+            options.traceContext,
+            {
+              query: query.slice(0, 100),
+              k,
+              scoreThreshold: scoreThreshold ?? 0.2,
+              filterTypes: filter?.types,
+              hasTimeRange: !!filter?.timeRange,
+            },
+            undefined,
+            new Date(startTime),
+          )
+        : null;
 
     const queryVector = await this._embeddingsService.generateEmbeddings(query, {
       concurrencyLimit: 4,
@@ -238,27 +269,23 @@ export class QdrantProvider {
       point.score,
     ]);
 
-    if (options?.enableTelemetry && options?.traceContext) {
-      const endSpan = createSpanWithTiming("vector-search", "search", options.traceContext, {
-        query: query.slice(0, 100),
-        k,
-        scoreThreshold: effectiveThreshold,
-        filterTypes: filter?.types,
-        hasTimeRange: !!filter?.timeRange,
-      });
-      if (endSpan) {
-        endSpan({
-          resultCount: results.length,
-          avgScore:
-            results.length > 0
-              ? results.reduce((sum, [, score]) => sum + (typeof score === "number" ? score : 0), 0) / results.length
-              : 0,
-          maxScore: results.length > 0 ? (results[0]?.[1] ?? 0) : 0,
-          minScore: results.length > 0 ? (results[results.length - 1]?.[1] ?? 0) : 0,
-          duration: Date.now() - startTime,
-        });
-      }
+    const duration = Date.now() - startTime;
+    const telemetryData = {
+      resultCount: results.length,
+      avgScore:
+        results.length > 0
+          ? results.reduce((sum, [, score]) => sum + (typeof score === "number" ? score : 0), 0) / results.length
+          : 0,
+      maxScore: results.length > 0 ? (results[0]?.[1] ?? 0) : 0,
+      minScore: results.length > 0 ? (results[results.length - 1]?.[1] ?? 0) : 0,
+      duration,
+    };
+
+    if (endSpan) {
+      endSpan(telemetryData);
     }
+
+    logger.debug("Vector search completed", telemetryData);
 
     return results as Array<[Document<BaseMetadata>, number]>;
   }

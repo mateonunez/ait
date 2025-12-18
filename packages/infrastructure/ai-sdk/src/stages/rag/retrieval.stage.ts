@@ -47,10 +47,17 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       : getAllCollections().map((c) => ({ vendor: c.vendor, weight: c.defaultWeight }));
 
     const endSpan = context.traceContext
-      ? createSpanWithTiming("rag/retrieval", "retrieval", context.traceContext, {
-          query: input.query.slice(0, 100),
-          collections: selectedCollections.map((c) => c.vendor),
-        })
+      ? createSpanWithTiming(
+          "rag/retrieval",
+          "retrieval",
+          context.traceContext,
+          {
+            query: input.query.slice(0, 100),
+            collections: selectedCollections.map((c) => c.vendor),
+          },
+          undefined,
+          new Date(startTime),
+        )
       : null;
 
     const effectiveQuery = input.retrievalQuery || input.query;

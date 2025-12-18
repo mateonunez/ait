@@ -20,9 +20,16 @@ export class ConversationProcessingStage
   async execute(input: ConversationProcessingInput, context: PipelineContext): Promise<ConversationProcessingOutput> {
     const startTime = Date.now();
     const endSpan = context.traceContext
-      ? createSpanWithTiming("generation/conversation-processing", "conversation", context.traceContext, {
-          messageCount: input.messages.length,
-        })
+      ? createSpanWithTiming(
+          "generation/conversation-processing",
+          "conversation",
+          context.traceContext,
+          {
+            messageCount: input.messages.length,
+          },
+          undefined,
+          new Date(startTime),
+        )
       : null;
 
     const conversationContext = await this.conversationManager.processConversation(input.messages, input.currentPrompt);

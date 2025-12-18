@@ -1,6 +1,7 @@
 import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
 import { createRAGPipeline } from "../../pipelines/rag.pipeline";
+import type { PipelineResult } from "../../services/rag/pipeline/pipeline.types";
 import { ContextPreparationStage } from "../../stages/generation/context-preparation.stage";
 import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
 import {
@@ -13,6 +14,7 @@ import {
 import type { StreamEvent } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
+import type { RetrievalOutput } from "../../types/stages";
 import type { TraceContext } from "../../types/telemetry";
 import type { Tool } from "../../types/tools";
 import { getAnalyticsService } from "../analytics/analytics.service";
@@ -78,6 +80,7 @@ export interface ITextGenerationService {
 }
 
 export class TextGenerationService implements ITextGenerationService {
+  readonly name = "text-generation";
   private readonly _enableRAGByDefault: boolean;
   private readonly _maxToolRounds: number;
   private readonly _ragPipeline: ReturnType<typeof createRAGPipeline>;
@@ -144,9 +147,10 @@ export class TextGenerationService implements ITextGenerationService {
       let chunkCount = 0;
       const enableRAG = options.enableRAG ?? this._enableRAGByDefault;
       let contextToUse = "";
+      let ragResult: PipelineResult<RetrievalOutput> | undefined;
 
       if (enableRAG) {
-        const ragResult = await this._ragPipeline.execute(
+        ragResult = await this._ragPipeline.execute(
           { query: options.prompt, traceContext: traceContext || undefined },
           { traceContext: traceContext || undefined },
         );
@@ -217,19 +221,31 @@ export class TextGenerationService implements ITextGenerationService {
         }
       }
 
-      // Analyze intent to determine if tools are needed (LLM-orchestrated decision)
+      // Determine if tools are needed based on intent
+      // Reuse intent from RAG pipeline if available, otherwise analyze
       let enableToolExecution = false;
       if (options.tools && Object.keys(options.tools).length > 0) {
-        const intent = await this._intentService.analyzeIntent(
-          options.prompt,
-          options.messages || [],
-          traceContext || undefined,
-        );
-        enableToolExecution = intent.needsTools;
-        logger.debug("Intent analysis for tool execution", {
-          needsTools: intent.needsTools,
-          primaryFocus: intent.primaryFocus,
-        });
+        // Check if we already have intent from RAG pipeline
+        if (enableRAG && ragResult?.success && ragResult.data?.intent) {
+          // Reuse intent from RAG pipeline - avoids duplicate LLM call
+          enableToolExecution = ragResult.data.intent.needsTools;
+          logger.debug("Reusing intent from RAG pipeline for tool execution", {
+            needsTools: ragResult.data.intent.needsTools,
+            primaryFocus: ragResult.data.intent.primaryFocus,
+          });
+        } else {
+          // No RAG or no intent available, analyze fresh
+          const intent = await this._intentService.analyzeIntent(
+            options.prompt,
+            options.messages || [],
+            traceContext || undefined,
+          );
+          enableToolExecution = intent.needsTools;
+          logger.debug("Intent analysis for tool execution", {
+            needsTools: intent.needsTools,
+            primaryFocus: intent.primaryFocus,
+          });
+        }
       }
 
       const promptResult = await this._promptOrchestrator.orchestrate({
@@ -240,6 +256,11 @@ export class TextGenerationService implements ITextGenerationService {
         maxToolRounds: options.maxToolRounds ?? this._maxToolRounds,
         enableToolExecution,
         traceContext: traceContext,
+      });
+
+      logger.debug(`${this.name} - Prompt orchestration result`, {
+        ...promptResult,
+        finalPrompt: promptResult.finalPrompt.substring(0, 100),
       });
 
       if (enableMetadata && promptResult.hasToolCalls && promptResult.toolResults.length > 0) {

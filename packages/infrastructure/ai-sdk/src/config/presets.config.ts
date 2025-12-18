@@ -84,7 +84,7 @@ const RAG_OPTIMIZED_PRESET: PresetConfig = {
   },
   rag: {
     strategy: "multi-collection",
-    maxDocs: 100,
+    maxDocs: 10,
     collectionRouting: {
       strategy: "llm",
       enableLLMRouting: true,
@@ -95,7 +95,7 @@ const RAG_OPTIMIZED_PRESET: PresetConfig = {
   },
   textGeneration: {
     multipleQueryPlannerConfig: {
-      maxDocs: 100,
+      maxDocs: 10,
       queriesCount: 12,
       concurrency: 4,
     },

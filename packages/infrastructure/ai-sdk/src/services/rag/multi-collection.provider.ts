@@ -91,6 +91,15 @@ export class MultiCollectionProvider {
     traceContext?: TraceContext,
   ): Promise<MultiCollectionSearchResult<TMetadata>> {
     const startTime = Date.now();
+
+    // Create span at start for accurate timing
+    const endSpan = traceContext
+      ? createSpanWithTiming("rag/multi-collection-search", "search", traceContext, {
+          query: query.slice(0, 100),
+          collections: collections.map((c) => c.vendor),
+        })
+      : null;
+
     const results: CollectionSearchResult<TMetadata>[] = [];
     let totalDocuments = 0;
     let queriesExecuted = 0;
@@ -99,6 +108,7 @@ export class MultiCollectionProvider {
       logger.warn("No collections provided for search", {
         query: query.slice(0, 100),
       });
+      if (endSpan) endSpan({ totalDocuments: 0, queriesExecuted: 0, duration: Date.now() - startTime });
       return {
         results: [],
         totalDocuments: 0,
@@ -160,25 +170,23 @@ export class MultiCollectionProvider {
     }
 
     const totalDuration = Date.now() - startTime;
-    if (traceContext) {
-      const endSpan = createSpanWithTiming("multi-collection-search", "search", traceContext, {
-        query: query.slice(0, 100),
-        collections: collections.map((c) => c.vendor),
-      });
-      if (endSpan) {
-        endSpan({
-          totalDocuments,
-          queriesExecuted,
-          collectionsQueried: results.length,
-          duration: totalDuration,
-          resultsByCollection: results.map((r) => ({
-            vendor: r.vendor,
-            documentCount: r.totalResults,
-            duration: r.searchDuration,
-          })),
-        });
-      }
+    const telemetryData = {
+      totalDocuments,
+      queriesExecuted,
+      collectionsQueried: results.length,
+      duration: totalDuration,
+      resultsByCollection: results.map((r) => ({
+        vendor: r.vendor,
+        documentCount: r.totalResults,
+        duration: r.searchDuration,
+      })),
+    };
+
+    if (endSpan) {
+      endSpan(telemetryData);
     }
+
+    logger.info("Multi-collection search completed", telemetryData);
 
     return {
       results,
@@ -198,10 +206,19 @@ export class MultiCollectionProvider {
   ): Promise<Array<{ vendor: CollectionVendor; documents: Array<[Document<TMetadata>, number]> }>> {
     const startTime = Date.now();
 
+    // Create span at start for accurate timing
+    const endSpan = traceContext
+      ? createSpanWithTiming("rag/multi-collection-search-with-score", "search", traceContext, {
+          query: query.slice(0, 100),
+          collections: collections.map((c) => c.vendor),
+        })
+      : null;
+
     if (collections.length === 0) {
       logger.warn("No collections provided for search", {
         query: query.slice(0, 100),
       });
+      if (endSpan) endSpan({ totalDocuments: 0, duration: Date.now() - startTime });
       return [];
     }
 
@@ -234,20 +251,19 @@ export class MultiCollectionProvider {
       );
     }
 
-    if (traceContext) {
-      const endSpan = createSpanWithTiming("multi-collection-search-with-score", "search", traceContext, {
-        query: query.slice(0, 100),
-        collections: collections.map((c) => c.vendor),
-      });
-      if (endSpan) {
-        endSpan({
-          duration: Date.now() - startTime,
-          collectionsQueried: results.length,
-          totalDocuments: results.reduce((sum, r) => sum + r.documents.length, 0),
-          retriedWithoutTimeFilter: totalDocuments === 0 && filter?.timeRange !== undefined,
-        });
-      }
+    const duration = Date.now() - startTime;
+    const telemetryData = {
+      duration,
+      collectionsQueried: results.length,
+      totalDocuments: results.reduce((sum, r) => sum + r.documents.length, 0),
+      retriedWithoutTimeFilter: totalDocuments === 0 && filter?.timeRange !== undefined,
+    };
+
+    if (endSpan) {
+      endSpan(telemetryData);
     }
+
+    logger.info("Multi-collection search with score completed", telemetryData);
 
     return results;
   }

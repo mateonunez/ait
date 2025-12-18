@@ -1,11 +1,41 @@
 import { getLogger } from "@ait/core";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
 import type { OllamaToolCall } from "../../client/ollama.provider";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
+import { convertToOllamaTools } from "../../tools/tool.converter";
+import type { ChatMessage } from "../../types/chat";
 import type { TraceContext } from "../../types/telemetry";
 import type { ToolExecutionConfig, ToolExecutionResult } from "../../types/text-generation";
 import type { Tool } from "../../types/tools";
+import { formatConversation, formatValue } from "../../utils/format.utils";
+import { PromptBuilderService } from "./prompt-builder.service";
 
 const logger = getLogger();
+
+/**
+ * Input for the multi-round tool execution loop
+ */
+export interface ToolLoopInput {
+  userPrompt: string;
+  systemMessage: string;
+  recentMessages: ChatMessage[];
+  summary?: string;
+  tools: Record<string, Tool>;
+  maxRounds: number;
+  traceContext?: TraceContext | null;
+}
+
+/**
+ * Result from the multi-round tool execution loop
+ */
+export interface ToolLoopResult {
+  finalPrompt: string;
+  toolCalls: unknown[];
+  toolResults: unknown[];
+  hasToolCalls: boolean;
+  accumulatedMessages?: ChatMessage[];
+  finalTextResponse?: string;
+}
 
 /**
  * Interface for tool execution service
@@ -25,6 +55,13 @@ export interface IToolExecutionService {
   ): Promise<ToolExecutionResult[]>;
 
   /**
+   * Execute the multi-round tool loop
+   * @param input - Tool loop input
+   * @returns Tool loop result with final prompt and tool results
+   */
+  executeToolLoop(input: ToolLoopInput): Promise<ToolLoopResult>;
+
+  /**
    * Format tool results for prompt injection
    * @param results - Tool execution results
    * @returns Formatted results text
@@ -37,9 +74,13 @@ export interface IToolExecutionService {
  */
 export class ToolExecutionService implements IToolExecutionService {
   private readonly _toolTimeoutMs: number;
+  private readonly _promptBuilder: PromptBuilderService;
+  private readonly _client: AItClient;
 
   constructor(config: ToolExecutionConfig = {}) {
     this._toolTimeoutMs = Math.max(config.toolTimeoutMs ?? 30000, 1000);
+    this._promptBuilder = new PromptBuilderService();
+    this._client = getAItClient();
   }
 
   async executeToolCalls(
@@ -92,7 +133,7 @@ export class ToolExecutionService implements IToolExecutionService {
             // Record successful tool execution
             if (traceContext) {
               const endSpan = createSpanWithTiming(
-                `tool-${toolName}`,
+                `tool/${toolName}`,
                 "tool",
                 traceContext,
                 { toolName, parameters: toolCall.function.arguments },
@@ -127,7 +168,7 @@ export class ToolExecutionService implements IToolExecutionService {
               // Record failed tool execution
               if (traceContext) {
                 const endSpan = createSpanWithTiming(
-                  `tool-${toolName}`,
+                  `tool/${toolName}`,
                   "tool",
                   traceContext,
                   { toolName, parameters: toolCall.function.arguments },
@@ -160,39 +201,11 @@ export class ToolExecutionService implements IToolExecutionService {
   formatToolResults(results: ToolExecutionResult[]): string {
     const parts: string[] = ["## Current Real-Time Information\n"];
 
-    const formatCompact = (value: unknown): string => {
-      const MAX_LENGTH = 8000; // Increased from 2000 to avoid truncating important data like channel lists
-      try {
-        if (Array.isArray(value)) {
-          const preview = value.slice(0, 10); // Increased from 5 to 10
-          const suffix = value.length > 10 ? `, and ${value.length - 10} more` : "";
-          const json = JSON.stringify(preview, null, 2);
-          return (json.length > MAX_LENGTH ? `${json.slice(0, MAX_LENGTH)}...` : json) + suffix;
-        }
-        if (value && typeof value === "object") {
-          const obj = value as Record<string, unknown>;
-          if (Array.isArray(obj.results)) {
-            const preview = (obj.results as unknown[]).slice(0, 10);
-            const count = (obj as any).count ?? (obj.results as unknown[]).length;
-            const json = JSON.stringify({ count, preview }, null, 2);
-            return json.length > MAX_LENGTH ? `${json.slice(0, MAX_LENGTH)}...` : json;
-          }
-          const json = JSON.stringify(value);
-          return json.length > MAX_LENGTH ? `${json.slice(0, MAX_LENGTH)}…` : JSON.stringify(value, null, 2);
-        }
-        const asString = String(value ?? "");
-        return asString.length > MAX_LENGTH ? `${asString.slice(0, MAX_LENGTH)}…` : asString;
-      } catch {
-        const asString = String(value ?? "");
-        return asString.length > MAX_LENGTH ? `${asString.slice(0, MAX_LENGTH)}…` : asString;
-      }
-    };
-
     for (const result of results) {
       if (result.error) {
         parts.push(`- ${result.name} encountered an issue: ${result.error}`);
       } else {
-        parts.push(`- ${result.name} → ${formatCompact(result.result)}`);
+        parts.push(`- ${result.name} → ${formatValue(result.result)}`);
       }
     }
 
@@ -208,6 +221,116 @@ export class ToolExecutionService implements IToolExecutionService {
     });
 
     return formatted;
+  }
+
+  /**
+   * Execute the multi-round tool execution loop
+   * Handles the full cycle of: check for tool calls → execute → append results → repeat
+   */
+  async executeToolLoop(input: ToolLoopInput): Promise<ToolLoopResult> {
+    const modelSupportsTools = this._client.generationModelConfig.supportsTools ?? true;
+
+    // Fast path: no tools, model doesn't support tools, or maxRounds is 0
+    if (!input.tools || Object.keys(input.tools).length === 0 || !modelSupportsTools || input.maxRounds === 0) {
+      const finalPrompt = this._promptBuilder.buildPrompt({
+        systemMessage: input.systemMessage,
+        conversationHistory: formatConversation(input.recentMessages, input.summary),
+        userMessage: input.userPrompt,
+      });
+
+      return {
+        finalPrompt,
+        toolCalls: [],
+        toolResults: [],
+        hasToolCalls: false,
+      };
+    }
+
+    const ollamaTools = convertToOllamaTools(input.tools);
+    const toolCalls: unknown[] = [];
+    const toolResults: unknown[] = [];
+    let hasToolCalls = false;
+    let finalRoundText: string | undefined;
+
+    // Initialize messages with full context (system + history + user)
+    const currentMessages = this._promptBuilder.buildMessages(
+      input.systemMessage,
+      input.recentMessages,
+      input.userPrompt,
+    );
+
+    let currentPrompt = this._promptBuilder.buildPrompt({
+      systemMessage: input.systemMessage,
+      conversationHistory: formatConversation(input.recentMessages, input.summary),
+      userMessage: input.userPrompt,
+    });
+
+    for (let round = 0; round < input.maxRounds; round++) {
+      logger.debug(`Tool execution round ${round}`, { messageCount: currentMessages.length });
+
+      const checkResult = await this._client.generateText({
+        prompt: currentPrompt,
+        messages: currentMessages,
+        tools: ollamaTools,
+        temperature: this._client.config.generation.temperature,
+        topP: this._client.config.generation.topP,
+        topK: this._client.config.generation.topK,
+      });
+
+      if (checkResult.toolCalls && checkResult.toolCalls.length > 0) {
+        hasToolCalls = true;
+        toolCalls.push(...checkResult.toolCalls);
+
+        const roundResults = await this.executeToolCalls(checkResult.toolCalls, input.tools, input.traceContext);
+
+        toolResults.push(...roundResults);
+
+        const formattedToolResults = this.formatToolResults(roundResults);
+
+        currentPrompt = this._promptBuilder.buildPrompt({
+          systemMessage: input.systemMessage,
+          conversationHistory: formatConversation(input.recentMessages, input.summary),
+          userMessage: input.userPrompt,
+          toolResults: formattedToolResults,
+        });
+
+        // Append assistant's tool calls to history
+        const toolNames = checkResult.toolCalls.map((tc) => tc.function.name).join(", ");
+        const toolCallDetails = checkResult.toolCalls
+          .map((tc) => `Tool Call: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`)
+          .join("\n\n");
+
+        currentMessages.push({
+          role: "assistant" as const,
+          content: `${checkResult.text || `I will now execute the following tools: ${toolNames}`}\n\n${toolCallDetails}`,
+        });
+
+        // Append tool results to history
+        currentMessages.push({
+          role: "user" as const,
+          content: formattedToolResults,
+        });
+      } else {
+        if (checkResult.text?.trim()) {
+          logger.debug(`Round ${round} - LLM returned final text`, { length: checkResult.text.length });
+          finalRoundText = checkResult.text;
+        }
+        break;
+      }
+    }
+
+    return {
+      finalPrompt: currentPrompt,
+      toolCalls,
+      toolResults,
+      hasToolCalls,
+      accumulatedMessages: hasToolCalls
+        ? (currentMessages
+            .filter((m) => m.role === "user" || m.role === "assistant")
+            .map((m) => ({ role: m.role as "user" | "assistant", content: m.content })) as ChatMessage[])
+        : undefined,
+      finalTextResponse: finalRoundText,
+    };
   }
 
   private async _executeWithTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {

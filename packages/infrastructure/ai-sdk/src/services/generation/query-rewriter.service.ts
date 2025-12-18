@@ -24,7 +24,7 @@ export class QueryRewriterService implements IQueryRewriterService {
 
     const startTime = Date.now();
     const endSpan = traceContext
-      ? createSpanWithTiming("query-rewriting", "task", traceContext, {
+      ? createSpanWithTiming("generation/query-rewriting", "task", traceContext, {
           originalQuery: query.slice(0, 100),
           historyLength: messages.length,
         })

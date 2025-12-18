@@ -1,156 +1,56 @@
 import { getLogger } from "@ait/core";
-import { getAItClient } from "../../client/ai-sdk.client";
-import { PromptBuilderService } from "../../services/generation/prompt-builder.service";
 import { ToolExecutionService } from "../../services/generation/tool-execution.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
-import { convertToOllamaTools } from "../../tools/tool.converter";
 import type { ToolExecutionInput, ToolExecutionOutput } from "../../types/stages";
-import type { Tool } from "../../types/tools";
 
 const logger = getLogger();
 
+/**
+ * Pipeline stage wrapper for tool execution.
+ * Delegates to ToolExecutionService and adds telemetry.
+ */
 export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, ToolExecutionOutput> {
   readonly name = "tool-execution";
 
   private readonly toolExecutionService: ToolExecutionService;
-  private readonly promptBuilder: PromptBuilderService;
 
   constructor() {
     this.toolExecutionService = new ToolExecutionService();
-    this.promptBuilder = new PromptBuilderService();
   }
 
   async execute(input: ToolExecutionInput, context: PipelineContext): Promise<ToolExecutionOutput> {
     const startTime = Date.now();
     const endSpan = context.traceContext
-      ? createSpanWithTiming("generation/tool-execution", "tool", context.traceContext, {
-          availableTools: input.tools ? Object.keys(input.tools) : [],
-          maxRounds: input.maxRounds,
-        })
+      ? createSpanWithTiming(
+          "generation/tool-execution",
+          "tool",
+          context.traceContext,
+          {
+            availableTools: input.tools ? Object.keys(input.tools) : [],
+            maxRounds: input.maxRounds,
+          },
+          undefined,
+          new Date(startTime),
+        )
       : null;
 
-    const client = getAItClient();
-    const modelSupportsTools = client.generationModelConfig.supportsTools ?? true;
-
-    if (!input.tools || !modelSupportsTools || input.maxRounds === 0) {
-      const finalPrompt = this.promptBuilder.buildPrompt({
-        systemMessage: input.systemMessage,
-        conversationHistory: this.formatConversation(input.recentMessages, input.summary),
-        userMessage: input.currentPrompt,
-      });
-
-      const output: ToolExecutionOutput = {
-        ...input,
-        finalPrompt,
-        toolCalls: [],
-        toolResults: [],
-        hasToolCalls: false,
-      };
-
-      if (endSpan) {
-        endSpan({
-          hasToolCalls: false,
-          toolCallsCount: 0,
-          duration: Date.now() - startTime,
-        });
-      }
-
-      return output;
-    }
-
-    const ollamaTools = convertToOllamaTools(input.tools as Record<string, Tool>);
-    const toolCalls: unknown[] = [];
-    const toolResults: unknown[] = [];
-    let hasToolCalls = false;
-    let finalRoundText: string | undefined;
-
-    // Initialize messages with full context (system + history + user)
-    const currentMessages: any[] = this.promptBuilder.buildMessages(
-      input.systemMessage,
-      input.recentMessages,
-      input.currentPrompt,
-    );
-
-    let currentPrompt = this.promptBuilder.buildPrompt({
+    // Delegate to the service
+    const result = await this.toolExecutionService.executeToolLoop({
+      userPrompt: input.currentPrompt,
       systemMessage: input.systemMessage,
-      conversationHistory: this.formatConversation(input.recentMessages, input.summary),
-      userMessage: input.currentPrompt,
+      recentMessages: input.recentMessages,
+      summary: input.summary,
+      tools: (input.tools || {}) as Record<string, import("../../types/tools").Tool>,
+      maxRounds: input.maxRounds,
+      traceContext: context.traceContext,
     });
 
-    for (let round = 0; round < input.maxRounds; round++) {
-      logger.debug(`Tool execution round ${round}`, { messageCount: currentMessages.length });
-
-      const checkResult = await client.generateText({
-        prompt: currentPrompt,
-        messages: currentMessages, // Always use the accumulated messages
-        tools: ollamaTools,
-        temperature: client.config.generation.temperature,
-        topP: client.config.generation.topP,
-        topK: client.config.generation.topK,
-      });
-
-      if (checkResult.toolCalls && checkResult.toolCalls.length > 0) {
-        hasToolCalls = true;
-        toolCalls.push(...checkResult.toolCalls);
-
-        const roundResults = await this.toolExecutionService.executeToolCalls(
-          checkResult.toolCalls,
-          input.tools as Record<string, Tool>,
-          context.traceContext,
-        );
-
-        toolResults.push(...roundResults);
-
-        const formattedToolResults = this.toolExecutionService.formatToolResults(roundResults);
-
-        currentPrompt = this.promptBuilder.buildPrompt({
-          systemMessage: input.systemMessage,
-          conversationHistory: this.formatConversation(input.recentMessages, input.summary),
-          userMessage: input.currentPrompt,
-          toolResults: formattedToolResults,
-        });
-
-        // Append assistant's tool calls to history
-        const toolNames = checkResult.toolCalls.map((tc) => tc.function.name).join(", ");
-        const toolCallDetails = checkResult.toolCalls
-          .map((tc) => `Tool Call: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`)
-          .join("\n\n");
-
-        currentMessages.push({
-          role: "assistant",
-          content: `${checkResult.text || `I will now execute the following tools: ${toolNames}`}\n\n${toolCallDetails}`,
-        });
-
-        // Append tool results to history
-        currentMessages.push({
-          role: "user",
-          content: formattedToolResults,
-        });
-      } else {
-        if (checkResult.text?.trim()) {
-          logger.debug(`Round ${round} - LLM returned final text`, { length: checkResult.text.length });
-          finalRoundText = checkResult.text;
-        }
-        break;
-      }
-    }
-
-    const output: ToolExecutionOutput = {
-      ...input,
-      finalPrompt: currentPrompt,
-      toolCalls,
-      toolResults,
-      hasToolCalls,
-      accumulatedMessages: hasToolCalls ? currentMessages : undefined,
-      finalTextResponse: finalRoundText,
-    };
-
     const telemetryData = {
-      hasToolCalls,
-      toolCallsCount: toolCalls.length,
-      toolResultsCount: toolResults.length,
-      wasFinalTextReturned: !!finalRoundText,
+      hasToolCalls: result.hasToolCalls,
+      toolCallsCount: result.toolCalls.length,
+      toolResultsCount: result.toolResults.length,
+      wasFinalTextReturned: !!result.finalTextResponse,
       duration: Date.now() - startTime,
     };
 
@@ -158,23 +58,14 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
 
     logger.info(`Stage [${this.name}] completed`, telemetryData);
 
-    return output;
-  }
-
-  private formatConversation(messages: ToolExecutionInput["recentMessages"], summary?: string): string {
-    const parts: string[] = [];
-
-    if (summary) {
-      parts.push(summary);
-    }
-
-    if (messages.length > 0) {
-      const formatted = messages
-        .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
-        .join("\n\n");
-      parts.push(formatted);
-    }
-
-    return parts.join("\n\n");
+    return {
+      ...input,
+      finalPrompt: result.finalPrompt,
+      toolCalls: result.toolCalls,
+      toolResults: result.toolResults,
+      hasToolCalls: result.hasToolCalls,
+      accumulatedMessages: result.accumulatedMessages,
+      finalTextResponse: result.finalTextResponse,
+    };
   }
 }

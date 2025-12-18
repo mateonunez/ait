@@ -16,9 +16,16 @@ export class MetadataExtractionStage implements IPipelineStage<MetadataExtractio
   async execute(input: MetadataExtractionInput, context: PipelineContext): Promise<MetadataExtractionOutput> {
     const startTime = Date.now();
     const endSpan = context.traceContext
-      ? createSpanWithTiming("generation/metadata-extraction", "task", context.traceContext, {
-          responseLength: input.fullResponse.length,
-        })
+      ? createSpanWithTiming(
+          "generation/metadata-extraction",
+          "task",
+          context.traceContext,
+          {
+            responseLength: input.fullResponse.length,
+          },
+          undefined,
+          new Date(startTime),
+        )
       : null;
 
     const suggestionsService = getSuggestionService();

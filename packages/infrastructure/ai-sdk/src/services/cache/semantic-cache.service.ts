@@ -89,7 +89,7 @@ export class SemanticCacheService {
 
     if (traceContext) {
       const endSpan = createSpanWithTiming(
-        "semantic-cache-hit",
+        "cache/semantic-cache-hit",
         "cache",
         traceContext,
         { query: query.slice(0, 100), hash },
@@ -149,7 +149,7 @@ export class SemanticCacheService {
 
     if (trace) {
       const endSpan = createSpanWithTiming(
-        "semantic-cache-miss",
+        "cache/semantic-cache-miss",
         "cache",
         trace,
         { query: query.slice(0, 100), normalizedKey, reason },

@@ -50,6 +50,21 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
   ): Promise<QueryResult<TMetadata>[]> {
     const startTime = Date.now();
 
+    // Create span at start for accurate timing
+    const endSpan = traceContext
+      ? createSpanWithTiming(
+          "rag/multi-query-retrieval",
+          "rag",
+          traceContext,
+          {
+            query: userQuery.slice(0, 100),
+            typeFilter: typeFilter?.types,
+          },
+          undefined,
+          new Date(),
+        )
+      : null;
+
     logger.debug("Multi-query retrieval initiated", {
       query: userQuery.slice(0, 50),
       typeFilter: typeFilter?.types,
@@ -81,20 +96,17 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     }
 
     // Record telemetry
-    if (traceContext) {
-      const totalDocs = parallelResults.reduce((acc, r) => acc + r.results.length, 0);
-      const endSpan = createSpanWithTiming("multi-query-retrieval", "rag", traceContext, {
-        query: userQuery.slice(0, 100),
-        typeFilter: typeFilter?.types,
-      });
-      if (endSpan) {
-        endSpan({
-          documentCount: totalDocs,
-          queryVariantsExecuted: parallelResults.length,
-          duration: Date.now() - startTime,
-        });
-      }
+    const duration = Date.now() - startTime;
+    const telemetryData = {
+      documentCount: parallelResults.reduce((acc, r) => acc + r.results.length, 0),
+      queryVariantsExecuted: parallelResults.length,
+      duration,
+    };
+
+    if (endSpan) {
+      endSpan(telemetryData);
     }
+    logger.debug("Multi-query retrieval completed", telemetryData);
 
     return parallelResults;
   }
@@ -112,6 +124,22 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     traceContext?: TraceContext | null,
   ): Promise<Document<TMetadata>[]> {
     const startTime = Date.now();
+
+    // Create span at start for accurate timing
+    const endSpan = traceContext
+      ? createSpanWithTiming(
+          "rag/multi-collection-retrieval",
+          "rag",
+          traceContext,
+          {
+            query: userQuery.slice(0, 100),
+            collectionsCount: collectionWeights.length,
+            collections: collectionWeights.map((c) => c.vendor),
+          },
+          undefined,
+          new Date(),
+        )
+      : null;
 
     logger.debug("Multi-collection retrieval started", {
       query: userQuery.slice(0, 50),
@@ -159,21 +187,19 @@ export class MultiQueryRetrievalService implements IMultiQueryRetrievalService {
     });
 
     // Record telemetry
-    if (traceContext) {
-      const endSpan = createSpanWithTiming("multi-collection-retrieval", "rag", traceContext, {
-        query: userQuery.slice(0, 100),
-        collectionsCount: collectionWeights.length,
-        collections: collectionWeights.map((c) => c.vendor),
-      });
-      if (endSpan) {
-        endSpan({
-          documentCount: allDocuments.length,
-          collectionsSearched: searchResults.length,
-          duration: Date.now() - startTime,
-          collectionDistribution: this._getCollectionDistribution(allDocuments),
-        });
-      }
+    const duration = Date.now() - startTime;
+    const telemetryData = {
+      documentCount: allDocuments.length,
+      collectionsSearched: searchResults.length,
+      duration,
+      collectionDistribution: this._getCollectionDistribution(allDocuments),
+    };
+
+    if (endSpan) {
+      endSpan(telemetryData);
     }
+
+    logger.info("Multi-collection retrieval completed", telemetryData);
 
     return allDocuments;
   }
