@@ -10,6 +10,29 @@ import { EmbeddingsService } from "../embeddings/embeddings.service";
 
 const logger = getLogger();
 
+/**
+ * Entity-type-specific date field mapping for temporal filtering.
+ * Maps each entity type to its primary temporal field in Qdrant payloads.
+ */
+const ENTITY_DATE_FIELDS: Readonly<Record<EntityType, string>> = {
+  event: "startTime",
+  recently_played: "playedAt",
+  tweet: "createdAt",
+  pull_request: "mergedAt",
+  repository: "pushedAt",
+  issue: "updatedAt",
+  track: "createdAt",
+  artist: "createdAt",
+  playlist: "createdAt",
+  album: "createdAt",
+  message: "createdAt",
+  commit: "pushedAt",
+  repository_file: "pushedAt",
+  page: "createdAt",
+  calendar: "startTime",
+  subscription: "createdAt",
+} as const;
+
 export interface QdrantProviderConfig {
   url?: string;
   collectionName: string;
@@ -64,26 +87,6 @@ export class QdrantProvider {
     const must: any[] = [];
     const should: any[] = [];
 
-    // Entity-type-specific date field mapping
-    const entityDateFields: Record<EntityType, string> = {
-      event: "startTime",
-      recently_played: "playedAt",
-      tweet: "createdAt",
-      pull_request: "mergedAt",
-      repository: "pushedAt",
-      issue: "updatedAt",
-      track: "createdAt",
-      artist: "createdAt",
-      playlist: "createdAt",
-      album: "createdAt",
-      message: "createdAt",
-      commit: "pushedAt",
-      repository_file: "pushedAt",
-      page: "createdAt",
-      calendar: "startTime",
-      subscription: "createdAt",
-    };
-
     if (
       filter?.timeRange &&
       (filter.timeRange.from || filter.timeRange.to) &&
@@ -98,11 +101,20 @@ export class QdrantProvider {
 
       const typeSpecificConditions: any[] = [];
       for (const type of filter.types) {
-        const dateField = entityDateFields[type as EntityType] || "createdAt";
+        // Broaden date field matching: check both the specific field and common fallbacks
+        const primaryDateField = ENTITY_DATE_FIELDS[type as EntityType] || "createdAt";
+        const fallbackFields = ["timestamp", "date", "createdAt", "updatedAt"].filter((f) => f !== primaryDateField);
+        const allFields = [primaryDateField, ...fallbackFields];
+
         typeSpecificConditions.push({
           must: [
             { key: "metadata.__type", match: { value: type } },
-            { key: `metadata.${dateField}`, range },
+            {
+              should: allFields.map((field) => ({
+                key: `metadata.${field}`,
+                range,
+              })),
+            },
           ],
         });
       }

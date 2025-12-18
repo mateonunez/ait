@@ -25,6 +25,8 @@ export interface ContextPreparationConfig {
   topicSimilarityThreshold?: number;
   /** Temporal correlation window in hours (default: 3) */
   temporalWindowHours?: number;
+  /** Maximum context characters (default: 128000) */
+  maxContextChars?: number;
 }
 
 /**

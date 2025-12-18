@@ -17,6 +17,11 @@ interface SemanticRetrievalCacheEntry {
   collections: string[];
 }
 
+export interface RetrievalStageOptions {
+  enableCache?: boolean;
+  relevanceFloor?: number;
+}
+
 export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalOutput> {
   readonly name = "retrieval";
 
@@ -24,17 +29,19 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
   private readonly _multiCollectionProvider: MultiCollectionProvider;
   private readonly _semanticCache: SemanticCacheService;
   private readonly _enableCache: boolean;
+  private readonly _relevanceFloor: number;
   private readonly _typeFilterService: TypeFilterService;
 
   constructor(
     multiQueryRetrieval: IMultiQueryRetrievalService,
     multiCollectionProvider: MultiCollectionProvider,
-    enableCache = true,
+    options: RetrievalStageOptions = {},
   ) {
     this._multiQueryRetrieval = multiQueryRetrieval;
     this._multiCollectionProvider = multiCollectionProvider;
     this._semanticCache = getSemanticCacheService();
-    this._enableCache = enableCache;
+    this._enableCache = options.enableCache ?? true;
+    this._relevanceFloor = options.relevanceFloor ?? 0.35;
     this._typeFilterService = new TypeFilterService();
   }
 
@@ -160,7 +167,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     );
 
     // Apply relevance floor to filter out low-quality results
-    const relevanceFloor = 0.45;
+    const relevanceFloor = this._relevanceFloor;
     const filteredDocuments = allDocuments.filter((doc) => {
       const score = (doc.metadata as { score?: number }).score;
       return score === undefined || score >= relevanceFloor;

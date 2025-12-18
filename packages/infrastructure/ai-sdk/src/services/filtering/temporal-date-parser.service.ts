@@ -45,8 +45,133 @@ const SPANISH_MONTHS: Record<string, string> = {
 
 const MONTH_TRANSLATIONS = [ITALIAN_MONTHS, SPANISH_MONTHS];
 
+// Pattern Registry for temporal parsing
+interface TemporalPattern {
+  regex: RegExp;
+  handler: (match: RegExpExecArray, now: Date) => DateRange;
+}
+
+const UNIT_MAP: Record<string, "day" | "week" | "month" | "year"> = {
+  // English
+  day: "day",
+  days: "day",
+  week: "week",
+  weeks: "week",
+  month: "month",
+  months: "month",
+  year: "year",
+  years: "year",
+  // Italian
+  giorno: "day",
+  giorni: "day",
+  settimana: "week",
+  settimane: "week",
+  mese: "month",
+  mesi: "month",
+  anno: "year",
+  anni: "year",
+  // Spanish
+  día: "day",
+  días: "day",
+  semana: "week",
+  semanas: "week",
+  mes: "month",
+  meses: "month",
+  año: "year",
+  años: "year",
+};
+
 export class TemporalDateParser implements ITemporalDateParser {
   readonly name = "temporal-date-parser";
+
+  private readonly _patternRegistry: TemporalPattern[] = [
+    // Pattern: "last/past X units" (e.g., "last 2 months", "ultimi 3 giorni")
+    {
+      regex: /\b(?:last|past|ultimi|ultime|scorsi|scorse|ultimos|ultimas|pasados|pasadas)\s+(\d+)\s+([a-zàéíóú]+\b)/i,
+      handler: (match, now) => {
+        const amountStr = match[1];
+        const unitLabel = match[2]?.toLowerCase();
+        if (!amountStr || !unitLabel) return {};
+
+        const amount = Number.parseInt(amountStr, 10);
+        const unit = UNIT_MAP[unitLabel];
+
+        if (!unit) return {};
+
+        const from = new Date(now);
+        if (unit === "day") from.setDate(now.getDate() - amount);
+        if (unit === "week") from.setDate(now.getDate() - amount * 7);
+        if (unit === "month") from.setMonth(now.getMonth() - amount);
+        if (unit === "year") from.setFullYear(now.getFullYear() - amount);
+
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(now);
+        to.setHours(23, 59, 59, 999);
+
+        return { from: from.toISOString(), to: to.toISOString() };
+      },
+    },
+    // Pattern: "last/past unit" (e.g., "last month", "mese scorso")
+    {
+      regex: /\b(?:last|past|scorso|scorsa|pasado|pasada|ultimo|ultima)\s+([a-zàéíóú]+\b)/i,
+      handler: (match, now) => {
+        const unitLabel = match[1]?.toLowerCase();
+        if (!unitLabel) return {};
+        const unit = UNIT_MAP[unitLabel];
+        if (!unit) return {};
+
+        const from = new Date(now);
+        if (unit === "day") from.setDate(now.getDate() - 1);
+        if (unit === "week") from.setDate(now.getDate() - 7);
+        if (unit === "month") from.setMonth(now.getMonth() - 1);
+        if (unit === "year") from.setFullYear(now.getFullYear() - 1);
+
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(now);
+        to.setHours(23, 59, 59, 999);
+        return { from: from.toISOString(), to: to.toISOString() };
+      },
+    },
+    // Pattern: "unit scorso/a" (Italian style: "mese scorso")
+    {
+      regex: /\b([a-zàéíóú]+\s+)(?:scorso|scorsa|pasado|pasada)\b/i,
+      handler: (match, now) => {
+        const unitLabel = match[1]?.trim().toLowerCase();
+        if (!unitLabel) return {};
+        const unit = UNIT_MAP[unitLabel];
+        if (!unit) return {};
+
+        const from = new Date(now);
+        if (unit === "day") from.setDate(now.getDate() - 1);
+        if (unit === "week") from.setDate(now.getDate() - 7);
+        if (unit === "month") from.setMonth(now.getMonth() - 1);
+        if (unit === "year") from.setFullYear(now.getFullYear() - 1);
+
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(now);
+        to.setHours(23, 59, 59, 999);
+        return { from: from.toISOString(), to: to.toISOString() };
+      },
+    },
+    // Pattern: "today/tomorrow/yesterday"
+    {
+      regex: /\b(today|oggi|hoy|tomorrow|domani|mañana|yesterday|ieri|ayer)\b/i,
+      handler: (match, now) => {
+        const term = match[1]?.toLowerCase();
+        if (!term) return {};
+        const target = new Date(now);
+
+        if (/\b(tomorrow|domani|mañana)\b/i.test(term)) target.setDate(now.getDate() + 1);
+        if (/\b(yesterday|ieri|ayer)\b/i.test(term)) target.setDate(now.getDate() - 1);
+
+        const from = new Date(target);
+        from.setHours(0, 0, 0, 0);
+        const to = new Date(target);
+        to.setHours(23, 59, 59, 999);
+        return { from: from.toISOString(), to: to.toISOString() };
+      },
+    },
+  ];
 
   parseDate(value: unknown): Date | null {
     if (!value) return null;
@@ -73,17 +198,22 @@ export class TemporalDateParser implements ITemporalDateParser {
     const startTime = Date.now();
     const normalizedText = this._normalizeMonthNames(text);
 
-    // Handle period patterns (day/week/month/year) explicitly before chrono
-    const periodRange = this._parsePeriodPattern(normalizedText);
-    if (periodRange) {
-      const duration = Date.now() - startTime;
-      logger.debug(`Service [${this.name}] parsed period pattern`, {
-        text: text.slice(0, 50),
-        from: periodRange.from?.slice(0, 19),
-        to: periodRange.to?.slice(0, 19),
-        duration,
-      });
-      return periodRange;
+    // 1. Try Pattern Registry (Scalable regex-based parsing)
+    for (const pattern of this._patternRegistry) {
+      const match = pattern.regex.exec(normalizedText);
+      if (match) {
+        const range = pattern.handler(match, new Date());
+        if (range.from || range.to) {
+          const duration = Date.now() - startTime;
+          logger.debug(`Service [${this.name}] parsed via registry`, {
+            text: text.slice(0, 50),
+            pattern: pattern.regex.toString(),
+            from: range.from?.slice(0, 19),
+            duration,
+          });
+          return range;
+        }
+      }
     }
 
     try {
@@ -146,7 +276,7 @@ export class TemporalDateParser implements ITemporalDateParser {
           };
 
       const duration = Date.now() - startTime;
-      logger.debug(`Service [${this.name}] parsed single date`, {
+      logger.debug(`Service [${this.name}] parsed single date (chrono)`, {
         text: text.slice(0, 50),
         from: range.from?.slice(0, 19),
         to: range.to?.slice(0, 19),
@@ -164,133 +294,6 @@ export class TemporalDateParser implements ITemporalDateParser {
       });
       return undefined;
     }
-  }
-
-  /**
-   * Parse period-related patterns that chrono doesn't handle well
-   * Handles day/week/month/year patterns with proper date ranges
-   */
-  private _parsePeriodPattern(text: string): DateRange | undefined {
-    const lowerText = text.toLowerCase();
-    const now = new Date();
-
-    // === DAY PATTERNS ===
-
-    // "today" - current day
-    if (/\b(today|oggi|hoy)\b/i.test(lowerText)) {
-      const startOfDay = new Date(now);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(now);
-      endOfDay.setHours(23, 59, 59, 999);
-      return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
-    }
-
-    // "tomorrow" - next day
-    if (/\b(tomorrow|domani|mañana)\b/i.test(lowerText)) {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const startOfDay = new Date(tomorrow);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(tomorrow);
-      endOfDay.setHours(23, 59, 59, 999);
-      return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
-    }
-
-    // "yesterday" - previous day
-    if (/\b(yesterday|ieri|ayer)\b/i.test(lowerText)) {
-      const yesterday = new Date(now);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const startOfDay = new Date(yesterday);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(yesterday);
-      endOfDay.setHours(23, 59, 59, 999);
-      return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
-    }
-
-    // === WEEK PATTERNS ===
-
-    // "this week" - current calendar week (Monday to Sunday)
-    if (/\b(this\s+week|current\s+week|questa\s+settimana)\b/i.test(lowerText)) {
-      const monday = this._getStartOfWeek(now);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      return { from: monday.toISOString(), to: sunday.toISOString() };
-    }
-
-    // "last week" - previous calendar week
-    if (/\b(last\s+week|previous\s+week|scorsa\s+settimana)\b/i.test(lowerText)) {
-      const lastMonday = this._getStartOfWeek(now);
-      lastMonday.setDate(lastMonday.getDate() - 7);
-      const lastSunday = new Date(lastMonday);
-      lastSunday.setDate(lastMonday.getDate() + 6);
-      lastSunday.setHours(23, 59, 59, 999);
-      return { from: lastMonday.toISOString(), to: lastSunday.toISOString() };
-    }
-
-    // "past week" / "last 7 days" - rolling 7 days
-    if (/\b(past\s+week|last\s+7\s+days|past\s+7\s+days|ultimi\s+7\s+giorni)\b/i.test(lowerText)) {
-      const weekAgo = new Date(now);
-      weekAgo.setDate(now.getDate() - 7);
-      weekAgo.setHours(0, 0, 0, 0);
-      const today = new Date(now);
-      today.setHours(23, 59, 59, 999);
-      return { from: weekAgo.toISOString(), to: today.toISOString() };
-    }
-
-    // === MONTH PATTERNS ===
-
-    // "this month" - 1st to end of current month
-    if (/\b(this\s+month|current\s+month|questo\s+mese)\b/i.test(lowerText)) {
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      return { from: firstDay.toISOString(), to: lastDay.toISOString() };
-    }
-
-    // "last month" - previous calendar month
-    if (/\b(last\s+month|previous\s+month|scorso\s+mese|mese\s+scorso)\b/i.test(lowerText)) {
-      const firstDay = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-      const lastDay = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
-      return { from: firstDay.toISOString(), to: lastDay.toISOString() };
-    }
-
-    // "past month" / "last 30 days" - rolling 30 days
-    if (/\b(past\s+month|last\s+30\s+days|past\s+30\s+days|ultimi\s+30\s+giorni)\b/i.test(lowerText)) {
-      const monthAgo = new Date(now);
-      monthAgo.setDate(now.getDate() - 30);
-      monthAgo.setHours(0, 0, 0, 0);
-      const today = new Date(now);
-      today.setHours(23, 59, 59, 999);
-      return { from: monthAgo.toISOString(), to: today.toISOString() };
-    }
-
-    // === YEAR PATTERNS ===
-
-    // "this year" - Jan 1 to Dec 31 of current year
-    if (/\b(this\s+year|current\s+year|quest'anno|questo\s+anno)\b/i.test(lowerText)) {
-      const firstDay = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
-      const lastDay = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-      return { from: firstDay.toISOString(), to: lastDay.toISOString() };
-    }
-
-    // "last year" - previous calendar year
-    if (/\b(last\s+year|previous\s+year|anno\s+scorso|l'anno\s+scorso)\b/i.test(lowerText)) {
-      const firstDay = new Date(now.getFullYear() - 1, 0, 1, 0, 0, 0, 0);
-      const lastDay = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
-      return { from: firstDay.toISOString(), to: lastDay.toISOString() };
-    }
-
-    // "past year" / "last 365 days" - rolling 365 days
-    if (/\b(past\s+year|last\s+365\s+days|last\s+12\s+months|ultimi\s+12\s+mesi)\b/i.test(lowerText)) {
-      const yearAgo = new Date(now);
-      yearAgo.setFullYear(now.getFullYear() - 1);
-      yearAgo.setHours(0, 0, 0, 0);
-      const today = new Date(now);
-      today.setHours(23, 59, 59, 999);
-      return { from: yearAgo.toISOString(), to: today.toISOString() };
-    }
-
-    return undefined;
   }
 
   /**

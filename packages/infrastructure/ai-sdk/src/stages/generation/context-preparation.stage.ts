@@ -3,9 +3,9 @@ import { SmartContextManager } from "../../services/context/smart/smart-context.
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { BaseMetadata, Document } from "../../types/documents";
-import type { ContextPreparationInput, ContextPreparationOutput } from "../../types/stages";
+import type { GenerationState } from "../../types/stages";
 
-export class ContextPreparationStage implements IPipelineStage<ContextPreparationInput, ContextPreparationOutput> {
+export class ContextPreparationStage implements IPipelineStage<GenerationState, GenerationState> {
   readonly name = "context-preparation";
 
   private readonly contextManager: SmartContextManager;
@@ -17,7 +17,7 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
     });
   }
 
-  async execute(input: ContextPreparationInput, context: PipelineContext): Promise<ContextPreparationOutput> {
+  async execute(input: GenerationState, context: PipelineContext): Promise<GenerationState> {
     const startTime = Date.now();
     if (!input.enableRAG) {
       return {
@@ -26,8 +26,8 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
       };
     }
 
-    // Input documents come from the RAG pipeline execution in TextGenerationService
-    const documents = input.ragContext?.documents || [];
+    // Input documents come from the RAG pipeline execution result
+    const documents = input.ragResult?.documents || [];
 
     const endSpan = context.traceContext
       ? createSpanWithTiming(
@@ -42,14 +42,14 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
 
     try {
       const builtContext = await this.contextManager.assembleContext({
-        systemInstructions: "", // System prompt is handled separately or passed here if needed
-        messages: input.recentMessages || [],
+        systemInstructions: "", // System prompt is handled separately in PromptOrchestrationStage
+        messages: input.messages || [],
         retrievedDocs: documents as Document<BaseMetadata>[],
       });
 
       const telemetryData = {
         documentCount: documents.length,
-        messageCount: input.recentMessages?.length || 0,
+        messageCount: input.messages?.length || 0,
         contextLength: builtContext.length,
         duration: Date.now() - startTime,
       };
@@ -60,12 +60,7 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
 
       return {
         ...input,
-        ragContext: {
-          ...input.ragContext!, // Preserve existing metadata like timestamp/query
-          context: builtContext,
-          documents: documents as Document<BaseMetadata>[],
-          fallbackUsed: false,
-        },
+        ragContext: builtContext,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -84,14 +79,7 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
       // Fallback
       return {
         ...input,
-        ragContext: {
-          context: "",
-          documents: [],
-          timestamp: Date.now(),
-          query: input.currentPrompt,
-          fallbackUsed: true,
-          fallbackReason: error instanceof Error ? error.message : String(error),
-        },
+        ragContext: "",
       };
     }
   }

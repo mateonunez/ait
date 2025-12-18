@@ -1,31 +1,18 @@
 import { getLogger } from "@ait/core";
 import { getAItClient } from "../../client/ai-sdk.client";
-import { createRAGPipeline } from "../../pipelines/rag.pipeline";
-import type { PipelineResult } from "../../services/rag/pipeline/pipeline.types";
-import { ContextPreparationStage } from "../../stages/generation/context-preparation.stage";
+import { type TextGenerationPipeline, createTextGenerationPipeline } from "../../pipelines/text-generation.pipeline";
 import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
-import {
-  createTraceContext,
-  endTraceWithError,
-  endTraceWithOutput,
-  shouldEnableTelemetry,
-  updateTraceInput,
-} from "../../telemetry/telemetry.middleware";
+import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
 import type { StreamEvent } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
-import type { RetrievalOutput } from "../../types/stages";
-import type { TraceContext } from "../../types/telemetry";
+import type { GenerationState } from "../../types/stages";
 import type { Tool } from "../../types/tools";
 import { getAnalyticsService } from "../analytics/analytics.service";
 import { getErrorClassificationService } from "../errors/error-classification.service";
-import { PromptOrchestrationService } from "../orchestration/prompt-orchestration.service";
-import { type IQueryIntentService, QueryIntentService } from "../routing/query-intent.service";
-import { MetadataEmitterService, type RAGContextMetadata } from "../streaming/metadata-emitter.service";
+import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
-
-export const MAX_SEARCH_SIMILAR_DOCS = 100;
 
 export class TextGenerationError extends Error {
   constructor(
@@ -40,10 +27,6 @@ export class TextGenerationError extends Error {
 export interface TextGenerationConfig extends TextGenerationFeatureConfig {
   model?: string;
   embeddingsModel?: string;
-  reranking?: {
-    enableLLMReranking?: boolean;
-    useCollectionSpecificPrompts?: boolean;
-  };
 }
 
 export interface GenerateOptions {
@@ -65,13 +48,7 @@ export interface GenerateStreamOptions {
   userId?: string;
   sessionId?: string;
   tags?: string[];
-  metadata?: {
-    version?: string;
-    environment?: string;
-    deploymentTimestamp?: string;
-    model?: string;
-    [key: string]: unknown;
-  };
+  metadata?: Record<string, unknown>;
   enableMetadata?: boolean;
 }
 
@@ -81,307 +58,195 @@ export interface ITextGenerationService {
 
 export class TextGenerationService implements ITextGenerationService {
   readonly name = "text-generation";
-  private readonly _enableRAGByDefault: boolean;
-  private readonly _maxToolRounds: number;
-  private readonly _ragPipeline: ReturnType<typeof createRAGPipeline>;
+  private readonly _pipeline: TextGenerationPipeline;
   private readonly _metadataEmitter: MetadataEmitterService;
-  private readonly _promptOrchestrator: PromptOrchestrationService;
-  private readonly _intentService: IQueryIntentService;
+  private readonly _metadataStage: MetadataExtractionStage;
 
   constructor(config: TextGenerationConfig = {}) {
     const client = getAItClient();
-
-    this._enableRAGByDefault = config.contextPreparationConfig?.enableRAG ?? true;
-    this._maxToolRounds = config.toolExecutionConfig?.maxRounds ?? 1;
-
-    this._ragPipeline = createRAGPipeline({
-      embeddingsModel: config.embeddingsModel || client.embeddingModelConfig.name,
-      vectorSize: client.embeddingModelConfig.vectorSize,
-      maxDocs: config.multipleQueryPlannerConfig?.maxDocs ?? 50,
-      queriesCount: config.multipleQueryPlannerConfig?.queriesCount ?? 12,
-      concurrency: config.multipleQueryPlannerConfig?.concurrency ?? 4,
+    this._pipeline = createTextGenerationPipeline(client, {
+      maxContextChars: config.contextPreparationConfig?.maxContextChars ?? 128000,
+      embeddingsModel: config.embeddingsModel,
+      maxDocs: config.multipleQueryPlannerConfig?.maxDocs,
+      concurrency: config.multipleQueryPlannerConfig?.concurrency,
+      relevanceFloor: config.multipleQueryPlannerConfig?.relevanceFloor,
       enableTelemetry: true,
     });
 
     this._metadataEmitter = new MetadataEmitterService();
-    this._promptOrchestrator = new PromptOrchestrationService(config.conversationConfig);
-    this._intentService = new QueryIntentService();
+    this._metadataStage = new MetadataExtractionStage();
   }
 
+  /**
+   * Main entry point for streaming text generation.
+   * Delegates all logic to the TextGenerationPipeline.
+   */
   public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string | StreamEvent> {
-    if (!options.prompt || !options.prompt.trim()) {
+    if (!options.prompt?.trim()) {
       throw new TextGenerationError("Prompt cannot be empty");
     }
 
-    const overallStart = Date.now();
-    const enableMetadata = options.enableMetadata ?? false;
+    const telemetry = createGenerationTelemetry({
+      name: "text-generation",
+      enableTelemetry: options.enableTelemetry,
+      userId: options.userId,
+      sessionId: options.sessionId,
+      tags: options.tags,
+      metadata: options.metadata as any,
+    });
 
-    let traceContext: TraceContext | null = null;
-    const enableTelemetry = shouldEnableTelemetry(options);
-
-    if (enableTelemetry) {
-      traceContext = createTraceContext("text-generation", {
-        userId: options.userId,
-        sessionId: options.sessionId,
-        tags: options.tags,
-        version: options.metadata?.version,
-        environment: options.metadata?.environment,
-        deploymentTimestamp: options.metadata?.deploymentTimestamp,
-      });
-
-      if (traceContext) {
-        updateTraceInput(traceContext, {
-          prompt: options.prompt,
-          messages: options.messages,
-          enableRAG: options.enableRAG,
-          tools: options.tools ? Object.keys(options.tools) : undefined,
-          maxToolRounds: options.maxToolRounds,
-        });
-      }
-    }
+    telemetry.recordInput({
+      prompt: options.prompt,
+      messages: options.messages,
+      enableRAG: options.enableRAG,
+      tools: options.tools,
+      maxToolRounds: options.maxToolRounds,
+    });
 
     try {
-      const client = getAItClient();
+      logger.info(`Starting stream generation for prompt: "${options.prompt.slice(0, 50)}..."`);
 
+      // 1. Execute Pipeline
+      const state = await this._pipeline.execute(
+        {
+          prompt: options.prompt,
+          messages: options.messages || [],
+          tools: options.tools,
+          maxToolRounds: options.maxToolRounds,
+          enableRAG: options.enableRAG ?? true,
+          enableMetadata: options.enableMetadata ?? false,
+        },
+        { traceContext: telemetry.optionalContext },
+      );
+
+      logger.info("Generation pipeline completed successfully", {
+        hasIntent: !!state.intent,
+        needsRAG: state.intent?.needsRAG,
+        needsTools: state.intent?.needsTools,
+      });
+
+      // 2. Handle Metadata (Context & Tools)
+      yield* this._emitPreGenerationMetadata(state);
+
+      // 3. Handle Stream
       let fullResponse = "";
       let chunkCount = 0;
-      const enableRAG = options.enableRAG ?? this._enableRAGByDefault;
-      let contextToUse = "";
-      let ragResult: PipelineResult<RetrievalOutput> | undefined;
 
-      if (enableRAG) {
-        ragResult = await this._ragPipeline.execute(
-          { query: options.prompt, traceContext: traceContext || undefined },
-          { traceContext: traceContext || undefined },
-        );
-
-        if (ragResult.success && ragResult.data) {
-          const retrievalData = ragResult.data;
-          const documents = retrievalData.documents || [];
-
-          // Use ContextPreparationStage to build smart context
-          const contextPrepStage = new ContextPreparationStage({
-            maxContextChars: 128000, // default limit or from config
-          });
-
-          const contextResult = await contextPrepStage.execute(
-            {
-              messages: options.messages || [],
-              currentPrompt: options.prompt,
-              recentMessages: options.messages || [], // Pass raw messages as recent for now
-              enableRAG: true,
-              estimatedTokens: 0, // Placeholder
-              ragContext: {
-                context: "",
-                documents: documents,
-                timestamp: Date.now(),
-                query: options.prompt,
-                fallbackUsed: false,
-              },
-            },
-            {
-              traceContext: traceContext || undefined,
-              metadata: {},
-              state: new Map(),
-              telemetry: { recordStage: () => {} },
-            },
-          );
-
-          // Extract context and metadata
-          if (contextResult.ragContext) {
-            contextToUse = contextResult.ragContext.context;
-
-            if (enableMetadata) {
-              const ragMetadata: RAGContextMetadata = {
-                context: contextToUse,
-                documents: contextResult.ragContext.documents,
-                contextMetadata: {
-                  documentCount: contextResult.ragContext.documents.length,
-                  contextLength: contextToUse.length,
-                  usedTemporalCorrelation: false,
-                },
-              };
-              const metadataEvent = this._metadataEmitter.createContextMetadataEvent(ragMetadata, options.prompt);
-              yield metadataEvent;
-            }
-          }
-        } else if (enableMetadata) {
-          // Failed or no data, emit empty if metadata enabled
-          const emptyRagMetadata: RAGContextMetadata = {
-            context: "",
-            documents: [],
-            contextMetadata: {
-              documentCount: 0,
-              contextLength: 0,
-              usedTemporalCorrelation: false,
-            },
-          };
-          const metadataEvent = this._metadataEmitter.createContextMetadataEvent(emptyRagMetadata, options.prompt);
-          yield metadataEvent;
-        }
-      }
-
-      // Determine if tools are needed based on intent
-      // Reuse intent from RAG pipeline if available, otherwise analyze
-      let enableToolExecution = false;
-      if (options.tools && Object.keys(options.tools).length > 0) {
-        // Check if we already have intent from RAG pipeline
-        if (enableRAG && ragResult?.success && ragResult.data?.intent) {
-          // Reuse intent from RAG pipeline - avoids duplicate LLM call
-          enableToolExecution = ragResult.data.intent.needsTools;
-          logger.debug("Reusing intent from RAG pipeline for tool execution", {
-            needsTools: ragResult.data.intent.needsTools,
-            primaryFocus: ragResult.data.intent.primaryFocus,
-          });
-        } else {
-          // No RAG or no intent available, analyze fresh
-          const intent = await this._intentService.analyzeIntent(
-            options.prompt,
-            options.messages || [],
-            traceContext || undefined,
-          );
-          enableToolExecution = intent.needsTools;
-          logger.debug("Intent analysis for tool execution", {
-            needsTools: intent.needsTools,
-            primaryFocus: intent.primaryFocus,
-          });
-        }
-      }
-
-      const promptResult = await this._promptOrchestrator.orchestrate({
-        userPrompt: options.prompt,
-        ragContext: contextToUse,
-        messages: options.messages,
-        tools: options.tools,
-        maxToolRounds: options.maxToolRounds ?? this._maxToolRounds,
-        enableToolExecution,
-        traceContext: traceContext,
-      });
-
-      logger.debug(`${this.name} - Prompt orchestration result`, {
-        ...promptResult,
-        finalPrompt: promptResult.finalPrompt.substring(0, 100),
-      });
-
-      if (enableMetadata && promptResult.hasToolCalls && promptResult.toolResults.length > 0) {
-        const toolMetadataEvent = this._metadataEmitter.createToolMetadataEvent({
-          toolCalls: promptResult.toolCalls,
-          toolResults: promptResult.toolResults,
-          hasToolCalls: promptResult.hasToolCalls,
-        });
-        yield toolMetadataEvent;
-      }
-
-      const finalPrompt = promptResult.finalPrompt;
-
-      // If LLM already generated final text during tool execution, use it directly
-      // This happens when the LLM returns text without more tool calls
-      if (promptResult.finalTextResponse) {
-        fullResponse = promptResult.finalTextResponse;
-        chunkCount = 1;
-        yield promptResult.finalTextResponse;
-      } else {
-        // Use accumulated messages for streaming if tools were called,
-        // so the LLM has full conversation context for the final response
-        const stream = client.streamText({
-          prompt: finalPrompt,
-          messages: promptResult.accumulatedMessages,
-          temperature: client.config.generation.temperature,
-          topP: client.config.generation.topP,
-          topK: client.config.generation.topK,
-        });
-
-        for await (const chunk of stream) {
+      if (state.textStream) {
+        logger.info("Starting text stream...");
+        for await (const chunk of state.textStream) {
           chunkCount++;
           fullResponse += chunk;
           yield chunk;
         }
+        logger.info("Text stream completed", { chunks: chunkCount, responseLength: fullResponse.length });
       }
 
-      // Extract and emit metadata after collecting full response
-      // Metadata extraction must always run, even for simple queries
-      const metadataStage = new MetadataExtractionStage();
-      const metadataInput = {
-        fullResponse,
-        prompt: options.prompt,
-        messages: options.messages || [],
-        enableMetadata: true,
-      };
+      // 4. Finalize & Extract Post-Generation Metadata
+      const finalizedState = await this._finalize(state, fullResponse, telemetry);
 
-      try {
-        const metadataResult = await metadataStage.execute(metadataInput, {
-          traceContext: traceContext || undefined,
-          metadata: {},
-          state: new Map(),
-          telemetry: { recordStage: () => {} },
-        });
+      // 5. Emit Post-Generation Metadata (Suggestions)
+      yield* this._emitPostGenerationMetadata(finalizedState);
 
-        // Emit metadata events only if enableMetadata is true
-        if (enableMetadata) {
-          // Emit suggestions metadata event
-          if (metadataResult.suggestions && metadataResult.suggestions.length > 0) {
-            const suggestionEvent = this._metadataEmitter.createSuggestionMetadataEvent(metadataResult.suggestions);
-            yield suggestionEvent;
-          }
-        }
-      } catch (error) {
-        // Log error but don't fail the request if metadata extraction fails
-        logger.warn("Failed to extract metadata:", { error });
-      }
-
-      const duration = Date.now() - overallStart;
-
-      if (enableTelemetry && traceContext) {
-        endTraceWithOutput(traceContext, {
-          response: fullResponse,
-          chunkCount,
-          responseLength: fullResponse.length,
-          duration,
-        });
-      }
-
-      const analytics = getAnalyticsService();
-      const estimatedTokens = analytics.getCostTracking().estimateTokens(fullResponse);
-
-      analytics.trackRequest({
-        latencyMs: duration,
-        success: true,
-        generationTokens: estimatedTokens,
-        cacheHit: enableRAG,
+      telemetry.recordSuccess({
+        response: fullResponse,
+        chunkCount,
+        responseLength: fullResponse.length,
       });
+
+      this._trackAnalytics(telemetry.getDuration(), fullResponse, options.enableRAG ?? true);
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-
-      const errorClassifier = getErrorClassificationService();
-      const classifiedError = errorClassifier.classify(error, "text-generation");
-
-      if (enableTelemetry && traceContext) {
-        endTraceWithError(traceContext, error, {
-          errorCategory: classifiedError.category,
-          errorSeverity: classifiedError.severity,
-          errorFingerprint: classifiedError.fingerprint,
-          isRetryable: classifiedError.isRetryable,
-          suggestedAction: classifiedError.suggestedAction,
-        });
-      }
-
-      const analytics = getAnalyticsService();
-      analytics.trackRequest({
-        latencyMs: Date.now() - overallStart,
-        success: false,
-        error: classifiedError,
-      });
-
-      const fallbackResponse = this._buildFallbackResponse(errMsg);
-      yield fallbackResponse;
+      yield* this._handleError(error, telemetry);
     }
   }
 
-  private _buildFallbackResponse(reason?: string): string {
-    const baseMessage = "I'm having trouble accessing my knowledge base right now, so I can't share specific results.";
-    if (!reason) {
-      return `${baseMessage} Please try again later or ask in a different way.`;
+  private async *_emitPreGenerationMetadata(state: GenerationState): AsyncGenerator<StreamEvent> {
+    if (!state.enableMetadata) return;
+
+    // Emit RAG Context Metadata
+    if (state.enableRAG) {
+      yield this._metadataEmitter.createContextMetadataEvent(
+        {
+          context: state.ragContext || "",
+          documents: state.ragResult?.documents || [],
+          contextMetadata: {
+            documentCount: state.ragResult?.documents?.length || 0,
+            contextLength: state.ragContext?.length || 0,
+            usedTemporalCorrelation: false,
+          },
+        },
+        state.prompt,
+      );
     }
-    return `${baseMessage} (${reason}). Please try again later or ask in a different way.`;
+
+    // Emit Tool Metadata
+    if (state.orchestrationResult?.hasToolCalls) {
+      yield this._metadataEmitter.createToolMetadataEvent({
+        toolCalls: state.orchestrationResult.toolCalls,
+        toolResults: state.orchestrationResult.toolResults,
+        hasToolCalls: true,
+      });
+    }
+  }
+
+  private async *_emitPostGenerationMetadata(state: GenerationState): AsyncGenerator<StreamEvent> {
+    if (state.enableMetadata && state.suggestions && state.suggestions.length > 0) {
+      yield this._metadataEmitter.createSuggestionMetadataEvent(state.suggestions);
+    }
+  }
+
+  private async _finalize(
+    state: GenerationState,
+    fullResponse: string,
+    telemetry: GenerationTelemetryContext,
+  ): Promise<GenerationState> {
+    state.fullResponse = fullResponse;
+
+    // Run final metadata extraction stage
+    return await this._metadataStage.execute(state, {
+      traceContext: telemetry.optionalContext,
+      metadata: {},
+      state: new Map(),
+      telemetry: { recordStage: () => {} },
+    });
+  }
+
+  private _trackAnalytics(duration: number, response: string, enableRAG: boolean): void {
+    const analytics = getAnalyticsService();
+    const estimatedTokens = analytics.getCostTracking().estimateTokens(response);
+
+    analytics.trackRequest({
+      latencyMs: duration,
+      success: true,
+      generationTokens: estimatedTokens,
+      cacheHit: enableRAG,
+    });
+  }
+
+  private async *_handleError(
+    error: unknown,
+    telemetry: GenerationTelemetryContext,
+  ): AsyncGenerator<string | StreamEvent> {
+    const errorClassifier = getErrorClassificationService();
+    const classifiedError = errorClassifier.classify(error, "text-generation");
+
+    telemetry.recordError(error, {
+      errorCategory: classifiedError.category,
+      errorSeverity: classifiedError.severity,
+      errorFingerprint: classifiedError.fingerprint,
+      isRetryable: classifiedError.isRetryable,
+      suggestedAction: classifiedError.suggestedAction,
+    });
+
+    const analytics = getAnalyticsService();
+    analytics.trackRequest({
+      latencyMs: telemetry.getDuration(),
+      success: false,
+      error: classifiedError,
+    });
+
+    const baseMessage = "I'm having trouble processing your request right now.";
+    const reason = error instanceof Error ? error.message : String(error);
+    yield `${baseMessage} (${reason}). Please try again later.`;
   }
 }
