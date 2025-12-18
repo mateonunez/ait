@@ -46,9 +46,17 @@ export class QueryIntentService implements IQueryIntentService {
 
   async analyzeIntent(query: string, messages: ChatMessage[] = [], traceContext?: TraceContext): Promise<QueryIntent> {
     const client = this._client;
+    const startTime = Date.now();
 
     const endSpan = traceContext
-      ? createSpanWithTiming(this.name, "routing", traceContext, { query: query.slice(0, 100) })
+      ? createSpanWithTiming(
+          "routing/query-intent",
+          "routing",
+          traceContext,
+          { query: query.slice(0, 100) },
+          undefined,
+          new Date(),
+        )
       : null;
 
     try {
@@ -74,6 +82,7 @@ export class QueryIntentService implements IQueryIntentService {
         needsTools: intent.needsTools,
       };
 
+      const duration = Date.now() - startTime;
       const telemetryData = {
         query: query.slice(0, 50),
         needsRAG: result.needsRAG,
@@ -81,6 +90,7 @@ export class QueryIntentService implements IQueryIntentService {
         entities: normalizedEntityTypes,
         focus: result.primaryFocus.slice(0, 50),
         style: result.requiredStyle,
+        duration,
       };
 
       if (endSpan) endSpan(telemetryData);

@@ -121,10 +121,17 @@ export class CollectionRouterService implements ICollectionRouterService {
   ): Promise<CollectionRouterResult> {
     const startTime = Date.now();
     const endSpan = traceContext
-      ? createSpanWithTiming("collection-routing", "routing", traceContext, {
-          query: userQuery.slice(0, 100),
-          entityTypes: queryIntent?.entityTypes,
-        })
+      ? createSpanWithTiming(
+          "routing/collection-router",
+          "routing",
+          traceContext,
+          {
+            query: userQuery.slice(0, 100),
+            entityTypes: queryIntent?.entityTypes,
+          },
+          undefined,
+          new Date(),
+        )
       : null;
 
     const enabledVendors = this._getEnabledCollectionVendors();
@@ -194,7 +201,7 @@ export class CollectionRouterService implements ICollectionRouterService {
 
       if (traceContext) {
         recordSpan(
-          "collection-routing-heuristic",
+          "routing/collection-router-heuristic",
           "routing",
           traceContext,
           { query: userQuery.slice(0, 100) },

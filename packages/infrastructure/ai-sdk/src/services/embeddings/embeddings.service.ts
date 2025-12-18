@@ -21,6 +21,8 @@ export interface EmbeddingsServiceOptions {
   traceContext?: any;
 }
 
+const logger = getLogger();
+
 export class EmbeddingsService implements IEmbeddingsService {
   private readonly _config: EmbeddingsConfig;
   private readonly _textPreprocessor: TextPreprocessor;
@@ -45,6 +47,14 @@ export class EmbeddingsService implements IEmbeddingsService {
     const startTime = Date.now();
 
     try {
+      // Create overall embedding span at start for accurate timing
+      const endEmbedSpan =
+        enableTelemetry && traceContext
+          ? createSpanWithTiming("embedding/generation", "embedding", traceContext, {
+              text: text.slice(0, 100),
+            })
+          : null;
+
       const chunks = this._textPreprocessor.chunkText(text);
 
       if (!this._textPreprocessor.validateChunks(chunks, text)) {
@@ -52,17 +62,6 @@ export class EmbeddingsService implements IEmbeddingsService {
           "EMBEDDINGS_VALIDATION",
           "Chunk validation failed - text may have been corrupted during preprocessing",
         );
-      }
-
-      if (enableTelemetry && traceContext) {
-        const endChunkSpan = createSpanWithTiming("text-chunking", "embedding", traceContext, {
-          text: text.slice(0, 100),
-        });
-        if (endChunkSpan) {
-          endChunkSpan({
-            chunkCount: chunks.length,
-          });
-        }
       }
 
       const chunkVectors = await this._processChunks(chunks, correlationId);
@@ -82,31 +81,28 @@ export class EmbeddingsService implements IEmbeddingsService {
       // Track embedding tokens for cost analysis
       const estimatedTokens = this._tokenizer.countTokens(text);
 
-      if (enableTelemetry && traceContext) {
-        const endEmbedSpan = createSpanWithTiming(
-          "embedding-generation",
-          "embedding",
-          traceContext,
-          {
-            text: text.slice(0, 100),
-            chunkCount: chunks.length,
-          },
-          {
-            model: this._config.model,
-          },
-        );
-        if (endEmbedSpan) {
-          endEmbedSpan({
-            vectorSize: averagedVector.length,
-            duration,
-            estimatedTokens,
-          });
-        }
+      const telemetryData = {
+        vectorSize: averagedVector.length,
+        chunkCount: chunks.length,
+        duration,
+        estimatedTokens,
+        model: this._config.model,
+      };
+
+      if (endEmbedSpan) {
+        endEmbedSpan(telemetryData);
       }
+      logger.info("Embeddings generated", {
+        correlationId,
+        duration,
+        estimatedTokens,
+        model: this._config.model,
+        telemetryData,
+      });
 
       return averagedVector;
     } catch (err) {
-      getLogger().error("Failed to generate embeddings", {
+      logger.error("Failed to generate embeddings", {
         correlationId,
         error: err instanceof Error ? err.message : String(err),
         model: this._config.model,
@@ -181,7 +177,7 @@ export class EmbeddingsService implements IEmbeddingsService {
 
         if (attempt < this._config.maxRetries) {
           const delay = this._config.retryDelayMs * attempt;
-          getLogger().warn(`Retry attempt ${attempt} for chunk ${chunk.index}`, {
+          logger.warn(`Retry attempt ${attempt} for chunk ${chunk.index}`, {
             correlationId,
             error: lastError.message,
             delay,

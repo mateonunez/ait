@@ -47,8 +47,9 @@ export class CollectionRerankService implements ICollectionRerankService {
       return [];
     }
 
+    const startTime = Date.now();
     const endSpan = traceContext
-      ? createSpanWithTiming(this.name, "rag", traceContext, {
+      ? createSpanWithTiming("ranking/collection-rerank", "rag", traceContext, {
           query: userQuery.slice(0, 100),
           inputDocuments: documents.length,
         })
@@ -73,11 +74,13 @@ export class CollectionRerankService implements ICollectionRerankService {
     const mergedResults = this._mergeRerankedGroups(rerankedGroups, targetEntityTypes);
     const finalResults = mergedResults.slice(0, maxResults);
 
+    const duration = Date.now() - startTime;
     const telemetryData = {
       inputDocuments: documents.length,
       outputDocuments: finalResults.length,
       collectionsProcessed: Object.keys(documentsByCollection).length,
       collectionDistribution: this._getCollectionDistribution(finalResults),
+      duration,
     };
 
     if (endSpan) endSpan(telemetryData);

@@ -30,9 +30,14 @@ export class ContextPreparationStage implements IPipelineStage<ContextPreparatio
     const documents = input.ragContext?.documents || [];
 
     const endSpan = context.traceContext
-      ? createSpanWithTiming("generation/context-preparation", "context_preparation", context.traceContext, {
-          documentCount: documents.length,
-        })
+      ? createSpanWithTiming(
+          "generation/context-preparation",
+          "context_preparation",
+          context.traceContext,
+          { documentCount: documents.length },
+          undefined,
+          new Date(startTime),
+        )
       : null;
 
     try {
