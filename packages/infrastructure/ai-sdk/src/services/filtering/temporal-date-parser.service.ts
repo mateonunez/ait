@@ -46,6 +46,8 @@ const SPANISH_MONTHS: Record<string, string> = {
 const MONTH_TRANSLATIONS = [ITALIAN_MONTHS, SPANISH_MONTHS];
 
 export class TemporalDateParser implements ITemporalDateParser {
+  readonly name = "temporal-date-parser";
+
   parseDate(value: unknown): Date | null {
     if (!value) return null;
 
@@ -68,19 +70,31 @@ export class TemporalDateParser implements ITemporalDateParser {
   parseTimeRange(text: string): DateRange | undefined {
     if (!text) return undefined;
 
+    const startTime = Date.now();
     const normalizedText = this._normalizeMonthNames(text);
 
-    // Handle period patterns (week/month/year) explicitly before chrono
+    // Handle period patterns (day/week/month/year) explicitly before chrono
     const periodRange = this._parsePeriodPattern(normalizedText);
     if (periodRange) {
-      logger.debug("Parsed period pattern", { text: text.slice(0, 50), range: periodRange });
+      const duration = Date.now() - startTime;
+      logger.debug(`Service [${this.name}] parsed period pattern`, {
+        text: text.slice(0, 50),
+        from: periodRange.from?.slice(0, 19),
+        to: periodRange.to?.slice(0, 19),
+        duration,
+      });
       return periodRange;
     }
 
     try {
       const results = chrono.parse(normalizedText, new Date(), { forwardDate: false });
 
-      if (!results || results.length === 0) return undefined;
+      if (!results || results.length === 0) {
+        logger.debug(`Service [${this.name}] no temporal pattern found`, {
+          text: text.slice(0, 50),
+        });
+        return undefined;
+      }
 
       if (results.length >= 2) {
         const validResults = results.filter((r): r is chrono.ParsedResult => !!r.start?.date());
@@ -95,10 +109,21 @@ export class TemporalDateParser implements ITemporalDateParser {
           const from = this._expandToStartOfPeriod(firstDate, firstResult);
           const to = this._expandToEndOfPeriod(lastDate, lastResult);
 
-          return {
+          const result = {
             from: from.toISOString(),
             to: to.toISOString(),
           };
+
+          const duration = Date.now() - startTime;
+          logger.debug(`Service [${this.name}] parsed multi-date range`, {
+            text: text.slice(0, 50),
+            from: result.from.slice(0, 19),
+            to: result.to.slice(0, 19),
+            resultCount: results.length,
+            duration,
+          });
+
+          return result;
         }
       }
 
@@ -110,21 +135,32 @@ export class TemporalDateParser implements ITemporalDateParser {
 
       const endDate = result.end?.date();
 
-      if (endDate) {
-        return {
-          from: this._expandToStartOfPeriod(startDate, result).toISOString(),
-          to: this._expandToEndOfPeriod(endDate, result).toISOString(),
-        };
-      }
+      const range: DateRange = endDate
+        ? {
+            from: this._expandToStartOfPeriod(startDate, result).toISOString(),
+            to: this._expandToEndOfPeriod(endDate, result).toISOString(),
+          }
+        : {
+            from: this._expandToStartOfPeriod(startDate, result).toISOString(),
+            to: this._expandToEndOfPeriod(startDate, result).toISOString(),
+          };
 
-      return {
-        from: this._expandToStartOfPeriod(startDate, result).toISOString(),
-        to: this._expandToEndOfPeriod(startDate, result).toISOString(),
-      };
+      const duration = Date.now() - startTime;
+      logger.debug(`Service [${this.name}] parsed single date`, {
+        text: text.slice(0, 50),
+        from: range.from?.slice(0, 19),
+        to: range.to?.slice(0, 19),
+        hasEndDate: !!endDate,
+        duration,
+      });
+
+      return range;
     } catch (error) {
-      logger.warn("Date parsing failed", {
+      const duration = Date.now() - startTime;
+      logger.warn(`Service [${this.name}] parsing failed`, {
         error: error instanceof Error ? error.message : String(error),
         text: text.slice(0, 50),
+        duration,
       });
       return undefined;
     }
@@ -132,11 +168,44 @@ export class TemporalDateParser implements ITemporalDateParser {
 
   /**
    * Parse period-related patterns that chrono doesn't handle well
-   * Handles week/month/year patterns with proper date ranges
+   * Handles day/week/month/year patterns with proper date ranges
    */
   private _parsePeriodPattern(text: string): DateRange | undefined {
     const lowerText = text.toLowerCase();
     const now = new Date();
+
+    // === DAY PATTERNS ===
+
+    // "today" - current day
+    if (/\b(today|oggi|hoy)\b/i.test(lowerText)) {
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+      return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
+    }
+
+    // "tomorrow" - next day
+    if (/\b(tomorrow|domani|mañana)\b/i.test(lowerText)) {
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const startOfDay = new Date(tomorrow);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(tomorrow);
+      endOfDay.setHours(23, 59, 59, 999);
+      return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
+    }
+
+    // "yesterday" - previous day
+    if (/\b(yesterday|ieri|ayer)\b/i.test(lowerText)) {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const startOfDay = new Date(yesterday);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(yesterday);
+      endOfDay.setHours(23, 59, 59, 999);
+      return { from: startOfDay.toISOString(), to: endOfDay.toISOString() };
+    }
 
     // === WEEK PATTERNS ===
 

@@ -2,6 +2,7 @@ import { getLogger } from "@ait/core";
 import { getAllCollections } from "../../config/collections.config";
 import { getCacheAnalyticsService } from "../../services/analytics/cache-analytics.service";
 import { type SemanticCacheService, getSemanticCacheService } from "../../services/cache/semantic-cache.service";
+import { TypeFilterService } from "../../services/filtering/type-filter.service";
 import type { MultiCollectionProvider } from "../../services/rag/multi-collection.provider";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
 import type { IMultiQueryRetrievalService } from "../../services/retrieval/multi-query-retrieval.service";
@@ -23,6 +24,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
   private readonly _multiCollectionProvider: MultiCollectionProvider;
   private readonly _semanticCache: SemanticCacheService;
   private readonly _enableCache: boolean;
+  private readonly _typeFilterService: TypeFilterService;
 
   constructor(
     multiQueryRetrieval: IMultiQueryRetrievalService,
@@ -33,6 +35,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     this._multiCollectionProvider = multiCollectionProvider;
     this._semanticCache = getSemanticCacheService();
     this._enableCache = enableCache;
+    this._typeFilterService = new TypeFilterService();
   }
 
   async canExecute(input: RetrievalInput): Promise<boolean> {
@@ -62,8 +65,13 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
 
     const effectiveQuery = input.retrievalQuery || input.query;
 
-    // Build collection context for cache key (not normalized)
-    const collectionContext = this._buildCollectionContext(selectedCollections);
+    // Build typeFilter FIRST to include temporal context in cache key
+    const typeFilter =
+      input.typeFilter ??
+      (input.intent ? this._typeFilterService.inferTypes(undefined, input.query, { intent: input.intent }) : undefined);
+
+    // Build cache context including collections AND temporal range
+    const collectionContext = this._buildCacheContext(selectedCollections, typeFilter?.timeRange);
 
     if (this._enableCache) {
       logger.debug("Checking semantic cache", { query: effectiveQuery.slice(0, 50), collectionContext });
@@ -141,10 +149,9 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       }
     }
 
-    const typeFilter =
-      input.typeFilter ?? (input.intent?.entityTypes?.length ? { types: input.intent.entityTypes } : undefined);
+    // typeFilter already built above before cache check
 
-    const documents = await this._multiQueryRetrieval.retrieveAcrossCollections(
+    const allDocuments = await this._multiQueryRetrieval.retrieveAcrossCollections(
       this._multiCollectionProvider,
       selectedCollections,
       effectiveQuery,
@@ -152,6 +159,26 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       context.traceContext,
     );
 
+    // Apply relevance floor to filter out low-quality results
+    const relevanceFloor = 0.45;
+    const filteredDocuments = allDocuments.filter((doc) => {
+      const score = (doc.metadata as { score?: number }).score;
+      return score === undefined || score >= relevanceFloor;
+    });
+
+    // Log warning if majority of documents were filtered out
+    const filteredCount = allDocuments.length - filteredDocuments.length;
+    if (filteredCount > 0 && filteredCount >= allDocuments.length * 0.5) {
+      logger.warn("High proportion of documents filtered due to low relevance", {
+        originalCount: allDocuments.length,
+        filteredCount,
+        remainingCount: filteredDocuments.length,
+        relevanceFloor,
+        query: input.query.slice(0, 50),
+      });
+    }
+
+    const documents = filteredDocuments;
     const totalDuration = Date.now() - startTime;
 
     if (this._enableCache && documents.length > 0) {
@@ -179,6 +206,7 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       collectionsQueried: selectedCollections.length,
       documentsPerCollection,
       cacheHit: false,
+      filteredByRelevance: filteredCount,
     };
 
     if (endSpan) endSpan(telemetryData);
@@ -197,11 +225,19 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
     };
   }
 
-  private _buildCollectionContext(collections: CollectionWeight[]): string {
+  private _buildCacheContext(collections: CollectionWeight[], timeRange?: { from?: string; to?: string }): string {
     const sortedVendors = collections
       .map((c) => c.vendor)
       .sort()
       .join(",");
+
+    // Include date range in cache key for temporal queries
+    // Use just the date portion (YYYY-MM-DD) to handle timezone differences
+    if (timeRange?.from || timeRange?.to) {
+      const fromDate = timeRange.from ? timeRange.from.slice(0, 10) : "";
+      const toDate = timeRange.to ? timeRange.to.slice(0, 10) : "";
+      return `collections:${sortedVendors}|dates:${fromDate}:${toDate}`;
+    }
 
     return `collections:${sortedVendors}`;
   }
