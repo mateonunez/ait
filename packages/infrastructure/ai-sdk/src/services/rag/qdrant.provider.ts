@@ -98,7 +98,7 @@ export class QdrantProvider {
 
       const typeSpecificConditions: any[] = [];
       for (const type of filter.types) {
-        const dateField = entityDateFields[type] || "createdAt";
+        const dateField = entityDateFields[type as EntityType] || "createdAt";
         typeSpecificConditions.push({
           must: [
             { key: "metadata.__type", match: { value: type } },
