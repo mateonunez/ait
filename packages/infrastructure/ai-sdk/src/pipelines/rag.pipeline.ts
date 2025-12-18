@@ -12,6 +12,9 @@ import type { TraceContext } from "../types/telemetry";
 
 const logger = getLogger();
 
+/**
+ * Configuration for the RAG pipeline.
+ */
 export interface RAGPipelineConfig {
   /** Model for generating embeddings */
   embeddingsModel?: string;
@@ -19,6 +22,8 @@ export interface RAGPipelineConfig {
   vectorSize?: number;
   /** Maximum documents to retrieve */
   maxDocs?: number;
+  /** Minimum relevance score (0-1, default: 0.2) */
+  scoreThreshold?: number;
   /** Number of query variants to generate */
   queriesCount?: number;
   /** Concurrency for parallel searches */
@@ -32,9 +37,21 @@ export interface RAGPipelineConfig {
   enableTelemetry?: boolean;
 }
 
+/**
+ * Options for executing the RAG pipeline.
+ */
 export interface RAGPipelineExecuteOptions {
+  /**
+   * Trace context for telemetry.
+   */
   traceContext?: TraceContext;
+  /**
+   * Stages to skip.
+   */
   skipStages?: string[];
+  /**
+   * Metadata to attach to telemetry spans.
+   */
   metadata?: Record<string, unknown>;
 }
 
@@ -52,13 +69,18 @@ export function createRAGPipeline(config: RAGPipelineConfig = {}): RAGPipeline {
   });
 
   const multiQueryRetrieval = new MultiQueryRetrievalService({
-    maxDocs: config.maxDocs ?? 50,
+    maxDocs: config.maxDocs ?? 100,
     concurrency: config.concurrency ?? 3,
+    scoreThreshold: config.scoreThreshold ?? 0.2,
   });
 
   const orchestrator = PipelineBuilder.create<QueryAnalysisInput, RetrievalOutput>()
     .addStage(new QueryAnalysisStage())
-    .addStage(new RetrievalStage(multiQueryRetrieval, multiCollectionProvider))
+    .addStage(
+      new RetrievalStage(multiQueryRetrieval, multiCollectionProvider, {
+        relevanceFloor: config.scoreThreshold ?? 0.3,
+      }),
+    )
     .withFailureMode("continue-on-error")
     .withTelemetry(config.enableTelemetry ?? true)
     .build();
@@ -71,14 +93,12 @@ export function createRAGPipeline(config: RAGPipelineConfig = {}): RAGPipeline {
       const startTime = Date.now();
       const pipelineSpanId = randomUUID();
 
-      // Create parent span for entire RAG pipeline
       const endPipelineSpan = options?.traceContext
         ? createSpanWithTiming("rag/pipeline", "rag", options.traceContext, {
             query: input.query?.slice(0, 100),
           })
         : null;
 
-      // Create child context so stage spans nest under pipeline span
       let childContext: TraceContext | undefined;
       if (options?.traceContext && endPipelineSpan) {
         childContext = createChildContext(options.traceContext, pipelineSpanId);

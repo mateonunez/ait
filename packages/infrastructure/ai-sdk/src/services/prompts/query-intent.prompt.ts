@@ -38,8 +38,9 @@ ${getEntityDescriptions()}
    - [] for generative, greetings, or general Qs.
 
 2. **Temporal Analysis**:
-   - True for time bounds (e.g., "last week", "2023"). False for timeless.
-   - timeReference: Quote exact phrase or standardize (e.g., "past 7 days").
+   - True for ANY time-related query in ANY language (e.g., "today", "yesterday", "last month", or equivalent in any language).
+   - Common temporal indicators: today, yesterday, tomorrow, this week/month/year, last week/month/year, N days/weeks/months ago, recent/recently, specific dates.
+   - timeReference: Extract the EXACT temporal phrase from the query (preserve original language, e.g., "oggi" stays as "oggi").
 
 3. **Complexity Score**:
    - 1-2: Trivial (greetings/facts).
@@ -78,6 +79,72 @@ Query: "What was I listening to while tweeting last week?"
   "timeReference": "last week",
   "primaryFocus": "correlate listening history with social activity",
   "complexityScore": 7,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// CRITICAL: Temporal queries for TODAY/YESTERDAY - these MUST set isTemporalQuery: true
+Query: "What did I do today?"
+{
+  "entityTypes": [],
+  "isTemporalQuery": true,
+  "timeReference": "today",
+  "primaryFocus": "retrieve all activity for today",
+  "complexityScore": 5,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "Show me my activities from yesterday"
+{
+  "entityTypes": [],
+  "isTemporalQuery": true,
+  "timeReference": "yesterday",
+  "primaryFocus": "retrieve all activity for yesterday",
+  "complexityScore": 4,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "What happened this morning?"
+{
+  "entityTypes": [],
+  "isTemporalQuery": true,
+  "timeReference": "this morning",
+  "primaryFocus": "retrieve morning activities",
+  "complexityScore": 4,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "Summarize my last month activities"
+{
+  "entityTypes": [],
+  "isTemporalQuery": true,
+  "timeReference": "last month",
+  "primaryFocus": "aggregate monthly activity summary",
+  "complexityScore": 6,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "What songs did I listen to yesterday evening?"
+{
+  "entityTypes": ["recently_played"],
+  "isTemporalQuery": true,
+  "timeReference": "yesterday evening",
+  "primaryFocus": "retrieve yesterday's listening history",
+  "complexityScore": 3,
   "requiredStyle": "detailed",
   "topicShift": false,
   "needsRAG": true,
@@ -384,6 +451,72 @@ Query: "What's the weather like right now?"
   "primaryFocus": "fetch real-time weather data",
   "complexityScore": 2,
   "requiredStyle": "concise",
+  "topicShift": false,
+  "needsRAG": false,
+  "needsTools": true
+}
+
+// Tool Examples: Actions that require external execution
+Query: "Send a message to the team on Slack"
+{
+  "entityTypes": [],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "execute Slack message action",
+  "complexityScore": 3,
+  "requiredStyle": "concise",
+  "topicShift": false,
+  "needsRAG": false,
+  "needsTools": true
+}
+
+Query: "Create a new issue in Linear for the bug fix"
+{
+  "entityTypes": [],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "create Linear issue",
+  "complexityScore": 4,
+  "requiredStyle": "concise",
+  "topicShift": false,
+  "needsRAG": false,
+  "needsTools": true
+}
+
+Query: "Open a PR to merge my feature branch"
+{
+  "entityTypes": [],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "create GitHub pull request",
+  "complexityScore": 5,
+  "requiredStyle": "concise",
+  "topicShift": false,
+  "needsRAG": false,
+  "needsTools": true
+}
+
+Query: "What song am I listening to right now?"
+{
+  "entityTypes": [],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "fetch current Spotify playback state",
+  "complexityScore": 2,
+  "requiredStyle": "concise",
+  "topicShift": false,
+  "needsRAG": false,
+  "needsTools": true
+}
+
+Query: "Search Notion for my architecture notes"
+{
+  "entityTypes": [],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "search Notion via API",
+  "complexityScore": 3,
+  "requiredStyle": "detailed",
   "topicShift": false,
   "needsRAG": false,
   "needsTools": true

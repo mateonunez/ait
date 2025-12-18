@@ -12,6 +12,67 @@ export interface QueryAnalysisInput {
   traceContext?: TraceContext;
 }
 
+export interface IntentAnalysisInput {
+  query: string;
+  messages?: ChatMessage[];
+  existingIntent?: QueryIntent;
+}
+
+export interface IntentAnalysisOutput extends IntentAnalysisInput {
+  intent: QueryIntent;
+}
+
+export interface PromptOrchestrationInput extends IntentAnalysisOutput {
+  ragContext?: string;
+  tools?: Record<string, any>;
+  maxToolRounds?: number;
+}
+
+export interface PromptOrchestrationOutput extends PromptOrchestrationInput {
+  orchestrationResult: {
+    finalPrompt: string;
+    accumulatedMessages?: ChatMessage[];
+    toolCalls: any[];
+    toolResults: any[];
+    hasToolCalls: boolean;
+    finalTextResponse?: string;
+  };
+}
+
+export interface StreamingGenerationInput extends PromptOrchestrationOutput {
+  enableMetadata?: boolean;
+}
+
+export interface StreamingGenerationOutput extends StreamingGenerationInput {
+  textStream: AsyncGenerator<string>;
+}
+
+export interface GenerationState {
+  prompt: string;
+  messages: ChatMessage[];
+  tools?: Record<string, any>;
+  maxToolRounds?: number;
+  enableRAG: boolean;
+  enableMetadata: boolean;
+
+  // Pipeline-enriched fields
+  ragResult?: RetrievalOutput;
+  ragContext?: string;
+  intent?: QueryIntent;
+  orchestrationResult?: {
+    finalPrompt: string;
+    accumulatedMessages?: ChatMessage[];
+    toolCalls: any[];
+    toolResults: any[];
+    hasToolCalls: boolean;
+    finalTextResponse?: string;
+  };
+  textStream?: AsyncGenerator<string>;
+  fullResponse?: string;
+  suggestions?: Suggestion[];
+  [key: string]: any;
+}
+
 export interface QueryAnalysisOutput {
   query: string;
   intent: QueryIntent;

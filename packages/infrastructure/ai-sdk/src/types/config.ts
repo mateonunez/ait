@@ -60,6 +60,7 @@ export interface TextGenerationFeatureConfig {
   /** Multi-query planner configuration */
   multipleQueryPlannerConfig?: Pick<MultiQueryConfig, "maxDocs" | "concurrency"> & {
     queriesCount?: number;
+    relevanceFloor?: number;
   };
   /** Conversation management configuration */
   conversationConfig?: ConversationConfig;

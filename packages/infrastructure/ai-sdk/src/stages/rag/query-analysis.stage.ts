@@ -202,11 +202,9 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
   private _shouldRewriteQuery(query: string, intent: QueryIntent, hasHistory: boolean): boolean {
     if (!hasHistory) return false;
 
-    // 1. Never rewrite greetings or simple capability questions (No RAG = No Context needed usually)
-    if (!intent.needsRAG) return false;
-
-    // 2. Check for explicit context markers (pronouns, demonstratives)
-    const contextMarkers = /\b(it|them|that|those|these|he|she|they|him|her|this|previous|following)\b/i;
+    // 1. Check for explicit context markers (pronouns, demonstratives)
+    const contextMarkers =
+      /\b(it|them|that|those|these|he|she|they|him|her|this|previous|following|last|past|above|below|more|again|well|bene)\b/i;
     if (contextMarkers.test(query)) return true;
 
     // 3. If LLM explicitly detected a continuation (topicShift: false), we likely need to rewrite

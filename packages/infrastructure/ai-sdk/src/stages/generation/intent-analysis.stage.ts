@@ -1,46 +1,51 @@
 import { getLogger } from "@ait/core";
-import { getSuggestionService } from "../../services/generation/suggestion.service";
 import type { IPipelineStage, PipelineContext } from "../../services/rag/pipeline/pipeline.types";
+import { type IQueryIntentService, QueryIntentService } from "../../services/routing/query-intent.service";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import type { GenerationState } from "../../types/stages";
 
 const logger = getLogger();
 
-export class MetadataExtractionStage implements IPipelineStage<GenerationState, GenerationState> {
-  readonly name = "metadata-extraction";
+export class IntentAnalysisStage implements IPipelineStage<GenerationState, GenerationState> {
+  readonly name = "intent-analysis";
+
+  private readonly _intentService: IQueryIntentService;
+
+  constructor(intentService?: IQueryIntentService) {
+    this._intentService = intentService || new QueryIntentService();
+  }
 
   async canExecute(input: GenerationState): Promise<boolean> {
-    return !!input.fullResponse && input.enableMetadata;
+    return !!input.prompt;
   }
 
   async execute(input: GenerationState, context: PipelineContext): Promise<GenerationState> {
     const startTime = Date.now();
-    const fullResponse = input.fullResponse || "";
+
+    if (input.intent) {
+      return input;
+    }
 
     const endSpan = context.traceContext
       ? createSpanWithTiming(
-          "generation/metadata-extraction",
+          "generation/intent-analysis",
           "task",
           context.traceContext,
-          {
-            responseLength: fullResponse.length,
-          },
+          { query: input.prompt.slice(0, 100) },
           undefined,
           new Date(startTime),
         )
       : null;
 
     try {
-      const suggestionsService = getSuggestionService();
+      const intent = await this._intentService.analyzeIntent(input.prompt, input.messages || [], context.traceContext);
 
-      const suggestions = await suggestionsService.generateSuggestions({
-        context: input.prompt,
-        history: fullResponse,
-      });
-
+      const duration = Date.now() - startTime;
       const telemetryData = {
-        suggestionsCount: suggestions.length,
-        duration: Date.now() - startTime,
+        needsRAG: intent.needsRAG,
+        needsTools: intent.needsTools,
+        primaryFocus: intent.primaryFocus,
+        duration,
       };
 
       if (endSpan) endSpan(telemetryData);
@@ -49,7 +54,7 @@ export class MetadataExtractionStage implements IPipelineStage<GenerationState, 
 
       return {
         ...input,
-        suggestions,
+        intent,
       };
     } catch (error) {
       const duration = Date.now() - startTime;
@@ -61,7 +66,7 @@ export class MetadataExtractionStage implements IPipelineStage<GenerationState, 
       }
 
       logger.error(`Stage [${this.name}] failed`, { error, duration });
-      return input; // Continue without suggestions on error
+      throw error;
     }
   }
 }
