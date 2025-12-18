@@ -4,11 +4,14 @@ import {
   findEntityTypesByKeywords,
   getEntityMetadata,
   getEntityTypesByVendor,
+  getLogger,
 } from "@ait/core";
 import type { TypeFilter } from "../../types/rag";
 import { type ITextNormalizationService, TextNormalizationService } from "../metadata/text-normalization.service";
 import type { QueryIntent } from "../routing/query-intent.service";
 import { type ITemporalDateParser, TemporalDateParser } from "./temporal-date-parser.service";
+
+const logger = getLogger();
 
 export interface ITypeFilterService {
   inferTypes(
@@ -19,6 +22,8 @@ export interface ITypeFilterService {
 }
 
 export class TypeFilterService implements ITypeFilterService {
+  readonly name = "type-filter";
+
   private readonly _dateParser: ITemporalDateParser;
   private readonly _textNormalizer: ITextNormalizationService;
 
@@ -32,6 +37,8 @@ export class TypeFilterService implements ITypeFilterService {
     userQuery?: string,
     options?: { usedFallback?: boolean; intent?: QueryIntent },
   ): TypeFilter | undefined {
+    const startTime = Date.now();
+
     // Prefer intent-derived types and temporal range when available
     if (options?.intent) {
       const timeRange = options.intent.isTemporalQuery
@@ -39,17 +46,41 @@ export class TypeFilterService implements ITypeFilterService {
         : undefined;
 
       if (options.intent.entityTypes && options.intent.entityTypes.length > 0) {
-        return { types: options.intent.entityTypes, timeRange };
+        const result = { types: options.intent.entityTypes, timeRange };
+
+        this._logCompletion(startTime, {
+          source: "intent",
+          types: result.types,
+          hasTimeRange: !!timeRange,
+          query: userQuery?.slice(0, 50),
+        });
+
+        return result;
       }
 
       if (timeRange) {
-        return { timeRange };
+        const result = { timeRange };
+
+        this._logCompletion(startTime, {
+          source: "intent-temporal",
+          types: [],
+          hasTimeRange: true,
+          query: userQuery?.slice(0, 50),
+        });
+
+        return result;
       }
     }
 
     const keywordSet = this._buildKeywordSet(tags, userQuery);
 
-    if (keywordSet.size === 0) return undefined;
+    if (keywordSet.size === 0) {
+      logger.debug(`Service [${this.name}] no filter inferred`, {
+        reason: "no-keywords",
+        query: userQuery?.slice(0, 50),
+      });
+      return undefined;
+    }
 
     const keywords = Array.from(keywordSet);
     const matchingTypes = findEntityTypesByKeywords(keywords);
@@ -75,17 +106,56 @@ export class TypeFilterService implements ITypeFilterService {
         return indexA - indexB;
       });
 
-      return { types: sortedTypes, timeRange: this._parseTimeRange(userQuery) };
+      const timeRange = this._parseTimeRange(userQuery);
+      const result = { types: sortedTypes, timeRange };
+
+      this._logCompletion(startTime, {
+        source: "keyword-matching",
+        types: sortedTypes,
+        hasTimeRange: !!timeRange,
+        keywordCount: keywords.length,
+        query: userQuery?.slice(0, 50),
+      });
+
+      return result;
     }
 
     if (options?.usedFallback && userQuery) {
-      return {
+      const timeRange = this._parseTimeRange(userQuery);
+      const result = {
         types: [...VALID_ENTITY_TYPES] as EntityType[],
-        timeRange: this._parseTimeRange(userQuery),
+        timeRange,
       };
+
+      this._logCompletion(startTime, {
+        source: "fallback",
+        types: result.types,
+        hasTimeRange: !!timeRange,
+        query: userQuery?.slice(0, 50),
+      });
+
+      return result;
     }
 
+    logger.debug(`Service [${this.name}] no filter inferred`, {
+      reason: "no-matching-types",
+      keywordCount: keywords.length,
+      query: userQuery?.slice(0, 50),
+    });
+
     return undefined;
+  }
+
+  private _logCompletion(
+    startTime: number,
+    data: { source: string; types: EntityType[]; hasTimeRange: boolean; keywordCount?: number; query?: string },
+  ): void {
+    const duration = Date.now() - startTime;
+    logger.debug(`Service [${this.name}] completed`, {
+      ...data,
+      typeCount: data.types.length,
+      duration,
+    });
   }
 
   private _parseTimeRange(text?: string): { from?: string; to?: string } | undefined {

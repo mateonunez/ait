@@ -21,6 +21,7 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
       singleEvents: "true",
       orderBy: "startTime",
       timeMin: this._getTimeMin(),
+      timeMax: this._getTimeMax(),
     });
 
     if (cursor) {
@@ -71,6 +72,13 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
     // Default to 30 days ago
     const date = new Date();
     date.setDate(date.getDate() - 30);
+    return date.toISOString();
+  }
+
+  private _getTimeMax(): string {
+    // Limit to 2 years in the future to prevent unbounded recurring event fetching
+    const date = new Date();
+    date.setFullYear(date.getFullYear() + 2);
     return date.toISOString();
   }
 

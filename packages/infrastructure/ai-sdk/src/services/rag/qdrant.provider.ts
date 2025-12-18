@@ -1,4 +1,4 @@
-import { getLogger } from "@ait/core";
+import { type EntityType, getLogger } from "@ait/core";
 import { getQdrantClient, type qdrant } from "@ait/qdrant";
 import { getEmbeddingModelConfig } from "../../client/ai-sdk.client";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
@@ -65,7 +65,8 @@ export class QdrantProvider {
     const should: any[] = [];
 
     // Entity-type-specific date field mapping
-    const entityDateFields: Record<string, string> = {
+    const entityDateFields: Record<EntityType, string> = {
+      event: "startTime",
       recently_played: "playedAt",
       tweet: "createdAt",
       pull_request: "mergedAt",
@@ -75,6 +76,12 @@ export class QdrantProvider {
       artist: "createdAt",
       playlist: "createdAt",
       album: "createdAt",
+      message: "createdAt",
+      commit: "pushedAt",
+      repository_file: "pushedAt",
+      page: "createdAt",
+      calendar: "startTime",
+      subscription: "createdAt",
     };
 
     if (

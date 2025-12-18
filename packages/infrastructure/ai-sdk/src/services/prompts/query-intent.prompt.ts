@@ -161,42 +161,192 @@ Query: "Compare useState vs useReducer in React"
   "needsTools": false
 }
 
-Query: "Generate a workout plan based on my recent activity"
+// GitHub Integration Examples
+Query: "Show my recent pull requests on GitHub"
 {
-  "entityTypes": ["activity"],
+  "entityTypes": ["pull_request"],
   "isTemporalQuery": true,
   "timeReference": "recent",
-  "primaryFocus": "create personalized fitness plan from user data",
-  "complexityScore": 6,
+  "primaryFocus": "retrieve open and merged pull requests",
+  "complexityScore": 3,
   "requiredStyle": "detailed",
   "topicShift": false,
   "needsRAG": true,
   "needsTools": false
 }
 
-Query: "Fix this buggy Python script for data scraping"
+Query: "What commits did I push to ait repo yesterday?"
 {
-  "entityTypes": [],
-  "isTemporalQuery": false,
-  "timeReference": "",
-  "primaryFocus": "debug and correct Python code",
-  "complexityScore": 8,
-  "requiredStyle": "technical",
-  "topicShift": true,
+  "entityTypes": ["commit"],
+  "isTemporalQuery": true,
+  "timeReference": "yesterday",
+  "primaryFocus": "retrieve recent commits from specific repository",
+  "complexityScore": 4,
+  "requiredStyle": "detailed",
+  "topicShift": false,
   "needsRAG": true,
   "needsTools": false
 }
 
-Query: "Brainstorm 5 startup ideas for AI in healthcare"
+Query: "List all my repositories"
 {
-  "entityTypes": [],
+  "entityTypes": ["repository"],
   "isTemporalQuery": false,
   "timeReference": "",
-  "primaryFocus": "generate creative business concepts",
+  "primaryFocus": "enumerate user's GitHub repositories",
+  "complexityScore": 2,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// Linear Integration Examples
+Query: "What are my open issues in Linear?"
+{
+  "entityTypes": ["issue"],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "retrieve active tasks and issues",
+  "complexityScore": 3,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "Show bugs I created last week"
+{
+  "entityTypes": ["issue"],
+  "isTemporalQuery": true,
+  "timeReference": "last week",
+  "primaryFocus": "filter issues by type and creation date",
+  "complexityScore": 4,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// Notion Integration Examples
+Query: "Find my notes about architecture decisions"
+{
+  "entityTypes": ["page"],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "search Notion pages by topic",
+  "complexityScore": 3,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "What did I write in Notion this month?"
+{
+  "entityTypes": ["page"],
+  "isTemporalQuery": true,
+  "timeReference": "this month",
+  "primaryFocus": "retrieve recently created or edited Notion pages",
+  "complexityScore": 4,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// Slack Integration Examples
+Query: "Show messages from the engineering channel"
+{
+  "entityTypes": ["message"],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "retrieve Slack messages from specific channel",
+  "complexityScore": 3,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "What did the team discuss about the deployment today?"
+{
+  "entityTypes": ["message"],
+  "isTemporalQuery": true,
+  "timeReference": "today",
+  "primaryFocus": "search team communications by topic and date",
+  "complexityScore": 5,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// X (Twitter) Integration Examples
+Query: "Show my recent tweets"
+{
+  "entityTypes": ["tweet"],
+  "isTemporalQuery": true,
+  "timeReference": "recent",
+  "primaryFocus": "retrieve user's Twitter/X posts",
+  "complexityScore": 2,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "What did I tweet about AI this week?"
+{
+  "entityTypes": ["tweet"],
+  "isTemporalQuery": true,
+  "timeReference": "this week",
+  "primaryFocus": "filter tweets by topic and timeframe",
+  "complexityScore": 4,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// YouTube Integration Examples
+Query: "Show my YouTube subscriptions"
+{
+  "entityTypes": ["subscription"],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "list subscribed YouTube channels",
+  "complexityScore": 2,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+// Cross-Integration Queries
+Query: "What was I coding while listening to music yesterday?"
+{
+  "entityTypes": ["commit", "recently_played"],
+  "isTemporalQuery": true,
+  "timeReference": "yesterday",
+  "primaryFocus": "correlate coding activity with listening history",
   "complexityScore": 7,
-  "requiredStyle": "creative",
-  "topicShift": true,
-  "needsRAG": false,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "Summarize my activity across all platforms this week"
+{
+  "entityTypes": [],
+  "isTemporalQuery": true,
+  "timeReference": "this week",
+  "primaryFocus": "aggregate activity across all integrations",
+  "complexityScore": 8,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
   "needsTools": false
 }
 
@@ -238,6 +388,53 @@ Query: "What's the weather like right now?"
   "needsRAG": false,
   "needsTools": true
 }
+
+Query: "What about the event: 'Mateo Nunez and Giorgia Rossini'?"
+{
+  "entityTypes": ["event"],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "retrieve calendar event with specified title",
+  "complexityScore": 3,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "Do I have a meeting with John Smith this week?"
+{
+  "entityTypes": ["event"],
+  "isTemporalQuery": true,
+  "timeReference": "this week",
+  "primaryFocus": "check calendar for meeting with specified person",
+  "complexityScore": 3,
+  "requiredStyle": "concise",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+Query: "Show my calendar events for the party at Sarah's"
+{
+  "entityTypes": ["event"],
+  "isTemporalQuery": false,
+  "timeReference": "",
+  "primaryFocus": "retrieve calendar event by description",
+  "complexityScore": 3,
+  "requiredStyle": "detailed",
+  "topicShift": false,
+  "needsRAG": true,
+  "needsTools": false
+}
+
+### Disambiguation: Person Names in Queries
+When a query contains person names, use these rules:
+- If query explicitly mentions "event", "meeting", "calendar", "appointment", or "schedule" → entityTypes: ["event"]
+- If query explicitly mentions "artist", "music", "song", "spotify", or "band" → entityTypes: ["artist"]  
+- If query asks about an event TITLE that contains person names (e.g., "'Mateo Nunez and Giorgia Rossini'") → entityTypes: ["event"]
+- If prior context was about calendar/events and query continues with person names → entityTypes: ["event"]
+- Only default to ["artist"] if the query is clearly about a music artist (e.g., "play songs by X", "what genre is X")
 
 ### Previous Context (Last 3 Messages)
 ${

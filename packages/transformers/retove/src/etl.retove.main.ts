@@ -36,8 +36,8 @@ const etlRunners: Record<EntityType, any> = {
   page: runNotionETL,
   message: runSlackETL,
   subscription: runGoogleYouTubeSubscriptionETL,
-  event: undefined,
-  calendar: runGoogleCalendarEventETL,
+  event: runGoogleCalendarEventETL,
+  calendar: undefined,
 };
 
 async function main() {
