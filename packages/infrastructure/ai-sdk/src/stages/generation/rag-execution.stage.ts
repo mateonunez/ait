@@ -44,6 +44,7 @@ export class RAGStage implements IPipelineStage<GenerationState, GenerationState
       return {
         ...input,
         ragResult: result.success ? result.data : undefined,
+        intent: result.success && result.data?.intent ? result.data.intent : input.intent,
       };
     } catch (error) {
       const duration = Date.now() - startTime;

@@ -60,6 +60,9 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
 
     try {
       intent = await this._intentService.analyzeIntent(queryToAnalyze, input.messages, context.traceContext);
+
+      // Keyword-based RAG boost: Override LLM decision if connector keywords detected
+      intent = this._applyKeywordBasedRAGBoost(intent, queryToAnalyze);
     } catch (error) {
       logger.warn("LLM intent analysis failed, falling back to heuristics", {
         error: error instanceof Error ? error.message : String(error),
@@ -238,5 +241,28 @@ export class QueryAnalysisStage implements IPipelineStage<QueryAnalysisInput, Qu
       needsRAG: needsRAG,
       needsTools: false, // Heuristic fallback: can't determine tool needs, default to false
     };
+  }
+
+  private _applyKeywordBasedRAGBoost(intent: QueryIntent, query: string): QueryIntent {
+    if (intent.needsRAG) {
+      return intent;
+    }
+
+    const heuristicAnalysis = this._fastAnalyzer.analyze(query);
+    if (heuristicAnalysis.entityTypes.length > 0) {
+      logger.info("Keyword-based RAG boost applied", {
+        query: query.slice(0, 50),
+        detectedEntities: heuristicAnalysis.entityTypes,
+        originalNeedsRAG: intent.needsRAG,
+      });
+
+      return {
+        ...intent,
+        needsRAG: true,
+        entityTypes: intent.entityTypes.length > 0 ? intent.entityTypes : heuristicAnalysis.entityTypes,
+      };
+    }
+
+    return intent;
   }
 }
