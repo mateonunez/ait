@@ -14,10 +14,12 @@ export type * from "./types/services/connector.service.interface";
 
 // Constants
 export * from "./shared/constants/ait.constant";
+export { SUPPORTED_VENDORS } from "@ait/core";
 
 // OAuth
 export type * from "./shared/auth/lib/oauth/connector.oauth";
 export * from "./shared/auth/lib/oauth/connector.oauth";
+export { clearOAuthData, getOAuthData } from "./shared/auth/lib/oauth/connector.oauth.utils";
 
 // Base Classes & Abstracts
 export * from "./services/connector.service.base.abstract";

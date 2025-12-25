@@ -15,6 +15,7 @@ import slackRoutes from "./routes/gateway.slack.routes";
 import spotifyRoutes from "./routes/gateway.spotify.routes";
 import suggestionsRoutes from "./routes/gateway.suggestions.routes";
 import xRoutes from "./routes/gateway.x.routes";
+import connectorsRoutes from "./routes/gateway.connectors.routes";
 import { initializeCacheProvider } from "./services/redis-cache.provider";
 
 const redisUrl = process.env.REDIS_URL;
@@ -38,6 +39,7 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(discoveryRoutes, { prefix: "/api/discovery" });
   server.register(insightsRoutes, { prefix: "/api/insights" });
   server.register(suggestionsRoutes, { prefix: "/api/suggestions" });
+  server.register(connectorsRoutes, { prefix: "/api/connectors" });
 
   try {
     await server.listen({ port, host: "0.0.0.0" });

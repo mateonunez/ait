@@ -9,10 +9,6 @@ import {
   updateTraceInput,
 } from "./telemetry.middleware";
 
-/**
- * Configuration options for creating a telemetry context.
- * Generic enough to support text generation, embeddings, tool execution, etc.
- */
 export interface GenerationTelemetryOptions {
   name: string;
   enableTelemetry?: boolean;
@@ -22,9 +18,6 @@ export interface GenerationTelemetryOptions {
   metadata?: SpanMetadata;
 }
 
-/**
- * Input data to record with the trace.
- */
 export interface GenerationTelemetryInput {
   prompt?: string;
   messages?: ChatMessage[];
@@ -34,9 +27,6 @@ export interface GenerationTelemetryInput {
   [key: string]: unknown;
 }
 
-/**
- * Output data to record when ending the trace.
- */
 export interface GenerationTelemetryOutput {
   response?: string;
   chunkCount?: number;
@@ -45,9 +35,6 @@ export interface GenerationTelemetryOutput {
   [key: string]: unknown;
 }
 
-/**
- * Error metadata for failed traces.
- */
 export interface GenerationTelemetryErrorMetadata {
   errorCategory?: string;
   errorSeverity?: string;
@@ -94,7 +81,6 @@ export class GenerationTelemetryContext {
     if (!this._traceContext) return;
 
     const sanitizedInput: Record<string, unknown> = { ...input };
-    // Convert tools to just names if provided as Record
     if (input.tools && typeof input.tools === "object" && !Array.isArray(input.tools)) {
       sanitizedInput.tools = Object.keys(input.tools);
     }
@@ -123,9 +109,6 @@ export class GenerationTelemetryContext {
   }
 }
 
-/**
- * Factory function to create telemetry context with common options pattern.
- */
 export function createGenerationTelemetry(options: GenerationTelemetryOptions): GenerationTelemetryContext {
   return new GenerationTelemetryContext(options);
 }

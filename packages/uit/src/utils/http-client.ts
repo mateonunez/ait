@@ -26,7 +26,7 @@ export async function apiGet<T>(url: string, options?: ApiGetOptions): Promise<A
   return { ok: true, data: result.value.data as unknown as T, status: result.value.status };
 }
 
-export async function apiPost<T>(url: string, body: unknown): Promise<ApiResponse<T>> {
+export async function apiPost<T, B = unknown>(url: string, body?: B): Promise<ApiResponse<T>> {
   const result = await requestJson<T>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -3,6 +3,7 @@ import { Route, Switch } from "wouter";
 import { AIChatDialog } from "./components/ai-chat-dialog";
 import { useChatDialog } from "./contexts/chat.context";
 import { IntegrationsProvider } from "./contexts/integrations.context";
+import ConnectionsPage from "./pages/connections-page";
 import HomePage from "./pages/home-page";
 import GitHubPage from "./pages/integrations/github-page";
 import GooglePage from "./pages/integrations/google-page";
@@ -20,6 +21,7 @@ export default function App() {
     <IntegrationsProvider>
       <Switch>
         <Route path="/" component={HomePage} />
+        <Route path="/connections" component={ConnectionsPage} />
         <Route path="/integrations/github" component={GitHubPage} />
         <Route path="/integrations/spotify" component={SpotifyPage} />
         <Route path="/integrations/x" component={XPage} />

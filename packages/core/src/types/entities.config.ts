@@ -1,7 +1,9 @@
 import type { EntityType } from "./entities";
 import { VALID_ENTITY_TYPES } from "./entities";
 
-export type IntegrationVendor = "spotify" | "github" | "linear" | "x" | "notion" | "slack" | "google";
+export const SUPPORTED_VENDORS = ["spotify", "github", "linear", "x", "notion", "slack", "google"] as const;
+
+export type IntegrationVendor = (typeof SUPPORTED_VENDORS)[number];
 
 export interface EntityMetadata {
   label: string;

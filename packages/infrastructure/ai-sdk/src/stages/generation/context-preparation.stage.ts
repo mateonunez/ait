@@ -26,7 +26,6 @@ export class ContextPreparationStage implements IPipelineStage<GenerationState, 
       };
     }
 
-    // Input documents come from the RAG pipeline execution result
     const documents = input.ragResult?.documents || [];
 
     const endSpan = context.traceContext
@@ -42,7 +41,7 @@ export class ContextPreparationStage implements IPipelineStage<GenerationState, 
 
     try {
       const builtContext = await this.contextManager.assembleContext({
-        systemInstructions: "", // System prompt is handled separately in PromptOrchestrationStage
+        systemInstructions: "",
         messages: input.messages || [],
         retrievedDocs: documents as Document<BaseMetadata>[],
       });
@@ -76,7 +75,6 @@ export class ContextPreparationStage implements IPipelineStage<GenerationState, 
         error: error instanceof Error ? error.message : String(error),
       });
 
-      // Fallback
       return {
         ...input,
         ragContext: "",

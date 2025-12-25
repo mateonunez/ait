@@ -1,4 +1,4 @@
-import { type ConnectorLinearService, connectorServiceFactory } from "@ait/connectors";
+import { type ConnectorLinearService, connectorServiceFactory, clearOAuthData } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -68,6 +68,16 @@ export default async function linearRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await clearOAuthData(connectorType);
+      reply.send({ success: true, message: "Linear disconnected successfully." });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Linear.");
+      reply.status(500).send({ error: "Failed to disconnect Linear." });
+    }
+  });
 
   fastify.get("/issues", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
