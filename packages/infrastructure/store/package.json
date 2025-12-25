@@ -1,0 +1,28 @@
+{
+  "name": "@ait/store",
+  "version": "1.0.0",
+  "description": "AIt's internal application data store - repositories and persistence logic",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc -p ./tsconfig.build.json --watch",
+    "build": "tsc -p ./tsconfig.build.json",
+    "prepare": "pnpm build",
+    "clean": "rm -rf dist coverage",
+    "lint": "biome format && biome lint && biome check",
+    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write"
+  },
+  "keywords": ["store", "persistence", "internal"],
+  "author": "@mateonunez <mateonunez95@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@ait/core": "workspace:*",
+    "@ait/postgres": "workspace:*",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.7"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
