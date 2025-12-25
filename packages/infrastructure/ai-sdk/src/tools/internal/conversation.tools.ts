@@ -1,3 +1,4 @@
+import type { MessageRole } from "@ait/core";
 import { getConversationService } from "@ait/store";
 import { z } from "zod";
 
@@ -14,12 +15,12 @@ export function createConversationTools() {
         const conversations = await conversationService.listConversations(userId);
 
         return {
-          conversations: conversations.map((c) => ({
-            id: c.id,
-            title: c.title || "Untitled",
-            createdAt: c.createdAt,
-            updatedAt: c.updatedAt,
-            metadata: c.metadata,
+          conversations: conversations.map((conversation: any) => ({
+            id: conversation.id,
+            title: conversation.title || "Untitled",
+            createdAt: conversation.createdAt,
+            updatedAt: conversation.updatedAt,
+            metadata: conversation.metadata,
           })),
           count: conversations.length,
         };
@@ -50,13 +51,14 @@ export function createConversationTools() {
             updatedAt: result.conversation.updatedAt,
             metadata: result.conversation.metadata,
           },
-          messages: result.messages.map((m) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            createdAt: m.createdAt,
-            metadata: m.metadata,
-            traceId: m.traceId,
+          messages: result.messages.map((message: any) => ({
+            id: message.id,
+            conversationId: message.conversationId,
+            role: message.role as MessageRole,
+            content: message.content,
+            createdAt: message.createdAt,
+            metadata: message.metadata as Record<string, any> | null,
+            traceId: message.traceId,
           })),
           messageCount: result.messages.length,
         };

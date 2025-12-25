@@ -1,3 +1,5 @@
+import type { MessageRole } from "./streaming";
+
 export interface Conversation {
   id: string;
   title: string | null;
@@ -10,7 +12,7 @@ export interface Conversation {
 export interface Message {
   id: string;
   conversationId: string;
-  role: "user" | "assistant" | "system" | "tool";
+  role: MessageRole;
   content: string;
   metadata: Record<string, any> | null;
   traceId: string | null;
