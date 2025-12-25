@@ -82,7 +82,7 @@ export {
   type SparseVector,
 } from "./services/embeddings/sparse-vector.service";
 
-export type { ChatMessage, MessageRole } from "./types/chat";
+export type { ChatMessage } from "./types/chat";
 export { formatConversationHistory } from "./utils/chat.utils";
 export type { Tool, ToolResult } from "./types/tools";
 export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";

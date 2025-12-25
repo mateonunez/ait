@@ -52,7 +52,7 @@ export const MODEL_REGISTRY = new Map<string, ModelMetadata>([
       supportsTools: true,
       temperature: 0.7,
       topP: 0.9,
-      topK: 10,
+      topK: 40,
     }),
   ],
   [

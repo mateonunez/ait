@@ -190,9 +190,9 @@ export const STAGGER_ANIMATION = {
  */
 export function getServiceGlow(service: ServiceType, intensity: "sm" | "md" | "lg" = "md"): string {
   const glowSize = {
-    sm: "hover:shadow-lg",
-    md: "hover:shadow-xl",
-    lg: "hover:shadow-2xl",
+    sm: "hover:shadow-md",
+    md: "hover:shadow-lg",
+    lg: "hover:shadow-xl",
   };
   return `${glowSize[intensity]} ${SERVICE_COLORS[service].glow}`;
 }

@@ -28,7 +28,7 @@ export const AIT_SERVICES: Item[] = [
     route: "/integrations/spotify",
   },
   {
-    id: "x-twitter",
+    id: "x",
     title: "X (Twitter)",
     description: "Latest tweets",
     color: "#14171A",
@@ -69,7 +69,7 @@ export const AIT_SERVICES: Item[] = [
     color: "#FF0000",
     size: "full",
     disabled: false,
-    route: "/integrations/google",
+    route: "/integrations/google?tab=subscriptions",
   },
   {
     id: "notion",

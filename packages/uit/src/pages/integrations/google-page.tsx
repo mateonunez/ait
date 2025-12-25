@@ -25,7 +25,11 @@ const TABS = [
 
 export default function GooglePage() {
   const { fetchEntityData, refreshVendor } = useIntegrationsContext();
-  const [activeTab, setActiveTab] = useState("events");
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    return tab && TABS.some((t) => t.id === tab) ? tab : "events";
+  });
   const [events, setEvents] = useState<GoogleCalendarEventEntity[]>([]);
   const [calendars, setCalendars] = useState<GoogleCalendarCalendarEntity[]>([]);
   const [subscriptions, setSubscriptions] = useState<GoogleYouTubeSubscriptionEntity[]>([]);
@@ -85,6 +89,14 @@ export default function GooglePage() {
   useEffect(() => {
     fetchData(activeTab, currentPage);
   }, [fetchData, activeTab, currentPage]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab && tab !== activeTab && TABS.some((t) => t.id === tab)) {
+      setActiveTab(tab);
+    }
+  }, [activeTab]);
 
   const renderContent = () => {
     if (isLoading) {

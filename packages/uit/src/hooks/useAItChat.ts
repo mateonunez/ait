@@ -1,8 +1,7 @@
 import { getConversation, sendMessage } from "@/services/chat.service";
 import { createEmptyMetadata } from "@/utils/stream-parser.utils";
 import { calculateConversationTokens } from "@/utils/token-counter.utils";
-import type { MessageRole } from "@ait/ai-sdk";
-import type { AggregatedMetadata, ChatMessageWithMetadata } from "@ait/core";
+import type { AggregatedMetadata, ChatMessageWithMetadata, MessageRole } from "@ait/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UseAItChatOptions {
