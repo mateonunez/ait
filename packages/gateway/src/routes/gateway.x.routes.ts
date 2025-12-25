@@ -1,4 +1,4 @@
-import { type ConnectorXService, connectorServiceFactory, clearOAuthData } from "@ait/connectors";
+import { type ConnectorXService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {

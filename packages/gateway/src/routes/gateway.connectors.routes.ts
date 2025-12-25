@@ -1,4 +1,4 @@
-import { getOAuthData, SUPPORTED_VENDORS } from "@ait/connectors";
+import { SUPPORTED_VENDORS, getOAuthData } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 export interface ConnectionStatus {

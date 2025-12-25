@@ -2,6 +2,7 @@ import "dotenv/config";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
 import chatRoutes from "./routes/gateway.chat.routes";
+import connectorsRoutes from "./routes/gateway.connectors.routes";
 import discoveryRoutes from "./routes/gateway.discovery.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
 import githubRoutes from "./routes/gateway.github.routes";
@@ -15,7 +16,6 @@ import slackRoutes from "./routes/gateway.slack.routes";
 import spotifyRoutes from "./routes/gateway.spotify.routes";
 import suggestionsRoutes from "./routes/gateway.suggestions.routes";
 import xRoutes from "./routes/gateway.x.routes";
-import connectorsRoutes from "./routes/gateway.connectors.routes";
 import { initializeCacheProvider } from "./services/redis-cache.provider";
 
 const redisUrl = process.env.REDIS_URL;

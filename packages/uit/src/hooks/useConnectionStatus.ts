@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
 import { type ConnectionStatus, type ConnectionsStatusMap, connectionsService } from "@/services/connections.service";
 import type { IntegrationVendor } from "@ait/core";
 import { getLogger } from "@ait/core";
+import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
 
@@ -46,17 +46,20 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): U
     }
   }, [enabled]);
 
-  const disconnect = useCallback(async (vendor: IntegrationVendor): Promise<boolean> => {
-    try {
-      await connectionsService.disconnect(vendor);
-      // Refetch status after disconnect
-      await fetchStatus();
-      return true;
-    } catch (err) {
-      logger.error(`Failed to disconnect ${vendor}:`, { error: err });
-      return false;
-    }
-  }, [fetchStatus]);
+  const disconnect = useCallback(
+    async (vendor: IntegrationVendor): Promise<boolean> => {
+      try {
+        await connectionsService.disconnect(vendor);
+        // Refetch status after disconnect
+        await fetchStatus();
+        return true;
+      } catch (err) {
+        logger.error(`Failed to disconnect ${vendor}:`, { error: err });
+        return false;
+      }
+    },
+    [fetchStatus],
+  );
 
   const getVendorStatus = useCallback(
     (vendor: IntegrationVendor): ConnectionStatus | null => {

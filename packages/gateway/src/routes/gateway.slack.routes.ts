@@ -1,4 +1,4 @@
-import { type ConnectorSlackService, connectorServiceFactory, clearOAuthData } from "@ait/connectors";
+import { type ConnectorSlackService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {

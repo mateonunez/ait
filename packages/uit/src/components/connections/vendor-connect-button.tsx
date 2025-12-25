@@ -1,17 +1,20 @@
 import { cn } from "@/styles/utils";
-import { Loader2 } from "lucide-react";
+import type { IntegrationVendor } from "@ait/core";
+import { Loader2, RefreshCw } from "lucide-react";
 import { Button } from "../ui/button";
 import { VENDOR_COLORS, VENDOR_ICONS, VENDOR_NAMES } from "./vendor-icons";
-import type { IntegrationVendor } from "@ait/core";
 
-interface VendorConnectButtonProps {
+export interface VendorConnectButtonProps {
   vendor: IntegrationVendor;
   isConnected: boolean;
   isLoading?: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
   className?: string;
+  reconnectMode?: boolean;
 }
+
+export type VendorType = IntegrationVendor;
 
 export function VendorConnectButton({
   vendor,
@@ -20,6 +23,7 @@ export function VendorConnectButton({
   onConnect,
   onDisconnect,
   className,
+  reconnectMode = false,
 }: VendorConnectButtonProps) {
   const Icon = VENDOR_ICONS[vendor];
   const colors = VENDOR_COLORS[vendor];
@@ -27,12 +31,26 @@ export function VendorConnectButton({
 
   const handleClick = () => {
     if (isLoading) return;
-    if (isConnected) {
+    if (isConnected && !reconnectMode) {
       onDisconnect();
     } else {
       onConnect();
     }
   };
+
+  // Reconnect mode - show prominent reconnect button
+  if (reconnectMode) {
+    return (
+      <Button
+        onClick={handleClick}
+        disabled={isLoading}
+        className={cn("gap-2 min-w-[140px] bg-amber-500 hover:bg-amber-600 text-white", className)}
+      >
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+        <span>Reconnect</span>
+      </Button>
+    );
+  }
 
   if (isConnected) {
     return (
@@ -42,11 +60,7 @@ export function VendorConnectButton({
         disabled={isLoading}
         className={cn("gap-2 min-w-[140px]", className)}
       >
-        {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Icon className="h-4 w-4" />
-        )}
+        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
         <span>Disconnect</span>
       </Button>
     );
@@ -75,14 +89,8 @@ export function VendorConnectButton({
           : undefined
       }
     >
-      {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
-      ) : (
-        <Icon className="h-4 w-4" />
-      )}
-      <span>
-        {vendor === "slack" ? `Add to ${name}` : `Sign in with ${name}`}
-      </span>
+      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
+      <span>{vendor === "slack" ? `Add to ${name}` : `Sign in with ${name}`}</span>
     </Button>
   );
 }

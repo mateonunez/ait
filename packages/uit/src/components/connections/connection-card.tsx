@@ -1,6 +1,7 @@
 import type { ConnectionStatus } from "@/services/connections.service";
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
+import type { IntegrationVendor } from "@ait/core";
 import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
@@ -8,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Skeleton } from "../ui/skeleton";
 import { VendorConnectButton } from "./vendor-connect-button";
 import { VENDOR_COLORS, VENDOR_ICONS, VENDOR_NAMES } from "./vendor-icons";
-import type { IntegrationVendor } from "@ait/core";
 
 interface ConnectionCardProps {
   vendor: IntegrationVendor;
@@ -58,16 +58,10 @@ export function ConnectionCard({
   return (
     <Card className={cn("relative overflow-hidden", className)}>
       {/* Colored accent bar */}
-      <div
-        className="absolute top-0 left-0 right-0 h-1"
-        style={{ backgroundColor: colors.bg }}
-      />
+      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: colors.bg }} />
 
       <CardHeader className="flex flex-row items-center gap-4 pb-2 pt-4">
-        <div
-          className="flex h-10 w-10 items-center justify-center rounded-lg"
-          style={{ backgroundColor: colors.bg }}
-        >
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: colors.bg }}>
           <Icon className="h-5 w-5" style={{ color: colors.text }} />
         </div>
 
@@ -75,7 +69,10 @@ export function ConnectionCard({
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">{name}</CardTitle>
             {isConnected ? (
-              <Badge variant="default" className="gap-1 bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30">
+              <Badge
+                variant="default"
+                className="gap-1 bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30"
+              >
                 <CheckCircle className="h-3 w-3" />
                 Connected
               </Badge>
@@ -88,9 +85,7 @@ export function ConnectionCard({
           </div>
 
           {isConnected && status?.lastSync && (
-            <CardDescription className="mt-1">
-              Last synced: {formatRelativeTime(status.lastSync)}
-            </CardDescription>
+            <CardDescription className="mt-1">Last synced: {formatRelativeTime(status.lastSync)}</CardDescription>
           )}
         </div>
       </CardHeader>
@@ -114,15 +109,28 @@ export function ConnectionCard({
           </Alert>
         )}
 
-        {/* Connect/Disconnect button */}
-        <VendorConnectButton
-          vendor={vendor}
-          isConnected={isConnected}
-          isLoading={isLoading}
-          onConnect={onConnect}
-          onDisconnect={onDisconnect}
-          className="w-full"
-        />
+        {/* Reconnect button (when expiring) + Disconnect button */}
+        <div className="flex flex-col gap-2">
+          {isExpiringSoon && isConnected && (
+            <VendorConnectButton
+              vendor={vendor}
+              isConnected={false}
+              isLoading={isLoading}
+              onConnect={onConnect}
+              onDisconnect={onDisconnect}
+              className="w-full"
+              reconnectMode
+            />
+          )}
+          <VendorConnectButton
+            vendor={vendor}
+            isConnected={isConnected}
+            isLoading={isLoading}
+            onConnect={onConnect}
+            onDisconnect={onDisconnect}
+            className="w-full"
+          />
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,6 +1,7 @@
 import "./App.css";
 import { Route, Switch } from "wouter";
 import { AIChatDialog } from "./components/ai-chat-dialog";
+import { SidebarLayout } from "./components/sidebar-layout";
 import { useChatDialog } from "./contexts/chat.context";
 import { IntegrationsProvider } from "./contexts/integrations.context";
 import ConnectionsPage from "./pages/connections-page";
@@ -19,25 +20,26 @@ export default function App() {
 
   return (
     <IntegrationsProvider>
-      <Switch>
-        <Route path="/" component={HomePage} />
-        <Route path="/connections" component={ConnectionsPage} />
-        <Route path="/integrations/github" component={GitHubPage} />
-        <Route path="/integrations/spotify" component={SpotifyPage} />
-        <Route path="/integrations/x" component={XPage} />
-        <Route path="/integrations/linear" component={LinearPage} />
-        <Route path="/integrations/notion" component={NotionPage} />
-        <Route path="/integrations/slack" component={SlackPage} />
-        <Route path="/integrations/google" component={GooglePage} />
-        <Route path="/stats" component={StatsPage} />
-        <Route>
-          <div className="min-h-dvh flex items-center justify-center">
-            <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
-          </div>
-        </Route>
-      </Switch>
+      <SidebarLayout>
+        <Switch>
+          <Route path="/" component={HomePage} />
+          <Route path="/connections" component={ConnectionsPage} />
+          <Route path="/integrations/github" component={GitHubPage} />
+          <Route path="/integrations/spotify" component={SpotifyPage} />
+          <Route path="/integrations/x" component={XPage} />
+          <Route path="/integrations/linear" component={LinearPage} />
+          <Route path="/integrations/notion" component={NotionPage} />
+          <Route path="/integrations/slack" component={SlackPage} />
+          <Route path="/integrations/google" component={GooglePage} />
+          <Route path="/stats" component={StatsPage} />
+          <Route>
+            <div className="min-h-dvh flex items-center justify-center">
+              <h1 className="text-4xl font-bold">404 - Page Not Found</h1>
+            </div>
+          </Route>
+        </Switch>
+      </SidebarLayout>
 
-      {/* Global AI Chat Dialog */}
       <AIChatDialog open={isOpen} onOpenChange={(open) => !open && closeChat()} />
     </IntegrationsProvider>
   );
