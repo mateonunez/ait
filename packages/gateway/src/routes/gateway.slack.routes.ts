@@ -1,4 +1,4 @@
-import { type ConnectorSlackService, connectorServiceFactory } from "@ait/connectors";
+import { type ConnectorSlackService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -80,6 +80,16 @@ export default async function slackRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await clearOAuthData(connectorType);
+      reply.send({ success: true, message: "Slack disconnected successfully." });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Slack.");
+      reply.status(500).send({ error: "Failed to disconnect Slack." });
+    }
+  });
 
   fastify.get("/messages", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {

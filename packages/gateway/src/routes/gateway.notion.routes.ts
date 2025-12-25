@@ -1,4 +1,4 @@
-import { type ConnectorNotionService, connectorServiceFactory } from "@ait/connectors";
+import { type ConnectorNotionService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -67,9 +67,6 @@ export default async function notionRoutes(fastify: FastifyInstance) {
       try {
         await notionService.connector.connect(code);
 
-        // Data fetching is now handled separately via the /refresh endpoint or background jobs
-        // to avoid timeout issues during the auth callback.
-
         reply.send({
           success: true,
           message: "Authentication successful. You can close this window.",
@@ -81,6 +78,16 @@ export default async function notionRoutes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await clearOAuthData(connectorType);
+      reply.send({ success: true, message: "Notion disconnected successfully." });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Notion.");
+      reply.status(500).send({ error: "Failed to disconnect Notion." });
+    }
+  });
+
   fastify.get("/pages", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const pages = await notionService.fetchPages();
@@ -91,7 +98,6 @@ export default async function notionRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Paginated data route
   fastify.get("/data/pages", async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
     try {
       const page = Number.parseInt(request.query.page || "1", 10);
@@ -105,8 +111,6 @@ export default async function notionRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Refresh endpoint with optional entity filter
-  // Usage: POST /refresh?entities=pages or POST /refresh (all entities)
   fastify.post(
     "/refresh",
     async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {

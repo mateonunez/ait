@@ -72,18 +72,15 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
 
     const effectiveQuery = input.retrievalQuery || input.query;
 
-    // Build typeFilter FIRST to include temporal context in cache key
     const typeFilter =
       input.typeFilter ??
       (input.intent ? this._typeFilterService.inferTypes(undefined, input.query, { intent: input.intent }) : undefined);
 
-    // Build cache context including collections AND temporal range
     const collectionContext = this._buildCacheContext(selectedCollections, typeFilter?.timeRange);
 
     if (this._enableCache) {
       logger.debug("Checking semantic cache", { query: effectiveQuery.slice(0, 50), collectionContext });
 
-      // Pass query and context separately - query gets semantically normalized, context is preserved
       const cachedEntry = await this._semanticCache.get<SemanticRetrievalCacheEntry>(
         effectiveQuery,
         collectionContext,
@@ -156,8 +153,6 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       }
     }
 
-    // typeFilter already built above before cache check
-
     const allDocuments = await this._multiQueryRetrieval.retrieveAcrossCollections(
       this._multiCollectionProvider,
       selectedCollections,
@@ -166,14 +161,12 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       context.traceContext,
     );
 
-    // Apply relevance floor to filter out low-quality results
     const relevanceFloor = this._relevanceFloor;
     const filteredDocuments = allDocuments.filter((doc) => {
       const score = (doc.metadata as { score?: number }).score;
       return score === undefined || score >= relevanceFloor;
     });
 
-    // Log warning if majority of documents were filtered out
     const filteredCount = allDocuments.length - filteredDocuments.length;
     if (filteredCount > 0 && filteredCount >= allDocuments.length * 0.5) {
       logger.warn("High proportion of documents filtered due to low relevance", {
@@ -238,8 +231,6 @@ export class RetrievalStage implements IPipelineStage<RetrievalInput, RetrievalO
       .sort()
       .join(",");
 
-    // Include date range in cache key for temporal queries
-    // Use just the date portion (YYYY-MM-DD) to handle timezone differences
     if (timeRange?.from || timeRange?.to) {
       const fromDate = timeRange.from ? timeRange.from.slice(0, 10) : "";
       const toDate = timeRange.to ? timeRange.to.slice(0, 10) : "";

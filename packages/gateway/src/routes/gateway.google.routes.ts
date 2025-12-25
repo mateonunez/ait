@@ -1,4 +1,4 @@
-import { type ConnectorGoogleService, connectorServiceFactory } from "@ait/connectors";
+import { type ConnectorGoogleService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -72,6 +72,16 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await clearOAuthData(connectorType);
+      reply.send({ success: true, message: "Google disconnected successfully." });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Google.");
+      reply.status(500).send({ error: "Failed to disconnect Google." });
+    }
+  });
 
   // Fetch events from API
   fastify.get("/events", async (_request: FastifyRequest, reply: FastifyReply) => {

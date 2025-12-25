@@ -6,10 +6,6 @@ import type { ToolExecutionInput, ToolExecutionOutput } from "../../types/stages
 
 const logger = getLogger();
 
-/**
- * Pipeline stage wrapper for tool execution.
- * Delegates to ToolExecutionService and adds telemetry.
- */
 export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, ToolExecutionOutput> {
   readonly name = "tool-execution";
 
@@ -35,7 +31,6 @@ export class ToolExecutionStage implements IPipelineStage<ToolExecutionInput, To
         )
       : null;
 
-    // Delegate to the service
     const result = await this.toolExecutionService.executeToolLoop({
       userPrompt: input.currentPrompt,
       systemMessage: input.systemMessage,

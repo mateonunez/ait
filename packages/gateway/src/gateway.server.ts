@@ -2,6 +2,7 @@ import "dotenv/config";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
 import chatRoutes from "./routes/gateway.chat.routes";
+import connectorsRoutes from "./routes/gateway.connectors.routes";
 import discoveryRoutes from "./routes/gateway.discovery.routes";
 import feedbackRoutes from "./routes/gateway.feedback.routes";
 import githubRoutes from "./routes/gateway.github.routes";
@@ -38,6 +39,7 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(discoveryRoutes, { prefix: "/api/discovery" });
   server.register(insightsRoutes, { prefix: "/api/insights" });
   server.register(suggestionsRoutes, { prefix: "/api/suggestions" });
+  server.register(connectorsRoutes, { prefix: "/api/connectors" });
 
   try {
     await server.listen({ port, host: "0.0.0.0" });

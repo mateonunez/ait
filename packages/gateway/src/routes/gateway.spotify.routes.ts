@@ -1,4 +1,4 @@
-import { type ConnectorSpotifyService, connectorServiceFactory } from "@ait/connectors";
+import { type ConnectorSpotifyService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -77,6 +77,17 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  // Disconnect endpoint - revokes and removes OAuth token
+  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await clearOAuthData(connectorType);
+      reply.send({ success: true, message: "Spotify disconnected successfully." });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Spotify.");
+      reply.status(500).send({ error: "Failed to disconnect Spotify." });
+    }
+  });
 
   // Paginated data routes
   fastify.get(

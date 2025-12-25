@@ -1,4 +1,4 @@
-import { type ConnectorGitHubService, connectorServiceFactory } from "@ait/connectors";
+import { type ConnectorGitHubService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -64,6 +64,16 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       }
     },
   );
+
+  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await clearOAuthData(connectorType);
+      reply.send({ success: true, message: "GitHub disconnected successfully." });
+    } catch (err: unknown) {
+      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect GitHub.");
+      reply.status(500).send({ error: "Failed to disconnect GitHub." });
+    }
+  });
 
   fastify.get("/repositories", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
