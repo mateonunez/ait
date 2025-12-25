@@ -3,6 +3,7 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { useLayout } from "@/contexts/layout.context";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 
@@ -25,16 +26,21 @@ const PAGE_TITLES: Record<string, string> = {
 
 export function SidebarLayout({ children }: SidebarLayoutProps) {
   const [location] = useLocation();
-  const pageTitle = PAGE_TITLES[location] || "AIt";
+  const { headerActions, headerTitle } = useLayout();
+  const pageTitle = headerTitle || PAGE_TITLES[location] || "AIt";
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={false}>
       <AppSidebar />
       <SidebarInset className="min-w-0">
-        <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center gap-2 border-b bg-background px-4">
-          <SidebarTrigger className="-ml-1 hover:bg-accent" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <span className="text-sm font-medium text-muted-foreground">{pageTitle}</span>
+        <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center justify-between border-b bg-background px-4">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1 hover:bg-accent" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <span className="text-sm font-medium transition-all duration-200">{pageTitle}</span>
+          </div>
+
+          <div className="flex items-center gap-4">{headerActions}</div>
         </header>
         <div className="flex-1 overflow-auto min-h-0">{children}</div>
       </SidebarInset>

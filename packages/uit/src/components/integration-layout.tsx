@@ -2,8 +2,6 @@ import { cn } from "@/styles/utils";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import { AIChatButton } from "./ai-chat-button";
-import { ThemeToggle } from "./theme-toggle";
 import { Button } from "./ui/button";
 
 interface IntegrationLayoutProps {
@@ -62,13 +60,10 @@ export function IntegrationLayout({
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
             )}
-            <AIChatButton />
-            <ThemeToggle />
           </div>
         </div>
       </header>
 
-      {/* Content */}
       <main className={cn("container mx-auto py-4 sm:py-6 px-3 sm:px-4 md:px-6", className)}>{children}</main>
     </div>
   );

@@ -2,6 +2,7 @@ import type { SpotifyServiceInterface } from "../interfaces/spotify.service.inte
 import type { MCPClientManager } from "../mcp";
 import type { Tool } from "../types/tools";
 import { createSpotifyTools } from "./domains/spotify.tools";
+import { createConversationTools } from "./internal/conversation.tools";
 import { createAllMCPTools } from "./mcp";
 
 export { createSpotifyTools } from "./domains/spotify.tools";
@@ -10,6 +11,8 @@ export type { SpotifySearchResult } from "./domains/spotify.tools";
 
 export { createGitHubTools, githubGetFileSchema, githubSearchSchema } from "./domains/github.tools";
 export type { IGitHubFileRepositoryForTools, IGitHubDataSourceForTools } from "./domains/github.tools";
+
+export { createConversationTools } from "./internal/conversation.tools";
 
 export { createAllMCPTools, createMCPToolsForVendor, getMCPToolsSummary } from "./mcp";
 
@@ -22,19 +25,10 @@ export { createAllMCPTools, createMCPToolsForVendor, getMCPToolsSummary } from "
 export function createAllConnectorTools(spotifyService?: SpotifyServiceInterface): Record<string, Tool> {
   return {
     ...createSpotifyTools(spotifyService),
+    ...createConversationTools(),
   };
 }
 
-/**
- * Create all connector tools including MCP tools (async)
- *
- * This function creates tools from both:
- * 1. Local connector services (e.g., Spotify real-time playback)
- * 2. Connected MCP servers (e.g., Notion, GitHub write operations)
- *
- * @param spotifyService - Optional Spotify service for real-time playback tools
- * @param mcpManager - Optional MCP client manager for MCP tools
- */
 export async function createAllConnectorToolsWithMCP(
   spotifyService?: SpotifyServiceInterface,
   mcpManager?: MCPClientManager,

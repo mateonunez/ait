@@ -1,4 +1,4 @@
-export type MessageRole = "user" | "assistant" | "system";
+import type { MessageRole } from "@ait/core";
 
 export interface ChatMessage {
   id?: string;

@@ -3,13 +3,13 @@ import { GoalTrackerWidget } from "@/components/discovery/goal-tracker-widget";
 import { FloatingPromptButton } from "@/components/home/floating-prompt-button";
 import { HomeFeed } from "@/components/home/home-feed";
 import { IntegrationsList } from "@/components/integrations-list";
-import { useChatDialog } from "@/contexts/chat.context";
 import { InsightsProvider } from "@/contexts/insights.context";
 import { useHomepageData } from "@/hooks/useHomepageData";
 import { cn } from "@/styles/utils";
 import type { HomeSection as HomeSectionType } from "@/types/integrations.types";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 const animationVariants = {
   initial: { opacity: 0, y: 10 },
@@ -83,15 +83,15 @@ export default function HomePage() {
   const { sectionsData, isLoading, totalItems } = useHomepageData({
     sections: HOME_SECTIONS,
   });
-  const { isOpen, openChat } = useChatDialog();
+  const [, setLocation] = useLocation();
   const [timeRange] = useState<"week" | "month" | "year">("week");
 
   const handlePromptClick = () => {
-    openChat();
+    setLocation("/chat");
   };
 
   const handlePromptSubmit = () => {
-    openChat();
+    setLocation("/chat");
   };
 
   return (
@@ -122,7 +122,7 @@ export default function HomePage() {
             <IntegrationsList />
           </div>
 
-          <div className={cn("flex-1 overflow-y-auto custom-scrollbar", !isOpen && "pb-24 sm:pb-28")}>
+          <div className={cn("flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-28")}>
             <HomeFeed
               isLoading={isLoading}
               sections={HOME_SECTIONS}
@@ -136,7 +136,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <FloatingPromptButton isOpen={isOpen} onClick={handlePromptClick} onSubmit={handlePromptSubmit} />
+        <FloatingPromptButton onClick={handlePromptClick} onSubmit={handlePromptSubmit} />
       </motion.div>
     </InsightsProvider>
   );

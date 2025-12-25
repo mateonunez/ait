@@ -8,7 +8,7 @@ import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { GenerationState } from "../../types/stages";
 import type { Tool } from "../../types/tools";
-import { getAnalyticsService } from "../analytics/analytics.service";
+import { AnalyticsService, getAnalyticsService } from "../analytics/analytics.service";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
 
@@ -37,23 +37,38 @@ export interface GenerateOptions {
   messages?: ChatMessage[];
 }
 
-export interface GenerateStreamOptions {
-  prompt: string;
-  tools?: Record<string, Tool>;
-  maxToolRounds?: number;
-  enableRAG?: boolean;
-  messages?: ChatMessage[];
+export type TelemetryOptions = {
   enableTelemetry?: boolean;
   traceId?: string;
   userId?: string;
   sessionId?: string;
   tags?: string[];
   metadata?: Record<string, unknown>;
+};
+
+export interface GenerateStreamOptions {
+  prompt: string;
+  tools?: Record<string, Tool>;
+  maxToolRounds?: number;
+  enableRAG?: boolean;
+  messages?: ChatMessage[];
+  telemetryOptions?: TelemetryOptions;
+  enableMetadata?: boolean;
+}
+
+export interface GenerateTextOptions {
+  prompt: string;
+  messages?: ChatMessage[];
+  tools?: Record<string, Tool>;
+  maxToolRounds?: number;
+  enableRAG?: boolean;
+  telemetryOptions?: TelemetryOptions;
   enableMetadata?: boolean;
 }
 
 export interface ITextGenerationService {
   generateStream(options: GenerateStreamOptions): AsyncGenerator<string | StreamEvent>;
+  generateText(options: GenerateTextOptions): Promise<string>;
 }
 
 export class TextGenerationService implements ITextGenerationService {
@@ -61,6 +76,7 @@ export class TextGenerationService implements ITextGenerationService {
   private readonly _pipeline: TextGenerationPipeline;
   private readonly _metadataEmitter: MetadataEmitterService;
   private readonly _metadataStage: MetadataExtractionStage;
+  private readonly _analytics: AnalyticsService;
 
   constructor(config: TextGenerationConfig = {}) {
     const client = getAItClient();
@@ -75,6 +91,7 @@ export class TextGenerationService implements ITextGenerationService {
 
     this._metadataEmitter = new MetadataEmitterService();
     this._metadataStage = new MetadataExtractionStage();
+    this._analytics = new AnalyticsService();
   }
 
   /**
@@ -88,11 +105,11 @@ export class TextGenerationService implements ITextGenerationService {
 
     const telemetry = createGenerationTelemetry({
       name: "text-generation",
-      enableTelemetry: options.enableTelemetry,
-      userId: options.userId,
-      sessionId: options.sessionId,
-      tags: options.tags,
-      metadata: options.metadata as any,
+      enableTelemetry: options.telemetryOptions?.enableTelemetry,
+      userId: options.telemetryOptions?.userId,
+      sessionId: options.telemetryOptions?.sessionId,
+      tags: options.telemetryOptions?.tags,
+      metadata: options.telemetryOptions?.metadata as any,
     });
 
     telemetry.recordInput({
@@ -154,9 +171,93 @@ export class TextGenerationService implements ITextGenerationService {
         responseLength: fullResponse.length,
       });
 
-      this._trackAnalytics(telemetry.getDuration(), fullResponse, options.enableRAG ?? true);
+      this._trackAnalytics(telemetry.getDuration(), fullResponse);
     } catch (error: unknown) {
       yield* this._handleError(error, telemetry);
+    }
+  }
+
+  public async generateText(options: GenerateTextOptions): Promise<string> {
+    if (!options.prompt?.trim()) {
+      throw new TextGenerationError("Prompt cannot be empty");
+    }
+
+    const telemetry = createGenerationTelemetry({
+      name: "text-generation",
+      enableTelemetry: options.telemetryOptions?.enableTelemetry,
+      userId: options.telemetryOptions?.userId,
+      sessionId: options.telemetryOptions?.sessionId,
+      tags: options.telemetryOptions?.tags,
+      metadata: options.telemetryOptions?.metadata as any,
+    });
+
+    telemetry.recordInput({
+      prompt: options.prompt,
+      messages: options.messages,
+    });
+
+    try {
+      logger.info(`Starting text generation for prompt: "${options.prompt.slice(0, 50)}..."`);
+
+      // 1. Execute Pipeline
+      const state = await this._pipeline.execute(
+        {
+          prompt: options.prompt,
+          messages: options.messages || [],
+          tools: options.tools,
+          maxToolRounds: options.maxToolRounds,
+          enableRAG: options.enableRAG ?? true,
+          enableMetadata: options.enableMetadata ?? false,
+        },
+        { traceContext: telemetry.optionalContext },
+      );
+
+      logger.info("Generation pipeline completed successfully", {
+        hasIntent: !!state.intent,
+        needsRAG: state.intent?.needsRAG,
+        needsTools: state.intent?.needsTools,
+      });
+
+      // 2. Consume Stream (even for non-streaming, the stage returns a generator)
+      let fullResponse = "";
+      if (state.textStream) {
+        for await (const chunk of state.textStream) {
+          fullResponse += chunk;
+        }
+      }
+
+      // 3. Finalize & Extract Post-Generation Metadata (Suggestions, etc)
+      await this._finalize(state, fullResponse, telemetry);
+
+      telemetry.recordSuccess({
+        response: fullResponse,
+        responseLength: fullResponse.length,
+      });
+
+      this._trackAnalytics(telemetry.getDuration(), fullResponse);
+
+      return fullResponse;
+    } catch (error: unknown) {
+      // For generateText, we record and throw a proper error instead of yielding a message
+      const errorClassifier = getErrorClassificationService();
+      const classifiedError = errorClassifier.classify(error, "text-generation");
+
+      telemetry.recordError(error, {
+        errorCategory: classifiedError.category,
+        errorSeverity: classifiedError.severity,
+        errorFingerprint: classifiedError.fingerprint,
+      });
+
+      const analytics = getAnalyticsService();
+      analytics.trackRequest({
+        latencyMs: telemetry.getDuration(),
+        success: false,
+        error: classifiedError,
+      });
+
+      throw error instanceof TextGenerationError
+        ? error
+        : new TextGenerationError(`Text generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -211,15 +312,13 @@ export class TextGenerationService implements ITextGenerationService {
     });
   }
 
-  private _trackAnalytics(duration: number, response: string, enableRAG: boolean): void {
-    const analytics = getAnalyticsService();
-    const estimatedTokens = analytics.getCostTracking().estimateTokens(response);
+  private _trackAnalytics(duration: number, response: string): void {
+    const estimatedTokens = this._analytics.getCostTracking().estimateTokens(response);
 
-    analytics.trackRequest({
+    this._analytics.trackRequest({
       latencyMs: duration,
       success: true,
       generationTokens: estimatedTokens,
-      cacheHit: enableRAG,
     });
   }
 
@@ -238,8 +337,7 @@ export class TextGenerationService implements ITextGenerationService {
       suggestedAction: classifiedError.suggestedAction,
     });
 
-    const analytics = getAnalyticsService();
-    analytics.trackRequest({
+    this._analytics.trackRequest({
       latencyMs: telemetry.getDuration(),
       success: false,
       error: classifiedError,

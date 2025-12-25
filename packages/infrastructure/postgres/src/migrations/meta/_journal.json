@@ -218,6 +218,13 @@
       "when": 1765635676274,
       "tag": "0030_first_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1766684296304,
+      "tag": "0031_wild_echo",
+      "breakpoints": true
     }
   ]
 }
