@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "AIt's internal application data store - repositories and persistence logic",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "dev": "tsc -p ./tsconfig.build.json --watch",
     "build": "tsc -p ./tsconfig.build.json",
