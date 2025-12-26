@@ -52,7 +52,7 @@ const DEFAULT_CONFIG = {
   supportsTools: true,
   temperature: 0.7,
   topP: 0.9,
-  topK: 10,
+  topK: 40,
 };
 
 export const GENERATION_MODELS: Record<GenerationModelName, Omit<ModelSpec, "name">> = {

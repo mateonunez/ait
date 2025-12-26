@@ -2,6 +2,7 @@ import type { GitHubCommitEntity, GitHubCommitExternal } from "@ait/core";
 import type { GitHubCommitDataTarget } from "@ait/postgres";
 import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
+import { ensureDate } from "../utils/connector.mapper.utils";
 
 function parseCommitMessage(message: string): { subject: string; body: string | null } {
   const lines = message.split("\n");
@@ -69,7 +70,7 @@ const githubCommitMapping: ConnectorMapperDefinition<GitHubCommitExternal, GitHu
 
     authorDate: {
       external: (external) => (external.commit?.author?.date ? new Date(external.commit.author.date) : null),
-      domain: (domain) => domain.authorDate,
+      domain: (domain) => ensureDate(domain.authorDate),
       dataTarget: (dataTarget) => dataTarget.authorDate ?? null,
     },
 
@@ -87,7 +88,7 @@ const githubCommitMapping: ConnectorMapperDefinition<GitHubCommitExternal, GitHu
 
     committerDate: {
       external: (external) => (external.commit?.committer?.date ? new Date(external.commit.committer.date) : null),
-      domain: (domain) => domain.committerDate,
+      domain: (domain) => ensureDate(domain.committerDate),
       dataTarget: (dataTarget) => dataTarget.committerDate ?? null,
     },
 
@@ -200,6 +201,24 @@ const githubCommitMapping: ConnectorMapperDefinition<GitHubCommitExternal, GitHu
       },
       domain: (domain) => domain.metadata,
       dataTarget: (dataTarget) => (dataTarget.metadata as Record<string, unknown> | null) ?? null,
+    },
+
+    createdAt: {
+      external: (external) => {
+        const date = external.commit?.author?.date || null;
+        return date ? new Date(date) : null;
+      },
+      domain: (domain) => ensureDate(domain.createdAt),
+      dataTarget: (dataTarget) => dataTarget.createdAt ?? null,
+    },
+
+    updatedAt: {
+      external: (external) => {
+        const date = external.commit?.author?.date || null;
+        return date ? new Date(date) : null;
+      },
+      domain: (domain) => ensureDate(domain.updatedAt),
+      dataTarget: (dataTarget) => dataTarget.updatedAt ?? null,
     },
 
     __type: {

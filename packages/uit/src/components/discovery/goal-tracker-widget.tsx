@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInsights } from "@/contexts/insights.context";
 import { cn } from "@/styles/utils";
-import type { CreateGoalRequest, GoalData, GoalPeriod, GoalType } from "@ait/ai-sdk";
+import type { CreateGoalRequest, GoalData, GoalPeriod, GoalType } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { Calendar, ChevronRight, Edit2, Flame, Plus, Target, Trash2, TrendingUp, Trophy, Zap } from "lucide-react";
 import { useState } from "react";
@@ -508,7 +508,7 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, type: option.value }))}
+                  onClick={() => setFormData((prev: CreateGoalRequest) => ({ ...prev, type: option.value }))}
                   className={cn(
                     "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200",
                     formData.type === option.value
@@ -534,7 +534,12 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
                 type="number"
                 min="1"
                 value={formData.target}
-                onChange={(e) => setFormData((prev) => ({ ...prev, target: Number.parseInt(e.target.value, 10) || 1 }))}
+                onChange={(e) =>
+                  setFormData((prev: CreateGoalRequest) => ({
+                    ...prev,
+                    target: Number.parseInt(e.target.value, 10) || 1,
+                  }))
+                }
                 className="text-center text-lg font-semibold"
                 required
               />
@@ -546,7 +551,9 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
               </Label>
               <Select
                 value={formData.period}
-                onValueChange={(value) => setFormData((prev) => ({ ...prev, period: value as GoalPeriod }))}
+                onValueChange={(value) =>
+                  setFormData((prev: CreateGoalRequest) => ({ ...prev, period: value as GoalPeriod }))
+                }
               >
                 <SelectTrigger id="period">
                   <SelectValue />
@@ -572,7 +579,9 @@ function GoalFormModal({ isOpen, onClose, onSubmit, initialData, isEditing }: Go
               type="text"
               placeholder={`e.g., Morning ${selectedType?.label || "Activity"}`}
               value={formData.label || ""}
-              onChange={(e) => setFormData((prev) => ({ ...prev, label: e.target.value || undefined }))}
+              onChange={(e) =>
+                setFormData((prev: CreateGoalRequest) => ({ ...prev, label: e.target.value || undefined }))
+              }
             />
           </div>
 

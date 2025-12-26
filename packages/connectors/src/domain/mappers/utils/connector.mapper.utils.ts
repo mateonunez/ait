@@ -221,3 +221,24 @@ export function mapObjectToStringArray<T extends Record<string, any>>(
 
   return options.filterEmpty ? entries.filter((entry) => entry.trim().length > 0) : entries;
 }
+
+/**
+ * Safely converts a date value to a Date object.
+ * Handles Date objects, ISO strings, and null/undefined values.
+ *
+ * @param value The date value to convert (Date, string, null, or undefined)
+ * @returns A Date object if the value is valid, null otherwise
+ */
+export function ensureDate(value: Date | string | null | undefined): Date | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+  return null;
+}

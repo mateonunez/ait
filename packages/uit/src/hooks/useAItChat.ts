@@ -1,13 +1,15 @@
-import { sendMessage } from "@/services/chat.service";
+import { getConversation, sendMessage } from "@/services/chat.service";
 import { createEmptyMetadata } from "@/utils/stream-parser.utils";
 import { calculateConversationTokens } from "@/utils/token-counter.utils";
-import type { AggregatedMetadata, ChatMessageWithMetadata } from "@ait/core";
-import { useCallback, useMemo, useRef, useState } from "react";
+import type { AggregatedMetadata, ChatMessageWithMetadata, MessageRole } from "@ait/core";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UseAItChatOptions {
   initialMessages?: ChatMessageWithMetadata[];
   model?: string;
   enableMetadata?: boolean;
+  conversationId?: string;
+  onConversationCreated?: (conversationId: string) => void;
   onError?: (error: string) => void;
 }
 
@@ -24,25 +26,81 @@ export interface UseAItChatReturn {
   error: string | null;
   currentMetadata: AggregatedMetadata | null;
   tokenUsage: TokenUsage;
+  conversationId: string | null;
   sendMessage: (content: string) => Promise<void>;
   clearMessages: () => void;
+  loadConversation: (id: string) => Promise<void>;
   selectedModel: string;
   setSelectedModel: (modelId: string) => void;
 }
 
 export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
-  const { initialMessages = [], model: initialModel = "gpt-oss:20b-cloud", enableMetadata = true, onError } = options;
+  const {
+    initialMessages = [],
+    model: initialModel = "gpt-oss:20b-cloud",
+    enableMetadata = true,
+    conversationId: initialConversationId,
+    onConversationCreated,
+    onError,
+  } = options;
 
   const [messages, setMessages] = useState<ChatMessageWithMetadata[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentMetadata, setCurrentMetadata] = useState<AggregatedMetadata | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
-  // Persist session ID for the duration of the hook
+  const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
   const [sessionId] = useState(() => `session-${Date.now()}`);
 
   const currentMessageIdRef = useRef<string | null>(null);
   const currentMessageContentRef = useRef<string>("");
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setError(null);
+    setCurrentMetadata(null);
+    setConversationId(null);
+  }, []);
+
+  const loadConversation = useCallback(
+    async (id: string) => {
+      try {
+        setError(null);
+        setMessages([]); // Immediate clear for "ghost content"
+        setCurrentMetadata(null);
+        const data = await getConversation(id);
+
+        const transformedMessages: ChatMessageWithMetadata[] = data.messages.map((message) => ({
+          id: message.id,
+          role: message.role as MessageRole,
+          content: message.content,
+          metadata: message.metadata as any,
+          traceId: message.traceId || undefined,
+          createdAt: new Date(message.createdAt),
+        }));
+
+        setMessages(transformedMessages);
+        setConversationId(id);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to load conversation";
+        setError(errorMessage);
+        onError?.(errorMessage);
+      }
+    },
+    [onError],
+  );
+
+  // Sync state with prop/route changes
+  useEffect(() => {
+    if (initialConversationId) {
+      if (initialConversationId !== conversationId) {
+        loadConversation(initialConversationId);
+      }
+    } else if (conversationId) {
+      // If we had a conversation and now we don't (e.g. navigation to /chat), clear it
+      clearMessages();
+    }
+  }, [initialConversationId, conversationId, loadConversation, clearMessages]);
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -86,6 +144,7 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
           model: selectedModel,
           enableMetadata,
           sessionId,
+          conversationId: conversationId || undefined,
           onText: (text) => {
             currentMessageContentRef.current += text;
             setMessages((prev) =>
@@ -100,6 +159,11 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
             setMessages((prev) => prev.map((m) => (m.id === assistantMessageId ? { ...m, traceId: data.traceId } : m)));
             setCurrentMetadata(null);
             setIsLoading(false);
+            // Store conversationId if returned
+            if (data.conversationId && !conversationId) {
+              setConversationId(data.conversationId);
+              onConversationCreated?.(data.conversationId);
+            }
           },
           onError: (errorMessage) => {
             setError(errorMessage);
@@ -118,14 +182,8 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
         setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
       }
     },
-    [messages, isLoading, selectedModel, enableMetadata, onError, sessionId],
+    [messages, isLoading, selectedModel, enableMetadata, onError, sessionId, conversationId, onConversationCreated],
   );
-
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    setError(null);
-    setCurrentMetadata(null);
-  }, []);
 
   // Calculate cumulative token usage across conversation INCLUDING RAG context
   const tokenUsage = useMemo(() => {
@@ -152,8 +210,10 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
     error,
     currentMetadata,
     tokenUsage,
+    conversationId,
     sendMessage: handleSendMessage,
     clearMessages,
+    loadConversation,
     selectedModel,
     setSelectedModel,
   };

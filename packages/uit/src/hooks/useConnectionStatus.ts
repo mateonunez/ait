@@ -17,7 +17,7 @@ interface UseConnectionStatusReturn {
   refetch: () => Promise<void>;
   disconnect: (vendor: IntegrationVendor) => Promise<boolean>;
   getVendorStatus: (vendor: IntegrationVendor) => ConnectionStatus | null;
-  isExpiringSoon: (vendor: IntegrationVendor, hoursThreshold?: number) => boolean;
+  isExpiringSoon: (vendor: IntegrationVendor) => boolean;
 }
 
 const DEFAULT_POLLING_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -69,15 +69,9 @@ export function useConnectionStatus(options: UseConnectionStatusOptions = {}): U
   );
 
   const isExpiringSoon = useCallback(
-    (vendor: IntegrationVendor, hoursThreshold = 24): boolean => {
+    (vendor: IntegrationVendor): boolean => {
       const vendorStatus = status?.[vendor];
-      if (!vendorStatus?.expiresAt) return false;
-
-      const expiresAt = new Date(vendorStatus.expiresAt);
-      const now = new Date();
-      const hoursUntilExpiry = (expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-      return hoursUntilExpiry <= hoursThreshold && hoursUntilExpiry > 0;
+      return vendorStatus?.isExpiringSoon ?? false;
     },
     [status],
   );

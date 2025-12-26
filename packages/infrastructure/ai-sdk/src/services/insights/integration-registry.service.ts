@@ -1,332 +1,108 @@
-import { getLogger } from "@ait/core";
-
-// Define ConnectorType locally to avoid dependency on @ait/connectors
-// This matches the type from @ait/connectors
-export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "slack" | "google" | "youtube";
+import { ENTITY_METADATA, type EntityType, type IntegrationVendor, SUPPORTED_VENDORS, getLogger } from "@ait/core";
+import type { IntegrationVendorWithYoutube } from "@ait/store";
 
 const logger = getLogger();
 
-/**
- * Entity metadata for activity tracking
- */
-export interface EntityMetadata {
-  entityType: string;
-  displayName: string;
-  dateField: string | string[];
+export interface EntityFetchConfig {
+  entityType: EntityType;
   fetchMethod: string;
-  goalType?: string;
+  dateField: string | string[];
 }
 
-/**
- * Integration metadata for activity tracking - supports multiple entities per vendor
- */
-export interface IntegrationMetadata {
-  connectorType: ConnectorType;
-  displayName: string;
-  entities: EntityMetadata[];
-  // Primary entity for backward compatibility and default display
-  primaryEntityType: string;
-}
-
-/**
- * Registry of all available integrations and their metadata
- */
 export class IntegrationRegistryService {
-  private static readonly INTEGRATION_METADATA: Record<ConnectorType, IntegrationMetadata> = {
-    github: {
-      connectorType: "github",
-      displayName: "GitHub",
-      primaryEntityType: "commit",
-      entities: [
-        {
-          entityType: "repository",
-          displayName: "Repositories",
-          dateField: "updatedAt",
-          fetchMethod: "getRepositoriesPaginated",
-        },
-        {
-          entityType: "pull_request",
-          displayName: "Pull Requests",
-          dateField: "updatedAt",
-          fetchMethod: "getPullRequestsPaginated",
-        },
-        {
-          entityType: "commit",
-          displayName: "Commits",
-          dateField: "committerDate",
-          fetchMethod: "getCommitsPaginated",
-          goalType: "commits",
-        },
-        {
-          entityType: "repository_file",
-          displayName: "Code Files",
-          dateField: "updatedAt",
-          fetchMethod: "getFilesPaginated",
-        },
-      ],
+  private static readonly FETCH_CONFIGS: Partial<Record<EntityType, EntityFetchConfig>> = {
+    repository: {
+      entityType: "repository",
+      fetchMethod: "getRepositoriesPaginated",
+      dateField: ["updatedAt", "pushedAt", "createdAt"],
     },
-    linear: {
-      connectorType: "linear",
-      displayName: "Linear",
-      primaryEntityType: "issue",
-      entities: [
-        {
-          entityType: "issue",
-          displayName: "Issues",
-          dateField: "updatedAt",
-          fetchMethod: "getIssuesPaginated",
-          goalType: "tasks",
-        },
-      ],
+    pull_request: {
+      entityType: "pull_request",
+      fetchMethod: "getPullRequestsPaginated",
+      dateField: ["updatedAt", "prUpdatedAt", "createdAt", "prCreatedAt"],
     },
-    spotify: {
-      connectorType: "spotify",
-      displayName: "Spotify",
-      primaryEntityType: "recently_played",
-      entities: [
-        { entityType: "track", displayName: "Tracks", dateField: "updatedAt", fetchMethod: "getTracksPaginated" },
-        { entityType: "artist", displayName: "Artists", dateField: "updatedAt", fetchMethod: "getArtistsPaginated" },
-        {
-          entityType: "playlist",
-          displayName: "Playlists",
-          dateField: "updatedAt",
-          fetchMethod: "getPlaylistsPaginated",
-        },
-        { entityType: "album", displayName: "Albums", dateField: "updatedAt", fetchMethod: "getAlbumsPaginated" },
-        {
-          entityType: "recently_played",
-          displayName: "Recently Played",
-          dateField: "playedAt",
-          fetchMethod: "getRecentlyPlayedPaginated",
-          goalType: "songs",
-        },
-      ],
+    commit: {
+      entityType: "commit",
+      fetchMethod: "getCommitsPaginated",
+      dateField: ["committerDate", "authorDate", "updatedAt", "createdAt"],
     },
-    x: {
-      connectorType: "x",
-      displayName: "X (Twitter)",
-      primaryEntityType: "tweet",
-      entities: [
-        {
-          entityType: "tweet",
-          displayName: "Tweets",
-          dateField: "createdAt",
-          fetchMethod: "getTweetsPaginated",
-          goalType: "tweets",
-        },
-      ],
+    repository_file: { entityType: "repository_file", fetchMethod: "getFilesPaginated", dateField: "updatedAt" },
+    issue: { entityType: "issue", fetchMethod: "getIssuesPaginated", dateField: ["updatedAt", "createdAt"] },
+    track: { entityType: "track", fetchMethod: "getTracksPaginated", dateField: "updatedAt" },
+    artist: { entityType: "artist", fetchMethod: "getArtistsPaginated", dateField: "updatedAt" },
+    playlist: { entityType: "playlist", fetchMethod: "getPlaylistsPaginated", dateField: "updatedAt" },
+    album: { entityType: "album", fetchMethod: "getAlbumsPaginated", dateField: "updatedAt" },
+    recently_played: {
+      entityType: "recently_played",
+      fetchMethod: "getRecentlyPlayedPaginated",
+      dateField: "playedAt",
     },
-    notion: {
-      connectorType: "notion",
-      displayName: "Notion",
-      primaryEntityType: "page",
-      entities: [
-        {
-          entityType: "page",
-          displayName: "Pages",
-          dateField: "updatedAt",
-          fetchMethod: "getPagesPaginated",
-          goalType: "documents",
-        },
-      ],
-    },
-    slack: {
-      connectorType: "slack",
-      displayName: "Slack",
-      primaryEntityType: "message",
-      entities: [
-        {
-          entityType: "message",
-          displayName: "Messages",
-          dateField: ["ts", "createdAt"],
-          fetchMethod: "getMessagesPaginated",
-          goalType: "messages",
-        },
-      ],
-    },
-    google: {
-      connectorType: "google",
-      displayName: "Google",
-      primaryEntityType: "event",
-      entities: [
-        {
-          entityType: "event",
-          displayName: "Events",
-          dateField: "startTime",
-          fetchMethod: "getEventsPaginated",
-          goalType: "events",
-        },
-        {
-          entityType: "calendar",
-          displayName: "Calendars",
-          dateField: "updatedAt",
-          fetchMethod: "getCalendarsPaginated",
-        },
-        {
-          entityType: "subscription",
-          displayName: "YouTube Subscriptions",
-          dateField: "publishedAt",
-          fetchMethod: "getSubscriptionsPaginated",
-        },
-      ],
-    },
-    youtube: {
-      connectorType: "youtube",
-      displayName: "YouTube",
-      primaryEntityType: "subscription",
-      entities: [
-        {
-          entityType: "subscription",
-          displayName: "Subscriptions",
-          dateField: "publishedAt",
-          fetchMethod: "getSubscriptionsPaginated",
-          goalType: "subscription",
-        },
-      ],
-    },
+    tweet: { entityType: "tweet", fetchMethod: "getTweetsPaginated", dateField: "createdAt" },
+    page: { entityType: "page", fetchMethod: "getPagesPaginated", dateField: "updatedAt" },
+    message: { entityType: "message", fetchMethod: "getMessagesPaginated", dateField: ["ts", "createdAt"] },
+    event: { entityType: "event", fetchMethod: "getEventsPaginated", dateField: "startTime" },
+    calendar: { entityType: "calendar", fetchMethod: "getCalendarsPaginated", dateField: "updatedAt" },
+    subscription: { entityType: "subscription", fetchMethod: "getSubscriptionsPaginated", dateField: "publishedAt" },
   };
 
-  /**
-   * Get all available connector types
-   */
-  getAvailableConnectorTypes(): ConnectorType[] {
-    return Object.keys(IntegrationRegistryService.INTEGRATION_METADATA) as ConnectorType[];
+  getAvailableVendors(): IntegrationVendor[] {
+    return SUPPORTED_VENDORS as unknown as IntegrationVendor[];
   }
 
-  /**
-   * Get metadata for a specific connector type
-   */
-  getMetadata(connectorType: ConnectorType): IntegrationMetadata | null {
-    return IntegrationRegistryService.INTEGRATION_METADATA[connectorType] || null;
+  getEntitiesByVendor(vendor: IntegrationVendor): EntityType[] {
+    return Object.entries(ENTITY_METADATA)
+      .filter(([_, meta]) => meta.vendor === vendor)
+      .map(([type]) => type as EntityType);
   }
 
-  /**
-   * Get all integration metadata
-   */
-  getAllMetadata(): IntegrationMetadata[] {
-    return Object.values(IntegrationRegistryService.INTEGRATION_METADATA);
+  getFetchConfig(entityType: EntityType): EntityFetchConfig | null {
+    const config = IntegrationRegistryService.FETCH_CONFIGS[entityType];
+    if (!config) {
+      logger.warn(`[IntegrationRegistry] No fetch config found for entity type: ${entityType}`);
+      return null;
+    }
+    return config;
   }
 
-  /**
-   * Get all entities for a connector type
-   */
-  getEntities(connectorType: ConnectorType): EntityMetadata[] {
-    const metadata = this.getMetadata(connectorType);
-    return metadata?.entities || [];
+  getVendorDisplayName(vendor: IntegrationVendor): string {
+    const displayNames: Record<IntegrationVendorWithYoutube, string> = {
+      github: "GitHub",
+      linear: "Linear",
+      spotify: "Spotify",
+      x: "X (Twitter)",
+      notion: "Notion",
+      slack: "Slack",
+      google: "Google",
+      youtube: "YouTube",
+    };
+    return displayNames[vendor] || vendor;
   }
 
-  /**
-   * Get primary entity metadata for a connector (for backward compatibility)
-   */
-  getPrimaryEntityMetadata(connectorType: ConnectorType): EntityMetadata | null {
-    const metadata = this.getMetadata(connectorType);
-    if (!metadata) return null;
-    return metadata.entities.find((e) => e.entityType === metadata.primaryEntityType) || metadata.entities[0] || null;
-  }
-
-  /**
-   * Extract date from an entity based on date field configuration
-   */
   extractDateFromEntity(entity: any, dateField: string | string[]): Date | null {
     const fields = Array.isArray(dateField) ? dateField : [dateField];
 
     for (const field of fields) {
-      const fieldValue = entity[field];
+      const value = entity[field];
+      if (value === null || value === undefined) continue;
 
-      // Handle null/undefined
-      if (fieldValue === null || fieldValue === undefined) {
-        continue;
+      // Handle Slack Unix timestamps
+      if (field === "ts" && typeof value === "string") {
+        const ts = Number.parseFloat(value);
+        if (!Number.isNaN(ts)) return new Date(ts * 1000);
       }
 
-      // Handle different date field formats
-      if (field === "ts") {
-        // Slack uses Unix timestamp as string (e.g., "1234567890.123456")
-        if (typeof fieldValue === "string") {
-          const timestamp = Number.parseFloat(fieldValue);
-          if (!Number.isNaN(timestamp) && timestamp > 0) {
-            const ms = timestamp > 1e10 ? timestamp : timestamp * 1000;
-            return new Date(ms);
-          }
-        } else if (typeof fieldValue === "number") {
-          const ms = fieldValue > 1e10 ? fieldValue : fieldValue * 1000;
-          return new Date(ms);
-        }
-        continue;
-      }
-
-      // Handle Date objects
-      if (fieldValue instanceof Date) {
-        return fieldValue;
-      }
-
-      // Handle string dates (ISO format)
-      if (typeof fieldValue === "string") {
-        const date = new Date(fieldValue);
-        if (!Number.isNaN(date.getTime())) {
-          return date;
-        }
-      }
-
-      // Handle numeric timestamps (milliseconds)
-      if (typeof fieldValue === "number" && fieldValue > 0) {
-        return new Date(fieldValue);
-      }
+      const date = new Date(value);
+      if (!Number.isNaN(date.getTime())) return date;
     }
 
+    logger.warn(`[IntegrationRegistry] Failed to extract date from entity for fields: ${fields.join(", ")}`, {
+      entity: typeof entity === "object" ? JSON.stringify(entity).slice(0, 100) : entity,
+    });
     return null;
   }
 
-  /**
-   * Extract date from an entity based on connector type (backward compatible)
-   */
-  extractDate(entity: any, connectorType: ConnectorType): Date | null {
-    const entityMeta = this.getPrimaryEntityMetadata(connectorType);
-    if (!entityMeta) {
-      logger.warn("Unknown connector type for date extraction", { connectorType });
-      return null;
-    }
-    return this.extractDateFromEntity(entity, entityMeta.dateField);
-  }
-
-  /**
-   * Get goal type for a connector type (uses primary entity)
-   */
-  getGoalType(connectorType: ConnectorType): string | null {
-    const entityMeta = this.getPrimaryEntityMetadata(connectorType);
-    return entityMeta?.goalType || null;
-  }
-
-  /**
-   * Get display name for a connector type
-   */
-  getDisplayName(connectorType: ConnectorType): string {
-    const metadata = this.getMetadata(connectorType);
-    return metadata?.displayName || connectorType;
-  }
-
-  /**
-   * Get label for activity description (used in insights)
-   */
-  getActivityLabel(connectorType: ConnectorType): string {
-    const labels: Record<ConnectorType, string> = {
-      spotify: "music listening",
-      github: "coding",
-      slack: "team communication",
-      x: "social media activity",
-      linear: "task management",
-      notion: "documentation",
-      google: "calendar events",
-      youtube: "video subscriptions",
-    };
-
-    return labels[connectorType] || connectorType;
-  }
-
-  /**
-   * Get unit label for activity counts (used in insights)
-   */
-  getUnitLabel(connectorType: ConnectorType): string {
-    const units: Record<ConnectorType, string> = {
+  getUnitLabel(vendor: IntegrationVendorWithYoutube): string {
+    const units: Record<IntegrationVendorWithYoutube, string> = {
       spotify: "songs",
       github: "commits",
       slack: "messages",
@@ -336,21 +112,31 @@ export class IntegrationRegistryService {
       google: "events",
       youtube: "subscriptions",
     };
+    return units[vendor] || "items";
+  }
 
-    return units[connectorType] || "items";
+  getActivityLabel(vendor: IntegrationVendorWithYoutube): string {
+    const labels: Record<IntegrationVendorWithYoutube, string> = {
+      spotify: "music listening",
+      github: "coding",
+      slack: "team communication",
+      x: "social media activity",
+      linear: "task management",
+      notion: "documentation",
+      google: "calendar events",
+      youtube: "video subscriptions",
+    };
+    return labels[vendor] || vendor;
   }
 }
 
-// Singleton instance
-let _integrationRegistryService: IntegrationRegistryService | null = null;
+let instance: IntegrationRegistryService | null = null;
 
 export function getIntegrationRegistryService(): IntegrationRegistryService {
-  if (!_integrationRegistryService) {
-    _integrationRegistryService = new IntegrationRegistryService();
-  }
-  return _integrationRegistryService;
+  if (!instance) instance = new IntegrationRegistryService();
+  return instance;
 }
 
 export function resetIntegrationRegistryService(): void {
-  _integrationRegistryService = null;
+  instance = null;
 }

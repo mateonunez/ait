@@ -1,7 +1,9 @@
+"use client";
+
 import { cn } from "@/styles/utils";
-import { motion } from "framer-motion";
-import { Loader2, Mic, Paperclip, Send } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Loader2, Send } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { applyInputReplacements } from "../../utils/input-replacements";
 
 interface PromptInputProps {
@@ -29,32 +31,30 @@ export function PromptInput({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 240)}px`;
     }
   });
 
   // Focus on enable
   useEffect(() => {
     if (!disabled && focusOnEnable && textareaRef.current) {
-      // Small timeout to ensure the DOM is ready and accessible
       const timer = setTimeout(() => {
         textareaRef.current?.focus();
-      }, 10);
+      }, 50);
       return () => clearTimeout(timer);
     }
   }, [disabled, focusOnEnable]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!value.trim() || disabled) return;
 
     onSubmit(value);
     setValue("");
 
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  };
+  }, [value, disabled, onSubmit]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -65,38 +65,26 @@ export function PromptInput({
 
   const characterCount = value.length;
   const showCount = characterCount > 0;
+  const hasContent = value.trim().length > 0;
+  const isFloating = variant === "floating";
 
   return (
-    <div className={cn("w-full", className)}>
+    <div className={cn("w-full max-w-5xl mx-auto", className)}>
       <div
         className={cn(
-          "relative rounded-2xl transition-all duration-200",
-          variant === "floating"
-            ? "bg-transparent border-0 shadow-none"
+          "relative transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
+          isFloating
+            ? "bg-transparent border-0 shadow-none ring-0 focus-within:ring-0"
             : cn(
-                "border-2 bg-background shadow-lg",
-                isFocused ? "border-primary ring-4 ring-primary/10" : "border-border",
+                "rounded-[32px] border border-border/40 bg-muted/20 backdrop-blur-2xl shadow-xl shadow-primary/5",
+                isFocused
+                  ? "border-primary/40 ring-4 ring-primary/5 bg-muted/30 shadow-2xl shadow-primary/10"
+                  : "hover:border-border/60 hover:bg-muted/25",
               ),
           disabled && "opacity-50 cursor-not-allowed",
         )}
       >
-        <div className={cn("flex items-end gap-1.5 sm:gap-2", variant === "floating" ? "p-3 sm:p-4" : "p-2 sm:p-3")}>
-          {/* Future: Attachment button - Hidden in floating variant */}
-          {variant !== "floating" && (
-            <button
-              type="button"
-              disabled={disabled}
-              className={cn(
-                "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
-                "text-muted-foreground hover:text-foreground",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-              )}
-              title="Attach file (coming soon)"
-            >
-              <Paperclip className="h-4 w-4" />
-            </button>
-          )}
-
+        <div className={cn("flex items-end gap-2 sm:gap-4", isFloating ? "p-3 sm:p-4" : "p-2 sm:p-2 sm:px-4")}>
           {/* Textarea */}
           <textarea
             ref={textareaRef}
@@ -109,74 +97,85 @@ export function PromptInput({
             placeholder={placeholder}
             rows={1}
             className={cn(
-              "resize-none bg-transparent text-sm",
-              variant === "floating" ? "w-full" : "flex-1",
-              "focus:outline-none placeholder:text-muted-foreground",
-              "disabled:cursor-not-allowed min-h-[24px] max-h-[200px]",
+              "resize-none bg-transparent text-sm sm:text-base leading-relaxed overflow-hidden",
+              "flex-1 py-2 focus:outline-none placeholder:text-muted-foreground/50 transition-all font-normal",
+              "disabled:cursor-not-allowed min-h-[40px] max-h-[240px]",
             )}
           />
 
-          {/* Future: Voice input button - Hidden in floating variant */}
-          {variant !== "floating" && (
-            <button
-              type="button"
-              disabled={disabled}
-              className={cn(
-                "p-1.5 sm:p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0",
-                "text-muted-foreground hover:text-foreground",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-              )}
-              title="Voice input (coming soon)"
-            >
-              <Mic className="h-4 w-4" />
-            </button>
-          )}
-
-          {/* Send button - Hidden in floating variant */}
-          {variant !== "floating" && (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={disabled || !value.trim()}
-              className={cn(
-                "p-1.5 sm:p-2 rounded-lg transition-all duration-200 flex-shrink-0",
-                "bg-primary text-primary-foreground",
-                "hover:bg-primary/90 active:scale-95",
-                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary",
-              )}
-              title="Send message"
-            >
-              {disabled ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </button>
-          )}
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5">
+            {/* Send button */}
+            {!isFloating && (
+              <motion.button
+                layout
+                whileHover={hasContent ? { scale: 1.05 } : {}}
+                whileTap={hasContent ? { scale: 0.95 } : {}}
+                type="button"
+                onClick={handleSubmit}
+                disabled={disabled || !hasContent}
+                className={cn(
+                  "p-2 rounded-full transition-all duration-300 flex-shrink-0 relative overflow-hidden cursor-pointer",
+                  hasContent
+                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+                    : "bg-muted text-muted-foreground/30",
+                  "disabled:cursor-not-allowed",
+                )}
+                title="Send to AIt"
+              >
+                <AnimatePresence mode="wait">
+                  {disabled ? (
+                    <motion.div key="loader" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="send"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                    >
+                      <Send
+                        className={cn("h-5 w-5 transition-transform", hasContent && "translate-x-0.5 -translate-y-0.5")}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+            )}
+          </div>
         </div>
 
         {/* Character count */}
         {showCount && (
           <motion.div
-            initial={{ opacity: 0, y: -4 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="absolute -bottom-6 right-2 text-xs text-muted-foreground"
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute -bottom-7 right-6 text-[10px] font-bold tracking-widest text-muted-foreground/20 uppercase pointer-events-none"
           >
-            {characterCount}
+            {characterCount} CHARS
           </motion.div>
         )}
       </div>
 
-      {/* Hint text - Hidden in floating variant */}
-      {variant !== "floating" && (
-        <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-1.5 sm:mt-2">
-          Press{" "}
-          <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">
-            Enter
-          </kbd>{" "}
-          to send,{" "}
-          <kbd className="px-1 sm:px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px] sm:text-xs">
-            Shift + Enter
-          </kbd>{" "}
-          for new line
-        </p>
+      {/* Hint text */}
+      {!isFloating && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-center justify-center gap-4 text-[9px] font-bold tracking-[0.2em] text-muted-foreground/20 mt-4 uppercase pointer-events-none"
+        >
+          <div className="flex items-center gap-2">
+            <kbd className="px-1.5 py-0.5 rounded-md border border-border/20 bg-muted/5">Enter</kbd>
+            <span>Send</span>
+          </div>
+          <div className="w-1 h-1 rounded-full bg-border/20" />
+          <div className="flex items-center gap-2">
+            <kbd className="px-1.5 py-0.5 rounded-md border border-border/20 bg-muted/5">Shift + Enter</kbd>
+            <span>Newline</span>
+          </div>
+        </motion.div>
       )}
     </div>
   );

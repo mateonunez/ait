@@ -82,7 +82,7 @@ export {
   type SparseVector,
 } from "./services/embeddings/sparse-vector.service";
 
-export type { ChatMessage, MessageRole } from "./types/chat";
+export type { ChatMessage } from "./types/chat";
 export { formatConversationHistory } from "./utils/chat.utils";
 export type { Tool, ToolResult } from "./types/tools";
 export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";
@@ -179,16 +179,6 @@ export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
 export { getAnalyticsService } from "./services/analytics/analytics.service";
 
-export { getFeedbackService, resetFeedbackService, FeedbackService } from "./services/feedback/feedback.service";
-export type {
-  Feedback,
-  FeedbackRating,
-  FeedbackStats,
-  FeedbackMetadata,
-  QualityTrendPoint,
-  ProblematicTrace,
-} from "./services/feedback/types";
-
 export { smoothStream } from "./services/text-generation/utils/stream.utils";
 
 export {
@@ -226,11 +216,6 @@ export {
   resetCorrelationEngineService,
 } from "./services/insights/correlation-engine.service";
 export {
-  GoalTrackingService,
-  getGoalTrackingService,
-  resetGoalTrackingService,
-} from "./services/insights/goal-tracking.service";
-export {
   IntegrationRegistryService,
   getIntegrationRegistryService,
   resetIntegrationRegistryService,
@@ -240,26 +225,6 @@ export {
   createActivityAggregatorService,
   type IConnectorServiceFactory,
 } from "./services/insights/activity-aggregator.service";
-
-// Insights types
-export type {
-  InsightsData,
-  InsightSummary,
-  InsightCorrelation,
-  InsightAnomaly,
-  InsightRecommendation,
-  Insight,
-  InsightType,
-  GoalData,
-  GoalType,
-  GoalPeriod,
-  CreateGoalRequest,
-  UpdateGoalRequest,
-  ActivityData,
-  InsightsConfig,
-} from "./services/insights/insights.types";
-
-export { DEFAULT_INSIGHTS_CONFIG } from "./services/insights/insights.types";
 
 // MCP (Model Context Protocol) - Enables write operations via vendor-hosted MCP servers
 export {

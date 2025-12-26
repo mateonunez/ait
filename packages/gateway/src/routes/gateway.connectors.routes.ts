@@ -1,10 +1,11 @@
-import { SUPPORTED_VENDORS, getOAuthData } from "@ait/connectors";
+import { SUPPORTED_VENDORS, getOAuthData, isTokenExpiringSoon } from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 export interface ConnectionStatus {
   connected: boolean;
   lastSync?: string;
   expiresAt?: string;
+  isExpiringSoon?: boolean;
 }
 
 export type ConnectionsStatusMap = Record<string, ConnectionStatus>;
@@ -19,11 +20,14 @@ export default async function connectorsRoutes(fastify: FastifyInstance) {
 
         if (token) {
           let expiresAt: string | undefined;
+          let isExpiringSoon = false;
+
           if (token.expiresIn && token.updatedAt) {
             const expiresInSeconds = Number.parseInt(token.expiresIn, 10);
             if (!Number.isNaN(expiresInSeconds)) {
               const expirationDate = new Date(token.updatedAt.getTime() + expiresInSeconds * 1000);
               expiresAt = expirationDate.toISOString();
+              isExpiringSoon = isTokenExpiringSoon(expirationDate, token.updatedAt);
             }
           }
 
@@ -31,6 +35,7 @@ export default async function connectorsRoutes(fastify: FastifyInstance) {
             connected: true,
             lastSync: token.updatedAt?.toISOString(),
             expiresAt,
+            isExpiringSoon,
           };
         } else {
           statusMap[vendor] = {

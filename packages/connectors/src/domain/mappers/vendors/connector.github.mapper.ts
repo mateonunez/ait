@@ -2,7 +2,7 @@ import type { GitHubRepositoryEntity, GitHubRepositoryExternal } from "@ait/core
 import type { GitHubRepositoryDataTarget } from "@ait/postgres";
 import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
-import { connectorMapperPassThrough } from "../utils/connector.mapper.utils";
+import { connectorMapperPassThrough, ensureDate } from "../utils/connector.mapper.utils";
 
 const githubRepositoryMapping: ConnectorMapperDefinition<
   GitHubRepositoryExternal,
@@ -171,7 +171,7 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
 
   pushedAt: {
     external: (external) => (external.pushed_at ? new Date(external.pushed_at) : null),
-    domain: (domain) => domain.pushedAt,
+    domain: (domain) => ensureDate(domain.pushedAt),
     dataTarget: (dataTarget) => dataTarget.pushedAt ?? null,
   },
 
@@ -218,6 +218,18 @@ const githubRepositoryMapping: ConnectorMapperDefinition<
     },
     domain: (domain) => domain.metadata,
     dataTarget: (dataTarget) => (dataTarget.metadata as Record<string, unknown> | null) ?? null,
+  },
+
+  createdAt: {
+    external: (external) => (external.created_at ? new Date(external.created_at) : null),
+    domain: (domain) => ensureDate(domain.createdAt),
+    dataTarget: (dataTarget) => dataTarget.createdAt ?? null,
+  },
+
+  updatedAt: {
+    external: (external) => (external.updated_at ? new Date(external.updated_at) : null),
+    domain: (domain) => ensureDate(domain.updatedAt),
+    dataTarget: (dataTarget) => dataTarget.updatedAt ?? null,
   },
 
   __type: {

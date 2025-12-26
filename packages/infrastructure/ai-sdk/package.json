@@ -22,6 +22,7 @@
   "dependencies": {
     "@ait/core": "workspace:*",
     "@ait/qdrant": "workspace:*",
+    "@ait/store": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.24.3",
     "ai": "^5.0.82",
     "chrono-node": "^2.7.7",

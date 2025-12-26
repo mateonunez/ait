@@ -20,3 +20,8 @@ export * from "./types/stats";
 export * from "./types/streaming";
 export * from "./types/entities";
 export * from "./types/entities.config";
+export * from "./types/conversations";
+export * from "./types/activity";
+export * from "./types/goals";
+export * from "./types/feedback";
+export * from "./types/insights";

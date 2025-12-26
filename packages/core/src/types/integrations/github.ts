@@ -251,8 +251,8 @@ export const GitHubRepositoryEntitySchema = z.object({
   ownerData: z.record(z.string(), z.unknown()).nullable(),
   licenseData: z.record(z.string(), z.unknown()).nullable(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
   __type: z.literal("repository"),
 });
 
@@ -304,8 +304,8 @@ export const GitHubPullRequestEntitySchema = z.object({
   requestedTeamsData: z.record(z.string(), z.unknown()).nullable(),
   headRepoData: z.record(z.string(), z.unknown()).nullable(),
   baseRepoData: z.record(z.string(), z.unknown()).nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
   __type: z.literal("pull_request"),
 });
 
@@ -336,8 +336,8 @@ export const GitHubCommitEntitySchema = z.object({
   filesData: z.array(z.record(z.string(), z.unknown())).nullable(),
   verification: z.record(z.string(), z.unknown()).nullable(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
   __type: z.literal("commit"),
 });
 
@@ -375,8 +375,8 @@ export const GitHubFileEntitySchema = z.object({
   language: z.string().nullable(),
   extension: z.string().nullable(),
   linesOfCode: z.number(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
   __type: z.literal("repository_file"),
 });
 

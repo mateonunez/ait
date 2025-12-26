@@ -1,14 +1,8 @@
-import {
-  type CreateGoalRequest,
-  type IConnectorServiceFactory,
-  type UpdateGoalRequest,
-  createActivityAggregatorService,
-  getInsightsService,
-} from "@ait/ai-sdk";
-import { getGoalTrackingService } from "@ait/ai-sdk";
+import { type IConnectorServiceFactory, createActivityAggregatorService, getInsightsService } from "@ait/ai-sdk";
 import { connectorServiceFactory } from "@ait/connectors";
+import type { CreateGoalRequest, UpdateGoalRequest } from "@ait/core";
+import { getGoalService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { getRedisClient } from "../services/redis-cache.provider";
 
 interface InsightsQuery {
   range?: "week" | "month" | "year";
@@ -133,11 +127,8 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     "/goals",
     async (request: FastifyRequest<{ Body: CreateGoalRequest }>, reply: FastifyReply) => {
       try {
-        const redisClient = getRedisClient();
-        const goalService = getGoalTrackingService(redisClient);
-
-        const goal = await goalService.createGoal(request.body);
-
+        const goalService = getGoalService();
+        const goal = await goalService.createGoal("default", request.body);
         reply.status(201).send(goal);
       } catch (err: any) {
         fastify.log.error({ err, route: "/goals [POST]" }, "Failed to create goal.");
@@ -152,20 +143,18 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
    */
   fastify.get("/goals", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const redisClient = getRedisClient();
-      const goalService = getGoalTrackingService(redisClient);
-
-      const goals = await goalService.getGoals();
+      const goalService = getGoalService();
+      const userId = "default";
 
       // Update progress based on current activity
       const activityAggregator = createActivityAggregatorService(
         connectorServiceFactory as unknown as IConnectorServiceFactory,
       );
       const activityData = await activityAggregator.fetchActivityData("week");
-      await goalService.updateAllProgress(activityData);
+      await goalService.updateAllProgress(activityData, userId);
 
       // Fetch updated goals
-      const updatedGoals = await goalService.getGoals();
+      const updatedGoals = await goalService.getGoals(userId);
 
       reply.send(updatedGoals);
     } catch (err: any) {
@@ -182,10 +171,8 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     "/goals/:id",
     async (request: FastifyRequest<{ Params: GoalParams; Body: UpdateGoalRequest }>, reply: FastifyReply) => {
       try {
-        const redisClient = getRedisClient();
-        const goalService = getGoalTrackingService(redisClient);
-
-        const goal = await goalService.updateGoal(request.params.id, request.body);
+        const goalService = getGoalService();
+        const goal = await goalService.updateGoal(request.params.id, "default", request.body);
 
         if (!goal) {
           reply.status(404).send({ error: "Goal not found." });
@@ -208,11 +195,8 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     "/goals/:id",
     async (request: FastifyRequest<{ Params: GoalParams }>, reply: FastifyReply) => {
       try {
-        const redisClient = getRedisClient();
-        const goalService = getGoalTrackingService(redisClient);
-
-        await goalService.deleteGoal(request.params.id);
-
+        const goalService = getGoalService();
+        await goalService.deleteGoal(request.params.id, "default");
         reply.status(204).send();
       } catch (err: any) {
         fastify.log.error({ err, route: "/goals/:id [DELETE]" }, "Failed to delete goal.");

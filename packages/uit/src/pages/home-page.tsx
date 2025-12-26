@@ -3,13 +3,13 @@ import { GoalTrackerWidget } from "@/components/discovery/goal-tracker-widget";
 import { FloatingPromptButton } from "@/components/home/floating-prompt-button";
 import { HomeFeed } from "@/components/home/home-feed";
 import { IntegrationsList } from "@/components/integrations-list";
-import { useChatDialog } from "@/contexts/chat.context";
 import { InsightsProvider } from "@/contexts/insights.context";
 import { useHomepageData } from "@/hooks/useHomepageData";
 import { cn } from "@/styles/utils";
 import type { HomeSection as HomeSectionType } from "@/types/integrations.types";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useLocation } from "wouter";
 
 const animationVariants = {
   initial: { opacity: 0, y: 10 },
@@ -34,48 +34,56 @@ const HOME_SECTIONS: HomeSectionType[] = [
       "event",
     ],
     variant: "bento",
+    viewAllHref: "/connections",
   },
   {
     id: "music",
     title: "Your Music",
     entityTypes: ["track", "playlist", "album", "recently_played"],
     variant: "scroll",
+    viewAllHref: "/integrations/spotify",
   },
   {
     id: "code",
     title: "Code & Projects",
     entityTypes: ["commit", "pull_request", "repository"],
     variant: "scroll",
+    viewAllHref: "/integrations/github",
   },
   {
     id: "tweets",
     title: "From Twitter",
     entityTypes: ["tweet"],
     variant: "grid",
+    viewAllHref: "/integrations/x",
   },
   {
     id: "workspace",
     title: "Your Workspace",
     entityTypes: ["page"],
     variant: "grid",
+    viewAllHref: "/integrations/notion",
   },
   {
     id: "team",
     title: "Team Updates",
     entityTypes: ["message"],
     variant: "grid",
+    viewAllHref: "/integrations/slack",
   },
   {
     id: "tasks",
     title: "Tasks & Issues",
     entityTypes: ["issue"],
     variant: "grid",
+    viewAllHref: "/integrations/linear",
   },
   {
     id: "schedule",
     title: "Your Schedule",
     entityTypes: ["event"],
     variant: "scroll",
+    viewAllHref: "/integrations/google",
   },
 ];
 
@@ -83,20 +91,23 @@ export default function HomePage() {
   const { sectionsData, isLoading, totalItems } = useHomepageData({
     sections: HOME_SECTIONS,
   });
-  const { isOpen, openChat } = useChatDialog();
+  const [, setLocation] = useLocation();
   const [timeRange] = useState<"week" | "month" | "year">("week");
 
   const handlePromptClick = () => {
-    openChat();
+    setLocation("/chat");
   };
 
   const handlePromptSubmit = () => {
-    openChat();
+    setLocation("/chat");
   };
 
   return (
     <InsightsProvider initialTimeRange={timeRange}>
-      <motion.div {...animationVariants} className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <motion.div
+        {...animationVariants}
+        className="flex-1 flex flex-col overflow-y-auto custom-scrollbar min-w-0 min-h-0"
+      >
         <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
           <div className="container mx-auto max-w-7xl space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Welcome back</h2>
@@ -122,7 +133,7 @@ export default function HomePage() {
             <IntegrationsList />
           </div>
 
-          <div className={cn("flex-1 overflow-y-auto custom-scrollbar", !isOpen && "pb-24 sm:pb-28")}>
+          <div className={cn("pb-24 sm:pb-28")}>
             <HomeFeed
               isLoading={isLoading}
               sections={HOME_SECTIONS}
@@ -136,7 +147,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <FloatingPromptButton isOpen={isOpen} onClick={handlePromptClick} onSubmit={handlePromptSubmit} />
+        <FloatingPromptButton onClick={handlePromptClick} onSubmit={handlePromptSubmit} />
       </motion.div>
     </InsightsProvider>
   );

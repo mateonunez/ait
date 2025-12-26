@@ -218,6 +218,27 @@
       "when": 1765635676274,
       "tag": "0030_first_bucky",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1766684296304,
+      "tag": "0031_wild_echo",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1766749043473,
+      "tag": "0032_unusual_the_fallen",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1766750053073,
+      "tag": "0033_narrow_anthem",
+      "breakpoints": true
     }
   ]
 }

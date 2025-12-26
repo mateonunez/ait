@@ -73,7 +73,7 @@ export default function ConnectionsPage() {
   const connectedCount = SUPPORTED_VENDORS.filter((v) => status?.[v]?.connected).length;
 
   return (
-    <div className="flex-1 flex flex-col">
+    <div className="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
       {/* Compact header with stats and refresh */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <p className="text-sm text-muted-foreground">

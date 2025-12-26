@@ -173,9 +173,11 @@ export interface AggregatedMetadata {
   model?: ModelMetadata;
 }
 
+export type MessageRole = "user" | "assistant" | "system";
+
 export interface ChatMessageWithMetadata {
   id: string;
-  role: "user" | "assistant" | "system";
+  role: MessageRole;
   content: string;
   metadata?: AggregatedMetadata;
   traceId?: string;

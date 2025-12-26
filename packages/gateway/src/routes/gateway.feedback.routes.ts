@@ -1,4 +1,4 @@
-import { getFeedbackService } from "@ait/ai-sdk";
+import { getFeedbackService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 interface FeedbackBody {
@@ -46,7 +46,7 @@ export default async function feedbackRoutes(fastify: FastifyInstance) {
         });
       }
 
-      const feedback = feedbackService.recordFeedback({
+      const feedback = await feedbackService.recordFeedback({
         traceId: traceId || messageId, // fallback to messageId if traceId not provided
         messageId,
         rating,
@@ -58,7 +58,7 @@ export default async function feedbackRoutes(fastify: FastifyInstance) {
 
       return reply.status(201).send({
         success: true,
-        feedbackId: feedback.feedbackId,
+        feedbackId: feedback.id,
         feedback,
       });
     } catch (error) {
@@ -74,7 +74,7 @@ export default async function feedbackRoutes(fastify: FastifyInstance) {
     try {
       const windowMs = request.query.windowMs ? Number.parseInt(request.query.windowMs, 10) : undefined;
 
-      const stats = feedbackService.getFeedbackStats(windowMs);
+      const stats = await feedbackService.getFeedbackStats(windowMs);
 
       return reply.send({
         success: true,
@@ -95,7 +95,7 @@ export default async function feedbackRoutes(fastify: FastifyInstance) {
       try {
         const limit = request.query.limit ? Number.parseInt(request.query.limit, 10) : 10;
 
-        const problematic = feedbackService.getProblematicTraces(limit);
+        const problematic = await feedbackService.getProblematicTraces(limit);
 
         return reply.send({
           success: true,
@@ -121,7 +121,7 @@ export default async function feedbackRoutes(fastify: FastifyInstance) {
         sessionId: request.query.sessionId,
       };
 
-      const feedback = feedbackService.getAllFeedback(params);
+      const feedback = await feedbackService.getAllFeedback(params);
 
       return reply.send({
         success: true,
@@ -141,7 +141,7 @@ export default async function feedbackRoutes(fastify: FastifyInstance) {
     try {
       const windowMs = request.query.windowMs ? Number.parseInt(request.query.windowMs, 10) : undefined;
 
-      const trend = feedbackService.getQualityTrend(undefined, windowMs);
+      const trend = await feedbackService.getQualityTrend(undefined, windowMs);
 
       return reply.send({
         success: true,

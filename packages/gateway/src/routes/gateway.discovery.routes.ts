@@ -39,7 +39,7 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
         // Build date set from all integrations
         const dateSet = new Set<string>();
         for (const integration of integrationKeys) {
-          const activity = activityData[integration];
+          const activity = activityData[integration as keyof typeof activityData];
           if (activity?.daily) {
             for (const day of activity.daily) {
               dateSet.add(day.date);
@@ -54,7 +54,7 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
         const timeSeriesData: DailyActivity[] = sortedDates.map((date) => {
           const dayData: DailyActivity = { date };
           for (const integration of integrationKeys) {
-            const activity = activityData[integration];
+            const activity = activityData[integration as keyof typeof activityData];
             if (activity?.daily) {
               const dayEntry = activity.daily.find((d) => d.date === date);
               dayData[integration] = dayEntry?.count || 0;
@@ -68,7 +68,7 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
         // Calculate totals dynamically
         const totals: Record<string, number> = {};
         for (const integration of integrationKeys) {
-          const activity = activityData[integration];
+          const activity = activityData[integration as keyof typeof activityData];
           totals[integration] = activity?.total || 0;
         }
 

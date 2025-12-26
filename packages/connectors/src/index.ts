@@ -19,7 +19,7 @@ export { SUPPORTED_VENDORS } from "@ait/core";
 // OAuth
 export type * from "./shared/auth/lib/oauth/connector.oauth";
 export * from "./shared/auth/lib/oauth/connector.oauth";
-export { clearOAuthData, getOAuthData } from "./shared/auth/lib/oauth/connector.oauth.utils";
+export { clearOAuthData, getOAuthData, isTokenExpiringSoon } from "./shared/auth/lib/oauth/connector.oauth.utils";
 
 // Base Classes & Abstracts
 export * from "./services/connector.service.base.abstract";

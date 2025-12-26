@@ -1,4 +1,5 @@
-import { getAnalyticsService, getFeedbackService, getLangfuseProvider } from "@ait/ai-sdk";
+import { getAnalyticsService, getLangfuseProvider } from "@ait/ai-sdk";
+import { getFeedbackService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 /**
@@ -103,10 +104,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
           Promise.resolve(analytics.getFailureAnalysis().getAverageRetryAttempts(windowMs)),
           Promise.resolve(analytics.getFailureAnalysis().detectErrorSpikes()),
           Promise.resolve(analytics.getFailureAnalysis().getErrorTimeline(60 * 1000, windowMs)),
-          Promise.resolve(feedbackService.getFeedbackStats(windowMs)),
-          Promise.resolve(feedbackService.getQualityTrend(60 * 60 * 1000, windowMs)),
-          Promise.resolve(feedbackService.getProblematicTraces(10)),
-          Promise.resolve(feedbackService.isQualityDegrading()),
+          feedbackService.getFeedbackStats(windowMs),
+          feedbackService.getQualityTrend(60 * 60 * 1000, windowMs),
+          feedbackService.getProblematicTraces(10),
+          feedbackService.isQualityDegrading(),
         ]);
 
         const memoryUsage = process.memoryUsage();
@@ -294,7 +295,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               traceId: trace.traceId,
               messageId: trace.messageId,
               rating: trace.rating,
-              timestamp: new Date(trace.timestamp).toISOString(),
+              timestamp: new Date(trace.createdAt).toISOString(),
               comment: trace.comment,
               userId: trace.userId,
             })),
@@ -696,10 +697,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
         const windowMs = windowMinutes * 60 * 1000;
 
         const feedbackService = getFeedbackService();
-        const stats = feedbackService.getFeedbackStats(windowMs);
-        const trend = feedbackService.getQualityTrend(60 * 60 * 1000, windowMs); // 1-hour buckets
-        const problematicTraces = feedbackService.getProblematicTraces(10);
-        const isDegrading = feedbackService.isQualityDegrading();
+        const stats = await feedbackService.getFeedbackStats(windowMs);
+        const trend = await feedbackService.getQualityTrend(60 * 60 * 1000, windowMs); // 1-hour buckets
+        const problematicTraces = await feedbackService.getProblematicTraces(10);
+        const isDegrading = await feedbackService.isQualityDegrading();
 
         // Determine health status based on quality score
         const getHealthStatus = (score: number): "excellent" | "good" | "fair" | "poor" => {
@@ -735,7 +736,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             traceId: trace.traceId,
             messageId: trace.messageId,
             rating: trace.rating,
-            timestamp: new Date(trace.timestamp).toISOString(),
+            timestamp: new Date(trace.createdAt).toISOString(),
             comment: trace.comment,
             userId: trace.userId,
           })),

@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { Link, useLocation } from "wouter";
 
-import { AIChatButton } from "@/components/ai-chat-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -91,6 +90,14 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={isActive("/chat") || location.startsWith("/chat/")}>
+                  <Link href="/chat">
+                    <MessageSquare />
+                    <span>Chait</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -152,9 +159,6 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <ThemeToggle />
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <AIChatButton />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

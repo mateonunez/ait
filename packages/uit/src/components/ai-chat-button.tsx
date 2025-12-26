@@ -1,14 +1,14 @@
-import { useChatDialog } from "@/contexts/chat.context";
 import { Sparkles } from "lucide-react";
+import { useLocation } from "wouter";
 import { SidebarMenuButton } from "./ui/sidebar";
 
 export function AIChatButton() {
-  const { openChat } = useChatDialog();
+  const [, setLocation] = useLocation();
 
   return (
-    <SidebarMenuButton onClick={openChat} tooltip="Chat with AIt">
+    <SidebarMenuButton onClick={() => setLocation("/chat")} tooltip="Chat with AIt">
       <Sparkles className="h-[1.2rem] w-[1.2rem]" />
-      <span>&gt; AIt</span>
+      <span>AIt</span>
     </SidebarMenuButton>
   );
 }

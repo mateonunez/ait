@@ -8,6 +8,7 @@ import {
   type StreamEvent,
   type TextGenerationService,
   createAllConnectorToolsWithMCP,
+  getAItClient,
   getLangfuseProvider,
   getMCPClientManager,
   getTextGenerationService,
@@ -23,6 +24,7 @@ import {
   connectorServiceFactory,
 } from "@ait/connectors";
 import { getLogger } from "@ait/core";
+import { getConversationService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 // Read version from package.json
@@ -48,6 +50,7 @@ interface ChatRequestBody {
   messages: ChatMessage[];
   model?: string;
   enableMetadata?: boolean;
+  conversationId?: string;
 }
 
 const telemetryEnabled = process.env.LANGFUSE_ENABLED === "true";
@@ -67,6 +70,8 @@ initAItClient({
   },
   telemetry: telemetryConfig,
 });
+
+const aitClient = getAItClient();
 
 function isTextChunk(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.TEXT } {
   return event.type === STREAM_EVENT.TEXT;
@@ -245,14 +250,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           `💬 Chat: Processing (${Object.keys(tools).length} tools, ${mcpManager.getConnectedVendors().length} MCP vendors)`,
         );
 
-        const stream = textGenerationService.generateStream({
-          prompt,
-          enableRAG: true,
-          messages: conversationHistory,
-          tools,
-          maxToolRounds,
+        const telemetryOptions = {
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
-          enableMetadata,
           traceId,
           userId: request.headers["x-user-id"] as string | undefined,
           sessionId: request.headers["x-session-id"] as string | undefined,
@@ -264,16 +263,56 @@ export default async function chatRoutes(fastify: FastifyInstance) {
             model: model || "default",
             mcpVendors: mcpManager.getConnectedVendors().join(","),
           },
+        };
+
+        const stream = textGenerationService.generateStream({
+          prompt,
+          enableRAG: true,
+          messages: conversationHistory,
+          tools,
+          maxToolRounds,
+          telemetryOptions,
+          enableMetadata,
+        });
+
+        const conversationService = getConversationService();
+        let conversationId = request.body.conversationId;
+        let assistantResponse = "";
+
+        // Create conversation if not provided
+        if (!conversationId) {
+          const title = await textGenerationService.generateText({
+            prompt: `You're an expert at generating titles for conversations, based on Nietzsche's style. Generate a 33 chars title for the following prompt, do not include any additional text or characters, simple text and concise: ${prompt}`,
+            telemetryOptions,
+          });
+
+          const conversation = await conversationService.createConversation({
+            title,
+            userId: request.headers["x-user-id"] as string | undefined,
+            metadata: { model: model || "default" },
+          });
+          conversationId = conversation.id;
+        }
+
+        // Save user message
+        await conversationService.addMessage({
+          conversationId,
+          role: "user",
+          content: prompt,
+          metadata: telemetryOptions,
+          traceId,
         });
 
         let firstChunk = true;
         for await (const chunk of stream) {
           if (typeof chunk === "string") {
+            assistantResponse += chunk;
             reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(chunk)}\n`);
           } else {
             const event = chunk as StreamEvent;
 
             if (isTextChunk(event)) {
+              assistantResponse += event.data;
               reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(event.data)}\n`);
             } else if (isMetadataChunk(event)) {
               reply.raw.write(`${STREAM_EVENT.METADATA}:${JSON.stringify(event.data)}\n`);
@@ -297,7 +336,21 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           }
         }
 
-        reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify({ finishReason: "stop", traceId })}\n`);
+        // Save assistant message
+        if (assistantResponse.trim()) {
+          await conversationService.addMessage({
+            conversationId: conversationId!,
+            role: "assistant",
+            content: assistantResponse,
+            metadata: {
+              model: model || "default",
+              mcpVendors: mcpManager.getConnectedVendors(),
+            },
+            traceId,
+          });
+        }
+
+        reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify({ finishReason: "stop", traceId, conversationId })}\n`);
 
         const langfuseProvider = getLangfuseProvider();
         if (langfuseProvider?.isEnabled()) {

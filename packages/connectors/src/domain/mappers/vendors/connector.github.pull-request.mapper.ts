@@ -2,6 +2,7 @@ import type { GitHubPullRequestEntity, GitHubPullRequestExternal } from "@ait/co
 import type { GitHubPullRequestDataTarget } from "@ait/postgres";
 import type { ConnectorMapperDefinition } from "../../../types/domain/mappers/connector.mapper.interface";
 import { ConnectorMapper } from "../connector.mapper";
+import { ensureDate } from "../utils/connector.mapper.utils";
 
 const githubPullRequestMapping: ConnectorMapperDefinition<
   GitHubPullRequestExternal,
@@ -82,13 +83,13 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
 
   mergedAt: {
     external: (external) => (external.merged_at ? new Date(external.merged_at) : null),
-    domain: (domain) => domain.mergedAt,
+    domain: (domain) => ensureDate(domain.mergedAt),
     dataTarget: (dataTarget) => dataTarget.mergedAt ?? null,
   },
 
   closedAt: {
     external: (external) => (external.closed_at ? new Date(external.closed_at) : null),
-    domain: (domain) => domain.closedAt,
+    domain: (domain) => ensureDate(domain.closedAt),
     dataTarget: (dataTarget) => dataTarget.closedAt ?? null,
   },
 
@@ -281,13 +282,13 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
 
   prCreatedAt: {
     external: (external) => (external.created_at ? new Date(external.created_at) : null),
-    domain: (domain) => domain.prCreatedAt,
+    domain: (domain) => ensureDate(domain.prCreatedAt),
     dataTarget: (dataTarget) => dataTarget.prCreatedAt ?? null,
   },
 
   prUpdatedAt: {
     external: (external) => (external.updated_at ? new Date(external.updated_at) : null),
-    domain: (domain) => domain.prUpdatedAt,
+    domain: (domain) => ensureDate(domain.prUpdatedAt),
     dataTarget: (dataTarget) => dataTarget.prUpdatedAt ?? null,
   },
 
@@ -301,6 +302,18 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
     external: (external) => (external.base?.repo ? ({ ...external.base.repo } as Record<string, unknown>) : null),
     domain: (domain) => domain.baseRepoData,
     dataTarget: (dataTarget) => (dataTarget.baseRepoData as Record<string, unknown> | null) ?? null,
+  },
+
+  createdAt: {
+    external: (external) => (external.created_at ? new Date(external.created_at) : null),
+    domain: (domain) => ensureDate(domain.createdAt),
+    dataTarget: (dataTarget) => dataTarget.createdAt ?? null,
+  },
+
+  updatedAt: {
+    external: (external) => (external.updated_at ? new Date(external.updated_at) : null),
+    domain: (domain) => ensureDate(domain.updatedAt),
+    dataTarget: (dataTarget) => dataTarget.updatedAt ?? null,
   },
 
   __type: {
