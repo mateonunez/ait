@@ -134,7 +134,7 @@ export class ActivityAggregatorService {
 
   private _getCacheKey(range: string): string {
     const now = new Date();
-    const ts = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${now.getHours()}`;
+    const ts = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
     return `activity:${range}:${ts}`;
   }
 
@@ -144,7 +144,8 @@ export class ActivityAggregatorService {
   }
 
   private async _cacheData(key: string, data: ActivityData): Promise<void> {
-    const res = getCacheService().set(key, data, 300 * 1000);
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    const res = getCacheService().set(key, data, ONE_DAY_MS);
     if (res instanceof Promise) await res;
   }
 
