@@ -110,6 +110,7 @@ export class AItClient {
       temperature: options.temperature ?? this.config.generation.temperature,
       topP: options.topP ?? this.config.generation.topP,
       topK: options.topK ?? this.config.generation.topK,
+      tools: options.tools,
     };
 
     const streamOptions = options.messages?.length
