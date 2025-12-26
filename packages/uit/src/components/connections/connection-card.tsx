@@ -61,7 +61,10 @@ export function ConnectionCard({
       <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: colors.bg ?? "" }} />
 
       <CardHeader className="flex flex-row items-center gap-4 pb-2 pt-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: colors.bg ?? "" }}>
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-lg"
+          style={{ backgroundColor: colors.bg ?? "" }}
+        >
           <Icon className="h-5 w-5" style={{ color: colors.text ?? "" }} />
         </div>
 

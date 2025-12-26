@@ -80,7 +80,6 @@ export async function clearOAuthData(provider: string): Promise<void> {
   await _pgClient.db.delete(oauthTokens).where(drizzleOrm.eq(oauthTokens.provider, provider)).execute();
 }
 
-
 export function isTokenExpiringSoon(expiresAt: Date, updatedAt: Date): boolean {
   const now = new Date();
   const msUntilExpiry = expiresAt.getTime() - now.getTime();
@@ -102,4 +101,3 @@ export function isTokenExpiringSoon(expiresAt: Date, updatedAt: Date): boolean {
   // For longer-lived tokens, use 24-hour threshold
   return hoursUntilExpiry <= 24;
 }
-

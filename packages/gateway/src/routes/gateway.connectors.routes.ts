@@ -51,5 +51,3 @@ export default async function connectorsRoutes(fastify: FastifyInstance) {
     }
   });
 }
-
-
