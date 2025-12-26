@@ -46,7 +46,7 @@ export function ConversationsHistory({
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col flex-1 min-h-0">
       <div className="p-4">
         <Button onClick={onNewChat} variant="outline" className="w-full">
           <MessageCircle className="h-4 w-4 mr-2" />
@@ -56,7 +56,7 @@ export function ConversationsHistory({
 
       <Separator />
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 min-h-0">
         <div className="p-2 space-y-1">
           {conversations.length === 0 ? (
             <div className="text-center p-8">
