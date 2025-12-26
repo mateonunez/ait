@@ -30,7 +30,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const pageTitle = headerTitle || PAGE_TITLES[location] || "AIt";
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
       <AppSidebar />
       <SidebarInset className="min-w-0">
         <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center justify-between border-b bg-background px-4">

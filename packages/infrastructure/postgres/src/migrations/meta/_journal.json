@@ -225,6 +225,13 @@
       "when": 1766684296304,
       "tag": "0031_wild_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1766749043473,
+      "tag": "0032_unusual_the_fallen",
+      "breakpoints": true
     }
   ]
 }

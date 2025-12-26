@@ -179,16 +179,6 @@ export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
 export { getAnalyticsService } from "./services/analytics/analytics.service";
 
-export { getFeedbackService, resetFeedbackService, FeedbackService } from "./services/feedback/feedback.service";
-export type {
-  Feedback,
-  FeedbackRating,
-  FeedbackStats,
-  FeedbackMetadata,
-  QualityTrendPoint,
-  ProblematicTrace,
-} from "./services/feedback/types";
-
 export { smoothStream } from "./services/text-generation/utils/stream.utils";
 
 export {

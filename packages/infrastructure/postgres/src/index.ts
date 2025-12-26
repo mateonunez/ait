@@ -10,3 +10,4 @@ export * from "./schemas/connector.slack.schema";
 export * from "./schemas/connector.google-calendar.schema";
 export * from "./schemas/connector.google-youtube.schema";
 export * from "./schemas/chat.schema";
+export * from "./schemas/feedback.schema";
