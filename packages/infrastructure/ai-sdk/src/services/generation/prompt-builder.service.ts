@@ -94,10 +94,17 @@ export class PromptBuilderService implements IPromptBuilderService {
     // Add conversation history if present
     if (conversationHistory && conversationHistory.length > 0) {
       for (const msg of conversationHistory) {
-        messages.push({
-          role: msg.role as "user" | "assistant" | "system" | "tool",
-          content: msg.content,
-        });
+        switch (msg.role) {
+          case "user":
+            messages.push({ role: "user", content: msg.content });
+            break;
+          case "assistant":
+            messages.push({ role: "assistant", content: msg.content });
+            break;
+          case "system":
+            messages.push({ role: "system", content: msg.content });
+            break;
+        }
       }
     }
 

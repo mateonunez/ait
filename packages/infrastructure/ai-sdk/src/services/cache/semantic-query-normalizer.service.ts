@@ -1,11 +1,9 @@
 import { getLogger } from "@ait/core";
-import { generateText } from "ai";
-import { createOllama } from "ollama-ai-provider-v2";
-import { GenerationModels } from "./../../config/models.config";
+import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
+import { GenerationModels } from "../../config/models.config";
 
 const logger = getLogger();
 
-const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
 // Use a fast, lightweight model for normalization - much faster than full generation model
 const DEFAULT_NORMALIZER_MODEL = process.env.SEMANTIC_NORMALIZER_MODEL || GenerationModels.GPT_OSS_20B_CLOUD;
 
@@ -40,19 +38,13 @@ Examples:
 User Query: `;
 
 export class SemanticQueryNormalizer {
-  private readonly _ollamaProvider;
-  private readonly _model;
   private readonly _cache = new Map<string, string>();
   private readonly _modelName: string;
+  private readonly _client: AItClient;
 
-  constructor(modelName?: string) {
-    const rawBaseURL = DEFAULT_OLLAMA_BASE_URL;
-    const apiBaseURL = rawBaseURL.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
-    this._ollamaProvider = createOllama({ baseURL: apiBaseURL });
-
+  constructor(client?: AItClient, modelName?: string) {
     this._modelName = modelName || DEFAULT_NORMALIZER_MODEL;
-    this._model = this._ollamaProvider(this._modelName);
-
+    this._client = client || getAItClient();
     logger.info("SemanticQueryNormalizer initialized", { model: this._modelName });
   }
 
@@ -66,13 +58,12 @@ export class SemanticQueryNormalizer {
 
     try {
       const startTime = Date.now();
-      const { text } = await generateText({
-        model: this._model,
+      const result = await this._client.generateText({
         prompt: NORMALIZATION_PROMPT + query,
         temperature: 0, // Deterministic output for caching
       });
 
-      const intent = this._parseIntent(text, collection);
+      const intent = this._parseIntent(result.text, collection);
       const canonicalKey = this._buildCanonicalKey(intent);
 
       const duration = Date.now() - startTime;

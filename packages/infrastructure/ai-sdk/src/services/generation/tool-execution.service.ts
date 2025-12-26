@@ -1,9 +1,9 @@
 import { getLogger } from "@ait/core";
 import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
-import type { OllamaToolCall } from "../../client/ollama.provider";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
-import { convertToOllamaTools } from "../../tools/tool.converter";
+import { convertToCoreTools } from "../../tools/tool.converter";
 import type { ChatMessage } from "../../types/chat";
+import type { ToolCall } from "../../types/models";
 import type { TraceContext } from "../../types/telemetry";
 import type { ToolExecutionConfig, ToolExecutionResult } from "../../types/text-generation";
 import type { Tool } from "../../types/tools";
@@ -49,7 +49,7 @@ export interface IToolExecutionService {
    * @returns Execution results
    */
   executeToolCalls(
-    toolCalls: OllamaToolCall[],
+    toolCalls: ToolCall[],
     tools: Record<string, Tool>,
     traceContext?: TraceContext | null,
   ): Promise<ToolExecutionResult[]>;
@@ -84,13 +84,13 @@ export class ToolExecutionService implements IToolExecutionService {
   }
 
   async executeToolCalls(
-    toolCalls: OllamaToolCall[],
+    toolCalls: ToolCall[],
     tools: Record<string, Tool>,
     traceContext?: TraceContext | null,
   ): Promise<ToolExecutionResult[]> {
     const results = await Promise.all(
       toolCalls.map(async (toolCall) => {
-        const toolName = toolCall.function.name;
+        const toolName = toolCall.toolName;
         const tool = tools[toolName];
         const startTime = Date.now();
 
@@ -112,14 +112,11 @@ export class ToolExecutionService implements IToolExecutionService {
         while (attempt < maxAttempts) {
           try {
             logger.info(`Executing tool: ${toolName}`, {
-              arguments: toolCall.function.arguments,
+              arguments: toolCall.args,
               attempt: attempt + 1,
             });
 
-            const result = await this._executeWithTimeout(
-              tool.execute(toolCall.function.arguments),
-              this._toolTimeoutMs,
-            );
+            const result = await this._executeWithTimeout(tool.execute(toolCall.args), this._toolTimeoutMs);
 
             const executionTimeMs = Date.now() - startTime;
             logger.info(`Tool ${toolName} completed`, { executionTimeMs });
@@ -136,7 +133,7 @@ export class ToolExecutionService implements IToolExecutionService {
                 `tool/${toolName}`,
                 "tool",
                 traceContext,
-                { toolName, parameters: toolCall.function.arguments },
+                { toolName, parameters: toolCall.args },
                 undefined,
                 new Date(startTime),
               );
@@ -171,7 +168,7 @@ export class ToolExecutionService implements IToolExecutionService {
                   `tool/${toolName}`,
                   "tool",
                   traceContext,
-                  { toolName, parameters: toolCall.function.arguments },
+                  { toolName, parameters: toolCall.args },
                   undefined,
                   new Date(startTime),
                 );
@@ -246,7 +243,7 @@ export class ToolExecutionService implements IToolExecutionService {
       };
     }
 
-    const ollamaTools = convertToOllamaTools(input.tools);
+    const ollamaTools = convertToCoreTools(input.tools);
     const toolCalls: unknown[] = [];
     const toolResults: unknown[] = [];
     let hasToolCalls = false;
@@ -295,9 +292,9 @@ export class ToolExecutionService implements IToolExecutionService {
         });
 
         // Append assistant's tool calls to history
-        const toolNames = checkResult.toolCalls.map((tc) => tc.function.name).join(", ");
+        const toolNames = checkResult.toolCalls.map((tc) => tc.toolName).join(", ");
         const toolCallDetails = checkResult.toolCalls
-          .map((tc) => `Tool Call: ${tc.function.name}\nArguments: ${JSON.stringify(tc.function.arguments)}`)
+          .map((tc) => `Tool Call: ${tc.toolName}\nArguments: ${JSON.stringify(tc.args)}`)
           .join("\n\n");
 
         currentMessages.push({

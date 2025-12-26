@@ -80,12 +80,14 @@ OAuth Auth → Connector → PostgreSQL → ETL/Scheduler → Embeddings → Qdr
 | Package | Path | Description |
 |---------|------|-------------|
 | **Core** | `packages/core` | Shared utilities, types, errors, HTTP client |
-| **Connectors** | `packages/connectors` | OAuth 2.0 integrations (GitHub, Linear, Spotify, X) |
+| **Connectors** | `packages/connectors` | OAuth 2.0 integrations (GitHub, Linear, Spotify, X, Notion, Slack, Google Calendar) |
 | **Gateway** | `packages/gateway` | Unified API gateway for all connectors |
 | **AI SDK** | `packages/infrastructure/ai-sdk` | RAG, text generation, embeddings with Ollama |
+| **Store** | `packages/infrastructure/store` | Application data store (conversations, feedback, goals) |
 | **Scheduler** | `packages/infrastructure/scheduler` | Automated ETL job scheduling with BullMQ |
 | **RetoVe** | `packages/transformers/retove` | ETL pipeline for vector embeddings |
 | **UIt** | `packages/uit` | Web interface (React + Vite) |
+| **Rocks** | `packages/rocks` | Landing page (React + Vite + Tailwind) |
 
 ## Key Features
 
@@ -134,8 +136,14 @@ LINEAR_CLIENT_SECRET=your_linear_secret
 X_CLIENT_ID=your_x_client_id
 X_CLIENT_SECRET=your_x_secret
 
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+NOTION_CLIENT_ID=your_notion_client_id
+NOTION_CLIENT_SECRET=your_notion_secret
+
+SLACK_CLIENT_ID=your_slack_client_id
+SLACK_CLIENT_SECRET=your_slack_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_secret
 ```
 
 See individual package READMEs and [.env.example](.env.example) for all available options.
@@ -189,6 +197,7 @@ pnpm clean:all            # Full cleanup (node_modules, dist, services)
 | [Gateway](packages/gateway/README.md) | API gateway and OAuth authentication |
 | [Connectors](packages/connectors/README.md) | Platform integrations framework |
 | [AI SDK](packages/infrastructure/ai-sdk/README.md) | RAG and text generation |
+| [Store](packages/infrastructure/store/README.md) | Data persistence for conversations, feedback, goals |
 | [Scheduler](packages/infrastructure/scheduler/README.md) | ETL job scheduling |
 | [ETL Pipeline](packages/transformers/retove/README.md) | Data transformation |
 | [PostgreSQL](packages/infrastructure/postgres/README.md) | Database client |
@@ -196,6 +205,7 @@ pnpm clean:all            # Full cleanup (node_modules, dist, services)
 | [Ollama](packages/infrastructure/ollama/README.md) | LLM service setup |
 | [Redis](packages/infrastructure/redis/README.md) | Job queue and caching |
 | [UIt](packages/uit/README.md) | Web interface |
+| [Rocks](packages/rocks/README.md) | Landing page |
 
 ## Troubleshooting
 

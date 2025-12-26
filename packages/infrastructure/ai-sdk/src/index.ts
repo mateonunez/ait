@@ -11,9 +11,6 @@ export {
   type AItClient,
   type AItClientConfig,
   type InitOptions,
-  type LlmGenerateTextOptions,
-  type LlmStreamOptions,
-  type LlmStructuredGenerationOptions,
 } from "./client/ai-sdk.client";
 
 export {
@@ -88,7 +85,7 @@ export type { Tool, ToolResult } from "./types/tools";
 export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";
 export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
 
-export { convertToOllamaTools } from "./tools/tool.converter";
+export { convertToCoreTools } from "./tools/tool.converter";
 export {
   createAllConnectorTools,
   createAllConnectorToolsWithMCP,
