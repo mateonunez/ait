@@ -154,10 +154,6 @@
     @apply overflow-y-auto;
   }
 
-  .dark .streamdown-wrapper pre code {
-    filter: invert(0.98) hue-rotate(180deg);
-  }
-
   .custom-scrollbar::-webkit-scrollbar {
     @apply w-2;
   }
@@ -177,11 +173,11 @@
   }
 
   .streamdown-wrapper {
-    @apply text-sm leading-relaxed;
+    @apply text-sm leading-relaxed text-foreground;
   }
 
   .streamdown-wrapper p {
-    @apply my-2 first:mt-0 last:mb-0;
+    @apply my-2 first:mt-0 last:mb-0 text-foreground;
   }
 
   .streamdown-wrapper h1,
@@ -190,7 +186,7 @@
   .streamdown-wrapper h4,
   .streamdown-wrapper h5,
   .streamdown-wrapper h6 {
-    @apply font-semibold mt-4 mb-2 first:mt-0;
+    @apply font-semibold mt-4 mb-2 first:mt-0 text-foreground;
   }
 
   .streamdown-wrapper ul,
@@ -202,8 +198,19 @@
     @apply my-0.5;
   }
 
-  .streamdown-wrapper code {
-    @apply text-xs bg-primary/10 px-1.5 py-0.5 rounded font-mono;
+  .streamdown-wrapper > code,
+  .streamdown-wrapper p code,
+  .streamdown-wrapper li code {
+    @apply text-xs px-1.5 py-0.5 rounded font-mono;
+    background-color: hsl(0 0% 90%);
+    color: var(--neutral-800);
+  }
+
+  .dark .streamdown-wrapper > code,
+  .dark .streamdown-wrapper p code,
+  .dark .streamdown-wrapper li code {
+    background-color: hsl(0 0% 25%);
+    color: var(--neutral-100);
   }
 
   .streamdown-wrapper pre {
@@ -213,6 +220,12 @@
   .streamdown-wrapper pre code {
     @apply bg-transparent p-0 text-sm leading-relaxed;
     font-family: inherit;
+    color: inherit;
+  }
+
+  .dark .streamdown-wrapper pre code {
+    background: transparent !important;
+    color: inherit;
   }
 
   .streamdown-wrapper div + pre {
@@ -231,8 +244,12 @@
     border-top: 0 !important; /* Let the header's bottom border handle the separator */
   }
 
-  .dark .streamdown-wrapper pre[data-streamdown="code-block"] span {
-    color: var(--shiki-dark) !important;
+  .dark .streamdown-wrapper pre span {
+    color: var(--shiki-dark, var(--neutral-200)) !important;
+  }
+
+  .dark .streamdown-wrapper pre code {
+    color: var(--shiki-dark, var(--neutral-200)) !important;
   }
 
   .streamdown-wrapper blockquote {

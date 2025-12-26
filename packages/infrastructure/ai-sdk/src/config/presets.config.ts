@@ -95,7 +95,7 @@ const RAG_OPTIMIZED_PRESET: PresetConfig = {
   },
   textGeneration: {
     multipleQueryPlannerConfig: {
-      maxDocs: 10,
+      maxDocs: 33,
       queriesCount: 12,
       concurrency: 4,
     },
@@ -161,7 +161,7 @@ const TOOL_FOCUSED_PRESET: PresetConfig = {
       concurrency: 3,
     },
     conversationConfig: {
-      maxRecentMessages: 10,
+      maxRecentMessages: 20,
       maxHistoryTokens: 4000,
       enableSummarization: false,
     },
@@ -285,11 +285,11 @@ const PRODUCTION_PRESET: PresetConfig = {
   textGeneration: {
     multipleQueryPlannerConfig: {
       maxDocs: 80,
-      queriesCount: 10,
+      queriesCount: 20,
       concurrency: 4,
     },
     conversationConfig: {
-      maxRecentMessages: 10,
+      maxRecentMessages: 20,
       maxHistoryTokens: 4000,
       enableSummarization: false,
     },

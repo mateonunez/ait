@@ -282,7 +282,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         // Create conversation if not provided
         if (!conversationId) {
           const title = await textGenerationService.generateText({
-            prompt: `Generate a 33 chars title for the following prompt: ${prompt}`,
+            prompt: `You're an expert at generating titles for conversations, based on Nietzsche's style. Generate a 33 chars title for the following prompt, do not include any additional text or characters, simple text and concise: ${prompt}`,
             telemetryOptions,
           });
 
