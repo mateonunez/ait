@@ -23,15 +23,15 @@
     "@ait/core": "workspace:*",
     "@ait/qdrant": "workspace:*",
     "@ait/store": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.25.1",
-    "ai": "^6.0.3",
-    "chrono-node": "^2.9.0",
+    "@modelcontextprotocol/sdk": "^1.24.3",
+    "ai": "^5.0.82",
+    "chrono-node": "^2.7.7",
     "dotenv": "^17.2.3",
     "js-tiktoken": "^1.0.21",
-    "langfuse": "^3.38.6",
-    "ollama-ai-provider-v2": "^1.5.5",
+    "langfuse": "^3.30.3",
+    "ollama-ai-provider-v2": "^1.5.2",
     "stopword": "^3.1.5",
-    "zod": "^4.2.1"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@types/node": "^24.9.1",

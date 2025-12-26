@@ -13,6 +13,8 @@ import { type IGoalRepository, getGoalRepository } from "../repositories/goal.re
 
 const logger = getLogger();
 
+export type IntegrationVendorWithYoutube = IntegrationVendor | "youtube";
+
 export class GoalService {
   private _repository: IGoalRepository;
 
@@ -95,7 +97,7 @@ export class GoalService {
   private mapActivityDataToGoalCounts(activityData: ActivityData): Partial<Record<GoalType, number>> {
     const counts: Partial<Record<GoalType, number>> = {};
 
-    const mapping: Record<IntegrationVendor, GoalType[]> = {
+    const mapping: Record<IntegrationVendorWithYoutube, GoalType[]> = {
       github: ["commit", "commits"],
       spotify: ["recently_played", "songs", "track"],
       slack: ["message", "messages"],

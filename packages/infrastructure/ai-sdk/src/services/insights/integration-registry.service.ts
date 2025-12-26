@@ -1,4 +1,5 @@
 import { ENTITY_METADATA, type EntityType, type IntegrationVendor, SUPPORTED_VENDORS, getLogger } from "@ait/core";
+import type { IntegrationVendorWithYoutube } from "@ait/store";
 
 const logger = getLogger();
 
@@ -64,7 +65,7 @@ export class IntegrationRegistryService {
   }
 
   getVendorDisplayName(vendor: IntegrationVendor): string {
-    const displayNames: Record<IntegrationVendor, string> = {
+    const displayNames: Record<IntegrationVendorWithYoutube, string> = {
       github: "GitHub",
       linear: "Linear",
       spotify: "Spotify",
@@ -100,8 +101,8 @@ export class IntegrationRegistryService {
     return null;
   }
 
-  getUnitLabel(vendor: IntegrationVendor): string {
-    const units: Record<IntegrationVendor, string> = {
+  getUnitLabel(vendor: IntegrationVendorWithYoutube): string {
+    const units: Record<IntegrationVendorWithYoutube, string> = {
       spotify: "songs",
       github: "commits",
       slack: "messages",
@@ -114,8 +115,8 @@ export class IntegrationRegistryService {
     return units[vendor] || "items";
   }
 
-  getActivityLabel(vendor: IntegrationVendor): string {
-    const labels: Record<IntegrationVendor, string> = {
+  getActivityLabel(vendor: IntegrationVendorWithYoutube): string {
+    const labels: Record<IntegrationVendorWithYoutube, string> = {
       spotify: "music listening",
       github: "coding",
       slack: "team communication",
