@@ -104,7 +104,10 @@ export default function HomePage() {
 
   return (
     <InsightsProvider initialTimeRange={timeRange}>
-      <motion.div {...animationVariants} className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <motion.div
+        {...animationVariants}
+        className="flex-1 flex flex-col overflow-y-auto custom-scrollbar min-w-0 min-h-0"
+      >
         <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
           <div className="container mx-auto max-w-7xl space-y-2">
             <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Welcome back</h2>
@@ -130,7 +133,7 @@ export default function HomePage() {
             <IntegrationsList />
           </div>
 
-          <div className={cn("flex-1 overflow-y-auto custom-scrollbar pb-24 sm:pb-28")}>
+          <div className={cn("pb-24 sm:pb-28")}>
             <HomeFeed
               isLoading={isLoading}
               sections={HOME_SECTIONS}

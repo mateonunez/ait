@@ -1,12 +1,19 @@
-import { getLogger } from "@ait/core";
+import {
+  type ActivityData,
+  ENTITY_METADATA,
+  type EntityActivityBreakdown,
+  type EntityType,
+  type IntegrationActivity,
+  type IntegrationVendor,
+  getLogger,
+} from "@ait/core";
 import { getCacheService } from "../cache/cache.service";
-import type { ActivityData, EntityActivityBreakdown, IntegrationActivity } from "./insights.types";
-import { type ConnectorType, type EntityMetadata, getIntegrationRegistryService } from "./integration-registry.service";
+import { getIntegrationRegistryService } from "./integration-registry.service";
 
 const logger = getLogger();
 
 export interface IConnectorServiceFactory {
-  getService<T = any>(connectorType: ConnectorType): T;
+  getService<T = any>(vendor: IntegrationVendor): T;
 }
 
 export class ActivityAggregatorService {
@@ -20,9 +27,8 @@ export class ActivityAggregatorService {
   async fetchActivityData(range: "week" | "month" | "year"): Promise<ActivityData> {
     const days = range === "week" ? 7 : range === "month" ? 30 : 365;
     const cacheKey = this._getCacheKey(range);
-    const cacheService = getCacheService();
-    const cachedResult = cacheService.get<ActivityData>(cacheKey);
-    const cached = cachedResult instanceof Promise ? await cachedResult : cachedResult;
+
+    const cached = await this._getCachedData(cacheKey);
     if (cached) {
       logger.info("Activity data served from cache", { range, cacheKey });
       return cached;
@@ -30,228 +36,142 @@ export class ActivityAggregatorService {
 
     logger.info("Fetching fresh activity data", { range, days });
 
-    const connectorTypes = this.registry.getAvailableConnectorTypes();
+    const vendors = this.registry.getAvailableVendors();
     const activityData: ActivityData = {};
 
-    for (const connectorType of connectorTypes) {
+    for (const vendor of vendors) {
       try {
-        const result = await this._fetchIntegrationActivity(connectorType, days);
-        if (result.activity) {
-          activityData[connectorType] = result.activity;
-          logger.info(`Successfully fetched ${connectorType} activity`, {
-            total: result.activity.total,
-            dailyEntries: result.activity.daily.length,
-            entityCount: Object.keys(result.activity.byEntity || {}).length,
-          });
-        } else {
-          activityData[connectorType] = {
-            total: 0,
-            daily: this._generateEmptyDateRange(days),
-            byEntity: {},
-          };
+        activityData[vendor] = await this._fetchVendorActivity(vendor, days);
+      } catch (error) {
+        logger.error(`Failed to fetch activity for ${vendor}`, { error });
+        activityData[vendor] = this._getEmptyActivity(days);
+      }
+    }
+
+    await this._cacheData(cacheKey, activityData);
+    return activityData;
+  }
+
+  private async _fetchVendorActivity(vendor: IntegrationVendor, days: number): Promise<IntegrationActivity> {
+    const service = this.connectorServiceFactory.getService(vendor);
+    const entityTypes = this.registry.getEntitiesByVendor(vendor);
+
+    const byEntity: Record<string, EntityActivityBreakdown> = {};
+    let grandTotal = 0;
+    const aggregatedDaily = new Map<string, number>();
+
+    // Initialize daily map
+    for (const date of this._generateDateRange(days)) {
+      aggregatedDaily.set(date, 0);
+    }
+
+    for (const entityType of entityTypes) {
+      const fetchConfig = this.registry.getFetchConfig(entityType);
+      if (!fetchConfig) continue;
+
+      try {
+        const entityActivity = await this._fetchEntityActivity(service, entityType, fetchConfig, days);
+        byEntity[entityType] = entityActivity;
+        grandTotal += entityActivity.total;
+
+        for (const { date, count } of entityActivity.daily) {
+          aggregatedDaily.set(date, (aggregatedDaily.get(date) || 0) + count);
         }
       } catch (error: any) {
-        logger.error(`Failed to fetch activity for ${connectorType}`, {
-          error: error.message,
-          stack: error.stack,
-        });
-
-        activityData[connectorType] = {
+        logger.warn(`Failed to fetch ${entityType} for ${vendor}`, { error: error.message });
+        byEntity[entityType] = {
           total: 0,
-          daily: this._generateEmptyDateRange(days),
-          byEntity: {},
+          daily: this._generateEmptyDaily(days),
+          displayName: ENTITY_METADATA[entityType].labelPlural,
         };
       }
     }
 
-    const totals = Object.entries(activityData).map(([key, val]) => ({ [key]: val?.total || 0 }));
-    logger.info("Activity data aggregated", {
-      integrations: Object.keys(activityData),
-      totals,
-    });
-
-    const setResult = cacheService.set(cacheKey, activityData, 300 * 1000);
-    if (setResult instanceof Promise) {
-      await setResult;
-    }
-    logger.debug("Activity data cached", { cacheKey, ttl: 300 });
-
-    return activityData;
-  }
-
-  private _getCacheKey(range: "week" | "month" | "year"): string {
-    const now = new Date();
-    const dateHour = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}-${now.getHours()}`;
-    return `activity:${range}:${dateHour}`;
-  }
-
-  private async _fetchIntegrationActivity(
-    connectorType: ConnectorType,
-    days: number,
-  ): Promise<{ connectorType: ConnectorType; activity: IntegrationActivity }> {
-    const metadata = this.registry.getMetadata(connectorType);
-    if (!metadata) {
-      throw new Error(`No metadata found for connector type: ${connectorType}`);
-    }
-
-    const entities = this.registry.getEntities(connectorType);
-    if (entities.length === 0) {
-      throw new Error(`No entities found for connector type: ${connectorType}`);
-    }
-
-    try {
-      const service = this.connectorServiceFactory.getService(connectorType);
-      const byEntity: Record<string, EntityActivityBreakdown> = {};
-      let grandTotal = 0;
-      const aggregatedDaily = new Map<string, number>();
-
-      // Initialize date range
-      for (const date of this._generateDateRange(days)) {
-        aggregatedDaily.set(date, 0);
-      }
-
-      // Fetch activity for each entity type
-      for (const entityMeta of entities) {
-        try {
-          const entityActivity = await this._fetchEntityActivity(service, entityMeta, days);
-          byEntity[entityMeta.entityType] = entityActivity;
-          grandTotal += entityActivity.total;
-
-          // Aggregate daily counts
-          for (const { date, count } of entityActivity.daily) {
-            aggregatedDaily.set(date, (aggregatedDaily.get(date) || 0) + count);
-          }
-
-          logger.debug(`Fetched ${entityMeta.entityType} for ${connectorType}`, {
-            total: entityActivity.total,
-          });
-        } catch (entityError: any) {
-          logger.warn(`Failed to fetch ${entityMeta.entityType} for ${connectorType}`, {
-            error: entityError.message,
-          });
-          // Add empty entry for this entity
-          byEntity[entityMeta.entityType] = {
-            total: 0,
-            daily: this._generateEmptyDateRange(days),
-            displayName: entityMeta.displayName,
-          };
-        }
-      }
-
-      const daily = Array.from(aggregatedDaily.entries())
+    return {
+      total: grandTotal,
+      daily: Array.from(aggregatedDaily.entries())
         .map(([date, count]) => ({ date, count }))
-        .sort((a, b) => a.date.localeCompare(b.date));
-
-      const activity: IntegrationActivity = {
-        total: grandTotal,
-        daily,
-        byEntity,
-      };
-
-      return { connectorType, activity };
-    } catch (error: any) {
-      logger.error("Error fetching integration activity", {
-        connectorType,
-        error: error.message,
-        stack: error.stack,
-      });
-
-      return {
-        connectorType,
-        activity: {
-          total: 0,
-          daily: this._generateEmptyDateRange(days),
-          byEntity: {},
-        },
-      };
-    }
+        .sort((a, b) => a.date.localeCompare(b.date)),
+      byEntity,
+    };
   }
 
   private async _fetchEntityActivity(
     service: any,
-    entityMeta: EntityMetadata,
+    entityType: EntityType,
+    config: any,
     days: number,
   ): Promise<EntityActivityBreakdown> {
-    if (typeof service[entityMeta.fetchMethod] !== "function") {
-      throw new Error(`Method ${entityMeta.fetchMethod} not found on service`);
+    if (typeof service[config.fetchMethod] !== "function") {
+      throw new Error(`Method ${config.fetchMethod} not found on service`);
     }
 
-    const response = await service[entityMeta.fetchMethod]({ limit: 10000, page: 1 });
+    const response = await service[config.fetchMethod]({ limit: 10000, page: 1 });
     const entities = response?.data || [];
 
-    logger.debug(`Fetched ${entities.length} ${entityMeta.entityType} entities`, {
-      fetchMethod: entityMeta.fetchMethod,
-    });
-
-    const daily = this._groupByDay(entities, entityMeta.dateField, days);
-    const total = daily.reduce((sum, day) => sum + day.count, 0);
-
-    return {
-      total,
-      daily,
-      displayName: entityMeta.displayName,
-    };
-  }
-
-  private _groupByDay(
-    entities: any[],
-    dateField: string | string[],
-    days: number,
-  ): Array<{ date: string; count: number }> {
     const grouped = new Map<string, number>();
     const dateRange = this._generateDateRange(days);
-
-    for (const date of dateRange) {
-      grouped.set(date, 0);
-    }
-
-    let validDatesCount = 0;
-    let invalidDatesCount = 0;
+    for (const date of dateRange) grouped.set(date, 0);
 
     for (const entity of entities) {
-      const date = this.registry.extractDateFromEntity(entity, dateField);
+      const date = this.registry.extractDateFromEntity(entity, config.dateField);
       if (date) {
-        const dateKey = date.toISOString().split("T")[0]!;
-        if (grouped.has(dateKey)) {
-          grouped.set(dateKey, (grouped.get(dateKey) || 0) + 1);
-          validDatesCount++;
-        } else {
-          invalidDatesCount++;
-        }
-      } else {
-        invalidDatesCount++;
+        const key = date.toISOString().split("T")[0]!;
+        if (grouped.has(key)) grouped.set(key, (grouped.get(key) || 0) + 1);
       }
     }
 
-    if (invalidDatesCount > 0) {
-      logger.debug(`Date extraction: ${validDatesCount} valid, ${invalidDatesCount} invalid`);
-    }
-
-    return Array.from(grouped.entries())
+    const daily = Array.from(grouped.entries())
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    return {
+      total: daily.reduce((sum, d) => sum + d.count, 0),
+      daily,
+      displayName: ENTITY_METADATA[entityType].labelPlural,
+    };
+  }
+
+  private _getCacheKey(range: string): string {
+    const now = new Date();
+    const ts = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-${now.getHours()}`;
+    return `activity:${range}:${ts}`;
+  }
+
+  private async _getCachedData(key: string): Promise<ActivityData | null> {
+    const res = getCacheService().get<ActivityData>(key);
+    return res instanceof Promise ? await res : res;
+  }
+
+  private async _cacheData(key: string, data: ActivityData): Promise<void> {
+    const res = getCacheService().set(key, data, 300 * 1000);
+    if (res instanceof Promise) await res;
+  }
+
+  private _getEmptyActivity(days: number): IntegrationActivity {
+    return {
+      total: 0,
+      daily: this._generateEmptyDaily(days),
+      byEntity: {},
+    };
+  }
+
+  private _generateEmptyDaily(days: number): Array<{ date: string; count: number }> {
+    return this._generateDateRange(days).map((date) => ({ date, count: 0 }));
   }
 
   private _generateDateRange(days: number): string[] {
     const dates: string[] = [];
     const today = new Date();
-
     for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      dates.push(date.toISOString().split("T")[0]!);
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dates.push(d.toISOString().split("T")[0]!);
     }
-
     return dates;
-  }
-
-  private _generateEmptyDateRange(days: number): Array<{ date: string; count: number }> {
-    return this._generateDateRange(days).map((date) => ({ date, count: 0 }));
   }
 }
 
-export function createActivityAggregatorService(
-  connectorServiceFactory: IConnectorServiceFactory,
-): ActivityAggregatorService {
-  return new ActivityAggregatorService(connectorServiceFactory);
+export function createActivityAggregatorService(factory: IConnectorServiceFactory): ActivityAggregatorService {
+  return new ActivityAggregatorService(factory);
 }

@@ -4,9 +4,9 @@
  * Re-export backend types from @ait/ai-sdk for easier frontend usage
  */
 
-import type { GoalPeriod, GoalType } from "@ait/ai-sdk";
+import type { GoalPeriod, GoalType } from "@ait/core";
 
-// Re-export all insight types from backend
+// Re-export all insight types from core
 export type {
   InsightsData,
   InsightSummary,
@@ -22,7 +22,7 @@ export type {
   UpdateGoalRequest,
   ActivityData,
   InsightsConfig,
-} from "@ait/ai-sdk";
+} from "@ait/core";
 
 /**
  * Frontend-specific UI state types

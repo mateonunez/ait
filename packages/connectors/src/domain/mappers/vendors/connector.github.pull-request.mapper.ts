@@ -303,6 +303,18 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget) => (dataTarget.baseRepoData as Record<string, unknown> | null) ?? null,
   },
 
+  createdAt: {
+    external: (external) => (external.created_at ? new Date(external.created_at).toISOString() : null),
+    domain: (domain) => domain.createdAt,
+    dataTarget: (dataTarget) => (dataTarget.createdAt ? dataTarget.createdAt.toISOString() : null),
+  },
+
+  updatedAt: {
+    external: (external) => (external.updated_at ? new Date(external.updated_at).toISOString() : null),
+    domain: (domain) => domain.updatedAt,
+    dataTarget: (dataTarget) => (dataTarget.updatedAt ? dataTarget.updatedAt.toISOString() : null),
+  },
+
   __type: {
     external: () => "pull_request" as const,
     domain: (domain) => domain.__type,

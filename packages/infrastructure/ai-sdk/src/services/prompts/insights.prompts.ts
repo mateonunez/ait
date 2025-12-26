@@ -1,135 +1,122 @@
-import type { ActivityData } from "../insights/insights.types";
+import type { ActivityData, IntegrationVendor } from "@ait/core";
 import { getIntegrationRegistryService } from "../insights/integration-registry.service";
 
-/**
- * Prompt templates for AI-powered insights generation
- */
+function formatActivityContext(activityData: ActivityData): string {
+  const registry = getIntegrationRegistryService();
+  const validEntries = Object.entries(activityData)
+    .filter(([_, data]) => data && typeof data === "object" && "total" in data)
+    .map(([vendor, data]) => ({
+      vendor: vendor as IntegrationVendor,
+      displayName: registry.getVendorDisplayName(vendor as IntegrationVendor),
+      total: data!.total,
+      unit: registry.getUnitLabel(vendor as IntegrationVendor),
+      daily: data && "daily" in data ? (data as any).daily : [],
+    }));
+
+  if (validEntries.length === 0) return "No activity recorded.";
+
+  return validEntries.map((e) => `- ${e.displayName}: ${e.total} ${e.unit}`).join("\n");
+}
+
+function formatDailyBreakdownContext(activityData: ActivityData): string {
+  const registry = getIntegrationRegistryService();
+  return Object.entries(activityData)
+    .filter(([_, data]) => data && typeof data === "object" && "daily" in data && Array.isArray((data as any).daily))
+    .map(([vendor, data]) => {
+      const displayName = registry.getVendorDisplayName(vendor as IntegrationVendor);
+      const recentDaily = (data as any).daily.slice(-7);
+      return `${displayName} (Last 7 days): ${JSON.stringify(recentDaily)}`;
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+const JSON_INSTRUCTIONS = `
+OUTPUT CONSTRAINTS:
+- Respond ONLY with a valid JSON object or array as specified.
+- Do not include any preamble, markdown code blocks, or post-response commentary.
+- Ensure all fields match the specified schema exactly.
+`;
 
 export function getSummaryPrompt(activityData: ActivityData, range: "week" | "month" | "year"): string {
-  const registry = getIntegrationRegistryService();
-  const integrationKeys = Object.keys(activityData).filter((key) => {
-    const data = activityData[key];
-    return data && typeof data === "object" && "total" in data;
-  });
-
-  // Calculate total activity dynamically
-  const totalActivity = integrationKeys.reduce((sum, key) => {
-    const data = activityData[key];
-    return sum + (data && typeof data === "object" && "total" in data ? data.total : 0);
-  }, 0);
-
+  const totalActivity = Object.values(activityData).reduce((sum, data) => sum + (data?.total || 0), 0);
   const rangeText = range === "week" ? "this week" : range === "month" ? "this month" : "this year";
 
-  // Build activity data list dynamically
-  const activityList = integrationKeys
-    .map((key) => {
-      const data = activityData[key];
-      if (!data || typeof data !== "object" || !("total" in data)) return "";
-      const displayName = registry.getDisplayName(key as any);
-      const unitLabel = registry.getUnitLabel(key as any);
-      return `- ${displayName}: ${data.total} ${unitLabel}`;
-    })
-    .filter(Boolean)
-    .join("\n");
+  return `
+Role: Senior Personal Insights Assistant
+Task: Generate a high-impact, motivational activity summary.
 
-  // Build daily breakdown for recent days
-  const dailyBreakdown = integrationKeys
-    .slice(0, 4) // Show up to 4 integrations in daily breakdown
-    .map((key) => {
-      const data = activityData[key];
-      if (!data || typeof data !== "object" || !("daily" in data) || !Array.isArray(data.daily)) return "";
-      const displayName = registry.getDisplayName(key as any);
-      return `${displayName}: ${JSON.stringify(data.daily.slice(-7))}`;
-    })
-    .filter(Boolean)
-    .join("\n");
+<ActivityData>
+Range: ${rangeText.toUpperCase()}
+Total Activities: ${totalActivity}
+Summary by Service:
+${formatActivityContext(activityData)}
 
-  return `Analyze the user's activity across multiple integrations and generate an engaging, personalized summary.
+Daily Trends:
+${formatDailyBreakdownContext(activityData)}
+</ActivityData>
 
-ACTIVITY DATA FOR ${rangeText.toUpperCase()}:
-${activityList}
+<Instructions>
+1. Audience: Second person ("You").
+2. Tone: Enthusiastic, supportive, and data-driven.
+3. Content: Highlight the biggest win or most consistent habit.
+4. Sentiment Logic:
+   - "positive": Activity is high or increasing.
+   - "neutral": Steady activity.
+   - "negative": Sharp decline in key metrics.
+5. Constraints:
+   - Keep description < 80 words.
+   - Title < 40 characters.
+   - Emoji must be highly relevant to the primary theme of the data.
+</Instructions>
 
-TOTAL ACTIVITIES: ${totalActivity}
+${JSON_INSTRUCTIONS}
 
-DAILY BREAKDOWN:
-${dailyBreakdown}
-
-INSTRUCTIONS:
-1. Write in second person ("You listened to...", "You committed...")
-2. Be encouraging, positive, and motivational
-3. Highlight the most interesting patterns or achievements
-4. Keep description under 100 words
-5. Create a catchy title (max 50 chars)
-6. Choose ONE relevant emoji that captures the vibe
-7. Extract 2-3 key highlights as short phrases
-8. Determine sentiment: positive (productive/active), neutral (steady), or negative (declining activity)
-
-TONE: Friendly, enthusiastic, and supportive - like a coding buddy celebrating your progress.
-
-IMPORTANT: Respond ONLY with valid JSON matching this exact schema:
+Expected Schema:
 {
   "type": "summary",
-  "title": "string (max 50 chars)",
-  "description": "string (max 100 words)",
+  "title": "A catchy, personalized headline",
+  "description": "Engaging 2-3 sentence summary of progress",
   "sentiment": "positive" | "neutral" | "negative",
-  "emoji": "string (single emoji)",
-  "highlights": ["string", "string"] (2-3 items)
-}`;
+  "emoji": "Single character emoji",
+  "highlights": ["Short phrase (3-4 words)", "Short phrase (3-4 words)"]
+}
+`;
 }
 
 export function getCorrelationPrompt(activityData: ActivityData): string {
-  const registry = getIntegrationRegistryService();
-  const integrationKeys = Object.keys(activityData).filter((key) => {
-    const data = activityData[key];
-    return data && typeof data === "object" && "total" in data && "daily" in data;
-  });
+  return `
+Role: Behavioral Analyst
+Task: Identify non-obvious correlations between different user activities.
 
-  // Build activity data list dynamically
-  const activityList = integrationKeys
-    .map((key) => {
-      const data = activityData[key];
-      if (!data || typeof data !== "object" || !("total" in data) || !("daily" in data)) return "";
-      const displayName = registry.getDisplayName(key as any);
-      const unitLabel = registry.getUnitLabel(key as any);
-      return `- ${displayName}: ${data.total} ${unitLabel} (daily: ${JSON.stringify(data.daily)})`;
-    })
-    .filter(Boolean)
-    .join("\n");
+<Context>
+${formatActivityContext(activityData)}
+Detailed Activity Stream:
+${formatDailyBreakdownContext(activityData)}
+</Context>
 
-  return `Identify interesting correlations and patterns between different activities.
+<AnalysisGoals>
+Find patterns like:
+- Deep focus (GitHub activity) vs communication (Slack/X).
+- Flow state triggers (Spotify tracks played before/during coding).
+- Work-life balance (Meetings vs Evening productivity).
+</AnalysisGoals>
 
-ACTIVITY DATA:
-${activityList}
+${JSON_INSTRUCTIONS}
 
-TASK: Find meaningful behavioral patterns such as:
-- Music listening habits during coding sessions
-- Communication patterns (Slack/X) vs coding productivity
-- Time-of-day patterns across activities
-- Activity clustering (high activity days vs quiet days)
-
-For each correlation:
-1. Identify which integrations are correlated
-2. Describe the pattern in plain language
-3. Provide a concrete example from the data
-4. Estimate correlation strength (0-100)
-5. Assign confidence level (0.0-1.0)
-
-RETURN: Up to 3 strongest correlations as JSON array.
-
-IMPORTANT: Respond ONLY with valid JSON array:
+Return up to 3 correlations in this format:
 [
   {
     "type": "correlation",
-    "integrations": ["integration1", "integration2"],
-    "pattern": "clear, concise pattern description",
-    "strength": 75,
-    "description": "detailed explanation of why this correlation matters",
-    "example": "specific example from the data",
-    "confidence": 0.8
+    "integrations": ["list", "of", "services"],
+    "pattern": "Concise observation",
+    "strength": 0-100,
+    "description": "Detailed hypothesis of the relationship",
+    "example": "Data-backed evidence from the provided context",
+    "confidence": 0.0-1.0
   }
 ]
-
-Return empty array [] if no significant patterns found.`;
+`;
 }
 
 export function getAnomalyPrompt(
@@ -138,142 +125,91 @@ export function getAnomalyPrompt(
   historicalStdDev: Record<string, number>,
 ): string {
   const registry = getIntegrationRegistryService();
-  const integrationKeys = Object.keys(currentData).filter((key) => {
-    const data = currentData[key];
-    return data && typeof data === "object" && "total" in data;
-  });
-
-  // Build current period list dynamically
-  const currentPeriodList = integrationKeys
-    .map((key) => {
-      const data = currentData[key];
-      if (!data || typeof data !== "object" || !("total" in data)) return "";
-      const displayName = registry.getDisplayName(key as any);
-      const unitLabel = registry.getUnitLabel(key as any);
-      return `- ${displayName}: ${data.total} ${unitLabel}`;
+  const baselineContext = Object.entries(historicalMean)
+    .map(([vendor, mean]) => {
+      const displayName = registry.getVendorDisplayName(vendor as IntegrationVendor);
+      return `- ${displayName}: Mean=${mean.toFixed(1)}, StdDev=${(historicalStdDev[vendor] || 0).toFixed(1)}`;
     })
-    .filter(Boolean)
     .join("\n");
 
-  // Build historical baseline list dynamically
-  const historicalList = integrationKeys
-    .map((key) => {
-      const displayName = registry.getDisplayName(key as any);
-      const mean = historicalMean[key] || 0;
-      const stdDev = historicalStdDev[key] || 0;
-      return `- ${displayName}: ${mean} ± ${stdDev}`;
-    })
-    .filter(Boolean)
-    .join("\n");
+  return `
+Role: Statistical Anomaly Detector
+Task: Identify significant deviations from the user's historical baseline.
 
-  return `Detect unusual patterns or deviations from normal behavior.
+<Baseline>
+${baselineContext}
+</Baseline>
 
-CURRENT PERIOD:
-${currentPeriodList}
+<CurrentActivity>
+${formatActivityContext(currentData)}
+</CurrentActivity>
 
-HISTORICAL BASELINE (mean ± std dev):
-${historicalList}
+<DetectionRules>
+1. Calculate Z-Score: (Current - Mean) / StdDev.
+2. Severities:
+   - "high": |Z| > 3.0
+   - "medium": |Z| > 2.5
+   - "low": |Z| > 2.0
+3. Only report deviations where |Z| > 2.0.
+</DetectionRules>
 
-TASK: Identify anomalies (deviations > 2 standard deviations):
-1. Calculate z-score for each metric
-2. Flag significant deviations as "spike" or "drop"
-3. Classify severity:
-   - low: 2-2.5 std deviations
-   - medium: 2.5-3 std deviations
-   - high: >3 std deviations
-4. Provide context-aware description (e.g., "Your GitHub activity dropped 60% this week")
+${JSON_INSTRUCTIONS}
 
-IMPORTANT: Respond ONLY with valid JSON array:
+Return anomalies as a JSON array:
 [
   {
     "type": "anomaly",
-    "integration": "${integrationKeys.join('" | "')}",
+    "integration": "Service Name",
     "metric": "total_activity",
-    "deviation": 2.5,
-    "description": "human-readable explanation",
+    "deviation": Z-Score,
+    "description": "Clear explanation of the spike or drop",
     "severity": "low" | "medium" | "high",
     "direction": "spike" | "drop",
-    "historical": {
-      "mean": number,
-      "stdDev": number,
-      "current": number
-    }
+    "historical": { "mean": number, "stdDev": number, "current": number }
   }
 ]
-
-Return empty array [] if no anomalies detected.`;
+`;
 }
 
-export function getRecommendationPrompt(
-  activityData: ActivityData,
-  anomalies: Array<any>,
-  correlations: Array<any>,
-): string {
-  const registry = getIntegrationRegistryService();
-  const integrationKeys = Object.keys(activityData).filter((key) => {
-    const data = activityData[key];
-    return data && typeof data === "object" && "total" in data;
-  });
+export function getRecommendationPrompt(activityData: ActivityData, anomalies: any[], correlations: any[]): string {
+  return `
+Role: Professional Performance Coach
+Task: Generate high-leverage recommendations based on recent behavior.
 
-  const hasAnomalies = anomalies.length > 0;
-  const hasCorrelations = correlations.length > 0;
+<DataInput>
+Activity Overview:
+${formatActivityContext(activityData)}
 
-  // Build activity summary dynamically
-  const activitySummary = integrationKeys
-    .map((key) => {
-      const data = activityData[key];
-      if (!data || typeof data !== "object" || !("total" in data)) return "";
-      const displayName = registry.getDisplayName(key as any);
-      const unitLabel = registry.getUnitLabel(key as any);
-      return `- ${displayName}: ${data.total} ${unitLabel}`;
-    })
-    .filter(Boolean)
-    .join("\n");
+Detected Anomalies:
+${JSON.stringify(anomalies)}
 
-  return `Generate actionable recommendations based on activity patterns.
+Internal Patterns:
+${JSON.stringify(correlations)}
+</DataInput>
 
-ACTIVITY SUMMARY:
-${activitySummary}
+<RecommendationFramework>
+- "productivity": Deep work, async communication, focused sessions.
+- "wellness": Recovery, break-taking, digital detox.
+- "learning": Skill acquisition, creative exploration.
+- "optimization": Workflow automation, scheduling changes.
+</RecommendationFramework>
 
-DETECTED ANOMALIES: ${hasAnomalies ? JSON.stringify(anomalies) : "None"}
-DETECTED CORRELATIONS: ${hasCorrelations ? JSON.stringify(correlations) : "None"}
+${JSON_INSTRUCTIONS}
 
-TASK: Generate 2-3 personalized recommendations:
-
-CATEGORIES:
-- "productivity": Time management, focus strategies
-- "wellness": Work-life balance, breaks
-- "learning": Skill development, exploration
-- "social": Communication, networking
-- "optimization": Workflow improvements
-
-For each recommendation:
-1. Choose appropriate category
-2. Write clear, actionable suggestion
-3. Explain why it matters based on the data
-4. Assign priority (1-5, where 5 is urgent)
-5. Suggest an icon (emoji or name)
-
-TONE: Supportive and practical, like a productivity coach.
-
-IMPORTANT: Respond ONLY with valid JSON array:
+Return 2-3 recommendations prioritized by impact:
 [
   {
     "type": "recommendation",
-    "category": "productivity" | "wellness" | "learning" | "social" | "optimization",
-    "action": "Clear, actionable suggestion (one sentence)",
-    "reason": "Why this matters based on data (one sentence)",
-    "priority": 3,
-    "icon": "📊"
+    "category": "productivity" | "wellness" | "learning" | "optimization",
+    "action": "One actionable imperative sentence",
+    "reason": "Data-backed justification for this specific advice",
+    "priority": 1-5 (5 is highest),
+    "icon": "Relevant emoji"
   }
 ]
-
-Return 2-3 recommendations, prioritized by impact.`;
+`;
 }
 
-/**
- * Helper function to create a complete insights generation prompt
- */
 export function getCompleteInsightsPrompt(
   activityData: ActivityData,
   range: "week" | "month" | "year",
@@ -289,18 +225,8 @@ export function getCompleteInsightsPrompt(
   anomalyPrompt?: string;
   recommendationPrompt?: string;
 } {
-  const prompts: any = {};
-
-  if (options.includeSummary !== false) {
-    prompts.summaryPrompt = getSummaryPrompt(activityData, range);
-  }
-
-  if (options.includeCorrelations !== false) {
-    prompts.correlationPrompt = getCorrelationPrompt(activityData);
-  }
-
-  // Note: Anomaly and recommendation prompts require additional data
-  // They will be generated in the service layer
-
-  return prompts;
+  return {
+    ...(options.includeSummary !== false && { summaryPrompt: getSummaryPrompt(activityData, range) }),
+    ...(options.includeCorrelations !== false && { correlationPrompt: getCorrelationPrompt(activityData) }),
+  };
 }

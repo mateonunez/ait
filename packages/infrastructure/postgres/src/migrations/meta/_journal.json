@@ -232,6 +232,13 @@
       "when": 1766749043473,
       "tag": "0032_unusual_the_fallen",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1766750053073,
+      "tag": "0033_narrow_anthem",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useInsights } from "@/contexts/insights.context";
 import { cn } from "@/styles/utils";
-import type { InsightAnomaly, InsightCorrelation, InsightRecommendation } from "@ait/ai-sdk";
+import type { InsightAnomaly, InsightCorrelation, InsightRecommendation } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
@@ -493,7 +493,7 @@ function CorrelationInsight({ correlation }: { correlation: InsightCorrelation }
         <Badge variant="secondary" className="text-xs bg-blue-500/10 text-blue-400 border-blue-500/20">
           {correlation.strength}% match
         </Badge>
-        {correlation.integrations.map((integration) => (
+        {correlation.integrations.map((integration: string) => (
           <Badge key={integration} variant="outline" className="text-xs capitalize">
             {integration}
           </Badge>

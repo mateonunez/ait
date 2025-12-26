@@ -1,4 +1,4 @@
-import type { CreateGoalRequest, GoalData, InsightsData, UpdateGoalRequest } from "@ait/ai-sdk";
+import type { CreateGoalRequest, GoalData, InsightsData, UpdateGoalRequest } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { apiConfig } from "../config/api.config";
 import { apiDelete, apiGet, apiPatch, apiPost } from "../utils/http-client";

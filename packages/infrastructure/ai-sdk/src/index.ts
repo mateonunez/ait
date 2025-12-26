@@ -216,11 +216,6 @@ export {
   resetCorrelationEngineService,
 } from "./services/insights/correlation-engine.service";
 export {
-  GoalTrackingService,
-  getGoalTrackingService,
-  resetGoalTrackingService,
-} from "./services/insights/goal-tracking.service";
-export {
   IntegrationRegistryService,
   getIntegrationRegistryService,
   resetIntegrationRegistryService,
@@ -230,26 +225,6 @@ export {
   createActivityAggregatorService,
   type IConnectorServiceFactory,
 } from "./services/insights/activity-aggregator.service";
-
-// Insights types
-export type {
-  InsightsData,
-  InsightSummary,
-  InsightCorrelation,
-  InsightAnomaly,
-  InsightRecommendation,
-  Insight,
-  InsightType,
-  GoalData,
-  GoalType,
-  GoalPeriod,
-  CreateGoalRequest,
-  UpdateGoalRequest,
-  ActivityData,
-  InsightsConfig,
-} from "./services/insights/insights.types";
-
-export { DEFAULT_INSIGHTS_CONFIG } from "./services/insights/insights.types";
 
 // MCP (Model Context Protocol) - Enables write operations via vendor-hosted MCP servers
 export {
