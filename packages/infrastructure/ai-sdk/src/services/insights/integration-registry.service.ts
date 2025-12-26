@@ -10,11 +10,23 @@ export interface EntityFetchConfig {
 
 export class IntegrationRegistryService {
   private static readonly FETCH_CONFIGS: Partial<Record<EntityType, EntityFetchConfig>> = {
-    repository: { entityType: "repository", fetchMethod: "getRepositoriesPaginated", dateField: "updatedAt" },
-    pull_request: { entityType: "pull_request", fetchMethod: "getPullRequestsPaginated", dateField: "updatedAt" },
-    commit: { entityType: "commit", fetchMethod: "getCommitsPaginated", dateField: "committerDate" },
+    repository: {
+      entityType: "repository",
+      fetchMethod: "getRepositoriesPaginated",
+      dateField: ["updatedAt", "pushedAt", "createdAt"],
+    },
+    pull_request: {
+      entityType: "pull_request",
+      fetchMethod: "getPullRequestsPaginated",
+      dateField: ["updatedAt", "prUpdatedAt", "createdAt", "prCreatedAt"],
+    },
+    commit: {
+      entityType: "commit",
+      fetchMethod: "getCommitsPaginated",
+      dateField: ["committerDate", "authorDate", "updatedAt", "createdAt"],
+    },
     repository_file: { entityType: "repository_file", fetchMethod: "getFilesPaginated", dateField: "updatedAt" },
-    issue: { entityType: "issue", fetchMethod: "getIssuesPaginated", dateField: "updatedAt" },
+    issue: { entityType: "issue", fetchMethod: "getIssuesPaginated", dateField: ["updatedAt", "createdAt"] },
     track: { entityType: "track", fetchMethod: "getTracksPaginated", dateField: "updatedAt" },
     artist: { entityType: "artist", fetchMethod: "getArtistsPaginated", dateField: "updatedAt" },
     playlist: { entityType: "playlist", fetchMethod: "getPlaylistsPaginated", dateField: "updatedAt" },

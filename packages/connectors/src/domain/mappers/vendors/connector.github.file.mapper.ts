@@ -136,6 +136,18 @@ const githubFileMapping: ConnectorMapperDefinition<
     dataTarget: (dataTarget) => dataTarget.linesOfCode ?? 0,
   },
 
+  createdAt: {
+    external: () => null,
+    domain: (domain) => domain.createdAt,
+    dataTarget: (dataTarget) => dataTarget.createdAt ?? null,
+  },
+
+  updatedAt: {
+    external: () => null,
+    domain: (domain) => domain.updatedAt,
+    dataTarget: (dataTarget) => dataTarget.updatedAt ?? null,
+  },
+
   __type: {
     external: () => "repository_file" as const,
     domain: (domain) => domain.__type,

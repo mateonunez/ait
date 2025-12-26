@@ -205,19 +205,19 @@ const githubCommitMapping: ConnectorMapperDefinition<GitHubCommitExternal, GitHu
     createdAt: {
       external: (external) => {
         const date = external.commit?.author?.date || null;
-        return date ? new Date(date).toISOString() : null;
+        return date ? new Date(date) : null;
       },
       domain: (domain) => domain.createdAt,
-      dataTarget: (dataTarget) => (dataTarget.createdAt ? dataTarget.createdAt.toISOString() : null),
+      dataTarget: (dataTarget) => dataTarget.createdAt ?? null,
     },
 
     updatedAt: {
       external: (external) => {
         const date = external.commit?.author?.date || null;
-        return date ? new Date(date).toISOString() : null;
+        return date ? new Date(date) : null;
       },
       domain: (domain) => domain.updatedAt,
-      dataTarget: (dataTarget) => (dataTarget.updatedAt ? dataTarget.updatedAt.toISOString() : null),
+      dataTarget: (dataTarget) => dataTarget.updatedAt ?? null,
     },
 
     __type: {

@@ -304,15 +304,15 @@ const githubPullRequestMapping: ConnectorMapperDefinition<
   },
 
   createdAt: {
-    external: (external) => (external.created_at ? new Date(external.created_at).toISOString() : null),
+    external: (external) => (external.created_at ? new Date(external.created_at) : null),
     domain: (domain) => domain.createdAt,
-    dataTarget: (dataTarget) => (dataTarget.createdAt ? dataTarget.createdAt.toISOString() : null),
+    dataTarget: (dataTarget) => dataTarget.createdAt ?? null,
   },
 
   updatedAt: {
-    external: (external) => (external.updated_at ? new Date(external.updated_at).toISOString() : null),
+    external: (external) => (external.updated_at ? new Date(external.updated_at) : null),
     domain: (domain) => domain.updatedAt,
-    dataTarget: (dataTarget) => (dataTarget.updatedAt ? dataTarget.updatedAt.toISOString() : null),
+    dataTarget: (dataTarget) => dataTarget.updatedAt ?? null,
   },
 
   __type: {
