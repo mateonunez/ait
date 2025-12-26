@@ -1,7 +1,7 @@
 import { AItError, getLogger } from "@ait/core";
-import { generateObject, generateText } from "ai";
+import { type LanguageModel, embed, generateObject, generateText, streamText } from "ai";
+import { createOllama } from "ai-sdk-ollama";
 import dotenv from "dotenv";
-import { createOllama } from "ollama-ai-provider-v2";
 import type { ZodType } from "zod";
 import {
   type EmbeddingModelName,
@@ -13,40 +13,33 @@ import {
 } from "../config/models.config";
 import { type PresetName, getPreset, mergePresetWithOverrides } from "../config/presets.config";
 import { getCircuitBreaker } from "../services/resilience/circuit-breaker.service";
-import type { TextGenerationService } from "../services/text-generation/text-generation.service";
+import { TextGenerationService } from "../services/text-generation/text-generation.service";
 import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 import type { ClientConfig } from "../types/config";
-import type {
-  EmbeddingsModel,
-  GenerationModel,
-  ModelGenerateOptions,
-  ModelGenerateResult,
-  ModelStreamOptions,
-} from "../types/models";
-import type { OllamaTool } from "../types/providers/ollama.types";
-import { OllamaProvider } from "./ollama.provider";
+import type { ModelGenerateOptions, ModelGenerateResult, ModelStreamOptions } from "../types/models";
+
+import {
+  type CompatibleEmbeddingModel,
+  type CompatibleLanguageModel,
+  attemptStructuredRepair,
+  augmentPrompt,
+  nextDelay,
+  wait,
+} from "../utils/generation.utils";
 
 dotenv.config();
 
+const logger = getLogger();
+
+export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
+const DEFAULT_STRUCTURED_MAX_RETRIES = 2;
+const CIRCUIT_BREAKER_OPTIONS = {
+  failureThreshold: 3,
+  resetTimeout: 30000,
+  timeout: 120000,
+};
+
 export type AItClientConfig = ClientConfig;
-
-export interface LlmGenerateTextOptions {
-  prompt: string;
-  messages?: ModelGenerateOptions["messages"];
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-  tools?: OllamaTool[];
-}
-
-export interface LlmStreamOptions {
-  prompt: string;
-  messages?: ModelGenerateOptions["messages"];
-  temperature?: number;
-  topP?: number;
-  topK?: number;
-  tools?: OllamaTool[];
-}
 
 export interface LlmStructuredGenerationOptions<T> {
   prompt: string;
@@ -56,224 +49,158 @@ export interface LlmStructuredGenerationOptions<T> {
   maxRetries?: number;
 }
 
-export interface AItClient {
-  config: Required<AItClientConfig>;
-  generationModel: GenerationModel;
-  embeddingsModel: EmbeddingsModel;
-  generationModelConfig: ModelSpec;
-  embeddingModelConfig: ModelSpec;
-  generateText(options: LlmGenerateTextOptions): Promise<ModelGenerateResult>;
-  streamText(options: LlmStreamOptions): AsyncGenerator<string>;
-  generateStructured<T>(options: LlmStructuredGenerationOptions<T>): Promise<T>;
-}
+export class AItClient {
+  private readonly _ollamaModel: CompatibleLanguageModel;
+  private readonly _ollamaEmbeddingModel: CompatibleEmbeddingModel;
+  private readonly _structuredModel: CompatibleLanguageModel;
+  private readonly _circuitBreaker = getCircuitBreaker("llm-generation", CIRCUIT_BREAKER_OPTIONS);
 
-export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-const DEFAULT_JSON_INSTRUCTION =
-  "IMPORTANT: Respond ONLY with valid JSON that matches the expected schema. Do not include explanations.";
-const DEFAULT_STRUCTURED_MAX_RETRIES = 2;
+  constructor(
+    public readonly config: Required<AItClientConfig>,
+    public readonly generationModelConfig: ModelSpec,
+    public readonly embeddingModelConfig: ModelSpec,
+  ) {
+    const ollamaBaseURL = config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL;
 
-type StructuredModel = ReturnType<ReturnType<typeof createOllama>>;
-type TextGenerationServiceType = typeof TextGenerationService;
-
-let _clientInstance: AItClient | null = null;
-let _textGenerationServiceInstance: InstanceType<TextGenerationServiceType> | null = null;
-let _config: Required<AItClientConfig>;
-
-function augmentPrompt(prompt: string, customInstruction?: string): string {
-  if (prompt.includes(DEFAULT_JSON_INSTRUCTION)) {
-    return prompt;
-  }
-
-  if (customInstruction && prompt.includes(customInstruction)) {
-    return prompt;
-  }
-
-  return [prompt.trim(), customInstruction ?? DEFAULT_JSON_INSTRUCTION].join("\n\n");
-}
-
-async function attemptStructuredRepair<T>(
-  model: StructuredModel,
-  prompt: string,
-  schema: ZodType<T>,
-  temperature?: number,
-): Promise<{ success: boolean; data?: T; error?: unknown }> {
-  try {
-    const { text } = await generateText({
-      model,
-      prompt,
-      temperature,
+    const ollama = createOllama({
+      baseURL: ollamaBaseURL,
     });
 
-    const jsonPayload = extractJson(text);
-    if (!jsonPayload) {
-      throw new AItError("PARSE_ERROR", "No JSON object found in repair response");
-    }
+    this._ollamaModel = ollama(String(generationModelConfig.name)) as unknown as CompatibleLanguageModel;
+    this._ollamaEmbeddingModel = ollama.embedding(
+      String(embeddingModelConfig.name),
+    ) as unknown as CompatibleEmbeddingModel;
+    this._structuredModel = this._ollamaModel;
 
-    const parsed = JSON.parse(jsonPayload);
-    const validation = schema.safeParse(parsed);
-    if (!validation.success) {
-      throw validation.error;
-    }
-
-    return { success: true, data: validation.data };
-  } catch (error) {
-    return { success: false, error };
-  }
-}
-
-function extractJson(text: string): string | null {
-  const firstBrace = text.indexOf("{");
-  const lastBrace = text.lastIndexOf("}");
-
-  if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-    return null;
-  }
-
-  const candidate = text.slice(firstBrace, lastBrace + 1);
-  return candidate.trim().length ? candidate : null;
-}
-
-function nextDelay(attempt: number, baseDelay?: number): number {
-  const delay = baseDelay ?? 500;
-  return delay * Math.max(1, attempt + 1);
-}
-
-async function wait(ms?: number): Promise<void> {
-  if (!ms || ms <= 0) {
-    return;
-  }
-  await new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-function buildAItClient(config: Required<AItClientConfig>): AItClient {
-  const generationModelName = config.generation.model;
-  const embeddingsModelName = config.embeddings.model;
-
-  const generationModelConfig = generationModelName
-    ? getModelSpec(generationModelName, "generation") || getGenerationModel()
-    : getGenerationModel();
-  const embeddingModelConfig = embeddingsModelName
-    ? getModelSpec(embeddingsModelName, "embedding") || getEmbeddingModel()
-    : getEmbeddingModel();
-
-  if (config.logger) {
-    const logger = getLogger();
-    logger.info(`[AItClient] Initializing with generation model: ${generationModelName}`);
-    logger.info(`[AItClient] Initializing with embeddings model: ${embeddingsModelName}`);
-  }
-
-  const ollama = new OllamaProvider({
-    baseURL: config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL,
-  });
-
-  const generationModel = ollama.createTextModel(String(generationModelName));
-  const embeddingsModel = ollama.createEmbeddingsModel(String(embeddingsModelName));
-
-  const rawBaseURL = config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL;
-  const apiBaseURL = rawBaseURL.endsWith("/api") ? rawBaseURL : `${rawBaseURL}/api`;
-  const structuredProvider = createOllama({ baseURL: apiBaseURL });
-  const structuredModel = structuredProvider(String(generationModelName));
-
-  const clientInstance: AItClient = {
-    config,
-    generationModel,
-    embeddingsModel,
-    generationModelConfig,
-    embeddingModelConfig,
-
-    async generateText(options: LlmGenerateTextOptions): Promise<ModelGenerateResult> {
-      const generateOptions: ModelGenerateOptions = {
-        prompt: options.prompt,
-        messages: options.messages,
-        temperature: options.temperature ?? config.generation.temperature,
-        topP: options.topP ?? config.generation.topP,
-        topK: options.topK ?? config.generation.topK,
-        tools: options.tools,
-      };
-
-      const circuitBreaker = getCircuitBreaker("llm-generation", {
-        failureThreshold: 3,
-        resetTimeout: 30000,
-        timeout: 120000,
+    if (config.logger) {
+      logger.info("[AItClient] Initialized", {
+        generationModel: generationModelConfig.name,
+        embeddingModel: embeddingModelConfig.name,
+        baseURL: ollamaBaseURL,
       });
+    }
+  }
 
-      return circuitBreaker.execute(() => generationModel.doGenerate(generateOptions));
-    },
-
-    async *streamText(options: LlmStreamOptions): AsyncGenerator<string> {
-      const streamOptions: ModelStreamOptions = {
-        prompt: options.prompt,
-        messages: options.messages,
-        temperature: options.temperature ?? config.generation.temperature,
-        topP: options.topP ?? config.generation.topP,
-        topK: options.topK ?? config.generation.topK,
+  public async generateText(options: ModelGenerateOptions): Promise<ModelGenerateResult> {
+    return this._circuitBreaker.execute(async () => {
+      const baseParams = {
+        model: this._ollamaModel as LanguageModel,
+        temperature: options.temperature ?? this.config.generation.temperature,
+        topP: options.topP ?? this.config.generation.topP,
+        topK: options.topK ?? this.config.generation.topK,
         tools: options.tools,
       };
 
-      const stream = generationModel.doStream(streamOptions);
-      for await (const chunk of stream) {
-        yield chunk;
-      }
-    },
+      const generateOptions = options.messages?.length
+        ? { ...baseParams, messages: options.messages }
+        : { ...baseParams, prompt: options.prompt };
 
-    async generateStructured<T>(options: LlmStructuredGenerationOptions<T>): Promise<T> {
-      const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
-      const configuredRetries = config.textGeneration.retryConfig?.maxRetries ?? DEFAULT_STRUCTURED_MAX_RETRIES;
-      const maxRetries = options.maxRetries ?? configuredRetries;
-      const baseTemperature = options.temperature ?? config.generation.temperature;
+      const result = await generateText(generateOptions as any);
 
-      let lastError: unknown;
+      return {
+        text: result.text,
+        toolCalls: result.toolCalls?.map((tc) => ({
+          function: {
+            name: tc.toolName,
+            // @ts-expect-error - args property exists at runtime in AI SDK v5/6
+            arguments: (tc.args ?? {}) as Record<string, unknown>,
+          },
+        })),
+      };
+    });
+  }
 
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          const { object } = await generateObject({
-            model: structuredModel,
-            schema: options.schema,
-            prompt,
-            temperature: baseTemperature,
-            mode: "json",
-          });
+  public async *streamText(options: ModelStreamOptions): AsyncGenerator<string> {
+    const baseParams = {
+      model: this._ollamaModel as LanguageModel,
+      temperature: options.temperature ?? this.config.generation.temperature,
+      topP: options.topP ?? this.config.generation.topP,
+      topK: options.topK ?? this.config.generation.topK,
+    };
 
-          return object as T;
-        } catch (error) {
-          lastError = error;
-          const isFinalAttempt = attempt >= maxRetries;
+    const streamOptions = options.messages?.length
+      ? { ...baseParams, messages: options.messages }
+      : { ...baseParams, prompt: options.prompt };
 
-          getLogger().warn("Structured generation attempt failed", {
-            attempt,
-            maxRetries,
-            error: error instanceof Error ? error.message : String(error),
-          });
+    const result = streamText(streamOptions as any);
 
-          if (isFinalAttempt) {
-            break;
-          }
+    for await (const chunk of result.textStream) {
+      yield chunk;
+    }
+  }
 
-          try {
-            const repaired = await attemptStructuredRepair(structuredModel, prompt, options.schema, baseTemperature);
-            if (repaired.success) {
-              return repaired.data as T;
-            }
-            lastError = repaired.error ?? lastError;
-          } catch (repairError) {
-            lastError = repairError;
-          }
+  public async embed(text: string): Promise<number[]> {
+    const { embedding } = await embed({
+      model: this._ollamaEmbeddingModel,
+      value: text,
+    });
+    return embedding;
+  }
 
-          await wait(nextDelay(attempt, config.textGeneration.retryConfig?.delayMs));
+  public async generateStructured<T>(options: LlmStructuredGenerationOptions<T>): Promise<T> {
+    const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
+    const configuredRetries = this.config.textGeneration.retryConfig?.maxRetries ?? DEFAULT_STRUCTURED_MAX_RETRIES;
+    const maxRetries = options.maxRetries ?? configuredRetries;
+    const baseTemperature = options.temperature ?? this.config.generation.temperature;
+
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const { object } = await generateObject({
+          model: this._structuredModel as LanguageModel,
+          schema: options.schema,
+          prompt,
+          temperature: baseTemperature,
+        });
+
+        return object as T;
+      } catch (error) {
+        lastError = error;
+        const isFinalAttempt = attempt >= maxRetries;
+
+        logger.warn("Structured generation attempt failed", {
+          attempt,
+          maxRetries,
+          error: error instanceof Error ? error.message : String(error),
+        });
+
+        if (isFinalAttempt) {
+          break;
         }
+
+        try {
+          const repaired = await attemptStructuredRepair(
+            this._structuredModel,
+            prompt,
+            options.schema,
+            baseTemperature,
+          );
+          if (repaired.success) {
+            return repaired.data as T;
+          }
+          lastError = repaired.error ?? lastError;
+        } catch (repairError) {
+          lastError = repairError;
+        }
+
+        await wait(nextDelay(attempt, this.config.textGeneration.retryConfig?.delayMs));
       }
+    }
 
-      throw new AItError(
-        "STRUCTURED_FAILED",
-        `Structured generation failed: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
-        undefined,
-        lastError,
-      );
-    },
-  };
-
-  return clientInstance;
+    throw new AItError(
+      "STRUCTURED_FAILED",
+      `Structured generation failed: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
+      undefined,
+      lastError,
+    );
+  }
 }
+
+// Singleton Management
+let _clientInstance: AItClient | null = null;
+let _textGenerationServiceInstance: TextGenerationService | null = null;
+let _config: Required<AItClientConfig> | null = null;
 
 export interface InitOptions {
   preset?: PresetName;
@@ -286,6 +213,7 @@ export function initAItClient(options: InitOptions | Partial<AItClientConfig> = 
   if ("preset" in options && options.preset) {
     finalConfig = mergePresetWithOverrides(options.preset, options.overrides);
   } else {
+    // Default initialization
     const presetConfig = getPreset("rag-optimized");
     const generationModelConfig = getGenerationModel();
     const embeddingModelConfig = getEmbeddingModel();
@@ -368,28 +296,39 @@ export function getAItClient(): AItClient {
     if (!_config) {
       initAItClient();
     }
-    _clientInstance = buildAItClient(_config);
+    const config = _config!;
+
+    const generationModelName = config.generation.model;
+    const embeddingsModelName = config.embeddings.model;
+
+    const generationModelConfig = generationModelName
+      ? getModelSpec(generationModelName, "generation") || getGenerationModel()
+      : getGenerationModel();
+    const embeddingModelConfig = embeddingsModelName
+      ? getModelSpec(embeddingsModelName, "embedding") || getEmbeddingModel()
+      : getEmbeddingModel();
+
+    _clientInstance = new AItClient(config, generationModelConfig, embeddingModelConfig);
   }
   return _clientInstance;
 }
 
-export function getTextGenerationService(): InstanceType<TextGenerationServiceType> {
+export function getTextGenerationService(): TextGenerationService {
   if (!_textGenerationServiceInstance) {
-    const { TextGenerationService } = require("../services/text-generation/text-generation.service");
-
     if (!_config) {
       initAItClient();
     }
+    const config = _config!;
 
     _textGenerationServiceInstance = new TextGenerationService({
-      multipleQueryPlannerConfig: _config.textGeneration.multipleQueryPlannerConfig,
-      conversationConfig: _config.textGeneration.conversationConfig,
-      contextPreparationConfig: _config.textGeneration.contextPreparationConfig,
-      toolExecutionConfig: _config.textGeneration.toolExecutionConfig,
-      retryConfig: _config.textGeneration.retryConfig,
+      multipleQueryPlannerConfig: config.textGeneration.multipleQueryPlannerConfig,
+      conversationConfig: config.textGeneration.conversationConfig,
+      contextPreparationConfig: config.textGeneration.contextPreparationConfig,
+      toolExecutionConfig: config.textGeneration.toolExecutionConfig,
+      retryConfig: config.textGeneration.retryConfig,
     });
   }
-  return _textGenerationServiceInstance as InstanceType<TextGenerationServiceType>;
+  return _textGenerationServiceInstance;
 }
 
 export function resetAItClientInstance(): void {
@@ -398,7 +337,10 @@ export function resetAItClientInstance(): void {
 }
 
 export function getClientConfig(): Required<AItClientConfig> {
-  return _config;
+  if (!_config) {
+    initAItClient();
+  }
+  return _config!;
 }
 
 export function getGenerationModelConfig(): ModelSpec {
@@ -410,8 +352,7 @@ export function getEmbeddingModelConfig(): ModelSpec {
 }
 
 export function modelSupportsTools(): boolean {
-  const config = getGenerationModelConfig();
-  return config.supportsTools ?? true;
+  return getGenerationModelConfig().supportsTools ?? true;
 }
 
 export function getModelCapabilities(): {

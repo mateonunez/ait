@@ -1,6 +1,6 @@
 import { AItError } from "@ait/core";
 import { z } from "zod";
-import type { OllamaTool } from "../client/ollama.provider";
+import type { OllamaTool } from "../types/models";
 import type { Tool } from "../types/tools";
 
 export function convertToOllamaTools(tools: Record<string, Tool>): OllamaTool[] {

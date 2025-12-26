@@ -1,9 +1,9 @@
 import { getLogger } from "@ait/core";
 import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
-import type { OllamaToolCall } from "../../client/ollama.provider";
 import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
 import { convertToOllamaTools } from "../../tools/tool.converter";
 import type { ChatMessage } from "../../types/chat";
+import type { OllamaToolCall } from "../../types/models";
 import type { TraceContext } from "../../types/telemetry";
 import type { ToolExecutionConfig, ToolExecutionResult } from "../../types/text-generation";
 import type { Tool } from "../../types/tools";

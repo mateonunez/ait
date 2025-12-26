@@ -29,7 +29,7 @@ export class StreamingGenerationStage implements IPipelineStage<GenerationState,
       hasFinalResponse: !!orchestrationResult.finalTextResponse,
     });
 
-    const textStream = this._createStream(orchestrationResult, this._client);
+    const textStream = this._createStream(orchestrationResult, this._client, input.tools);
 
     return {
       ...input,
@@ -40,6 +40,7 @@ export class StreamingGenerationStage implements IPipelineStage<GenerationState,
   private async *_createStream(
     orchestrationResult: Required<GenerationState>["orchestrationResult"],
     client: AItClient,
+    tools?: Record<string, any>,
   ): AsyncGenerator<string> {
     if (orchestrationResult.finalTextResponse) {
       yield orchestrationResult.finalTextResponse;
@@ -52,6 +53,7 @@ export class StreamingGenerationStage implements IPipelineStage<GenerationState,
       temperature: client.config.generation.temperature,
       topP: client.config.generation.topP,
       topK: client.config.generation.topK,
+      tools,
     });
 
     for await (const chunk of stream) {

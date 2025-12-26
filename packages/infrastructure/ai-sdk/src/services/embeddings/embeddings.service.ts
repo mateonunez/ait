@@ -162,7 +162,7 @@ export class EmbeddingsService implements IEmbeddingsService {
       try {
         const client = getAItClient();
 
-        const vec = await client.embeddingsModel.doEmbed(chunk.content);
+        const vec = await client.embed(chunk.content);
 
         if (vec.length !== this._config.expectedVectorSize) {
           throw new AItError(

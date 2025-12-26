@@ -11,9 +11,6 @@ export {
   type AItClient,
   type AItClientConfig,
   type InitOptions,
-  type LlmGenerateTextOptions,
-  type LlmStreamOptions,
-  type LlmStructuredGenerationOptions,
 } from "./client/ai-sdk.client";
 
 export {
