@@ -79,3 +79,27 @@ export async function getOAuthData(provider: string): Promise<OAuthTokenDataTarg
 export async function clearOAuthData(provider: string): Promise<void> {
   await _pgClient.db.delete(oauthTokens).where(drizzleOrm.eq(oauthTokens.provider, provider)).execute();
 }
+
+
+export function isTokenExpiringSoon(expiresAt: Date, updatedAt: Date): boolean {
+  const now = new Date();
+  const msUntilExpiry = expiresAt.getTime() - now.getTime();
+  const hoursUntilExpiry = msUntilExpiry / (1000 * 60 * 60);
+
+  // Already expired
+  if (hoursUntilExpiry <= 0) return false;
+
+  // Calculate total token lifetime
+  const totalLifetimeMs = expiresAt.getTime() - updatedAt.getTime();
+  const totalLifetimeHours = totalLifetimeMs / (1000 * 60 * 60);
+
+  // For short-lived tokens (< 24h lifetime), use 30% remaining threshold
+  if (totalLifetimeHours < 24) {
+    const percentRemaining = msUntilExpiry / totalLifetimeMs;
+    return percentRemaining <= 0.3;
+  }
+
+  // For longer-lived tokens, use 24-hour threshold
+  return hoursUntilExpiry <= 24;
+}
+

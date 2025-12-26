@@ -2,7 +2,7 @@ import type { ConnectionStatus } from "@/services/connections.service";
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
 import type { IntegrationVendor } from "@ait/core";
-import { AlertTriangle, CheckCircle, XCircle } from "lucide-react";
+import { AlertTriangle, Box, CheckCircle, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -31,9 +31,9 @@ export function ConnectionCard({
   error,
   className,
 }: ConnectionCardProps) {
-  const Icon = VENDOR_ICONS[vendor];
-  const colors = VENDOR_COLORS[vendor];
-  const name = VENDOR_NAMES[vendor];
+  const Icon = VENDOR_ICONS[vendor] ?? Box;
+  const colors = VENDOR_COLORS[vendor] ?? { bg: "#6B7280", text: "#FFFFFF", hover: "#4B5563" };
+  const name = VENDOR_NAMES[vendor] ?? vendor;
 
   const isConnected = status?.connected ?? false;
 
@@ -58,11 +58,11 @@ export function ConnectionCard({
   return (
     <Card className={cn("relative overflow-hidden", className)}>
       {/* Colored accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: colors.bg }} />
+      <div className="absolute top-0 left-0 right-0 h-1" style={{ backgroundColor: colors.bg ?? "" }} />
 
       <CardHeader className="flex flex-row items-center gap-4 pb-2 pt-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: colors.bg }}>
-          <Icon className="h-5 w-5" style={{ color: colors.text }} />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: colors.bg ?? "" }}>
+          <Icon className="h-5 w-5" style={{ color: colors.text ?? "" }} />
         </div>
 
         <div className="flex-1 min-w-0">

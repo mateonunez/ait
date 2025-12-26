@@ -7,6 +7,7 @@ export interface ConnectionStatus {
   connected: boolean;
   lastSync?: string;
   expiresAt?: string;
+  isExpiringSoon?: boolean;
 }
 
 export type ConnectionsStatusMap = Record<IntegrationVendor, ConnectionStatus>;
