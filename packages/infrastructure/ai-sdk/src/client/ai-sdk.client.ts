@@ -1,5 +1,5 @@
 import { AItError, getLogger } from "@ait/core";
-import { type LanguageModel, embed, generateObject, generateText, streamText } from "ai";
+import { type EmbeddingModel, type LanguageModel, embed, generateObject, generateText, streamText } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import dotenv from "dotenv";
 import type { ZodType } from "zod";
@@ -16,7 +16,7 @@ import { getCircuitBreaker } from "../services/resilience/circuit-breaker.servic
 import { TextGenerationService } from "../services/text-generation/text-generation.service";
 import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 import type { ClientConfig } from "../types/config";
-import type { ModelGenerateOptions, ModelGenerateResult, ModelStreamOptions } from "../types/models";
+import type { ModelGenerateOptions, ModelGenerateResult, ModelStreamOptions, ToolCall } from "../types/models";
 
 import {
   type CompatibleEmbeddingModel,
@@ -99,13 +99,7 @@ export class AItClient {
 
       return {
         text: result.text,
-        toolCalls: result.toolCalls?.map((tc) => ({
-          function: {
-            name: tc.toolName,
-            // @ts-expect-error - args property exists at runtime in AI SDK v5/6
-            arguments: (tc.args ?? {}) as Record<string, unknown>,
-          },
-        })),
+        toolCalls: result.toolCalls as unknown as ToolCall[],
       };
     });
   }
@@ -131,7 +125,7 @@ export class AItClient {
 
   public async embed(text: string): Promise<number[]> {
     const { embedding } = await embed({
-      model: this._ollamaEmbeddingModel,
+      model: this._ollamaEmbeddingModel as unknown as EmbeddingModel,
       value: text,
     });
     return embedding;

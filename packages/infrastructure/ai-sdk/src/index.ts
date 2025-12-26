@@ -85,7 +85,7 @@ export type { Tool, ToolResult } from "./types/tools";
 export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";
 export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
 
-export { convertToOllamaTools } from "./tools/tool.converter";
+export { convertToCoreTools } from "./tools/tool.converter";
 export {
   createAllConnectorTools,
   createAllConnectorToolsWithMCP,
