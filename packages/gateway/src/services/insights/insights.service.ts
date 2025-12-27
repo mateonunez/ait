@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { getAItClient } from "@ait/ai-sdk";
 import {
   DEFAULT_INSIGHTS_CONFIG,
   InsightCorrelationSchema,
@@ -15,11 +16,10 @@ import type {
   InsightsConfig,
   InsightsData,
 } from "@ait/core";
-import { getAItClient } from "../../client/ai-sdk.client";
 import { getCacheService } from "../cache/cache.service";
-import { getCorrelationPrompt, getRecommendationPrompt, getSummaryPrompt } from "../prompts/insights.prompts";
 import { type AnomalyDetectorService, getAnomalyDetectorService } from "./anomaly-detector.service";
 import { type CorrelationEngineService, getCorrelationEngineService } from "./correlation-engine.service";
+import { getCorrelationPrompt, getRecommendationPrompt, getSummaryPrompt } from "./insights.prompts";
 
 const logger = getLogger();
 

@@ -1,6 +1,7 @@
-import { getAnalyticsService, getLangfuseProvider } from "@ait/ai-sdk";
+import { getLangfuseProvider } from "@ait/ai-sdk";
 import { getFeedbackService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { getAnalyticsService } from "../services/analytics/analytics.service";
 
 /**
  * Observability routes for health checks and metrics
@@ -202,13 +203,13 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               retrievalsSaved: costSavings.retrievalsSaved,
               estimatedSavingsPerDay: `$${costSavings.estimatedSavingsPerDay.toFixed(2)}`,
             },
-            topQueries: queryPatterns.map((pattern) => ({
+            topQueries: queryPatterns.map((pattern: any) => ({
               query: pattern.query,
               hits: pattern.hits,
               avgDocuments: pattern.avgDocumentCount.toFixed(1),
               lastHit: new Date(pattern.lastHit).toISOString(),
             })),
-            timeline: cacheTimeline.map((t) => ({
+            timeline: cacheTimeline.map((t: any) => ({
               timestamp: new Date(t.timestamp).toISOString(),
               hits: t.hits,
               misses: t.misses,
@@ -255,7 +256,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               errorSpike: errorSpike,
             },
             byCategory: errorsByCategory,
-            topErrors: topErrorsRaw.map((err) => ({
+            topErrors: topErrorsRaw.map((err: any) => ({
               fingerprint: err.fingerprint,
               count: err.count,
               category: err.example.category,
@@ -264,7 +265,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               isRetryable: err.example.isRetryable,
               suggestedAction: err.example.suggestedAction,
             })),
-            timeline: errorTimeline.map((t) => ({
+            timeline: errorTimeline.map((t: any) => ({
               timestamp: new Date(t.timestamp).toISOString(),
               count: t.count,
             })),
@@ -284,14 +285,14 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               isDegrading,
               status: getQualityHealthStatus(feedbackStats.qualityScore),
             },
-            trend: qualityTrend.map((point) => ({
+            trend: qualityTrend.map((point: any) => ({
               timestamp: new Date(point.timestamp).toISOString(),
               score: point.score,
               totalFeedback: point.totalFeedback,
               thumbsUp: point.thumbsUpCount,
               thumbsDown: point.thumbsDownCount,
             })),
-            problematicTraces: problematicTraces.map((trace) => ({
+            problematicTraces: problematicTraces.map((trace: any) => ({
               traceId: trace.traceId,
               messageId: trace.messageId,
               rating: trace.rating,
@@ -376,14 +377,14 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
           },
           errors: {
             retrySuccessRate: `${summary.retrySuccessRate.toFixed(2)}%`,
-            byCategory: summary.errors.map((err) => ({
+            byCategory: summary.errors.map((err: any) => ({
               category: err.category,
               count: err.count,
               percentage: `${err.percentage.toFixed(2)}%`,
               isRetryable: err.isRetryable,
               suggestedAction: err.suggestedAction,
             })),
-            topErrors: summary.topErrors.map((err) => ({
+            topErrors: summary.topErrors.map((err: any) => ({
               fingerprint: err.fingerprint,
               count: err.count,
               category: err.category,
@@ -563,13 +564,13 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             retrievalsSaved: costSavings.retrievalsSaved,
             estimatedSavingsPerDay: `$${costSavings.estimatedSavingsPerDay.toFixed(2)}`,
           },
-          topQueries: queryPatterns.map((pattern) => ({
+          topQueries: queryPatterns.map((pattern: any) => ({
             query: pattern.query,
             hits: pattern.hits,
             avgDocuments: pattern.avgDocumentCount.toFixed(1),
             lastHit: new Date(pattern.lastHit).toISOString(),
           })),
-          timeline: timeline.map((t) => ({
+          timeline: timeline.map((t: any) => ({
             timestamp: new Date(t.timestamp).toISOString(),
             hits: t.hits,
             misses: t.misses,
@@ -622,7 +623,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             errorSpike: errorSpike,
           },
           byCategory: errorsByCategory,
-          topErrors: topErrors.map((err) => ({
+          topErrors: topErrors.map((err: any) => ({
             fingerprint: err.fingerprint,
             count: err.count,
             category: err.example.category,
@@ -631,7 +632,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             isRetryable: err.example.isRetryable,
             suggestedAction: err.example.suggestedAction,
           })),
-          timeline: timeline.map((t) => ({
+          timeline: timeline.map((t: any) => ({
             timestamp: new Date(t.timestamp).toISOString(),
             count: t.count,
           })),

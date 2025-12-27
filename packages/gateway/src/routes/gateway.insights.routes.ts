@@ -1,8 +1,12 @@
-import { type IConnectorServiceFactory, createActivityAggregatorService, getInsightsService } from "@ait/ai-sdk";
 import { connectorServiceFactory } from "@ait/connectors";
 import type { CreateGoalRequest, UpdateGoalRequest } from "@ait/core";
 import { getGoalService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import {
+  type IConnectorServiceFactory,
+  createActivityAggregatorService,
+} from "../services/insights/activity-aggregator.service";
+import { getInsightsService } from "../services/insights/insights.service";
 
 interface InsightsQuery {
   range?: "week" | "month" | "year";

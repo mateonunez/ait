@@ -1,10 +1,5 @@
-import {
-  type EmbeddingModelName,
-  EmbeddingModels,
-  type GenerationModelName,
-  GenerationModels,
-} from "../../config/models.config";
-import { getTokenizer } from "../tokenizer/tokenizer.service";
+import { type EmbeddingModelName, EmbeddingModels, type GenerationModelName, GenerationModels } from "@ait/ai-sdk";
+import { getTokenizer } from "@ait/ai-sdk";
 import type { CostBreakdown } from "./types";
 
 /**

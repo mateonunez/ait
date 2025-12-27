@@ -1,4 +1,4 @@
-import type { ClassifiedError } from "../errors/error-classification.service";
+import type { ClassifiedError } from "@ait/ai-sdk";
 import { type CacheAnalyticsService, getCacheAnalyticsService } from "./cache-analytics.service";
 import { type CostTrackingService, getCostTrackingService } from "./cost-tracking.service";
 import { type FailureAnalysisService, getFailureAnalysisService } from "./failure-analysis.service";

@@ -1,4 +1,4 @@
-import type { ClassifiedError } from "../errors/error-classification.service";
+import type { ClassifiedError } from "@ait/ai-sdk";
 import type { ErrorStats } from "./types";
 
 interface ErrorRecord {

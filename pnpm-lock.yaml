@@ -160,6 +160,9 @@ importers:
       '@fastify/secure-session':
         specifier: ^8.2.0
         version: 8.3.0
+      '@types/stopword':
+        specifier: ^2.0.3
+        version: 2.0.3
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
@@ -172,6 +175,9 @@ importers:
       pino-pretty:
         specifier: ^13.1.2
         version: 13.1.3
+      stopword:
+        specifier: ^3.1.5
+        version: 3.1.5
     devDependencies:
       tsx:
         specifier: ^4.20.6

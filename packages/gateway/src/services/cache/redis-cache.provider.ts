@@ -1,5 +1,5 @@
 import { getLogger } from "@ait/core";
-import type { ICacheProvider } from "./cache.service";
+import { type ICacheProvider, setCacheProvider } from "./cache.service";
 
 const logger = getLogger();
 
@@ -216,4 +216,11 @@ export class RedisCacheProvider implements ICacheProvider {
 
 export function createRedisCacheProvider(config?: RedisCacheConfig): RedisCacheProvider {
   return new RedisCacheProvider(config);
+}
+
+export function initializeCacheProvider(url?: string): void {
+  if (url) {
+    const provider = createRedisCacheProvider({ url });
+    setCacheProvider(provider);
+  }
 }

@@ -114,6 +114,8 @@ export {
   type Suggestion,
 } from "./services/generation/suggestion.service";
 
+export { getTokenizer } from "./services/tokenizer/tokenizer.service";
+
 export { type IEmbeddingsService, EmbeddingsService } from "./services/embeddings/embeddings.service";
 
 export {
@@ -175,54 +177,13 @@ export {
 
 export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
-export { getAnalyticsService } from "./services/analytics/analytics.service";
-
-export { smoothStream } from "./services/text-generation/utils/stream.utils";
-
 export {
-  type ICacheProvider,
-  type ICacheService,
-  getCacheService,
-  setCacheProvider,
-  resetCacheService,
-  MemoryCacheProvider,
-} from "./services/cache/cache.service";
-
-export {
-  SemanticCacheService,
-  getSemanticCacheService,
-  resetSemanticCacheService,
-  type SemanticCacheConfig,
-} from "./services/cache/semantic-cache.service";
-
-export {
-  RedisCacheProvider,
-  createRedisCacheProvider,
-  type RedisCacheConfig,
-} from "./services/cache/redis-cache.provider";
-
-// Insights services
-export { InsightsService, getInsightsService, resetInsightsService } from "./services/insights/insights.service";
-export {
-  AnomalyDetectorService,
-  getAnomalyDetectorService,
-  resetAnomalyDetectorService,
-} from "./services/insights/anomaly-detector.service";
-export {
-  CorrelationEngineService,
-  getCorrelationEngineService,
-  resetCorrelationEngineService,
-} from "./services/insights/correlation-engine.service";
-export {
-  IntegrationRegistryService,
-  getIntegrationRegistryService,
-  resetIntegrationRegistryService,
-} from "./services/insights/integration-registry.service";
-export {
-  ActivityAggregatorService,
-  createActivityAggregatorService,
-  type IConnectorServiceFactory,
-} from "./services/insights/activity-aggregator.service";
+  getErrorClassificationService,
+  ErrorClassificationService,
+  ErrorCategory,
+  ErrorSeverity,
+  type ClassifiedError,
+} from "./services/errors/error-classification.service";
 
 // MCP (Model Context Protocol) - Enables write operations via vendor-hosted MCP servers
 export {

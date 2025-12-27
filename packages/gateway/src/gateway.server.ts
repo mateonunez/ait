@@ -17,7 +17,7 @@ import slackRoutes from "./routes/gateway.slack.routes";
 import spotifyRoutes from "./routes/gateway.spotify.routes";
 import suggestionsRoutes from "./routes/gateway.suggestions.routes";
 import xRoutes from "./routes/gateway.x.routes";
-import { initializeCacheProvider } from "./services/redis-cache.provider";
+import { initializeCacheProvider } from "./services/cache/redis-cache.provider";
 
 const redisUrl = process.env.REDIS_URL;
 
