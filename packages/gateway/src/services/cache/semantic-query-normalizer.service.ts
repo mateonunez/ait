@@ -1,6 +1,6 @@
+import { type AItClient, getAItClient } from "@ait/ai-sdk";
+import { GenerationModels } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
-import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
-import { GenerationModels } from "../../config/models.config";
 
 const logger = getLogger();
 

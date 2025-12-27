@@ -1,7 +1,10 @@
-import { type IConnectorServiceFactory, createActivityAggregatorService } from "@ait/ai-sdk";
 import { connectorServiceFactory } from "@ait/connectors";
 import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import {
+  type IConnectorServiceFactory,
+  createActivityAggregatorService,
+} from "../services/insights/activity-aggregator.service";
 
 const logger = getLogger();
 

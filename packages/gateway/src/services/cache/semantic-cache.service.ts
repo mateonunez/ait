@@ -1,7 +1,7 @@
+import { createSpanWithTiming } from "@ait/ai-sdk";
+import type { TraceContext } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
 import { eng, removeStopwords } from "stopword";
-import { createSpanWithTiming } from "../../telemetry/telemetry.middleware";
-import type { TraceContext } from "../../types/telemetry";
 import { getCacheAnalyticsService } from "../analytics/cache-analytics.service";
 import type { ICacheProvider } from "./cache.service";
 import { getCacheService } from "./cache.service";
@@ -232,7 +232,7 @@ export class SemanticCacheService {
       .filter((word) => word.length > 1);
 
     const withoutStopwords = removeStopwords(words, eng);
-    const filtered = withoutStopwords.filter((word) => !stripWords.includes(word));
+    const filtered = withoutStopwords.filter((word: string) => !stripWords.includes(word));
 
     const normalized = filtered.sort().join(" ").trim();
     return normalized;

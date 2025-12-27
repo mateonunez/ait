@@ -8,7 +8,6 @@ import type { StreamEvent } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { Tool } from "../../types/tools";
-import { AnalyticsService, getAnalyticsService } from "../analytics/analytics.service";
 import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
@@ -81,7 +80,6 @@ export interface ITextGenerationService {
 export class TextGenerationService implements ITextGenerationService {
   readonly name = "text-generation";
   private readonly _metadataEmitter: MetadataEmitterService;
-  private readonly _analytics: AnalyticsService;
   private readonly _config: TextGenerationConfig;
   private readonly _contextManager: SmartContextManager;
   private readonly _queryRewriter: PromptRewriterService;
@@ -90,7 +88,6 @@ export class TextGenerationService implements ITextGenerationService {
   constructor(config: TextGenerationConfig = {}) {
     this._config = config;
     this._metadataEmitter = new MetadataEmitterService();
-    this._analytics = new AnalyticsService();
     this._contextManager = new SmartContextManager({
       totalTokenLimit: config.contextPreparationConfig?.maxContextChars
         ? Math.floor(config.contextPreparationConfig.maxContextChars / 4)
@@ -227,8 +224,6 @@ export class TextGenerationService implements ITextGenerationService {
         chunkCount,
         responseLength: fullResponse.length,
       });
-
-      this._trackAnalytics(telemetry.getDuration(), fullResponse);
     } catch (error: unknown) {
       yield* this._handleError(error, telemetry);
     }
@@ -327,8 +322,6 @@ export class TextGenerationService implements ITextGenerationService {
         responseLength: result.text.length,
       });
 
-      this._trackAnalytics(telemetry.getDuration(), result.text);
-
       return result.text;
     } catch (error: unknown) {
       const errorClassifier = getErrorClassificationService();
@@ -340,27 +333,14 @@ export class TextGenerationService implements ITextGenerationService {
         errorFingerprint: classifiedError.fingerprint,
       });
 
-      const analytics = getAnalyticsService();
-      analytics.trackRequest({
-        latencyMs: telemetry.getDuration(),
-        success: false,
-        error: classifiedError,
-      });
+      // Analytics moved to Gateway
+      // const analytics = getAnalyticsService();
+      // analytics.trackRequest({...});
 
       throw error instanceof TextGenerationError
         ? error
         : new TextGenerationError(`Text generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }
-
-  private _trackAnalytics(duration: number, response: string): void {
-    const estimatedTokens = this._analytics.getCostTracking().estimateTokens(response);
-
-    this._analytics.trackRequest({
-      latencyMs: duration,
-      success: true,
-      generationTokens: estimatedTokens,
-    });
   }
 
   private async *_handleError(
@@ -378,11 +358,8 @@ export class TextGenerationService implements ITextGenerationService {
       suggestedAction: classifiedError.suggestedAction,
     });
 
-    this._analytics.trackRequest({
-      latencyMs: telemetry.getDuration(),
-      success: false,
-      error: classifiedError,
-    });
+    // Analytics moved to Gateway
+    // this._analytics.trackRequest({...});
 
     const baseMessage = "I'm having trouble processing your request right now.";
     const reason = error instanceof Error ? error.message : String(error);
