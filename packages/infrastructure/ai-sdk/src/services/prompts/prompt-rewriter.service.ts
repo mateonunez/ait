@@ -6,11 +6,11 @@ import type { TraceContext } from "../../types/telemetry";
 
 const logger = getLogger();
 
-export interface IQueryRewriterService {
+export interface IPromptRewriterService {
   rewriteQuery(query: string, messages: ChatMessage[], traceContext?: TraceContext): Promise<string>;
 }
 
-export class QueryRewriterService implements IQueryRewriterService {
+export class PromptRewriterService implements IPromptRewriterService {
   private readonly _client: AItClient;
 
   constructor(client?: AItClient) {
@@ -30,9 +30,6 @@ export class QueryRewriterService implements IQueryRewriterService {
         })
       : null;
 
-    // Simple heuristic: if query is long and specific, it might not need rewriting
-    // But "Who of them..." is short, so we rely on the LLM to decide.
-    // We only send the last few messages to save context window and latency.
     const recentHistory = messages.slice(-5);
 
     try {
@@ -90,6 +87,7 @@ ${historyText}
 Current User Query: "${query}"
 
 Task: Rewrite the "Current User Query" to resolve any ambiguous references (like "them", "it", "that", "the list") using the context from the history. 
+Ensure to maintain the same language as the "Current User Query" and ensure the meaning is the same.
 If the query is already self-contained and clear, return it exactly as is.
 Do not answer the query. Only return the rewritten query string.
 
@@ -100,11 +98,11 @@ Rewritten Query:`;
 /**
  * Singleton instance for performance
  */
-let _instance: QueryRewriterService | null = null;
+let _instance: PromptRewriterService | null = null;
 
-export function getQueryRewriter(): QueryRewriterService {
+export function getQueryRewriter(): PromptRewriterService {
   if (!_instance) {
-    _instance = new QueryRewriterService();
+    _instance = new PromptRewriterService();
   }
   return _instance;
 }

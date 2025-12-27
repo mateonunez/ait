@@ -1,5 +1,4 @@
 import type { CollectionVendor } from "../config/collections.config";
-import type { QueryIntent } from "../services/routing/query-intent.service";
 import type { CollectionWeight } from "./collections";
 import type { BaseMetadata, Document } from "./documents";
 
@@ -117,7 +116,7 @@ export interface QueryPlanResult {
   /** Original user query */
   originalQuery: string;
   /** LLM-extracted query intent (optional) */
-  intent?: QueryIntent;
+
   /** Suggested collections for query execution (optional) */
   suggestedCollections?: CollectionWeight[];
 }

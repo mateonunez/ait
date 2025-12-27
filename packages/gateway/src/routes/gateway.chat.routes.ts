@@ -2,13 +2,11 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
-  GenerationModels,
   type MCPClientManager,
   STREAM_EVENT,
   type StreamEvent,
   type TextGenerationService,
   createAllConnectorToolsWithMCP,
-  getAItClient,
   getLangfuseProvider,
   getMCPClientManager,
   getTextGenerationService,
@@ -64,14 +62,8 @@ const telemetryConfig = {
 };
 
 initAItClient({
-  generation: {
-    model: GenerationModels.GPT_OSS_20B_CLOUD,
-    temperature: 1,
-  },
   telemetry: telemetryConfig,
 });
-
-const aitClient = getAItClient();
 
 function isTextChunk(event: StreamEvent): event is StreamEvent & { type: typeof STREAM_EVENT.TEXT } {
   return event.type === STREAM_EVENT.TEXT;
@@ -273,6 +265,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           maxToolRounds,
           telemetryOptions,
           enableMetadata,
+          model,
         });
 
         const conversationService = getConversationService();
@@ -284,6 +277,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           const title = await textGenerationService.generateText({
             prompt: `You're an expert at generating titles for conversations, based on Nietzsche's style. Generate a 33 chars title for the following prompt, do not include any additional text or characters, simple text and concise: ${prompt}`,
             telemetryOptions,
+            model,
           });
 
           const conversation = await conversationService.createConversation({

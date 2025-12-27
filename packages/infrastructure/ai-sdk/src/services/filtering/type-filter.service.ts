@@ -7,18 +7,16 @@ import {
   getLogger,
 } from "@ait/core";
 import type { TypeFilter } from "../../types/rag";
-import { type ITextNormalizationService, TextNormalizationService } from "../metadata/text-normalization.service";
-import type { QueryIntent } from "../routing/query-intent.service";
+import {
+  type ITextNormalizationService,
+  TextNormalizationService,
+} from "../text-generation/text-normalization.service";
 import { type ITemporalDateParser, TemporalDateParser } from "./temporal-date-parser.service";
 
 const logger = getLogger();
 
 export interface ITypeFilterService {
-  inferTypes(
-    tags?: string[],
-    userQuery?: string,
-    options?: { usedFallback?: boolean; intent?: QueryIntent },
-  ): TypeFilter | undefined;
+  inferTypes(tags?: string[], userQuery?: string, options?: { usedFallback?: boolean }): TypeFilter | undefined;
 }
 
 export class TypeFilterService implements ITypeFilterService {
@@ -32,45 +30,8 @@ export class TypeFilterService implements ITypeFilterService {
     this._textNormalizer = textNormalizer || new TextNormalizationService();
   }
 
-  inferTypes(
-    tags?: string[],
-    userQuery?: string,
-    options?: { usedFallback?: boolean; intent?: QueryIntent },
-  ): TypeFilter | undefined {
+  inferTypes(tags?: string[], userQuery?: string, options?: { usedFallback?: boolean }): TypeFilter | undefined {
     const startTime = Date.now();
-
-    // Prefer intent-derived types and temporal range when available
-    if (options?.intent) {
-      const timeRange = options.intent.isTemporalQuery
-        ? this._parseTimeRange(options.intent.timeReference || userQuery)
-        : undefined;
-
-      if (options.intent.entityTypes && options.intent.entityTypes.length > 0) {
-        const result = { types: options.intent.entityTypes, timeRange };
-
-        this._logCompletion(startTime, {
-          source: "intent",
-          types: result.types,
-          hasTimeRange: !!timeRange,
-          query: userQuery?.slice(0, 50),
-        });
-
-        return result;
-      }
-
-      if (timeRange) {
-        const result = { timeRange };
-
-        this._logCompletion(startTime, {
-          source: "intent-temporal",
-          types: [],
-          hasTimeRange: true,
-          query: userQuery?.slice(0, 50),
-        });
-
-        return result;
-      }
-    }
 
     const keywordSet = this._buildKeywordSet(tags, userQuery);
 
@@ -114,23 +75,6 @@ export class TypeFilterService implements ITypeFilterService {
         types: sortedTypes,
         hasTimeRange: !!timeRange,
         keywordCount: keywords.length,
-        query: userQuery?.slice(0, 50),
-      });
-
-      return result;
-    }
-
-    if (options?.usedFallback && userQuery) {
-      const timeRange = this._parseTimeRange(userQuery);
-      const result = {
-        types: [...VALID_ENTITY_TYPES] as EntityType[],
-        timeRange,
-      };
-
-      this._logCompletion(startTime, {
-        source: "fallback",
-        types: result.types,
-        hasTimeRange: !!timeRange,
         query: userQuery?.slice(0, 50),
       });
 
