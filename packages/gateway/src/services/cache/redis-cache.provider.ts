@@ -1,5 +1,7 @@
+import { type ICacheProvider, registerCacheProvider } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
-import { type ICacheProvider, setCacheProvider } from "./cache.service";
+import Redis from "ioredis";
+import { setCacheProvider } from "./cache.service";
 
 const logger = getLogger();
 
@@ -11,12 +13,6 @@ export interface RedisCacheConfig {
   maxRetries?: number;
 }
 
-/**
- * Redis-backed cache provider for production environments.
- * Provides distributed caching with automatic TTL expiration.
- *
- * Falls back gracefully to no-op if Redis is unavailable.
- */
 export class RedisCacheProvider implements ICacheProvider {
   private client: any = null;
   private readonly config: Required<RedisCacheConfig>;
@@ -56,31 +52,17 @@ export class RedisCacheProvider implements ICacheProvider {
 
   private async connect(): Promise<void> {
     try {
-      // Dynamic import to avoid bundling redis if not used
-      // Redis is an optional runtime dependency - types are not required
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let redis: any;
-      try {
-        redis = await import("redis" as string);
-      } catch {
-        logger.warn("Redis package not installed, cache will use memory fallback");
-        return;
-      }
-
-      const { createClient } = redis;
-
-      this.client = createClient({
-        url: this.config.url,
-        socket: {
-          connectTimeout: this.config.connectTimeoutMs,
-          reconnectStrategy: (retries: number) => {
-            if (retries >= this.config.maxRetries) {
-              logger.warn("Redis max retries reached, giving up");
-              return false;
-            }
-            return Math.min(retries * 100, 3000);
-          },
+      this.client = new Redis(this.config.url, {
+        connectTimeout: this.config.connectTimeoutMs,
+        maxRetriesPerRequest: null,
+        retryStrategy: (times: number) => {
+          if (times >= this.config.maxRetries) {
+            logger.warn("Redis max retries reached, giving up");
+            return null;
+          }
+          return Math.min(times * 100, 3000);
         },
+        lazyConnect: true, // We will connect manually
       });
 
       this.client.on("error", (err: Error) => {
@@ -144,7 +126,8 @@ export class RedisCacheProvider implements ICacheProvider {
       const ttl = ttlMs ?? this.config.ttlMs;
       const ttlSeconds = Math.ceil(ttl / 1000);
 
-      await this.client.setEx(fullKey, ttlSeconds, JSON.stringify(value));
+      // ioredis set with EX argument
+      await this.client.set(fullKey, JSON.stringify(value), "EX", ttlSeconds);
     } catch (error) {
       logger.debug("Redis set failed", {
         key,
@@ -178,16 +161,18 @@ export class RedisCacheProvider implements ICacheProvider {
 
     try {
       const pattern = `${this.config.keyPrefix}*`;
-      let cursor = 0;
+      let cursor = "0";
 
       do {
-        const result = await this.client.scan(cursor, { MATCH: pattern, COUNT: 100 });
-        cursor = result.cursor;
+        // ioredis scan returns [cursor, keys]
+        const result = await this.client.scan(cursor, "MATCH", pattern, "COUNT", 100);
+        cursor = result[0];
+        const keys = result[1];
 
-        if (result.keys.length > 0) {
-          await this.client.del(result.keys);
+        if (keys.length > 0) {
+          await this.client.del(keys);
         }
-      } while (cursor !== 0);
+      } while (cursor !== "0");
     } catch (error) {
       logger.debug("Redis clear failed", {
         error: error instanceof Error ? error.message : String(error),
@@ -222,5 +207,6 @@ export function initializeCacheProvider(url?: string): void {
   if (url) {
     const provider = createRedisCacheProvider({ url });
     setCacheProvider(provider);
+    registerCacheProvider(provider);
   }
 }

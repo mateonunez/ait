@@ -2,6 +2,7 @@ import { getLogger } from "@ait/core";
 import { getQdrantClient } from "@ait/qdrant";
 import { getAItClient } from "../client/ai-sdk.client";
 import { getAllCollections } from "../config/collections.config";
+import { getCacheProvider } from "../providers";
 import type { TraceContext } from "../types/telemetry";
 
 const logger = getLogger();
@@ -53,11 +54,15 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
     .join(",");
 
   // 1. Semantic Cache Lookup
-  // Cache service moved to Gateway. Caching should be handled at the application layer or injected.
   if (enableCache) {
-    // No-op in SDK.
-    // TODO: Implement cache injection or middleware if needed.
-    logger.debug("Cache enabled but cache service not available in SDK");
+    const cacheProvider = getCacheProvider();
+    if (cacheProvider) {
+      const cached = await cacheProvider.get<RetrieveResult>(`${query}:${collectionContext}`);
+      if (cached) {
+        logger.info("Cache hit for retrieval", { query: query.slice(0, 50) });
+        return cached;
+      }
+    }
   }
 
   const queryEmbedding = await client.embed(query);
@@ -151,10 +156,13 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
     totalFound: flatResults.length,
   };
 
-  // 4. Update Cache - Moved
-  // if (enableCache && documents.length > 0) {
-  //   await semanticCache.set(query, result, collectionContext);
-  // }
+  // 4. Update Cache
+  if (enableCache && documents.length > 0) {
+    const cacheProvider = getCacheProvider();
+    if (cacheProvider) {
+      await cacheProvider.set(`${query}:${collectionContext}`, result);
+    }
+  }
 
   return result;
 }

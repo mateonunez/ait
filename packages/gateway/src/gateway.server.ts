@@ -17,12 +17,14 @@ import slackRoutes from "./routes/gateway.slack.routes";
 import spotifyRoutes from "./routes/gateway.spotify.routes";
 import suggestionsRoutes from "./routes/gateway.suggestions.routes";
 import xRoutes from "./routes/gateway.x.routes";
+import { initializeAnalyticsProvider } from "./services/analytics/analytics.adapter";
 import { initializeCacheProvider } from "./services/cache/redis-cache.provider";
 
 const redisUrl = process.env.REDIS_URL;
 
 export async function startServer(port = 3000): Promise<FastifyInstance> {
   initializeCacheProvider(redisUrl);
+  initializeAnalyticsProvider();
 
   const server = buildServer();
 
