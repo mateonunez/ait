@@ -75,6 +75,7 @@ export class AnalyticsService {
     cacheHit?: boolean;
     error?: ClassifiedError;
     retryAttempt?: number;
+    model?: string;
   }): void {
     // Performance metrics
     this.performanceMetrics.recordLatency(params.latencyMs, {
@@ -88,8 +89,9 @@ export class AnalyticsService {
     }
 
     // Cost tracking
+    const generationModel = params.model || this.config.generationModel;
     if (params.generationTokens) {
-      this.costTracking.recordGeneration(params.generationTokens, this.config.generationModel);
+      this.costTracking.recordGeneration(params.generationTokens, generationModel);
     }
     if (params.embeddingTokens) {
       this.costTracking.recordEmbedding(params.embeddingTokens, this.config.embeddingModel);

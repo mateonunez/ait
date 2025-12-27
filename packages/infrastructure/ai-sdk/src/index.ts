@@ -205,3 +205,17 @@ export {
   type MCPConnectOptions,
   type MCPTokenProvider,
 } from "./mcp";
+
+export type { ICacheProvider } from "./interfaces/cache-provider.interface";
+
+export type {
+  IAnalyticsProvider,
+  AnalyticsRequestData,
+} from "./interfaces/analytics-provider.interface";
+
+export {
+  registerCacheProvider,
+  getCacheProvider,
+  registerAnalyticsProvider,
+  getAnalyticsProvider,
+} from "./providers";

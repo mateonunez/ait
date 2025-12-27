@@ -1,6 +1,7 @@
 import { getLogger } from "@ait/core";
 import { stream as streamGeneration } from "../../generation/stream";
 import { generate as generateText } from "../../generation/text";
+import { getAnalyticsProvider } from "../../providers";
 import { rerank } from "../../rag/rerank";
 import { type RetrievedDocument, retrieve } from "../../rag/retrieve";
 import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
@@ -224,6 +225,17 @@ export class TextGenerationService implements ITextGenerationService {
         chunkCount,
         responseLength: fullResponse.length,
       });
+
+      const analytics = getAnalyticsProvider();
+      if (analytics) {
+        analytics.trackRequest({
+          latencyMs: telemetry.getDuration(),
+          success: true,
+          generationTokens: 0, // TODO: Token estimation logic was here
+          responseLength: fullResponse.length,
+          model: options.model,
+        });
+      }
     } catch (error: unknown) {
       yield* this._handleError(error, telemetry);
     }
@@ -322,6 +334,17 @@ export class TextGenerationService implements ITextGenerationService {
         responseLength: result.text.length,
       });
 
+      const analytics = getAnalyticsProvider();
+      if (analytics) {
+        analytics.trackRequest({
+          latencyMs: telemetry.getDuration(),
+          success: true,
+          generationTokens: 0, // TODO: Token estimation logic
+          responseLength: result.text.length,
+          model: options.model,
+        });
+      }
+
       return result.text;
     } catch (error: unknown) {
       const errorClassifier = getErrorClassificationService();
@@ -333,9 +356,15 @@ export class TextGenerationService implements ITextGenerationService {
         errorFingerprint: classifiedError.fingerprint,
       });
 
-      // Analytics moved to Gateway
-      // const analytics = getAnalyticsService();
-      // analytics.trackRequest({...});
+      const analytics = getAnalyticsProvider();
+      if (analytics) {
+        analytics.trackRequest({
+          latencyMs: telemetry.getDuration(),
+          success: false,
+          error: classifiedError,
+          model: options.model,
+        });
+      }
 
       throw error instanceof TextGenerationError
         ? error
@@ -358,8 +387,14 @@ export class TextGenerationService implements ITextGenerationService {
       suggestedAction: classifiedError.suggestedAction,
     });
 
-    // Analytics moved to Gateway
-    // this._analytics.trackRequest({...});
+    const analytics = getAnalyticsProvider();
+    if (analytics) {
+      analytics.trackRequest({
+        latencyMs: telemetry.getDuration(),
+        success: false,
+        error: classifiedError,
+      });
+    }
 
     const baseMessage = "I'm having trouble processing your request right now.";
     const reason = error instanceof Error ? error.message : String(error);
