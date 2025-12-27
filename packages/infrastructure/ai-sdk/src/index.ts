@@ -106,7 +106,7 @@ export {
   TextGenerationError,
 } from "./services/text-generation/text-generation.service";
 
-export * from "./services/generation/query-rewriter.service";
+export * from "./services/prompts/prompt-rewriter.service";
 export {
   SuggestionService,
   getSuggestionService,
@@ -172,15 +172,6 @@ export {
   endTraceWithError,
   shouldEnableTelemetry,
 } from "./telemetry/telemetry.middleware";
-
-// Note: Legacy Routing services (FastQueryAnalyzer, CollectionRouter)
-// have been replaced by the composable retrieve() and QueryIntentService.
-
-export {
-  QueryIntentService,
-  type IQueryIntentService,
-  type QueryIntent,
-} from "./services/routing/query-intent.service";
 
 export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 
@@ -253,14 +244,3 @@ export {
   type MCPConnectOptions,
   type MCPTokenProvider,
 } from "./mcp";
-
-export {
-  CircuitBreaker,
-  CircuitBreakerOpenError,
-  getCircuitBreaker,
-  resetCircuitBreaker,
-  resetAllCircuitBreakers,
-  getCircuitBreakerStats,
-  type CircuitState,
-  type CircuitBreakerConfig,
-} from "./services/resilience/circuit-breaker.service";

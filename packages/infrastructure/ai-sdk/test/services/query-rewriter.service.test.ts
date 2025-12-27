@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it, mock } from "node:test";
 import type { AItClient } from "../../src/client/ai-sdk.client";
-import { QueryRewriterService } from "../../src/services/generation/query-rewriter.service";
+import { PromptRewriterService } from "../../src/services/generation/query-rewriter.service";
 
-describe("QueryRewriterService", () => {
-  let service: QueryRewriterService;
+describe("PromptRewriterService", () => {
+  let service: PromptRewriterService;
   let mockGenerateText: any;
   let mockClient: AItClient;
 
@@ -13,7 +13,7 @@ describe("QueryRewriterService", () => {
     mockClient = {
       generateText: mockGenerateText,
     } as unknown as AItClient;
-    service = new QueryRewriterService(mockClient);
+    service = new PromptRewriterService(mockClient);
   });
 
   it("should return original query if no messages provided", async () => {

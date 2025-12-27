@@ -1,5 +1,5 @@
-import { AItError, getLogger } from "@ait/core";
-import { type EmbeddingModel, type LanguageModel, embed, generateObject, generateText, streamText } from "ai";
+import { getLogger } from "@ait/core";
+import { type EmbeddingModel, embed } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import dotenv from "dotenv";
 import type { ZodType } from "zod";
@@ -12,27 +12,21 @@ import {
   getModelSpec,
 } from "../config/models.config";
 import { type PresetName, getPreset, mergePresetWithOverrides } from "../config/presets.config";
-import { getCircuitBreaker } from "../services/resilience/circuit-breaker.service";
+import { generateObject as generateStructuredObject } from "../generation/object";
+import { stream } from "../generation/stream";
+import { generate } from "../generation/text";
 import { TextGenerationService } from "../services/text-generation/text-generation.service";
 import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 import type { ClientConfig } from "../types/config";
 import type { ModelGenerateOptions, ModelGenerateResult, ModelStreamOptions, ToolCall } from "../types/models";
 
-import {
-  type CompatibleEmbeddingModel,
-  type CompatibleLanguageModel,
-  attemptStructuredRepair,
-  augmentPrompt,
-  nextDelay,
-  wait,
-} from "../utils/generation.utils";
+import type { CompatibleEmbeddingModel, CompatibleLanguageModel } from "../utils/generation.utils";
 
 dotenv.config();
 
 const logger = getLogger();
 
 export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-const DEFAULT_STRUCTURED_MAX_RETRIES = 2;
 const CIRCUIT_BREAKER_OPTIONS = {
   failureThreshold: 3,
   resetTimeout: 30000,
@@ -50,10 +44,8 @@ export interface LlmStructuredGenerationOptions<T> {
 }
 
 export class AItClient {
-  private readonly _ollamaModel: CompatibleLanguageModel;
-  private readonly _ollamaEmbeddingModel: CompatibleEmbeddingModel;
-  private readonly _structuredModel: CompatibleLanguageModel;
-  private readonly _circuitBreaker = getCircuitBreaker("llm-generation", CIRCUIT_BREAKER_OPTIONS);
+  public readonly model: CompatibleLanguageModel;
+  public readonly embeddingModel: CompatibleEmbeddingModel;
 
   constructor(
     public readonly config: Required<AItClientConfig>,
@@ -62,15 +54,12 @@ export class AItClient {
   ) {
     const ollamaBaseURL = config.ollama.baseURL || DEFAULT_OLLAMA_BASE_URL;
 
+    this.model = createModel(generationModelConfig.name, ollamaBaseURL) as unknown as CompatibleLanguageModel;
+
     const ollama = createOllama({
       baseURL: ollamaBaseURL,
     });
-
-    this._ollamaModel = ollama(String(generationModelConfig.name)) as unknown as CompatibleLanguageModel;
-    this._ollamaEmbeddingModel = ollama.embedding(
-      String(embeddingModelConfig.name),
-    ) as unknown as CompatibleEmbeddingModel;
-    this._structuredModel = this._ollamaModel;
+    this.embeddingModel = ollama.embedding(String(embeddingModelConfig.name)) as unknown as CompatibleEmbeddingModel;
 
     if (config.logger) {
       logger.info("[AItClient] Initialized", {
@@ -82,113 +71,52 @@ export class AItClient {
   }
 
   public async generateText(options: ModelGenerateOptions): Promise<ModelGenerateResult> {
-    return this._circuitBreaker.execute(async () => {
-      const baseParams = {
-        model: this._ollamaModel as LanguageModel,
-        temperature: options.temperature ?? this.config.generation.temperature,
-        topP: options.topP ?? this.config.generation.topP,
-        topK: options.topK ?? this.config.generation.topK,
-        tools: options.tools,
-      };
-
-      const generateOptions = options.messages?.length
-        ? { ...baseParams, messages: options.messages }
-        : { ...baseParams, prompt: options.prompt };
-
-      const result = await generateText(generateOptions as any);
-
-      return {
-        text: result.text,
-        toolCalls: result.toolCalls as unknown as ToolCall[],
-      };
+    const result = await generate({
+      prompt: options.prompt,
+      messages: options.messages as any,
+      tools: options.tools as any,
+      temperature: options.temperature,
+      topP: options.topP,
+      topK: options.topK,
     });
+
+    return {
+      text: result.text,
+      toolCalls: result.toolCalls as unknown as ToolCall[],
+    };
   }
 
   public async *streamText(options: ModelStreamOptions): AsyncGenerator<string> {
-    const baseParams = {
-      model: this._ollamaModel as LanguageModel,
-      temperature: options.temperature ?? this.config.generation.temperature,
-      topP: options.topP ?? this.config.generation.topP,
-      topK: options.topK ?? this.config.generation.topK,
-      tools: options.tools,
-    };
+    const { textStream } = await stream({
+      prompt: options.prompt as string,
+      messages: options.messages as any,
+      tools: options.tools as any,
+      temperature: options.temperature,
+      topP: options.topP,
+      topK: options.topK,
+    });
 
-    const streamOptions = options.messages?.length
-      ? { ...baseParams, messages: options.messages }
-      : { ...baseParams, prompt: options.prompt };
-
-    const result = streamText(streamOptions as any);
-
-    for await (const chunk of result.textStream) {
+    for await (const chunk of textStream) {
       yield chunk;
     }
   }
 
   public async embed(text: string): Promise<number[]> {
     const { embedding } = await embed({
-      model: this._ollamaEmbeddingModel as unknown as EmbeddingModel,
+      model: this.embeddingModel as unknown as EmbeddingModel,
       value: text,
     });
     return embedding;
   }
 
   public async generateStructured<T>(options: LlmStructuredGenerationOptions<T>): Promise<T> {
-    const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
-    const configuredRetries = this.config.textGeneration.retryConfig?.maxRetries ?? DEFAULT_STRUCTURED_MAX_RETRIES;
-    const maxRetries = options.maxRetries ?? configuredRetries;
-    const baseTemperature = options.temperature ?? this.config.generation.temperature;
-
-    let lastError: unknown;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        const { object } = await generateObject({
-          model: this._structuredModel as LanguageModel,
-          schema: options.schema,
-          prompt,
-          temperature: baseTemperature,
-        });
-
-        return object as T;
-      } catch (error) {
-        lastError = error;
-        const isFinalAttempt = attempt >= maxRetries;
-
-        logger.warn("Structured generation attempt failed", {
-          attempt,
-          maxRetries,
-          error: error instanceof Error ? error.message : String(error),
-        });
-
-        if (isFinalAttempt) {
-          break;
-        }
-
-        try {
-          const repaired = await attemptStructuredRepair(
-            this._structuredModel,
-            prompt,
-            options.schema,
-            baseTemperature,
-          );
-          if (repaired.success) {
-            return repaired.data as T;
-          }
-          lastError = repaired.error ?? lastError;
-        } catch (repairError) {
-          lastError = repairError;
-        }
-
-        await wait(nextDelay(attempt, this.config.textGeneration.retryConfig?.delayMs));
-      }
-    }
-
-    throw new AItError(
-      "STRUCTURED_FAILED",
-      `Structured generation failed: ${lastError instanceof Error ? lastError.message : String(lastError)}`,
-      undefined,
-      lastError,
-    );
+    return generateStructuredObject({
+      prompt: options.prompt,
+      schema: options.schema,
+      temperature: options.temperature,
+      jsonInstruction: options.jsonInstruction,
+      maxRetries: options.maxRetries,
+    });
   }
 }
 
@@ -361,4 +289,12 @@ export function getModelCapabilities(): {
     contextWindow: config.contextWindow,
     vectorSize: config.vectorSize,
   };
+}
+
+export function createModel(modelName: string, baseURL: string = DEFAULT_OLLAMA_BASE_URL): CompatibleLanguageModel {
+  const ollama = createOllama({
+    baseURL,
+  });
+
+  return ollama(modelName) as unknown as CompatibleLanguageModel;
 }
