@@ -1,54 +1,55 @@
 import type {
-  GitHubCommitEntity,
   GitHubCommitExternal,
-  GitHubPullRequestEntity,
   GitHubPullRequestExternal,
-  GitHubRepositoryEntity,
   GitHubRepositoryExternal,
-  GoogleCalendarCalendarEntity,
   GoogleCalendarCalendarExternal,
-  GoogleCalendarEventEntity,
   GoogleCalendarEventExternal,
-  GoogleYouTubeSubscriptionEntity,
   GoogleYouTubeSubscriptionExternal,
-  LinearIssueEntity,
   LinearIssueExternal,
-  NotionPageEntity,
   NotionPageExternal,
-  SlackMessageEntity,
   SlackMessageExternal,
-  SpotifyAlbumEntity,
   SpotifyAlbumExternal,
-  SpotifyArtistEntity,
   SpotifyArtistExternal,
-  SpotifyPlaylistEntity,
   SpotifyPlaylistExternal,
-  SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
-  SpotifyTrackEntity,
   SpotifyTrackExternal,
-  XTweetEntity,
   XTweetExternal,
 } from "@ait/core";
-import { connectorGithubCommitMapper } from "../../domain/mappers/vendors/connector.github.commit.mapper";
-import { connectorGithubRepositoryMapper } from "../../domain/mappers/vendors/connector.github.mapper";
-import { connectorGithubPullRequestMapper } from "../../domain/mappers/vendors/connector.github.pull-request.mapper";
-import { connectorGoogleYouTubeSubscriptionMapper } from "../../domain/mappers/vendors/connector.google-youtube.mapper";
+import { type GitHubCommitEntity, mapGitHubCommit } from "../../domain/entities/github/github-commit.entity";
 import {
-  connectorGoogleCalendarCalendarMapper,
-  connectorGoogleCalendarEventMapper,
-} from "../../domain/mappers/vendors/connector.google.mapper";
-import { connectorLinearIssueMapper } from "../../domain/mappers/vendors/connector.linear.mapper";
-import { connectorNotionPageMapper } from "../../domain/mappers/vendors/connector.notion.mapper";
-import { connectorSlackMessageMapper } from "../../domain/mappers/vendors/connector.slack.mapper";
+  type GitHubPullRequestEntity,
+  mapGitHubPullRequest,
+} from "../../domain/entities/github/github-pull-request.entity";
 import {
-  connectorSpotifyAlbumMapper,
-  connectorSpotifyArtistMapper,
-  connectorSpotifyRecentlyPlayedMapper,
-  connectorSpotifyTrackMapper,
-} from "../../domain/mappers/vendors/connector.spotify.mapper";
-import { connectorSpotifyPlaylistMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
-import { connectorXTweetMapper } from "../../domain/mappers/vendors/connector.x.mapper";
+  type GitHubRepositoryEntity,
+  mapGitHubRepository,
+} from "../../domain/entities/github/github-repository.entity";
+import {
+  type GoogleCalendarCalendarEntity,
+  type GoogleCalendarEventEntity,
+  mapGoogleCalendarCalendar,
+  mapGoogleCalendarEvent,
+} from "../../domain/entities/google/google-calendar.entity";
+import {
+  type GoogleYouTubeSubscriptionEntity,
+  mapGoogleYouTubeSubscription,
+} from "../../domain/entities/google/google-youtube.entity";
+import { type LinearIssueEntity, mapLinearIssue } from "../../domain/entities/linear/linear-issue.entity";
+import { type NotionPageEntity, mapNotionPage } from "../../domain/entities/notion/notion-page.entity";
+import { type SlackMessageEntity, mapSlackMessage } from "../../domain/entities/slack/slack-message.entity";
+import {
+  type SpotifyAlbumEntity,
+  type SpotifyArtistEntity,
+  type SpotifyPlaylistEntity,
+  type SpotifyRecentlyPlayedEntity,
+  type SpotifyTrackEntity,
+  mapSpotifyAlbum,
+  mapSpotifyArtist,
+  mapSpotifyPlaylist,
+  mapSpotifyRecentlyPlayed,
+  mapSpotifyTrack,
+} from "../../domain/entities/spotify";
+import { type XTweetEntity, mapXTweet } from "../../domain/entities/x/x-tweet.entity";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import type { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
@@ -160,7 +161,7 @@ const githubEntityConfigs = {
           : undefined,
       };
     },
-    mapper: (repo: GitHubRepositoryExternal) => connectorGithubRepositoryMapper.externalToDomain(repo),
+    mapper: (repo: GitHubRepositoryExternal) => mapGitHubRepository(repo),
     cacheTtl: 3600,
     checksumEnabled: true,
     batchSize: 50,
@@ -177,7 +178,7 @@ const githubEntityConfigs = {
           : undefined,
       };
     },
-    mapper: (pr: GitHubPullRequestExternal) => connectorGithubPullRequestMapper.externalToDomain(pr),
+    mapper: (pr: GitHubPullRequestExternal) => mapGitHubPullRequest(pr),
     cacheTtl: 300,
     checksumEnabled: true,
     batchSize: 50,
@@ -194,7 +195,7 @@ const githubEntityConfigs = {
           : undefined,
       };
     },
-    mapper: (commit: GitHubCommitExternal) => connectorGithubCommitMapper.externalToDomain(commit),
+    mapper: (commit: GitHubCommitExternal) => mapGitHubCommit(commit),
     cacheTtl: 300,
     checksumEnabled: true,
     batchSize: 50,
@@ -211,14 +212,14 @@ const spotifyEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (track: SpotifyTrackExternal) => connectorSpotifyTrackMapper.externalToDomain(track),
+    mapper: (track: SpotifyTrackExternal) => mapSpotifyTrack(track),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyTrackExternal, SpotifyTrackEntity>,
 
   [SPOTIFY_ENTITY_TYPES_ENUM.ARTIST]: {
     fetcher: (connector: ConnectorSpotify) => connector.dataSource.fetchTopArtists(),
-    mapper: (artist: SpotifyArtistExternal) => connectorSpotifyArtistMapper.externalToDomain(artist),
+    mapper: (artist: SpotifyArtistExternal) => mapSpotifyArtist(artist),
   } satisfies EntityConfig<ConnectorSpotify, SpotifyArtistExternal, SpotifyArtistEntity>,
 
   [SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST]: {
@@ -272,7 +273,7 @@ const spotifyEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (playlist: SpotifyPlaylistExternal) => connectorSpotifyPlaylistMapper.externalToDomain(playlist),
+    mapper: (playlist: SpotifyPlaylistExternal) => mapSpotifyPlaylist(playlist),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyPlaylistExternal, SpotifyPlaylistEntity>,
@@ -286,7 +287,7 @@ const spotifyEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (album: SpotifyAlbumExternal) => connectorSpotifyAlbumMapper.externalToDomain(album),
+    mapper: (album: SpotifyAlbumExternal) => mapSpotifyAlbum(album),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyAlbumExternal, SpotifyAlbumEntity>,
@@ -300,7 +301,7 @@ const spotifyEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (item: SpotifyRecentlyPlayedExternal) => connectorSpotifyRecentlyPlayedMapper.externalToDomain(item),
+    mapper: (item: SpotifyRecentlyPlayedExternal) => mapSpotifyRecentlyPlayed(item),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorSpotify, SpotifyRecentlyPlayedExternal, SpotifyRecentlyPlayedEntity>,
@@ -316,7 +317,7 @@ const xEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (tweet: XTweetExternal) => connectorXTweetMapper.externalToDomain(tweet),
+    mapper: (tweet: XTweetExternal) => mapXTweet(tweet),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorX, XTweetExternal, XTweetEntity>,
@@ -332,7 +333,7 @@ const linearEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (issue: LinearIssueExternal) => connectorLinearIssueMapper.externalToDomain(issue),
+    mapper: (issue: LinearIssueExternal) => mapLinearIssue(issue),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorLinear, LinearIssueExternal, LinearIssueEntity>,
@@ -348,7 +349,7 @@ const notionEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (page: NotionPageExternal) => connectorNotionPageMapper.externalToDomain(page),
+    mapper: (page: NotionPageExternal) => mapNotionPage(page),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorNotion, NotionPageExternal, NotionPageEntity>,
@@ -364,7 +365,7 @@ const slackEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (message: SlackMessageExternal) => connectorSlackMessageMapper.externalToDomain(message),
+    mapper: (message: SlackMessageExternal) => mapSlackMessage(message),
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorSlack, SlackMessageExternal, SlackMessageEntity>,
@@ -380,7 +381,7 @@ const googleEntityConfigs = {
         nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (event: GoogleCalendarEventExternal) => connectorGoogleCalendarEventMapper.externalToDomain(event),
+    mapper: (event: GoogleCalendarEventExternal) => mapGoogleCalendarEvent(event),
     cacheTtl: 300,
     checksumEnabled: true,
     batchSize: 50,
@@ -388,8 +389,7 @@ const googleEntityConfigs = {
 
   [GOOGLE_ENTITY_TYPES_ENUM.CALENDAR]: {
     fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchCalendars(),
-    mapper: (calendar: GoogleCalendarCalendarExternal) =>
-      connectorGoogleCalendarCalendarMapper.externalToDomain(calendar),
+    mapper: (calendar: GoogleCalendarCalendarExternal) => mapGoogleCalendarCalendar(calendar),
     cacheTtl: 3600,
   } satisfies EntityConfig<ConnectorGoogle, GoogleCalendarCalendarExternal, GoogleCalendarCalendarEntity>,
 
@@ -402,8 +402,7 @@ const googleEntityConfigs = {
         nextCursor: response.nextPageToken ? { id: response.nextPageToken, timestamp: new Date() } : undefined,
       };
     },
-    mapper: (subscription: GoogleYouTubeSubscriptionExternal) =>
-      connectorGoogleYouTubeSubscriptionMapper.externalToDomain(subscription),
+    mapper: (subscription: GoogleYouTubeSubscriptionExternal) => mapGoogleYouTubeSubscription(subscription),
     cacheTtl: 3600,
     checksumEnabled: true,
     batchSize: 50,

@@ -1,5 +1,5 @@
 import { AItError } from "@ait/core";
-import type { XEntity } from "@ait/core";
+import type { XEntity, XTweetEntity } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { X_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -19,7 +19,8 @@ export class ConnectorXStore implements IConnectorStore {
     for (const item of items) {
       switch (item.__type) {
         case X_ENTITY_TYPES_ENUM.TWEET:
-          await this._connectorXRepository.tweet.saveTweet(item);
+          // TODO: fix this
+          await this._connectorXRepository.tweet.saveTweet(item as XTweetEntity as any);
           break;
         default:
           throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);

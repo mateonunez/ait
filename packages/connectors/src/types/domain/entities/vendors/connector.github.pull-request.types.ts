@@ -1,4 +1,5 @@
-import type { GitHubPullRequestEntity, PaginatedResponse, PaginationParams } from "@ait/core";
+import type { PaginatedResponse, PaginationParams } from "@ait/core";
+import type { GitHubPullRequestEntity } from "../../../../domain/entities/github/github-pull-request.entity";
 import type { IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorGitHubPullRequestRepository {

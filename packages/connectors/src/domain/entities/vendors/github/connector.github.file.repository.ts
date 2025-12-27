@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { AItError, type GitHubFileEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { drizzleOrm, getPostgresClient, githubRepositoryFiles } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import { connectorGithubFileMapper } from "../../../mappers/vendors/connector.github.file.mapper";
+import { fileDataTargetToDomain, fileDomainToDataTarget } from "../../../entities/github";
 
 const logger = getLogger();
 
@@ -33,7 +33,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
     const fileId = incremental ? randomUUID() : file.id;
 
     try {
-      const fileData = connectorGithubFileMapper.domainToDataTarget(file);
+      const fileData = fileDomainToDataTarget(file);
       fileData.id = fileId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -89,7 +89,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
       return null;
     }
 
-    return connectorGithubFileMapper.dataTargetToDomain(result[0]!);
+    return fileDataTargetToDomain(result[0]!);
   }
 
   async getFilesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubFileEntity>> {
@@ -111,7 +111,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: files.map((file) => connectorGithubFileMapper.dataTargetToDomain(file)),
+      data: files.map((file) => fileDataTargetToDomain(file)),
       pagination: {
         page,
         limit,
@@ -133,7 +133,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
       .limit(limit)
       .offset(offset);
 
-    return files.map((file) => connectorGithubFileMapper.dataTargetToDomain(file));
+    return files.map((file) => fileDataTargetToDomain(file));
   }
 
   /**

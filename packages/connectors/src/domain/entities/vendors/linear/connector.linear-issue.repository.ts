@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type LinearIssueEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { type LinearIssueDataTarget, drizzleOrm, getPostgresClient, linearIssues } from "@ait/postgres";
-import { connectorLinearIssueMapper } from "../../../../domain/mappers/vendors/connector.linear.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
+import { linearIssueDataTargetToDomain, linearIssueDomainToDataTarget } from "../../linear/linear-issue.entity";
+import type { LinearIssueEntity } from "../../linear/linear-issue.entity";
 
 const logger = getLogger();
 
@@ -18,7 +19,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     const issueId = incremental ? randomUUID() : issue.id;
 
     try {
-      const issueDataTarget = connectorLinearIssueMapper.domainToDataTarget(issue);
+      const issueDataTarget = linearIssueDomainToDataTarget(issue);
       issueDataTarget.id = issueId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -101,7 +102,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: issues.map((issue) => connectorLinearIssueMapper.dataTargetToDomain(issue)),
+      data: issues.map((issue) => linearIssueDataTargetToDomain(issue as LinearIssueDataTarget)),
       pagination: {
         page,
         limit,

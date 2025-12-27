@@ -1,19 +1,21 @@
 import type {
   PaginatedResponse,
   PaginationParams,
-  SpotifyAlbumEntity,
   SpotifyAlbumExternal,
-  SpotifyArtistEntity,
   SpotifyArtistExternal,
   SpotifyCurrentlyPlayingExternal,
-  SpotifyPlaylistEntity,
   SpotifyPlaylistExternal,
-  SpotifyRecentlyPlayedEntity,
   SpotifyRecentlyPlayedExternal,
-  SpotifyTrackEntity,
   SpotifyTrackExternal,
 } from "@ait/core";
-import { connectorSpotifyTrackMapper } from "../../domain/mappers/vendors/connector.spotify.mapper";
+import {
+  type SpotifyAlbumEntity,
+  type SpotifyArtistEntity,
+  type SpotifyPlaylistEntity,
+  type SpotifyRecentlyPlayedEntity,
+  type SpotifyTrackEntity,
+  mapSpotifyTrack,
+} from "../../domain/entities/spotify";
 import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
@@ -116,7 +118,7 @@ export class ConnectorSpotifyService
       ...response,
       item: {
         ...response.item,
-        trackEntity: connectorSpotifyTrackMapper.externalToDomain(response.item),
+        trackEntity: mapSpotifyTrack(response.item),
       },
     };
   }

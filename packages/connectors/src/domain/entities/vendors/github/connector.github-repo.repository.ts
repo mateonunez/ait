@@ -9,7 +9,7 @@ import {
 import { drizzleOrm, getPostgresClient, githubRepositories } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubRepoRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
-import { connectorGithubRepositoryMapper } from "../../../mappers/vendors/connector.github.mapper";
+import { repositoryDataTargetToDomain, repositoryDomainToDataTarget } from "../../../entities/github";
 
 const logger = getLogger();
 
@@ -24,7 +24,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
     const repositoryId = incremental ? randomUUID() : repository.id;
 
     try {
-      const repositoryData = connectorGithubRepositoryMapper.domainToDataTarget(repository);
+      const repositoryData = repositoryDomainToDataTarget(repository);
       repositoryData.id = repositoryId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -118,7 +118,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: repositories.map((repo) => connectorGithubRepositoryMapper.dataTargetToDomain(repo)),
+      data: repositories.map((repo) => repositoryDataTargetToDomain(repo)),
       pagination: {
         page,
         limit,

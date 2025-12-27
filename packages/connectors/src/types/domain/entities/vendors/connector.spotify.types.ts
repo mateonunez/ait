@@ -1,12 +1,11 @@
+import type { PaginatedResponse, PaginationParams } from "@ait/core";
 import type {
-  PaginatedResponse,
-  PaginationParams,
   SpotifyAlbumEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
   SpotifyRecentlyPlayedEntity,
   SpotifyTrackEntity,
-} from "@ait/core";
+} from "../../../../domain/entities/spotify";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorSpotifyTrackRepository {

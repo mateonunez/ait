@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "@ait/core";
 import {
-  connectorGoogleCalendarCalendarMapper,
-  connectorGoogleCalendarEventMapper,
-} from "../../../src/domain/mappers/vendors/connector.google.mapper";
+  googleCalendarCalendarDomainToDataTarget,
+  googleCalendarEventDomainToDataTarget,
+  mapGoogleCalendarCalendar,
+  mapGoogleCalendarEvent,
+} from "../../../src/domain/entities/google/google-calendar.entity";
 
 describe("Google Calendar Mappers", () => {
   describe("connectorGoogleCalendarEventMapper", () => {
@@ -42,7 +44,7 @@ describe("Google Calendar Mappers", () => {
           updated: "2024-01-10T00:00:00Z",
         };
 
-        const domainEvent = connectorGoogleCalendarEventMapper.externalToDomain(externalEvent);
+        const domainEvent = mapGoogleCalendarEvent(externalEvent);
 
         assert.equal(domainEvent.id, "event-123");
         assert.equal(domainEvent.title, "Team Meeting");
@@ -78,7 +80,7 @@ describe("Google Calendar Mappers", () => {
           },
         };
 
-        const domainEvent = connectorGoogleCalendarEventMapper.externalToDomain(externalEvent);
+        const domainEvent = mapGoogleCalendarEvent(externalEvent);
 
         assert.equal(domainEvent.isAllDay, true);
         assert.ok(domainEvent.startTime instanceof Date);
@@ -93,10 +95,10 @@ describe("Google Calendar Mappers", () => {
           htmlLink: "https://calendar.google.com/event?eid=minimal",
         };
 
-        const domainEvent = connectorGoogleCalendarEventMapper.externalToDomain(externalEvent);
+        const domainEvent = mapGoogleCalendarEvent(externalEvent);
 
         assert.equal(domainEvent.id, "minimal-event");
-        assert.equal(domainEvent.title, "");
+        assert.equal(domainEvent.title, "Untitled Event");
         assert.equal(domainEvent.description, null);
         assert.equal(domainEvent.location, null);
         assert.equal(domainEvent.startTime, null);
@@ -119,7 +121,7 @@ describe("Google Calendar Mappers", () => {
           end: { dateTime: "2024-01-15T09:15:00-05:00" },
         };
 
-        const domainEvent = connectorGoogleCalendarEventMapper.externalToDomain(externalEvent);
+        const domainEvent = mapGoogleCalendarEvent(externalEvent);
 
         assert.equal(domainEvent.recurringEventId, "parent-event-id");
         assert.deepEqual(domainEvent.recurrenceData, ["RRULE:FREQ=DAILY;COUNT=5"]);
@@ -138,8 +140,8 @@ describe("Google Calendar Mappers", () => {
           end: { dateTime: "2024-01-15T11:00:00Z" },
         };
 
-        const domainEvent = connectorGoogleCalendarEventMapper.externalToDomain(externalEvent);
-        const dataTarget = connectorGoogleCalendarEventMapper.domainToDataTarget(domainEvent);
+        const domainEvent = mapGoogleCalendarEvent(externalEvent);
+        const dataTarget = googleCalendarEventDomainToDataTarget(domainEvent);
 
         assert.equal(dataTarget.id, "event-123");
         assert.equal(dataTarget.title, "Test Event");
@@ -170,7 +172,7 @@ describe("Google Calendar Mappers", () => {
           defaultReminders: [{ method: "popup", minutes: 10 }],
         };
 
-        const domainCalendar = connectorGoogleCalendarCalendarMapper.externalToDomain(externalCalendar);
+        const domainCalendar = mapGoogleCalendarCalendar(externalCalendar);
 
         assert.equal(domainCalendar.id, "primary");
         assert.equal(domainCalendar.title, "Primary Calendar");
@@ -196,7 +198,7 @@ describe("Google Calendar Mappers", () => {
           summaryOverride: "My Custom Name",
         };
 
-        const domainCalendar = connectorGoogleCalendarCalendarMapper.externalToDomain(externalCalendar);
+        const domainCalendar = mapGoogleCalendarCalendar(externalCalendar);
 
         assert.equal(domainCalendar.title, "My Custom Name");
       });
@@ -207,10 +209,10 @@ describe("Google Calendar Mappers", () => {
           id: "minimal-calendar",
         };
 
-        const domainCalendar = connectorGoogleCalendarCalendarMapper.externalToDomain(externalCalendar);
+        const domainCalendar = mapGoogleCalendarCalendar(externalCalendar);
 
         assert.equal(domainCalendar.id, "minimal-calendar");
-        assert.equal(domainCalendar.title, "");
+        assert.equal(domainCalendar.title, "Untitled Calendar");
         assert.equal(domainCalendar.description, null);
         assert.equal(domainCalendar.isPrimary, false);
         assert.equal(domainCalendar.isHidden, false);
@@ -229,8 +231,8 @@ describe("Google Calendar Mappers", () => {
           primary: true,
         };
 
-        const domainCalendar = connectorGoogleCalendarCalendarMapper.externalToDomain(externalCalendar);
-        const dataTarget = connectorGoogleCalendarCalendarMapper.domainToDataTarget(domainCalendar);
+        const domainCalendar = mapGoogleCalendarCalendar(externalCalendar);
+        const dataTarget = googleCalendarCalendarDomainToDataTarget(domainCalendar);
 
         assert.equal(dataTarget.id, "calendar-123");
         assert.equal(dataTarget.title, "Test Calendar");

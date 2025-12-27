@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import type { GitHubEntity } from "@ait/core";
 import { ConnectorGitHubStore } from "../../../src/infrastructure/vendors/github/connector.github.store";
 import type {
-  GitHubEntity,
   GitHubRepositoryEntity,
   IConnectorGitHubRepository,
 } from "../../../src/types/domain/entities/vendors/connector.github.repository.types";
@@ -64,8 +64,8 @@ describe("ConnectorGitHubStore", () => {
           forks: 50,
           language: "TypeScript",
           url: "https://github.com/mateonunez/ait",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "repository",
         } as unknown as GitHubRepositoryEntity,
         {

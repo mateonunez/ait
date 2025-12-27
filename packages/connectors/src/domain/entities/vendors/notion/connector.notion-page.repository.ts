@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type NotionPageEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { type NotionPageDataTarget, drizzleOrm, getPostgresClient, notionPages } from "@ait/postgres";
-import { connectorNotionPageMapper } from "../../../../domain/mappers/vendors/connector.notion.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorNotionPageRepository } from "../../../../types/domain/entities/vendors/connector.notion.types";
+import { notionPageDataTargetToDomain, notionPageDomainToDataTarget } from "../../notion/notion-page.entity";
+import type { NotionPageEntity } from "../../notion/notion-page.entity";
 
 const logger = getLogger();
 
@@ -19,7 +19,7 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
     const pageId = incremental ? randomUUID() : page.id;
 
     try {
-      const pageDataTarget = connectorNotionPageMapper.domainToDataTarget(page);
+      const pageDataTarget = notionPageDomainToDataTarget(page);
       pageDataTarget.id = pageId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -34,12 +34,13 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
           content: pageDataTarget.content,
           createdBy: pageDataTarget.createdBy,
           lastEditedBy: pageDataTarget.lastEditedBy,
+          properties: pageDataTarget.properties as any,
           updatedAt: new Date(),
         };
 
         await tx
           .insert(notionPages)
-          .values(pageDataTarget)
+          .values(pageDataTarget as any)
           .onConflictDoUpdate({
             target: notionPages.id,
             set: updateValues,
@@ -98,7 +99,7 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: pages.map((page) => connectorNotionPageMapper.dataTargetToDomain(page)),
+      data: pages.map((page) => notionPageDataTargetToDomain(page as NotionPageDataTarget)),
       pagination: {
         page,
         limit,

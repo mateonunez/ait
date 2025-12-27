@@ -1,14 +1,12 @@
-import {
-  AItError,
-  type GoogleCalendarEventEntity,
-  type PaginatedResponse,
-  type PaginationParams,
-  getLogger,
-} from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { type GoogleCalendarEventDataTarget, drizzleOrm, getPostgresClient, googleCalendarEvents } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarEventRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import { connectorGoogleCalendarEventMapper } from "../../../mappers/vendors/connector.google.mapper";
+import {
+  googleCalendarEventDataTargetToDomain,
+  googleCalendarEventDomainToDataTarget,
+} from "../../google/google-calendar.entity";
+import type { GoogleCalendarEventEntity } from "../../google/google-calendar.entity";
 
 const logger = getLogger();
 
@@ -22,7 +20,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
     const eventId = event.id;
 
     try {
-      const eventDataTarget = connectorGoogleCalendarEventMapper.domainToDataTarget(event);
+      const eventDataTarget = googleCalendarEventDomainToDataTarget(event);
       eventDataTarget.id = eventId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -53,15 +51,15 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
           locked: eventDataTarget.locked,
           attendeesOmitted: eventDataTarget.attendeesOmitted,
           attendeesCount: eventDataTarget.attendeesCount,
-          creatorData: eventDataTarget.creatorData,
-          organizerData: eventDataTarget.organizerData,
-          attendeesData: eventDataTarget.attendeesData,
-          recurrenceData: eventDataTarget.recurrenceData,
-          remindersData: eventDataTarget.remindersData,
-          conferenceData: eventDataTarget.conferenceData,
-          attachmentsData: eventDataTarget.attachmentsData,
-          extendedPropertiesData: eventDataTarget.extendedPropertiesData,
-          metadata: eventDataTarget.metadata,
+          creatorData: eventDataTarget.creatorData as any,
+          organizerData: eventDataTarget.organizerData as any,
+          attendeesData: eventDataTarget.attendeesData as any,
+          recurrenceData: eventDataTarget.recurrenceData as any,
+          remindersData: eventDataTarget.remindersData as any,
+          conferenceData: eventDataTarget.conferenceData as any,
+          attachmentsData: eventDataTarget.attachmentsData as any,
+          extendedPropertiesData: eventDataTarget.extendedPropertiesData as any,
+          metadata: eventDataTarget.metadata as any,
           eventCreatedAt: eventDataTarget.eventCreatedAt,
           eventUpdatedAt: eventDataTarget.eventUpdatedAt,
           updatedAt: new Date(),
@@ -69,7 +67,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
 
         await tx
           .insert(googleCalendarEvents)
-          .values(eventDataTarget)
+          .values(eventDataTarget as any)
           .onConflictDoUpdate({
             target: googleCalendarEvents.id,
             set: updateValues,
@@ -113,7 +111,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
       return null;
     }
 
-    return connectorGoogleCalendarEventMapper.dataTargetToDomain(result[0]!);
+    return googleCalendarEventDataTargetToDomain(result[0]! as GoogleCalendarEventDataTarget);
   }
 
   async fetchEvents(): Promise<GoogleCalendarEventEntity[]> {
@@ -122,7 +120,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
       .from(googleCalendarEvents)
       .orderBy(drizzleOrm.desc(googleCalendarEvents.startTime));
 
-    return events.map((event) => connectorGoogleCalendarEventMapper.dataTargetToDomain(event));
+    return events.map((event) => googleCalendarEventDataTargetToDomain(event as GoogleCalendarEventDataTarget));
   }
 
   async getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>> {
@@ -144,7 +142,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: events.map((event) => connectorGoogleCalendarEventMapper.dataTargetToDomain(event)),
+      data: events.map((event) => googleCalendarEventDataTargetToDomain(event as GoogleCalendarEventDataTarget)),
       pagination: {
         page,
         limit,

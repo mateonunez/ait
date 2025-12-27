@@ -1,4 +1,6 @@
-import type { LinearIssueEntity, PaginatedResponse, PaginationParams } from "@ait/core";
+import type { PaginatedResponse, PaginationParams } from "@ait/core";
+import type { LinearIssueEntity } from "../../../../domain/entities/linear/linear-issue.entity";
+export type { LinearIssueEntity };
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorLinearIssueRepository {

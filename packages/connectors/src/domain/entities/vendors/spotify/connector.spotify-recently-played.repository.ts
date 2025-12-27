@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyRecentlyPlayedEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { getLogger } from "@ait/core";
 import {
   type SpotifyRecentlyPlayedDataTarget,
@@ -7,9 +7,13 @@ import {
   getPostgresClient,
   spotifyRecentlyPlayed,
 } from "@ait/postgres";
-import { connectorSpotifyRecentlyPlayedMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyRecentlyPlayedRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import {
+  spotifyRecentlyPlayedDataTargetToDomain,
+  spotifyRecentlyPlayedDomainToDataTarget,
+} from "../../spotify/spotify-recently-played.entity";
+import type { SpotifyRecentlyPlayedEntity } from "../../spotify/spotify-recently-played.entity";
 
 const logger = getLogger();
 
@@ -24,7 +28,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
     const itemId = incremental ? randomUUID() : item.id;
 
     try {
-      const itemDataTarget = connectorSpotifyRecentlyPlayedMapper.domainToDataTarget(item);
+      const itemDataTarget = spotifyRecentlyPlayedDomainToDataTarget(item);
       itemDataTarget.id = itemId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -37,13 +41,13 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
           explicit: itemDataTarget.explicit,
           popularity: itemDataTarget.popularity,
           playedAt: itemDataTarget.playedAt,
-          context: itemDataTarget.context,
+          context: itemDataTarget.context as any,
           updatedAt: new Date(),
         };
 
         await tx
           .insert(spotifyRecentlyPlayed)
-          .values(itemDataTarget)
+          .values(itemDataTarget as any)
           .onConflictDoUpdate({
             target: spotifyRecentlyPlayed.id,
             set: updateValues,
@@ -84,7 +88,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       .limit(limit)
       .execute();
 
-    return results.map((result) => connectorSpotifyRecentlyPlayedMapper.dataTargetToDomain(result));
+    return results.map((result) => spotifyRecentlyPlayedDataTargetToDomain(result as SpotifyRecentlyPlayedDataTarget));
   }
 
   async getRecentlyPlayedById(id: string): Promise<SpotifyRecentlyPlayedEntity | null> {
@@ -96,7 +100,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       .execute();
 
     if (result.length > 0 && result[0]) {
-      return connectorSpotifyRecentlyPlayedMapper.dataTargetToDomain(result[0]);
+      return spotifyRecentlyPlayedDataTargetToDomain(result[0] as SpotifyRecentlyPlayedDataTarget);
     }
 
     return null;
@@ -121,7 +125,9 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: recentlyPlayed.map((item) => connectorSpotifyRecentlyPlayedMapper.dataTargetToDomain(item)),
+      data: recentlyPlayed.map((item) =>
+        spotifyRecentlyPlayedDataTargetToDomain(item as SpotifyRecentlyPlayedDataTarget),
+      ),
       pagination: {
         page,
         limit,

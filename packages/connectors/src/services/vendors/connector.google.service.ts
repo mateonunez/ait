@@ -1,13 +1,15 @@
 import type {
-  GoogleCalendarCalendarEntity,
   GoogleCalendarCalendarExternal,
-  GoogleCalendarEventEntity,
   GoogleCalendarEventExternal,
-  GoogleYouTubeSubscriptionEntity,
   GoogleYouTubeSubscriptionExternal,
   PaginatedResponse,
   PaginationParams,
 } from "@ait/core";
+import type {
+  GoogleCalendarCalendarEntity,
+  GoogleCalendarEventEntity,
+} from "../../domain/entities/google/google-calendar.entity";
+import type { GoogleYouTubeSubscriptionEntity } from "../../domain/entities/google/google-youtube.entity";
 import { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";

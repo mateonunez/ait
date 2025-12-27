@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
-import type { GitHubPullRequestEntity } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient, githubPullRequests } from "@ait/postgres";
+import type { GitHubPullRequestEntity } from "../../../../src/domain/entities/github/github-pull-request.entity";
 import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";
 
 describe("ConnectorGitHubPullRequestRepository", () => {
@@ -134,8 +134,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             requestedTeamsData: null,
             headRepoData: null,
             baseRepoData: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "pull_request",
           },
           {
@@ -189,8 +189,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             requestedTeamsData: null,
             headRepoData: null,
             baseRepoData: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "pull_request",
           },
         ];
@@ -258,8 +258,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
           requestedTeamsData: null,
           headRepoData: null,
           baseRepoData: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "pull_request",
         })) as unknown as GitHubPullRequestEntity[];
 
@@ -322,8 +322,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
           requestedTeamsData: null,
           headRepoData: null,
           baseRepoData: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "pull_request",
         })) as unknown as GitHubPullRequestEntity[];
 

@@ -32,6 +32,7 @@ export type * from "./types/domain/entities/vendors/connector.github.pull-reques
 export type * from "./types/domain/entities/vendors/connector.linear.types";
 export type * from "./types/domain/entities/vendors/connector.spotify.types";
 export type * from "./types/domain/entities/vendors/connector.x.repository.types";
+
 export type * from "./types/domain/entities/vendors/connector.slack.types";
 export type * from "./types/domain/entities/vendors/connector.google.types";
 
@@ -54,9 +55,9 @@ export type { ConnectorCursor } from "./services/vendors/connector.vendors.confi
 // GitHub code ingestion
 export { CODE_INGESTION_REPOS } from "./shared/constants/code-ingestion.constants";
 export {
-  connectorGithubFileMapper,
+  mapGitHubFile,
   type GitHubFileExternalWithContent,
-} from "./domain/mappers/vendors/connector.github.file.mapper";
+} from "./domain/entities/github";
 export {
   ConnectorGitHubFileRepository,
   type IConnectorGitHubFileRepository,

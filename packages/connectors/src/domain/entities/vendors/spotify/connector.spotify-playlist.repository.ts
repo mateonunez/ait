@@ -1,10 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyPlaylistEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { type SpotifyPlaylistDataTarget, drizzleOrm, getPostgresClient, spotifyPlaylists } from "@ait/postgres";
-import { connectorSpotifyPlaylistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyPlaylistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import {
+  spotifyPlaylistDataTargetToDomain,
+  spotifyPlaylistDomainToDataTarget,
+} from "../../spotify/spotify-playlist.entity";
+import type { SpotifyPlaylistEntity } from "../../spotify/spotify-playlist.entity";
 
 const logger = getLogger();
 
@@ -19,7 +23,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     const playlistId = incremental ? randomUUID() : playlist.id;
 
     try {
-      const playlistDataTarget = connectorSpotifyPlaylistMapper.domainToDataTarget(playlist);
+      const playlistDataTarget = spotifyPlaylistDomainToDataTarget(playlist);
       playlistDataTarget.id = playlistId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -29,18 +33,18 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
           public: playlistDataTarget.public,
           collaborative: playlistDataTarget.collaborative,
           owner: playlistDataTarget.owner,
-          tracks: playlistDataTarget.tracks,
+          tracks: playlistDataTarget.tracks as any,
           followers: playlistDataTarget.followers,
           snapshotId: playlistDataTarget.snapshotId,
           uri: playlistDataTarget.uri,
           href: playlistDataTarget.href,
-          externalUrls: playlistDataTarget.externalUrls,
+          externalUrls: playlistDataTarget.externalUrls as any,
           updatedAt: new Date(),
         };
 
         await tx
           .insert(spotifyPlaylists)
-          .values(playlistDataTarget)
+          .values(playlistDataTarget as any)
           .onConflictDoUpdate({
             target: spotifyPlaylists.id,
             set: updateValues,
@@ -104,7 +108,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: playlists.map((playlist) => connectorSpotifyPlaylistMapper.dataTargetToDomain(playlist)),
+      data: playlists.map((playlist) => spotifyPlaylistDataTargetToDomain(playlist as SpotifyPlaylistDataTarget)),
       pagination: {
         page,
         limit,

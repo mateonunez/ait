@@ -1,26 +1,22 @@
+import type { PaginatedResponse, PaginationParams } from "@ait/core";
 import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
-  GoogleYouTubeSubscriptionEntity,
-  PaginatedResponse,
-  PaginationParams,
-} from "@ait/core";
+} from "../../../../domain/entities/google/google-calendar.entity";
+import type { GoogleYouTubeSubscriptionEntity } from "../../../../domain/entities/google/google-youtube.entity";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorGoogleCalendarEventRepository {
-  saveEvent(event: Partial<GoogleCalendarEventEntity>, options?: IConnectorRepositorySaveOptions): Promise<void>;
-  saveEvents(events: Partial<GoogleCalendarEventEntity>[]): Promise<void>;
+  saveEvent(event: GoogleCalendarEventEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveEvents(events: GoogleCalendarEventEntity[]): Promise<void>;
   getEvent(id: string): Promise<GoogleCalendarEventEntity | null>;
   fetchEvents(): Promise<GoogleCalendarEventEntity[]>;
   getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>>;
 }
 
 export interface IConnectorGoogleCalendarCalendarRepository {
-  saveCalendar(
-    calendar: Partial<GoogleCalendarCalendarEntity>,
-    options?: IConnectorRepositorySaveOptions,
-  ): Promise<void>;
-  saveCalendars(calendars: Partial<GoogleCalendarCalendarEntity>[]): Promise<void>;
+  saveCalendar(calendar: GoogleCalendarCalendarEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveCalendars(calendars: GoogleCalendarCalendarEntity[]): Promise<void>;
   getCalendar(id: string): Promise<GoogleCalendarCalendarEntity | null>;
   fetchCalendars(): Promise<GoogleCalendarCalendarEntity[]>;
   getCalendarsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarCalendarEntity>>;
@@ -28,10 +24,10 @@ export interface IConnectorGoogleCalendarCalendarRepository {
 
 export interface IConnectorGoogleYouTubeSubscriptionRepository {
   saveSubscription(
-    subscription: Partial<GoogleYouTubeSubscriptionEntity>,
+    subscription: GoogleYouTubeSubscriptionEntity,
     options?: IConnectorRepositorySaveOptions,
   ): Promise<void>;
-  saveSubscriptions(subscriptions: Partial<GoogleYouTubeSubscriptionEntity>[]): Promise<void>;
+  saveSubscriptions(subscriptions: GoogleYouTubeSubscriptionEntity[]): Promise<void>;
   getSubscription(id: string): Promise<GoogleYouTubeSubscriptionEntity | null>;
   fetchSubscriptions(): Promise<GoogleYouTubeSubscriptionEntity[]>;
   getSubscriptionsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>>;

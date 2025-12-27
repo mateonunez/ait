@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type SlackMessageEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { type SlackMessageDataTarget, drizzleOrm, getPostgresClient, slackMessages } from "@ait/postgres";
-import { connectorSlackMessageMapper } from "../../../../domain/mappers/vendors/connector.slack.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSlackMessageRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
+import { slackMessageDataTargetToDomain, slackMessageDomainToDataTarget } from "../../slack/slack-message.entity";
+import type { SlackMessageEntity } from "../../slack/slack-message.entity";
 
 const logger = getLogger();
 
@@ -19,7 +20,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     const messageId = incremental ? randomUUID() : message.id;
 
     try {
-      const messageDataTarget = connectorSlackMessageMapper.domainToDataTarget(message);
+      const messageDataTarget = slackMessageDomainToDataTarget(message);
       messageDataTarget.id = messageId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -37,7 +38,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
 
         await tx
           .insert(slackMessages)
-          .values(messageDataTarget)
+          .values(messageDataTarget as any)
           .onConflictDoUpdate({
             target: slackMessages.id,
             set: updateValues,
@@ -101,7 +102,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: messages.map((message) => connectorSlackMessageMapper.dataTargetToDomain(message)),
+      data: messages.map((message) => slackMessageDataTargetToDomain(message as SlackMessageDataTarget)),
       pagination: {
         page,
         limit,

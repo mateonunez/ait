@@ -1,15 +1,12 @@
 import assert from "node:assert/strict";
 // connector.x.store.test.ts
 import { beforeEach, describe, it } from "node:test";
+import type { XEntity } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
+import type { XTweetEntity } from "../../../src/domain/entities/x/x-tweet.entity";
 import { ConnectorXStore } from "../../../src/infrastructure/vendors/x/connector.x.store";
-import { X_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
-import type {
-  IConnectorXRepository,
-  XEntity,
-  XTweetEntity,
-} from "../../../src/types/domain/entities/vendors/connector.x.repository.types";
+import type { IConnectorXRepository } from "../../../src/types/domain/entities/vendors/connector.x.repository.types";
 
 describe("ConnectorXStore", () => {
   let mockRepository: IConnectorXRepository;
@@ -37,15 +34,25 @@ describe("ConnectorXStore", () => {
 
       const tweet: XTweetEntity = {
         id: "tweet-1",
-        text: "Hello, world!",
-        __type: X_ENTITY_TYPES_ENUM.TWEET,
-        authorId: "user123",
-        authorUsername: "testuser",
-        authorName: "Test User",
+        text: "Test tweet",
+        __type: "tweet",
+        authorId: "author-1",
+        authorUsername: "user1",
+        authorName: "User One",
+        lang: "en",
+        retweetCount: 10,
+        likeCount: 50,
+        replyCount: 0,
+        quoteCount: 0,
+        conversationId: null,
+        inReplyToUserId: null,
+        mediaAttachments: [],
+        pollData: null,
+        placeData: null,
         createdAt: new Date(),
         updatedAt: new Date(),
         jsonData: {},
-      };
+      } as XTweetEntity;
 
       await store.save(tweet);
 
@@ -62,22 +69,42 @@ describe("ConnectorXStore", () => {
       const tweets: XTweetEntity[] = [
         {
           id: "tweet-1",
-          text: "Hello, world!",
+          text: "First tweet",
           __type: "tweet",
-          authorId: "user1",
+          authorId: "author-1",
           authorUsername: "user1",
           authorName: "User One",
+          lang: "en",
+          retweetCount: 10,
+          likeCount: 50,
+          replyCount: 0,
+          quoteCount: 0,
+          conversationId: null,
+          inReplyToUserId: null,
+          mediaAttachments: [],
+          pollData: null,
+          placeData: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           jsonData: {},
         },
         {
           id: "tweet-2",
-          text: "Another tweet",
+          text: "Second tweet",
           __type: "tweet",
-          authorId: "user2",
+          authorId: "author-2",
           authorUsername: "user2",
           authorName: "User Two",
+          lang: "en",
+          retweetCount: 20,
+          likeCount: 100,
+          replyCount: 0,
+          quoteCount: 0,
+          conversationId: null,
+          inReplyToUserId: null,
+          mediaAttachments: [],
+          pollData: null,
+          placeData: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           jsonData: {},
