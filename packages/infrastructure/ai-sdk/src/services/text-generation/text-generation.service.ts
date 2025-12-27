@@ -12,8 +12,7 @@ import { AnalyticsService, getAnalyticsService } from "../analytics/analytics.se
 import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
-import { QueryRewriterService } from "../generation/query-rewriter.service";
-import { QueryIntentService } from "../routing/query-intent.service";
+import { PromptRewriterService } from "../prompts/prompt-rewriter.service";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
@@ -39,6 +38,8 @@ export interface GenerateOptions {
   maxToolRounds?: number;
   enableRAG?: boolean;
   messages?: ChatMessage[];
+  telemetryOptions?: TelemetryOptions;
+  model?: string;
 }
 
 export type TelemetryOptions = {
@@ -58,6 +59,7 @@ export interface GenerateStreamOptions {
   messages?: ChatMessage[];
   telemetryOptions?: TelemetryOptions;
   enableMetadata?: boolean;
+  model?: string;
 }
 
 export interface GenerateTextOptions {
@@ -68,6 +70,7 @@ export interface GenerateTextOptions {
   enableRAG?: boolean;
   telemetryOptions?: TelemetryOptions;
   enableMetadata?: boolean;
+  model?: string;
 }
 
 export interface ITextGenerationService {
@@ -81,8 +84,7 @@ export class TextGenerationService implements ITextGenerationService {
   private readonly _analytics: AnalyticsService;
   private readonly _config: TextGenerationConfig;
   private readonly _contextManager: SmartContextManager;
-  private readonly _queryRewriter: QueryRewriterService;
-  private readonly _intentService: QueryIntentService;
+  private readonly _queryRewriter: PromptRewriterService;
   private readonly _typeFilterService: TypeFilterService;
 
   constructor(config: TextGenerationConfig = {}) {
@@ -94,8 +96,7 @@ export class TextGenerationService implements ITextGenerationService {
         ? Math.floor(config.contextPreparationConfig.maxContextChars / 4)
         : undefined,
     });
-    this._queryRewriter = new QueryRewriterService();
-    this._intentService = new QueryIntentService();
+    this._queryRewriter = new PromptRewriterService();
     this._typeFilterService = new TypeFilterService();
   }
 
@@ -130,20 +131,13 @@ export class TextGenerationService implements ITextGenerationService {
 
       // RAG flow using composable functions
       if (options.enableRAG) {
-        // 1. Intent Analysis
-        const intent = await this._intentService.analyzeIntent(
-          options.prompt,
-          options.messages,
-          telemetry.optionalContext,
-        );
-
         // 2. Query Rewriting if needed
         if (options.messages && options.messages.length > 0) {
           queryToUse = await this._queryRewriter.rewriteQuery(options.prompt, options.messages);
         }
 
         // 2.1 Extract Filters
-        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse, { intent });
+        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse);
 
         // 3. Retrieval
         const retrieval = await retrieve({
@@ -217,6 +211,7 @@ export class TextGenerationService implements ITextGenerationService {
         traceContext: telemetry.optionalContext, // Pass trace context for Langfuse spans
         ragContext, // Pass RAG context for AIt system prompt
         maxToolRounds: options.maxToolRounds,
+        model: options.model,
       });
 
       for await (const chunk of textStream) {
@@ -266,20 +261,13 @@ export class TextGenerationService implements ITextGenerationService {
 
       // RAG flow using composable functions
       if (options.enableRAG) {
-        // 1. Intent Analysis
-        const intent = await this._intentService.analyzeIntent(
-          options.prompt,
-          options.messages,
-          telemetry.optionalContext,
-        );
-
         // 2. Query Rewriting if needed
         if (options.messages && options.messages.length > 0) {
           queryToUse = await this._queryRewriter.rewriteQuery(options.prompt, options.messages);
         }
 
         // 2.1 Extract Filters
-        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse, { intent });
+        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse);
 
         // 3. Retrieval
         const retrieval = await retrieve({
@@ -331,6 +319,7 @@ export class TextGenerationService implements ITextGenerationService {
         traceContext: telemetry.optionalContext, // Pass trace context for Langfuse spans
         ragContext, // Pass RAG context for AIt system prompt
         maxToolRounds: options.maxToolRounds,
+        model: options.model,
       });
 
       telemetry.recordSuccess({
@@ -362,10 +351,6 @@ export class TextGenerationService implements ITextGenerationService {
         ? error
         : new TextGenerationError(`Text generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
-  }
-
-  private _buildPromptWithContext(prompt: string, context: string): string {
-    return `Context:\n${context}\n\nQuestion: ${prompt}`;
   }
 
   private _trackAnalytics(duration: number, response: string): void {

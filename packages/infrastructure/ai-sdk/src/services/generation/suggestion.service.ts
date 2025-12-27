@@ -59,7 +59,7 @@ export class SuggestionService {
       return [
         { id: "fallback-1", type: "question", text: "What can you do?" },
         { id: "fallback-2", type: "question", text: "Show me my recent activity" },
-        { id: "fallback-3", type: "question", text: "Help me with my code" },
+        { id: "fallback-3", type: "question", text: "Check my integrations status" },
       ];
     }
   }
