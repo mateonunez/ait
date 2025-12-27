@@ -1,3 +1,54 @@
+// ============================================================================
+// Vercel AI SDK - Re-exported for direct usage
+// ============================================================================
+// These are the native Vercel AI SDK functions. Use these for simple cases
+// or when you want direct control without AIT wrappers.
+export {
+  streamText,
+  generateText,
+  generateObject,
+  streamObject,
+  embed,
+  embedMany,
+  tool,
+  type LanguageModel,
+  type EmbeddingModel,
+  type StreamTextResult,
+  type GenerateTextResult,
+  type GenerateObjectResult,
+  type StreamObjectResult,
+  type EmbedResult,
+  type EmbedManyResult,
+} from "ai";
+
+// ============================================================================
+// AIT Thin Wrappers - Vercel SDK + optional AIT enhancements (telemetry, RAG)
+// ============================================================================
+// Use these for AIT-enhanced generation with opt-in telemetry.
+export {
+  stream,
+  streamChunks,
+  generate,
+  type StreamOptions,
+  type StreamResult,
+  type TextGenerateOptions,
+  type TextGenerateResult,
+} from "./generation";
+
+// Composable RAG functions (replaces complex pipeline stages)
+export {
+  retrieve,
+  rerank,
+  type RetrieveOptions,
+  type RetrieveResult,
+  type RetrievedDocument,
+  type RerankOptions,
+  type RerankResult,
+} from "./rag";
+
+// ============================================================================
+// AIT Client & Configuration
+// ============================================================================
 export {
   initAItClient,
   getAItClient,
@@ -109,19 +160,6 @@ export {
   type SuggestionItem,
 } from "./types";
 
-export { createRAGPipeline, type RAGPipelineConfig } from "./pipelines/rag.pipeline";
-
-export { PipelineOrchestrator } from "./services/rag/pipeline/pipeline.orchestrator";
-export type {
-  IPipelineStage,
-  PipelineConfig,
-  PipelineContext,
-  PipelineResult,
-  StageResult,
-  PipelineExecutionOptions,
-  FailureMode,
-} from "./services/rag/pipeline/pipeline.types";
-
 export { initLangfuseProvider, resetLangfuseProvider, getLangfuseProvider } from "./telemetry/langfuse.provider";
 export {
   createTraceContext,
@@ -135,42 +173,14 @@ export {
   shouldEnableTelemetry,
 } from "./telemetry/telemetry.middleware";
 
-export {
-  FastQueryAnalyzerService,
-  getFastQueryAnalyzer,
-  type FastQueryAnalysis,
-  type IFastQueryAnalyzerService,
-} from "./services/routing/fast-query-analyzer.service";
-
-export {
-  CollectionRouterService,
-  type ICollectionRouterService,
-  type CollectionRouterConfig,
-} from "./services/routing/collection-router.service";
+// Note: Legacy Routing services (FastQueryAnalyzer, CollectionRouter)
+// have been replaced by the composable retrieve() and QueryIntentService.
 
 export {
   QueryIntentService,
   type IQueryIntentService,
   type QueryIntent,
 } from "./services/routing/query-intent.service";
-
-// Ranking services
-export {
-  FastRerankService,
-  getFastRerankService,
-  resetFastRerankService,
-  type FastRerankConfig,
-} from "./services/ranking/fast-rerank.service";
-
-export {
-  RerankService,
-  type IRerankService,
-} from "./services/ranking/rerank.service";
-
-export {
-  CollectionRerankService,
-  type ICollectionRerankService,
-} from "./services/ranking/collection-rerank.service";
 
 export type { TraceContext, TelemetryConfig } from "./types/telemetry";
 

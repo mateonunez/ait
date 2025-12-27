@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { RetrievedDocument as RagRetrievedDocument } from "../../rag/retrieve";
 import type { StreamEvent } from "../../types";
 import { METADATA_TYPE, STREAM_EVENT } from "../../types";
 import type { BaseMetadata, Document } from "../../types/documents";
@@ -24,44 +25,65 @@ export interface ToolCallMetadata {
 
 export class MetadataEmitterService {
   convertDocumentsToUIFormat(rawDocuments: unknown[]): RetrievedDocument[] {
-    return (rawDocuments as Document<BaseMetadata>[]).map((doc) => {
-      const entityType = doc.metadata.__type || "unknown";
-      const score = typeof doc.metadata.score === "number" ? doc.metadata.score : 0;
+    return rawDocuments.map((rawDoc) => {
+      // Handle RagRetrievedDocument (from retrieve.ts) - the primary source
+      const ragDoc = rawDoc as RagRetrievedDocument;
+      if (ragDoc.content !== undefined && ragDoc.score !== undefined && ragDoc.collection !== undefined) {
+        return {
+          id: ragDoc.id || randomUUID(),
+          content: (ragDoc.content || "").slice(0, 500),
+          score: ragDoc.score || 0,
+          source: {
+            type: ragDoc.collection,
+            identifier: ragDoc.id,
+            url: ragDoc.source,
+            metadata: ragDoc.metadata,
+          },
+          timestamp: undefined,
+          entityTypes: [ragDoc.collection],
+        };
+      }
+
+      // Handle Document<BaseMetadata> type (legacy)
+      const legacyDoc = rawDoc as unknown as Document<BaseMetadata>;
+      const metadata = legacyDoc.metadata || ({} as BaseMetadata);
+      const entityType = metadata.__type || "unknown";
+      const score = typeof metadata.score === "number" ? metadata.score : 0;
 
       const timestamp =
-        doc.metadata.createdAt ||
-        doc.metadata.playedAt ||
-        doc.metadata.mergedAt ||
-        doc.metadata.pushedAt ||
-        doc.metadata.publishedAt ||
+        metadata.createdAt ||
+        metadata.playedAt ||
+        metadata.mergedAt ||
+        metadata.pushedAt ||
+        metadata.publishedAt ||
         undefined;
 
-      let content = doc.pageContent;
-      if (doc.metadata.title && typeof doc.metadata.title === "string") {
-        content = doc.metadata.title;
-        if (doc.metadata.description && typeof doc.metadata.description === "string") {
-          content += ` - ${doc.metadata.description}`;
+      let content = legacyDoc.pageContent || "";
+      if (metadata.title && typeof metadata.title === "string") {
+        content = metadata.title;
+        if (metadata.description && typeof metadata.description === "string") {
+          content += ` - ${metadata.description}`;
         }
-      } else if (doc.metadata.name && typeof doc.metadata.name === "string") {
-        content = doc.metadata.name;
-        if (doc.metadata.artist && typeof doc.metadata.artist === "string") {
-          content += ` by ${doc.metadata.artist}`;
+      } else if (metadata.name && typeof metadata.name === "string") {
+        content = metadata.name;
+        if (metadata.artist && typeof metadata.artist === "string") {
+          content += ` by ${metadata.artist}`;
         }
       }
 
       const source: { type: string; identifier?: string; url?: string; metadata?: Record<string, unknown> } = {
         type: entityType,
-        identifier: doc.metadata.id as string | undefined,
-        url: doc.metadata.url as string | undefined,
+        identifier: metadata.id as string | undefined,
+        url: metadata.url as string | undefined,
         metadata: {
-          collectionVendor: doc.metadata.collectionVendor,
-          repositoryName: doc.metadata.repositoryName,
-          repositoryFullName: doc.metadata.repositoryFullName,
+          collectionVendor: metadata.collectionVendor,
+          repositoryName: metadata.repositoryName,
+          repositoryFullName: metadata.repositoryFullName,
         },
       };
 
       return {
-        id: (doc.metadata.id as string) || randomUUID(),
+        id: (metadata.id as string) || randomUUID(),
         content: content.slice(0, 500),
         score,
         source,
