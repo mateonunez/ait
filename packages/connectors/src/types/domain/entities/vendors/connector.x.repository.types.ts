@@ -1,4 +1,6 @@
-import type { PaginatedResponse, PaginationParams, XTweetEntity } from "@ait/core";
+import type { PaginatedResponse, PaginationParams } from "@ait/core";
+import type { XTweetEntity } from "../../../../domain/entities/x/x-tweet.entity";
+
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorXTweetRepository {

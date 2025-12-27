@@ -1,4 +1,5 @@
-import type { GitHubCommitEntity, PaginatedResponse, PaginationParams } from "@ait/core";
+import type { PaginatedResponse, PaginationParams } from "@ait/core";
+import type { GitHubCommitEntity } from "../../../../domain/entities/github/github-commit.entity";
 import type { IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorGitHubCommitRepository {

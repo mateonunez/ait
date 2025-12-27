@@ -320,8 +320,8 @@ export const GoogleCalendarEventEntitySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable(),
   eventCreatedAt: z.date().nullable(),
   eventUpdatedAt: z.date().nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
   __type: z.literal("event"),
 });
 
@@ -343,8 +343,8 @@ export const GoogleCalendarCalendarEntitySchema = z.object({
   notificationSettingsData: z.record(z.string(), z.unknown()).nullable(),
   conferencePropertiesData: z.record(z.string(), z.unknown()).nullable(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
   __type: z.literal("calendar"),
 });
 

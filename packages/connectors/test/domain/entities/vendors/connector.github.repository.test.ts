@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
-import type { GitHubCommitEntity, GitHubPullRequestEntity, GitHubRepositoryEntity } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient } from "@ait/postgres";
 import { githubCommits, githubPullRequests, githubRepositories } from "@ait/postgres";
+import type { GitHubCommitEntity } from "../../../../src/domain/entities/github/github-commit.entity";
+import type { GitHubPullRequestEntity } from "../../../../src/domain/entities/github/github-pull-request.entity";
+import type { GitHubRepositoryEntity } from "../../../../src/domain/entities/github/github-repository.entity";
 import { ConnectorGitHubRepoRepository } from "../../../../src/domain/entities/vendors/github/connector.github-repo.repository";
 import { ConnectorGitHubCommitRepository } from "../../../../src/domain/entities/vendors/github/connector.github.commit.repository";
 import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";
@@ -117,8 +119,8 @@ describe("ConnectorGitHubRepository", () => {
             ownerData: null,
             licenseData: null,
             metadata: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "repository",
           },
           {
@@ -154,8 +156,8 @@ describe("ConnectorGitHubRepository", () => {
             ownerData: null,
             licenseData: null,
             metadata: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "repository",
           },
         ] as GitHubRepositoryEntity[];
@@ -208,8 +210,8 @@ describe("ConnectorGitHubRepository", () => {
           ownerData: null,
           licenseData: null,
           metadata: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "repository",
         })) as unknown as GitHubRepositoryEntity[];
 
@@ -257,8 +259,8 @@ describe("ConnectorGitHubRepository", () => {
           ownerData: null,
           licenseData: null,
           metadata: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "repository",
         })) as unknown as GitHubRepositoryEntity[];
 
@@ -405,8 +407,8 @@ describe("ConnectorGitHubRepository", () => {
             requestedTeamsData: null,
             headRepoData: null,
             baseRepoData: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "pull_request",
           },
           {
@@ -460,8 +462,8 @@ describe("ConnectorGitHubRepository", () => {
             requestedTeamsData: null,
             headRepoData: null,
             baseRepoData: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "pull_request",
           },
         ];
@@ -529,8 +531,8 @@ describe("ConnectorGitHubRepository", () => {
           requestedTeamsData: null,
           headRepoData: null,
           baseRepoData: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "pull_request",
         })) as unknown as GitHubPullRequestEntity[];
 
@@ -593,8 +595,8 @@ describe("ConnectorGitHubRepository", () => {
           requestedTeamsData: null,
           headRepoData: null,
           baseRepoData: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "pull_request",
         })) as unknown as GitHubPullRequestEntity[];
 
@@ -656,8 +658,8 @@ describe("ConnectorGitHubRepository", () => {
           ],
           verification: { verified: true, reason: "valid" },
           metadata: { url: "https://api.github.com/repos/mateonunez/test-repo/commits/abc123def456" },
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "commit",
         } as GitHubCommitEntity;
 
@@ -713,8 +715,8 @@ describe("ConnectorGitHubRepository", () => {
           filesData: null,
           verification: null,
           metadata: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "commit",
         } as GitHubCommitEntity;
 
@@ -775,8 +777,8 @@ describe("ConnectorGitHubRepository", () => {
             filesData: null,
             verification: null,
             metadata: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "commit",
           },
           {
@@ -806,8 +808,8 @@ describe("ConnectorGitHubRepository", () => {
             filesData: [{ filename: "src/feature.ts", additions: 30, deletions: 10, changes: 40 }],
             verification: { verified: false },
             metadata: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "commit",
           },
         ] as GitHubCommitEntity[];
@@ -854,8 +856,8 @@ describe("ConnectorGitHubRepository", () => {
           filesData: i % 3 === 0 ? [{ filename: `file${i}.ts`, additions: 10, deletions: 5 }] : null,
           verification: i % 2 === 0 ? { verified: true } : null,
           metadata: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "commit",
         })) as unknown as GitHubCommitEntity[];
 
@@ -897,8 +899,8 @@ describe("ConnectorGitHubRepository", () => {
           filesData: null,
           verification: null,
           metadata: null,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
           __type: "commit",
         })) as unknown as GitHubCommitEntity[];
 
@@ -948,8 +950,8 @@ describe("ConnectorGitHubRepository", () => {
             filesData: null,
             verification: null,
             metadata: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "commit",
           },
           {
@@ -979,8 +981,8 @@ describe("ConnectorGitHubRepository", () => {
             filesData: null,
             verification: null,
             metadata: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
             __type: "commit",
           },
         ] as GitHubCommitEntity[];

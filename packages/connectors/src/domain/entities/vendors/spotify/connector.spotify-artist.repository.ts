@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyArtistEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { type SpotifyArtistDataTarget, drizzleOrm, getPostgresClient, spotifyArtists } from "@ait/postgres";
-import { connectorSpotifyArtistMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyArtistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import { spotifyArtistDataTargetToDomain, spotifyArtistDomainToDataTarget } from "../../spotify/spotify-artist.entity";
+import type { SpotifyArtistEntity } from "../../spotify/spotify-artist.entity";
 
 const logger = getLogger();
 
@@ -19,7 +20,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     const artistId = incremental ? randomUUID() : artist.id;
 
     try {
-      const artistDataTarget = connectorSpotifyArtistMapper.domainToDataTarget(artist);
+      const artistDataTarget = spotifyArtistDomainToDataTarget(artist);
       artistDataTarget.id = artistId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -96,7 +97,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: artists.map((artist) => connectorSpotifyArtistMapper.dataTargetToDomain(artist)),
+      data: artists.map((artist) => spotifyArtistDataTargetToDomain(artist as SpotifyArtistDataTarget)),
       pagination: {
         page,
         limit,

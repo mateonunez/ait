@@ -69,14 +69,14 @@ export const GoogleYouTubeSubscriptionEntitySchema = z.object({
   description: z.string().nullable(),
   channelId: z.string(),
   resourceChannelId: z.string(),
-  publishedAt: z.string(),
+  publishedAt: z.date(),
   thumbnailUrl: z.string().nullable(),
   totalItemCount: z.number(),
   newItemCount: z.number(),
   activityType: z.string().nullable(),
   __type: z.literal("subscription"),
-  createdAt: z.string().nullable(),
-  updatedAt: z.string().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
 });
 
 export type GoogleYouTubeSubscriptionEntity = z.infer<typeof GoogleYouTubeSubscriptionEntitySchema>;

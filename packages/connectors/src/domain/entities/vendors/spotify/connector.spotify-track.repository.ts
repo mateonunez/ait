@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyTrackEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { type SpotifyTrackDataTarget, drizzleOrm, getPostgresClient, spotifyTracks } from "@ait/postgres";
-import { connectorSpotifyTrackMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyTrackRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import { spotifyTrackDataTargetToDomain, spotifyTrackDomainToDataTarget } from "../../spotify/spotify-track.entity";
+import type { SpotifyTrackEntity } from "../../spotify/spotify-track.entity";
 
 const logger = getLogger();
 
@@ -19,7 +20,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     const trackId = incremental ? randomUUID() : track.id;
 
     try {
-      const trackDataTarget = connectorSpotifyTrackMapper.domainToDataTarget(track);
+      const trackDataTarget = spotifyTrackDomainToDataTarget(track);
       trackDataTarget.id = trackId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -111,7 +112,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tracks.map((track) => connectorSpotifyTrackMapper.dataTargetToDomain(track)),
+      data: tracks.map((track) => spotifyTrackDataTargetToDomain(track as SpotifyTrackDataTarget)),
       pagination: {
         page,
         limit,

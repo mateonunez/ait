@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import type { SpotifyTrackEntity } from "../../../src/domain/entities/spotify/spotify-track.entity";
 import { ConnectorSpotifyStore } from "../../../src/infrastructure/vendors/spotify/connector.spotify.store";
-import type {
-  IConnectorSpotifyRepository,
-  SpotifyTrackEntity,
-} from "../../../src/types/domain/entities/vendors/connector.spotify.types";
+import type { IConnectorSpotifyRepository } from "../../../src/types/domain/entities/vendors/connector.spotify.types";
 
 describe("ConnectorSpotifyStore", () => {
   let mockRepository: IConnectorSpotifyRepository;

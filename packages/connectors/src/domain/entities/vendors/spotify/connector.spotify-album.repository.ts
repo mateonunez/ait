@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type SpotifyAlbumEntity } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { type SpotifyAlbumDataTarget, drizzleOrm, getPostgresClient, spotifyAlbums } from "@ait/postgres";
-import { connectorSpotifyAlbumMapper } from "../../../../domain/mappers/vendors/connector.spotify.mapper";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyAlbumRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
+import { spotifyAlbumDataTargetToDomain, spotifyAlbumDomainToDataTarget } from "../../spotify/spotify-album.entity";
+import type { SpotifyAlbumEntity } from "../../spotify/spotify-album.entity";
 
 const logger = getLogger();
 
@@ -19,15 +20,15 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
     const albumId = incremental ? randomUUID() : album.id;
 
     try {
-      const albumDataTarget = connectorSpotifyAlbumMapper.domainToDataTarget(album);
+      const albumDataTarget = spotifyAlbumDomainToDataTarget(album);
       albumDataTarget.id = albumId;
 
       await this._pgClient.db.transaction(async (tx) => {
         const updateValues: Partial<SpotifyAlbumDataTarget> = {
           name: albumDataTarget.name,
           albumType: albumDataTarget.albumType,
-          artists: albumDataTarget.artists,
-          tracks: albumDataTarget.tracks,
+          artists: albumDataTarget.artists as any,
+          tracks: albumDataTarget.tracks as any,
           totalTracks: albumDataTarget.totalTracks,
           releaseDate: albumDataTarget.releaseDate,
           releaseDatePrecision: albumDataTarget.releaseDatePrecision,
@@ -36,15 +37,15 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
           href: albumDataTarget.href,
           popularity: albumDataTarget.popularity,
           label: albumDataTarget.label,
-          copyrights: albumDataTarget.copyrights,
-          externalIds: albumDataTarget.externalIds,
-          genres: albumDataTarget.genres,
+          copyrights: albumDataTarget.copyrights as any,
+          externalIds: albumDataTarget.externalIds as any,
+          genres: albumDataTarget.genres as any,
           updatedAt: new Date(),
         };
 
         await tx
           .insert(spotifyAlbums)
-          .values(albumDataTarget)
+          .values(albumDataTarget as any)
           .onConflictDoUpdate({
             target: spotifyAlbums.id,
             set: updateValues,
@@ -106,7 +107,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: albums.map((album) => connectorSpotifyAlbumMapper.dataTargetToDomain(album)),
+      data: albums.map((album) => spotifyAlbumDataTargetToDomain(album as SpotifyAlbumDataTarget)),
       pagination: {
         page,
         limit,

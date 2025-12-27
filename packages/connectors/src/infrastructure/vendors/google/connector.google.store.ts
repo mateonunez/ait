@@ -1,6 +1,11 @@
 import type { GoogleEntity } from "@ait/core";
 import { AItError } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
+import type {
+  GoogleCalendarCalendarEntity,
+  GoogleCalendarEventEntity,
+} from "../../../domain/entities/google/google-calendar.entity";
+import type { GoogleYouTubeSubscriptionEntity } from "../../../domain/entities/google/google-youtube.entity";
 import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
@@ -19,13 +24,22 @@ export class ConnectorGoogleStore implements IConnectorStore {
     for (const item of items) {
       switch (item.__type) {
         case GOOGLE_ENTITY_TYPES_ENUM.EVENT:
-          await this._ConnectorGoogleRepository.event.saveEvent(item, { incremental: false });
+          await this._ConnectorGoogleRepository.event.saveEvent(item as unknown as GoogleCalendarEventEntity, {
+            incremental: false,
+          });
           break;
         case GOOGLE_ENTITY_TYPES_ENUM.CALENDAR:
-          await this._ConnectorGoogleRepository.calendar.saveCalendar(item, { incremental: false });
+          await this._ConnectorGoogleRepository.calendar.saveCalendar(item as unknown as GoogleCalendarCalendarEntity, {
+            incremental: false,
+          });
           break;
         case GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION:
-          await this._ConnectorGoogleRepository.subscription.saveSubscription(item, { incremental: false });
+          await this._ConnectorGoogleRepository.subscription.saveSubscription(
+            item as unknown as GoogleYouTubeSubscriptionEntity,
+            {
+              incremental: false,
+            },
+          );
           break;
         default:
           // @ts-ignore: Unreachable code error

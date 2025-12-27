@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, type XTweetEntity, getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import {
   type OAuthTokenDataTarget,
   type XTweetDataTarget,
@@ -14,7 +14,8 @@ import type {
   IConnectorXRepository,
   IConnectorXTweetRepository,
 } from "../../../../types/domain/entities/vendors/connector.x.repository.types";
-import { connectorXTweetMapper } from "../../../mappers/vendors/connector.x.mapper";
+import { xTweetDataTargetToDomain, xTweetDomainToDataTarget } from "../../x/x-tweet.entity";
+import type { XTweetEntity } from "../../x/x-tweet.entity";
 
 const logger = getLogger();
 
@@ -26,7 +27,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
     const tweetId = incremental ? randomUUID() : tweet.id;
 
     try {
-      const tweetData = connectorXTweetMapper.domainToDataTarget(tweet);
+      const tweetData = xTweetDomainToDataTarget(tweet);
       tweetData.id = tweetId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -49,7 +50,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
 
         await tx
           .insert(xTweets)
-          .values(tweetData)
+          .values(tweetData as any)
           .onConflictDoUpdate({
             target: xTweets.id,
             set: updateValues,
@@ -94,7 +95,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tweets.map((tweet) => connectorXTweetMapper.dataTargetToDomain(tweet)),
+      data: tweets.map((tweet) => xTweetDataTargetToDomain(tweet as XTweetDataTarget)),
       pagination: {
         page,
         limit,

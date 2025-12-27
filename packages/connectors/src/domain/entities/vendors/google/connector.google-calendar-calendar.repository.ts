@@ -1,10 +1,4 @@
-import {
-  AItError,
-  type GoogleCalendarCalendarEntity,
-  type PaginatedResponse,
-  type PaginationParams,
-  getLogger,
-} from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import {
   type GoogleCalendarCalendarDataTarget,
   drizzleOrm,
@@ -13,7 +7,11 @@ import {
 } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarCalendarRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import { connectorGoogleCalendarCalendarMapper } from "../../../mappers/vendors/connector.google.mapper";
+import {
+  googleCalendarCalendarDataTargetToDomain,
+  googleCalendarCalendarDomainToDataTarget,
+} from "../../google/google-calendar.entity";
+import type { GoogleCalendarCalendarEntity } from "../../google/google-calendar.entity";
 
 const logger = getLogger();
 
@@ -27,7 +25,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
     const calendarId = calendar.id;
 
     try {
-      const calendarDataTarget = connectorGoogleCalendarCalendarMapper.domainToDataTarget(calendar);
+      const calendarDataTarget = googleCalendarCalendarDomainToDataTarget(calendar);
       calendarDataTarget.id = calendarId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -44,16 +42,16 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
           isHidden: calendarDataTarget.isHidden,
           isSelected: calendarDataTarget.isSelected,
           isDeleted: calendarDataTarget.isDeleted,
-          defaultRemindersData: calendarDataTarget.defaultRemindersData,
-          notificationSettingsData: calendarDataTarget.notificationSettingsData,
-          conferencePropertiesData: calendarDataTarget.conferencePropertiesData,
-          metadata: calendarDataTarget.metadata,
+          defaultRemindersData: calendarDataTarget.defaultRemindersData as any,
+          notificationSettingsData: calendarDataTarget.notificationSettingsData as any,
+          conferencePropertiesData: calendarDataTarget.conferencePropertiesData as any,
+          metadata: calendarDataTarget.metadata as any,
           updatedAt: new Date(),
         };
 
         await tx
           .insert(googleCalendarCalendars)
-          .values(calendarDataTarget)
+          .values(calendarDataTarget as any)
           .onConflictDoUpdate({
             target: googleCalendarCalendars.id,
             set: updateValues,
@@ -97,7 +95,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
       return null;
     }
 
-    return connectorGoogleCalendarCalendarMapper.dataTargetToDomain(result[0]!);
+    return googleCalendarCalendarDataTargetToDomain(result[0]! as GoogleCalendarCalendarDataTarget);
   }
 
   async fetchCalendars(): Promise<GoogleCalendarCalendarEntity[]> {
@@ -106,7 +104,9 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
       .from(googleCalendarCalendars)
       .orderBy(drizzleOrm.desc(googleCalendarCalendars.isPrimary));
 
-    return calendars.map((calendar) => connectorGoogleCalendarCalendarMapper.dataTargetToDomain(calendar));
+    return calendars.map((calendar) =>
+      googleCalendarCalendarDataTargetToDomain(calendar as GoogleCalendarCalendarDataTarget),
+    );
   }
 
   async getCalendarsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarCalendarEntity>> {
@@ -128,7 +128,9 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: calendars.map((calendar) => connectorGoogleCalendarCalendarMapper.dataTargetToDomain(calendar)),
+      data: calendars.map((calendar) =>
+        googleCalendarCalendarDataTargetToDomain(calendar as GoogleCalendarCalendarDataTarget),
+      ),
       pagination: {
         page,
         limit,

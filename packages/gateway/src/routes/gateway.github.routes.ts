@@ -1,4 +1,10 @@
-import { type ConnectorGitHubService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import {
+  CODE_INGESTION_REPOS,
+  type ConnectorGitHubService,
+  clearOAuthData,
+  connectorServiceFactory,
+  mapGitHubFile,
+} from "@ait/connectors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 declare module "fastify" {
@@ -186,7 +192,6 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
         // Files - uses syncFiles to handle deletions
         if (entitiesToRefresh.includes("files")) {
-          const { CODE_INGESTION_REPOS, connectorGithubFileMapper } = await import("@ait/connectors");
           const repos = repo ? [repo] : CODE_INGESTION_REPOS;
           const dataSource = githubService.connector.dataSource;
           const fileRepository = githubService.connector.repository.file;
@@ -202,14 +207,14 @@ export default async function githubRoutes(fastify: FastifyInstance) {
             try {
               // Fetch current file tree from GitHub
               const tree = await dataSource.fetchRepositoryTree(owner, repoName, branch);
-              const files: Awaited<ReturnType<typeof connectorGithubFileMapper.externalToDomain>>[] = [];
+              const files: ReturnType<typeof mapGitHubFile>[] = [];
 
               // Fetch content for each text file
               for (const item of tree) {
                 try {
                   const content = await dataSource.fetchFileContent(owner, repoName, item.path, branch);
                   if (dataSource.isTextFile(item.path, content)) {
-                    const entity = connectorGithubFileMapper.externalToDomain({
+                    const entity = mapGitHubFile({
                       ...item,
                       content,
                       repositoryId: repoFullName.replace("/", "-"),
