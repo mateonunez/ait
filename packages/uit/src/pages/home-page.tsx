@@ -1,3 +1,4 @@
+import { BackgroundEffects } from "@/components/background-effects";
 import { DiscoveryStats } from "@/components/discovery/discovery-stats";
 import { GoalTrackerWidget } from "@/components/discovery/goal-tracker-widget";
 import { FloatingPromptButton } from "@/components/home/floating-prompt-button";
@@ -106,21 +107,30 @@ export default function HomePage() {
     <InsightsProvider initialTimeRange={timeRange}>
       <motion.div
         {...animationVariants}
-        className="flex-1 flex flex-col overflow-y-auto custom-scrollbar min-w-0 min-h-0"
+        className="flex-1 flex flex-col overflow-y-auto custom-scrollbar min-w-0 min-h-0 relative"
       >
-        <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4">
-          <div className="container mx-auto max-w-7xl space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Welcome back</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">
+        <BackgroundEffects />
+        <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 relative z-10">
+          <div className="container mx-auto max-w-7xl space-y-4 text-center sm:text-left">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter mb-4">
+                <span className="text-gradient-animated">AIt</span>
+              </h1>
+              <p className="text-xl sm:text-2xl font-medium text-foreground/80">
+                Your data. Your AI. <span className="font-semibold text-gradient">One Platform.</span>
+              </p>
+            </motion.div>
+
+            <p className="text-sm sm:text-base text-muted-foreground max-w-2xl">
               {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                <span className="flex items-center gap-2 justify-center sm:justify-start">
+                  <span className="inline-block w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
                   Loading your content...
                 </span>
               ) : totalItems > 0 ? (
                 `Discover ${totalItems} ${totalItems === 1 ? "item" : "items"} from your integrations`
               ) : (
-                "Connect your integrations to see your content"
+                "Connect everything you use—your code, music, notes, tasks—and talk to it all like never before."
               )}
             </p>
           </div>

@@ -64,17 +64,17 @@ export function IntegrationsList() {
                       type="button"
                       onClick={() => handleIntegrationClick(integration.route)}
                       className={cn(
-                        "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-lg",
+                        "group relative flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-2 sm:p-3 rounded-xl",
                         "w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] shrink-0",
-                        "border border-transparent hover:border-white/20",
-                        "transition-all duration-200 hover:scale-105 hover:shadow-xl",
+                        "border border-white/10 hover:border-white/30",
+                        "transition-all duration-300 hover:scale-105 hover:shadow-lg shadow-md",
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
                       )}
                       style={{
                         backgroundColor: integration.color,
                       }}
                     >
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 bg-white/10 backdrop-blur-sm">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 bg-white/20 backdrop-blur-md shadow-inner">
                         <IconComponent className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                       </div>
                       <p className="text-xs sm:text-sm font-semibold leading-tight text-white text-center whitespace-normal">

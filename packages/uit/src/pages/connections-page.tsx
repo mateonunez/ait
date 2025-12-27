@@ -77,7 +77,7 @@ export default function ConnectionsPage() {
       {/* Compact header with stats and refresh */}
       <div className="flex items-center justify-between px-4 py-3 border-b">
         <p className="text-sm text-muted-foreground">
-          {connectedCount} of {SUPPORTED_VENDORS.length} integrations connected
+          Connect everything you use — {connectedCount} of {SUPPORTED_VENDORS.length} connected
         </p>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading} className="gap-2">
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />

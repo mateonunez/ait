@@ -251,9 +251,12 @@ export default function ChatPage() {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full px-4 sm:px-6 py-8 sm:py-12 space-y-4 sm:space-y-6">
                   <div className="text-center space-y-2">
-                    <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Start a conversation</h2>
-                    <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
-                      Ask me anything and I'll help you with context-aware responses powered by RAG and tool calling.
+                    <h2 className="text-xl sm:text-2xl font-semibold text-foreground text-center">
+                      Your Data. Your AI. <span className="text-gradient">One Platform.</span>
+                    </h2>
+                    <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto text-center">
+                      Ask about your code, music, or tasks. I'll help you with context-aware responses powered by RAG
+                      and tool calling.
                     </p>
                   </div>
                   <div className="w-full max-w-2xl mx-auto px-4 sm:px-0">
