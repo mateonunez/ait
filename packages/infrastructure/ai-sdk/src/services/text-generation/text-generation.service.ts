@@ -1,15 +1,19 @@
 import { getLogger } from "@ait/core";
-import { getAItClient } from "../../client/ai-sdk.client";
-import { type TextGenerationPipeline, createTextGenerationPipeline } from "../../pipelines/text-generation.pipeline";
-import { MetadataExtractionStage } from "../../stages/generation/metadata-extraction.stage";
+import { stream as streamGeneration } from "../../generation/stream";
+import { generate as generateText } from "../../generation/text";
+import { rerank } from "../../rag/rerank";
+import { type RetrievedDocument, retrieve } from "../../rag/retrieve";
 import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
 import type { StreamEvent } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
-import type { GenerationState } from "../../types/stages";
 import type { Tool } from "../../types/tools";
 import { AnalyticsService, getAnalyticsService } from "../analytics/analytics.service";
+import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
+import { TypeFilterService } from "../filtering/type-filter.service";
+import { QueryRewriterService } from "../generation/query-rewriter.service";
+import { QueryIntentService } from "../routing/query-intent.service";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
@@ -73,31 +77,28 @@ export interface ITextGenerationService {
 
 export class TextGenerationService implements ITextGenerationService {
   readonly name = "text-generation";
-  private readonly _pipeline: TextGenerationPipeline;
   private readonly _metadataEmitter: MetadataEmitterService;
-  private readonly _metadataStage: MetadataExtractionStage;
   private readonly _analytics: AnalyticsService;
+  private readonly _config: TextGenerationConfig;
+  private readonly _contextManager: SmartContextManager;
+  private readonly _queryRewriter: QueryRewriterService;
+  private readonly _intentService: QueryIntentService;
+  private readonly _typeFilterService: TypeFilterService;
 
   constructor(config: TextGenerationConfig = {}) {
-    const client = getAItClient();
-    this._pipeline = createTextGenerationPipeline(client, {
-      maxContextChars: config.contextPreparationConfig?.maxContextChars ?? 128000,
-      embeddingsModel: config.embeddingsModel,
-      maxDocs: config.multipleQueryPlannerConfig?.maxDocs,
-      concurrency: config.multipleQueryPlannerConfig?.concurrency,
-      relevanceFloor: config.multipleQueryPlannerConfig?.relevanceFloor,
-      enableTelemetry: true,
-    });
-
+    this._config = config;
     this._metadataEmitter = new MetadataEmitterService();
-    this._metadataStage = new MetadataExtractionStage();
     this._analytics = new AnalyticsService();
+    this._contextManager = new SmartContextManager({
+      totalTokenLimit: config.contextPreparationConfig?.maxContextChars
+        ? Math.floor(config.contextPreparationConfig.maxContextChars / 4)
+        : undefined,
+    });
+    this._queryRewriter = new QueryRewriterService();
+    this._intentService = new QueryIntentService();
+    this._typeFilterService = new TypeFilterService();
   }
 
-  /**
-   * Main entry point for streaming text generation.
-   * Delegates all logic to the TextGenerationPipeline.
-   */
   public async *generateStream(options: GenerateStreamOptions): AsyncGenerator<string | StreamEvent> {
     if (!options.prompt?.trim()) {
       throw new TextGenerationError("Prompt cannot be empty");
@@ -123,47 +124,108 @@ export class TextGenerationService implements ITextGenerationService {
     try {
       logger.info(`Starting stream generation for prompt: "${options.prompt.slice(0, 50)}..."`);
 
-      // 1. Execute Pipeline
-      const state = await this._pipeline.execute(
-        {
-          prompt: options.prompt,
-          messages: options.messages || [],
-          tools: options.tools,
-          maxToolRounds: options.maxToolRounds,
-          enableRAG: options.enableRAG ?? true,
-          enableMetadata: options.enableMetadata ?? false,
-        },
-        { traceContext: telemetry.optionalContext },
-      );
+      let queryToUse = options.prompt;
+      let ragContext: string | undefined;
+      let ragDocuments: RetrievedDocument[] = [];
 
-      logger.info("Generation pipeline completed successfully", {
-        hasIntent: !!state.intent,
-        needsRAG: state.intent?.needsRAG,
-        needsTools: state.intent?.needsTools,
-      });
+      // RAG flow using composable functions
+      if (options.enableRAG) {
+        // 1. Intent Analysis
+        const intent = await this._intentService.analyzeIntent(
+          options.prompt,
+          options.messages,
+          telemetry.optionalContext,
+        );
 
-      // 2. Handle Metadata (Context & Tools)
-      yield* this._emitPreGenerationMetadata(state);
+        // 2. Query Rewriting if needed
+        if (options.messages && options.messages.length > 0) {
+          queryToUse = await this._queryRewriter.rewriteQuery(options.prompt, options.messages);
+        }
 
-      // 3. Handle Stream
+        // 2.1 Extract Filters
+        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse, { intent });
+
+        // 3. Retrieval
+        const retrieval = await retrieve({
+          query: queryToUse,
+          types: typeFilter?.types,
+          limit: this._config.multipleQueryPlannerConfig?.maxDocs ?? 20,
+          scoreThreshold: this._config.multipleQueryPlannerConfig?.relevanceFloor ?? 0.4,
+          filter: typeFilter?.timeRange
+            ? {
+                fromDate: typeFilter.timeRange.from,
+                toDate: typeFilter.timeRange.to,
+              }
+            : undefined,
+          traceContext: telemetry.optionalContext,
+          enableCache: true, // Core feature restoration
+        });
+
+        if (retrieval.documents.length > 0) {
+          // 4. Reranking
+          const ranked = rerank({
+            query: queryToUse,
+            documents: retrieval.documents,
+            topK: 10,
+          });
+
+          ragDocuments = ranked.documents;
+
+          // 5. Smart Context Assembly
+          ragContext = await this._contextManager.assembleContext({
+            systemInstructions: "",
+            messages: options.messages || [],
+            retrievedDocs: ragDocuments.map((d) => ({
+              pageContent: d.content,
+              metadata: {
+                id: d.id,
+                __type: "document",
+                source: d.source || (d.metadata?.source as string),
+                collection: d.collection,
+                ...d.metadata,
+              },
+            })),
+          });
+        }
+      }
+
+      // Emit RAG metadata if enabled
+      if (options.enableMetadata && options.enableRAG && ragContext) {
+        yield this._metadataEmitter.createContextMetadataEvent(
+          {
+            context: ragContext,
+            documents: ragDocuments,
+            contextMetadata: {
+              documentCount: ragDocuments.length,
+              contextLength: ragContext.length,
+              usedTemporalCorrelation: false,
+            },
+          },
+          options.prompt,
+        );
+      }
+
+      // Stream using new thin wrapper
       let fullResponse = "";
       let chunkCount = 0;
 
-      if (state.textStream) {
-        logger.info("Starting text stream...");
-        for await (const chunk of state.textStream) {
-          chunkCount++;
-          fullResponse += chunk;
-          yield chunk;
-        }
-        logger.info("Text stream completed", { chunks: chunkCount, responseLength: fullResponse.length });
+      const { textStream } = await streamGeneration({
+        prompt: queryToUse,
+        messages: options.messages,
+        tools: options.tools as any,
+        enableTelemetry: options.telemetryOptions?.enableTelemetry,
+        traceContext: telemetry.optionalContext, // Pass trace context for Langfuse spans
+        ragContext, // Pass RAG context for AIt system prompt
+        maxToolRounds: options.maxToolRounds,
+      });
+
+      for await (const chunk of textStream) {
+        chunkCount++;
+        fullResponse += chunk;
+        yield chunk;
       }
 
-      // 4. Finalize & Extract Post-Generation Metadata
-      const finalizedState = await this._finalize(state, fullResponse, telemetry);
-
-      // 5. Emit Post-Generation Metadata (Suggestions)
-      yield* this._emitPostGenerationMetadata(finalizedState);
+      logger.info("Stream completed", { chunks: chunkCount, responseLength: fullResponse.length });
 
       telemetry.recordSuccess({
         response: fullResponse,
@@ -199,46 +261,87 @@ export class TextGenerationService implements ITextGenerationService {
     try {
       logger.info(`Starting text generation for prompt: "${options.prompt.slice(0, 50)}..."`);
 
-      // 1. Execute Pipeline
-      const state = await this._pipeline.execute(
-        {
-          prompt: options.prompt,
-          messages: options.messages || [],
-          tools: options.tools,
-          maxToolRounds: options.maxToolRounds,
-          enableRAG: options.enableRAG ?? true,
-          enableMetadata: options.enableMetadata ?? false,
-        },
-        { traceContext: telemetry.optionalContext },
-      );
+      let queryToUse = options.prompt;
+      let ragContext: string | undefined;
 
-      logger.info("Generation pipeline completed successfully", {
-        hasIntent: !!state.intent,
-        needsRAG: state.intent?.needsRAG,
-        needsTools: state.intent?.needsTools,
-      });
+      // RAG flow using composable functions
+      if (options.enableRAG) {
+        // 1. Intent Analysis
+        const intent = await this._intentService.analyzeIntent(
+          options.prompt,
+          options.messages,
+          telemetry.optionalContext,
+        );
 
-      // 2. Consume Stream (even for non-streaming, the stage returns a generator)
-      let fullResponse = "";
-      if (state.textStream) {
-        for await (const chunk of state.textStream) {
-          fullResponse += chunk;
+        // 2. Query Rewriting if needed
+        if (options.messages && options.messages.length > 0) {
+          queryToUse = await this._queryRewriter.rewriteQuery(options.prompt, options.messages);
+        }
+
+        // 2.1 Extract Filters
+        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse, { intent });
+
+        // 3. Retrieval
+        const retrieval = await retrieve({
+          query: queryToUse,
+          types: typeFilter?.types,
+          limit: this._config.multipleQueryPlannerConfig?.maxDocs ?? 20,
+          scoreThreshold: this._config.multipleQueryPlannerConfig?.relevanceFloor ?? 0.4,
+          filter: typeFilter?.timeRange
+            ? {
+                fromDate: typeFilter.timeRange.from,
+                toDate: typeFilter.timeRange.to,
+              }
+            : undefined,
+          traceContext: telemetry.optionalContext,
+          enableCache: true, // Core feature restoration
+        });
+
+        if (retrieval.documents.length > 0) {
+          const ranked = rerank({
+            query: queryToUse,
+            documents: retrieval.documents,
+            topK: 10,
+          });
+
+          // 5. Smart Context Assembly
+          ragContext = await this._contextManager.assembleContext({
+            systemInstructions: "",
+            messages: options.messages || [],
+            retrievedDocs: ranked.documents.map((d) => ({
+              pageContent: d.content,
+              metadata: {
+                id: d.id,
+                __type: "document",
+                source: d.source || (d.metadata?.source as string),
+                collection: d.collection,
+                ...d.metadata,
+              },
+            })),
+          });
         }
       }
 
-      // 3. Finalize & Extract Post-Generation Metadata (Suggestions, etc)
-      await this._finalize(state, fullResponse, telemetry);
-
-      telemetry.recordSuccess({
-        response: fullResponse,
-        responseLength: fullResponse.length,
+      // Generate using new thin wrapper
+      const result = await generateText({
+        prompt: queryToUse,
+        messages: options.messages,
+        tools: options.tools as any,
+        enableTelemetry: options.telemetryOptions?.enableTelemetry,
+        traceContext: telemetry.optionalContext, // Pass trace context for Langfuse spans
+        ragContext, // Pass RAG context for AIt system prompt
+        maxToolRounds: options.maxToolRounds,
       });
 
-      this._trackAnalytics(telemetry.getDuration(), fullResponse);
+      telemetry.recordSuccess({
+        response: result.text,
+        responseLength: result.text.length,
+      });
 
-      return fullResponse;
+      this._trackAnalytics(telemetry.getDuration(), result.text);
+
+      return result.text;
     } catch (error: unknown) {
-      // For generateText, we record and throw a proper error instead of yielding a message
       const errorClassifier = getErrorClassificationService();
       const classifiedError = errorClassifier.classify(error, "text-generation");
 
@@ -261,55 +364,8 @@ export class TextGenerationService implements ITextGenerationService {
     }
   }
 
-  private async *_emitPreGenerationMetadata(state: GenerationState): AsyncGenerator<StreamEvent> {
-    if (!state.enableMetadata) return;
-
-    // Emit RAG Context Metadata
-    if (state.enableRAG) {
-      yield this._metadataEmitter.createContextMetadataEvent(
-        {
-          context: state.ragContext || "",
-          documents: state.ragResult?.documents || [],
-          contextMetadata: {
-            documentCount: state.ragResult?.documents?.length || 0,
-            contextLength: state.ragContext?.length || 0,
-            usedTemporalCorrelation: false,
-          },
-        },
-        state.prompt,
-      );
-    }
-
-    // Emit Tool Metadata
-    if (state.orchestrationResult?.hasToolCalls) {
-      yield this._metadataEmitter.createToolMetadataEvent({
-        toolCalls: state.orchestrationResult.toolCalls,
-        toolResults: state.orchestrationResult.toolResults,
-        hasToolCalls: true,
-      });
-    }
-  }
-
-  private async *_emitPostGenerationMetadata(state: GenerationState): AsyncGenerator<StreamEvent> {
-    if (state.enableMetadata && state.suggestions && state.suggestions.length > 0) {
-      yield this._metadataEmitter.createSuggestionMetadataEvent(state.suggestions);
-    }
-  }
-
-  private async _finalize(
-    state: GenerationState,
-    fullResponse: string,
-    telemetry: GenerationTelemetryContext,
-  ): Promise<GenerationState> {
-    state.fullResponse = fullResponse;
-
-    // Run final metadata extraction stage
-    return await this._metadataStage.execute(state, {
-      traceContext: telemetry.optionalContext,
-      metadata: {},
-      state: new Map(),
-      telemetry: { recordStage: () => {} },
-    });
+  private _buildPromptWithContext(prompt: string, context: string): string {
+    return `Context:\n${context}\n\nQuestion: ${prompt}`;
   }
 
   private _trackAnalytics(duration: number, response: string): void {
