@@ -2,7 +2,7 @@ import { AItError, type GitHubCommitEntity, type PaginatedResponse, type Paginat
 import { drizzleOrm, getPostgresClient, githubCommits } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubCommitRepository } from "../../../../types/domain/entities/vendors/connector.github.commit.types";
-import { connectorGithubCommitMapper } from "../../../mappers/vendors/connector.github.commit.mapper";
+import { commitDataTargetToDomain, commitDomainToDataTarget } from "../../../entities/github";
 
 const logger = getLogger();
 
@@ -14,7 +14,7 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
     options: IConnectorRepositorySaveOptions = { incremental: false },
   ): Promise<void> {
     try {
-      const commitData = connectorGithubCommitMapper.domainToDataTarget(commit);
+      const commitData = commitDomainToDataTarget(commit);
 
       await this._pgClient.db.transaction(async (tx) => {
         await tx
@@ -101,7 +101,7 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: commits.map((commit) => connectorGithubCommitMapper.dataTargetToDomain(commit)),
+      data: commits.map((commit) => commitDataTargetToDomain(commit)),
       pagination: {
         page,
         limit,

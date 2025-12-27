@@ -30,9 +30,9 @@ import type {
   XTweetEntity,
   XTweetExternal,
 } from "@ait/core";
-import { connectorGithubCommitMapper } from "../../domain/mappers/vendors/connector.github.commit.mapper";
-import { connectorGithubRepositoryMapper } from "../../domain/mappers/vendors/connector.github.mapper";
-import { connectorGithubPullRequestMapper } from "../../domain/mappers/vendors/connector.github.pull-request.mapper";
+import { mapGitHubCommit } from "../../domain/entities/github/github-commit.entity";
+import { mapGitHubPullRequest } from "../../domain/entities/github/github-pull-request.entity";
+import { mapGitHubRepository } from "../../domain/entities/github/github-repository.entity";
 import { connectorGoogleYouTubeSubscriptionMapper } from "../../domain/mappers/vendors/connector.google-youtube.mapper";
 import {
   connectorGoogleCalendarCalendarMapper,
@@ -160,7 +160,7 @@ const githubEntityConfigs = {
           : undefined,
       };
     },
-    mapper: (repo: GitHubRepositoryExternal) => connectorGithubRepositoryMapper.externalToDomain(repo),
+    mapper: (repo: GitHubRepositoryExternal) => mapGitHubRepository(repo),
     cacheTtl: 3600,
     checksumEnabled: true,
     batchSize: 50,
@@ -177,7 +177,7 @@ const githubEntityConfigs = {
           : undefined,
       };
     },
-    mapper: (pr: GitHubPullRequestExternal) => connectorGithubPullRequestMapper.externalToDomain(pr),
+    mapper: (pr: GitHubPullRequestExternal) => mapGitHubPullRequest(pr),
     cacheTtl: 300,
     checksumEnabled: true,
     batchSize: 50,
@@ -194,7 +194,7 @@ const githubEntityConfigs = {
           : undefined,
       };
     },
-    mapper: (commit: GitHubCommitExternal) => connectorGithubCommitMapper.externalToDomain(commit),
+    mapper: (commit: GitHubCommitExternal) => mapGitHubCommit(commit),
     cacheTtl: 300,
     checksumEnabled: true,
     batchSize: 50,
