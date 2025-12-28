@@ -6,11 +6,12 @@ const suggestionService = getSuggestionService();
 export default async function suggestionsRoutes(fastify: FastifyInstance) {
   fastify.post("/", async (request: FastifyRequest<{ Body: SuggestionContext }>, reply: FastifyReply) => {
     try {
-      const { context, history } = request.body;
+      const { context, history, recentMessages } = request.body;
 
       const suggestions = await suggestionService.generateSuggestions({
         context,
         history,
+        recentMessages,
       });
 
       return reply.send(suggestions);

@@ -208,5 +208,7 @@ export function initializeCacheProvider(url?: string): void {
     const provider = createRedisCacheProvider({ url });
     setCacheProvider(provider);
     registerCacheProvider(provider);
+    const isConnected = provider.isConnected();
+    logger.debug("Redis cache provider is connected: ", { isConnected });
   }
 }

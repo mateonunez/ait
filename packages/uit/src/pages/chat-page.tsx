@@ -100,10 +100,6 @@ export default function ChatPage() {
   const [availableModels, setAvailableModels] = useState<ModelMetadata[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const { suggestions: dynamicSuggestions, isLoading: isSuggestionsLoading } = useAiSuggestions({
-    enabled: messages.length === 0,
-  });
-
   useEffect(() => {
     loadHistory();
   }, [loadHistory]);
@@ -136,12 +132,22 @@ export default function ChatPage() {
     return null;
   }, [messages]);
 
+  const recentMessages = useMemo(() => {
+    return messages.slice(-4).map((m) => ({ role: m.role, content: m.content }));
+  }, [messages]);
+
+  const { suggestions: dynamicSuggestions, isLoading: isSuggestionsLoading } = useAiSuggestions({
+    enabled: messages.length === 0 || (!isLoading && latestAssistantMessage != null),
+    context: latestAssistantMessage?.content?.slice(0, 300),
+    recentMessages,
+    debounceMs: 500,
+  });
+
   const suggestions = useMemo(() => {
-    if (isLoading && currentMetadata?.suggestions) {
-      return currentMetadata.suggestions;
-    }
+    if (isLoading) return [];
+    if (dynamicSuggestions.length > 0) return dynamicSuggestions;
     return latestAssistantMessage?.metadata?.suggestions || [];
-  }, [isLoading, currentMetadata, latestAssistantMessage]);
+  }, [isLoading, dynamicSuggestions, latestAssistantMessage]);
 
   const hasSuggestions = suggestions.length > 0;
 
