@@ -1,7 +1,7 @@
 import { getConversation, sendMessage } from "@/services/chat.service";
 import { createEmptyMetadata } from "@/utils/stream-parser.utils";
 import { calculateConversationTokens } from "@/utils/token-counter.utils";
-import type { AggregatedMetadata, ChatMessageWithMetadata, MessageRole } from "@ait/core";
+import type { ChatMessageWithMetadata, MessageRole } from "@ait/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UseAItChatOptions {
@@ -24,7 +24,6 @@ export interface UseAItChatReturn {
   messages: ChatMessageWithMetadata[];
   isLoading: boolean;
   error: string | null;
-  currentMetadata: AggregatedMetadata | null;
   tokenUsage: TokenUsage;
   conversationId: string | null;
   sendMessage: (content: string) => Promise<void>;
@@ -47,7 +46,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
   const [messages, setMessages] = useState<ChatMessageWithMetadata[]>(initialMessages);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentMetadata, setCurrentMetadata] = useState<AggregatedMetadata | null>(null);
   const [selectedModel, setSelectedModel] = useState(initialModel);
   const [conversationId, setConversationId] = useState<string | null>(initialConversationId || null);
   const [sessionId] = useState(() => `session-${Date.now()}`);
@@ -58,7 +56,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
-    setCurrentMetadata(null);
     setConversationId(null);
   }, []);
 
@@ -67,7 +64,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
       try {
         setError(null);
         setMessages([]); // Immediate clear for "ghost content"
-        setCurrentMetadata(null);
         const data = await getConversation(id);
 
         const transformedMessages: ChatMessageWithMetadata[] = data.messages.map((message) => ({
@@ -133,7 +129,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
-      setCurrentMetadata(createEmptyMetadata());
 
       try {
         await sendMessage({
@@ -152,12 +147,10 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
             );
           },
           onMetadata: (metadata) => {
-            setCurrentMetadata(metadata);
             setMessages((prev) => prev.map((m) => (m.id === assistantMessageId ? { ...m, metadata } : m)));
           },
           onComplete: (data) => {
             setMessages((prev) => prev.map((m) => (m.id === assistantMessageId ? { ...m, traceId: data.traceId } : m)));
-            setCurrentMetadata(null);
             setIsLoading(false);
             // Store conversationId if returned
             if (data.conversationId && !conversationId) {
@@ -208,7 +201,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
     messages,
     isLoading,
     error,
-    currentMetadata,
     tokenUsage,
     conversationId,
     sendMessage: handleSendMessage,

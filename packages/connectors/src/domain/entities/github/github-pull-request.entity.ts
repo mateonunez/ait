@@ -30,31 +30,31 @@ export class GitHubPullRequestEntity {
   @Transform(({ value }) => value ?? false)
   locked!: boolean;
 
-  @Expose({ name: "html_url" })
+  @Expose()
   htmlUrl!: string;
 
-  @Expose({ name: "diff_url" })
+  @Expose()
   diffUrl!: string | null;
 
-  @Expose({ name: "patch_url" })
+  @Expose()
   patchUrl!: string | null;
 
-  @Expose({ name: "issue_url" })
+  @Expose()
   issueUrl!: string | null;
 
-  @Expose({ name: "merged" })
+  @Expose()
   @Transform(({ value }) => value ?? false)
   merged!: boolean;
 
-  @Expose({ name: "merged_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   mergedAt!: Date | null;
 
-  @Expose({ name: "closed_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   closedAt!: Date | null;
 
-  @Expose({ name: "merge_commit_sha" })
+  @Expose()
   mergeCommitSha!: string | null;
 
   @Expose()
@@ -69,7 +69,7 @@ export class GitHubPullRequestEntity {
   @Transform(({ value }) => value ?? 0)
   deletions!: number;
 
-  @Expose({ name: "changed_files" })
+  @Expose()
   @Transform(({ value }) => value ?? 0)
   changedFiles!: number;
 
@@ -77,36 +77,29 @@ export class GitHubPullRequestEntity {
   @Transform(({ value }) => value ?? 0)
   comments!: number;
 
-  @Expose({ name: "review_comments" })
+  @Expose()
   @Transform(({ value }) => value ?? 0)
   reviewComments!: number;
 
-  @Expose({ name: "head" })
-  @Transform(({ value }) => value?.ref ?? null)
+  @Expose()
   headRef!: string | null;
 
-  @Expose({ name: "head" })
-  @Transform(({ value }) => value?.sha ?? null)
+  @Expose()
   headSha!: string | null;
 
-  @Expose({ name: "base" })
-  @Transform(({ value }) => value?.ref ?? null)
+  @Expose()
   baseRef!: string | null;
 
-  @Expose({ name: "base" })
-  @Transform(({ value }) => value?.sha ?? null)
+  @Expose()
   baseSha!: string | null;
 
-  @Expose({ name: "base" })
-  @Transform(({ value }) => (value?.repo?.id ? String(value.repo.id) : null))
+  @Expose()
   repositoryId!: string | null;
 
-  @Expose({ name: "base" })
-  @Transform(({ value }) => value?.repo?.name ?? null)
+  @Expose()
   repositoryName!: string | null;
 
-  @Expose({ name: "base" })
-  @Transform(({ value }) => value?.repo?.full_name ?? null)
+  @Expose()
   repositoryFullName!: string | null;
 
   @Expose()
@@ -115,44 +108,44 @@ export class GitHubPullRequestEntity {
   @Expose()
   rebaseable!: boolean | null;
 
-  @Expose({ name: "mergeable_state" })
+  @Expose()
   mergeableState!: string | null;
 
-  @Expose({ name: "maintainer_can_modify" })
+  @Expose()
   @Transform(({ value }) => value ?? false)
   maintainerCanModify!: boolean;
 
-  @Expose({ name: "author_association" })
+  @Expose()
   authorAssociation!: string | null;
 
-  @Expose({ name: "auto_merge" })
+  @Expose()
   @Transform(({ value }) => value !== null)
   autoMerge!: boolean | null;
 
-  @Expose({ name: "active_lock_reason" })
+  @Expose()
   activeLockReason!: string | null;
 
-  @Expose({ name: "created_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   prCreatedAt!: Date | null;
 
-  @Expose({ name: "updated_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   prUpdatedAt!: Date | null;
 
-  @Expose({ name: "user" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   userData!: Record<string, unknown> | null;
 
-  @Expose({ name: "assignee" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   assigneeData!: Record<string, unknown> | null;
 
-  @Expose({ name: "assignees" })
+  @Expose()
   @Transform(({ value }) => (value ? { assignees: value } : null))
   assigneesData!: Record<string, unknown> | null;
 
-  @Expose({ name: "merged_by" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   mergedByData!: Record<string, unknown> | null;
 
@@ -160,32 +153,32 @@ export class GitHubPullRequestEntity {
   @Transform(({ value }) => value ?? null)
   labels!: Record<string, unknown>[] | null;
 
-  @Expose({ name: "milestone" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   milestoneData!: Record<string, unknown> | null;
 
-  @Expose({ name: "requested_reviewers" })
+  @Expose()
   @Transform(({ value }) => (value ? { requestedReviewers: value } : null))
   requestedReviewersData!: Record<string, unknown> | null;
 
-  @Expose({ name: "requested_teams" })
+  @Expose()
   @Transform(({ value }) => (value ? { requestedTeams: value } : null))
   requestedTeamsData!: Record<string, unknown> | null;
 
-  @Expose({ name: "head" })
+  @Expose()
   @Transform(({ value }) => (value?.repo ? { ...value.repo } : null))
   headRepoData!: Record<string, unknown> | null;
 
-  @Expose({ name: "base" })
+  @Expose()
   @Transform(({ value }) => (value?.repo ? { ...value.repo } : null))
   baseRepoData!: Record<string, unknown> | null;
 
   // Use prCreatedAt/prUpdatedAt as createdAt/updatedAt
-  @Expose({ name: "created_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
-  @Expose({ name: "updated_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
@@ -195,8 +188,50 @@ export class GitHubPullRequestEntity {
 /**
  * Transform external GitHub API response to domain entity.
  */
-export function mapGitHubPullRequest(external: unknown): GitHubPullRequestEntity {
-  return plainToInstance(GitHubPullRequestEntity, external, {
+export function mapGitHubPullRequest(external: any): GitHubPullRequestEntity {
+  const mapped = {
+    ...external,
+    htmlUrl: external.html_url ?? external.htmlUrl,
+    diffUrl: external.diff_url ?? external.diffUrl,
+    patchUrl: external.patch_url ?? external.patchUrl,
+    issueUrl: external.issue_url ?? external.issueUrl,
+    mergedAt: external.merged_at ?? external.mergedAt,
+    closedAt: external.closed_at ?? external.closedAt,
+    mergeCommitSha: external.merge_commit_sha ?? external.mergeCommitSha,
+    changedFiles: external.changed_files ?? external.changedFiles ?? 0,
+    reviewComments: external.review_comments ?? external.reviewComments ?? 0,
+    headRef: external.head?.ref ?? external.headRef,
+    headSha: external.head?.sha ?? external.headSha,
+    baseRef: external.base?.ref ?? external.baseRef,
+    baseSha: external.base?.sha ?? external.baseSha,
+    repositoryId: external.base?.repo?.id ? String(external.base.repo.id) : external.repositoryId,
+    repositoryName: external.base?.repo?.name ?? external.repositoryName,
+    repositoryFullName: external.base?.repo?.full_name ?? external.repositoryFullName,
+    mergeableState: external.mergeable_state ?? external.mergeableState,
+    maintainerCanModify: external.maintainer_can_modify ?? external.maintainerCanModify ?? false,
+    authorAssociation: external.author_association ?? external.authorAssociation,
+    autoMerge: external.auto_merge !== undefined ? external.auto_merge !== null : external.autoMerge,
+    activeLockReason: external.active_lock_reason ?? external.activeLockReason,
+    prCreatedAt: external.created_at ?? external.prCreatedAt,
+    prUpdatedAt: external.updated_at ?? external.prUpdatedAt,
+    userData: external.user ?? external.userData,
+    assigneeData: external.assignee ?? external.assigneeData,
+    assigneesData: external.assignees ? { assignees: external.assignees } : external.assigneesData,
+    mergedByData: external.merged_by ?? external.mergedByData,
+    milestoneData: external.milestone ?? external.milestoneData,
+    requestedReviewersData: external.requested_reviewers
+      ? { requestedReviewers: external.requested_reviewers }
+      : external.requestedReviewersData,
+    requestedTeamsData: external.requested_teams
+      ? { requestedTeams: external.requested_teams }
+      : external.requestedTeamsData,
+    headRepoData: external.head?.repo ?? external.headRepoData,
+    baseRepoData: external.base?.repo ?? external.baseRepoData,
+    createdAt: external.created_at ?? external.createdAt,
+    updatedAt: external.updated_at ?? external.updatedAt,
+  };
+
+  return plainToInstance(GitHubPullRequestEntity, mapped, {
     excludeExtraneousValues: true,
   });
 }

@@ -9,112 +9,102 @@ export class GitHubCommitEntity {
   @Expose()
   sha!: string;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.message?.split("\n")[0] ?? "")
+  @Expose()
+  @Transform(({ value }) => value ?? "")
   message!: string;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => {
-    const msg = value?.message ?? "";
-    const lines = msg.split("\n");
-    return lines.length > 1 ? lines.slice(1).join("\n").trim() : null;
-  })
+  @Expose()
+  @Transform(({ value }) => value ?? null)
   messageBody!: string | null;
 
-  @Expose({ name: "html_url" })
+  @Expose()
   htmlUrl!: string;
 
-  @Expose({ name: "comments_url" })
+  @Expose()
   commentsUrl!: string;
 
-  @Expose({ name: "node_id" })
+  @Expose()
   nodeId!: string;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.author?.name ?? null)
+  @Expose()
   authorName!: string | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.author?.email ?? null)
+  @Expose()
   authorEmail!: string | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => (value?.author?.date ? new Date(value.author.date) : null))
+  @Expose()
+  @Transform(({ value }) => (value ? new Date(value) : null))
   authorDate!: Date | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.committer?.name ?? null)
+  @Expose()
   committerName!: string | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.committer?.email ?? null)
+  @Expose()
   committerEmail!: string | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => (value?.committer?.date ? new Date(value.committer.date) : null))
+  @Expose()
+  @Transform(({ value }) => (value ? new Date(value) : null))
   committerDate!: Date | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.tree?.sha ?? "")
+  @Expose()
   treeSha!: string;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.tree?.url ?? "")
+  @Expose()
   treeUrl!: string;
 
-  @Expose({ name: "parents" })
-  @Transform(({ value }) => (value ?? []).map((p: { sha: string }) => p.sha))
+  @Expose()
+  @Transform(({ value }) => value ?? [])
   parentShas!: string[];
 
-  @Expose({ name: "stats" })
-  @Transform(({ value }) => value?.additions ?? 0)
+  @Expose()
+  @Transform(({ value }) => value ?? 0)
   additions!: number;
 
-  @Expose({ name: "stats" })
-  @Transform(({ value }) => value?.deletions ?? 0)
+  @Expose()
+  @Transform(({ value }) => value ?? 0)
   deletions!: number;
 
-  @Expose({ name: "stats" })
-  @Transform(({ value }) => value?.total ?? 0)
+  @Expose()
+  @Transform(({ value }) => value ?? 0)
   total!: number;
 
   // These are populated externally (from context)
+  @Expose()
   repositoryId: string | null = null;
+
+  @Expose()
   repositoryName: string | null = null;
+
+  @Expose()
   repositoryFullName: string | null = null;
 
-  @Expose({ name: "author" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   authorData!: Record<string, unknown> | null;
 
-  @Expose({ name: "committer" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   committerData!: Record<string, unknown> | null;
 
-  @Expose({ name: "files" })
+  @Expose()
   @Transform(({ value }) => value ?? null)
   filesData!: Record<string, unknown>[] | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => value?.verification ?? null)
+  @Expose()
+  @Transform(({ value }) => value ?? null)
   verification!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ obj }) => {
-    const metadata: Record<string, unknown> = {};
-    if (obj.url) metadata.api_url = obj.url;
-    if (obj.comments_url) metadata.comments_url = obj.comments_url;
-    return Object.keys(metadata).length > 0 ? metadata : null;
-  })
+  @Transform(({ value }) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   // Use author date as createdAt/updatedAt
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => (value?.author?.date ? new Date(value.author.date) : null))
+  @Expose()
+  @Transform(({ value }) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
-  @Expose({ name: "commit" })
-  @Transform(({ value }) => (value?.committer?.date ? new Date(value.committer.date) : null))
+  @Expose()
+  @Transform(({ value }) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   readonly __type = "commit" as const;
@@ -123,8 +113,51 @@ export class GitHubCommitEntity {
 /**
  * Transform external GitHub API response to domain entity.
  */
-export function mapGitHubCommit(external: unknown): GitHubCommitEntity {
-  return plainToInstance(GitHubCommitEntity, external, {
+export function mapGitHubCommit(external: any): GitHubCommitEntity {
+  const commit = external.commit ?? {};
+  const stats = external.stats ?? {};
+
+  const msg = commit.message ?? "";
+  const lines = msg.split("\n");
+  const message = lines[0] || "";
+  const messageBody = lines.length > 1 ? lines.slice(1).join("\n").trim() : null;
+
+  const mapped = {
+    ...external,
+    message,
+    messageBody,
+    htmlUrl: external.html_url ?? external.htmlUrl,
+    commentsUrl: external.comments_url ?? external.commentsUrl,
+    nodeId: external.node_id ?? external.nodeId,
+    authorName: commit.author?.name ?? external.authorName,
+    authorEmail: commit.author?.email ?? external.authorEmail,
+    authorDate: commit.author?.date ?? external.authorDate,
+    committerName: commit.committer?.name ?? external.committerName,
+    committerEmail: commit.committer?.email ?? external.committerEmail,
+    committerDate: commit.committer?.date ?? external.committerDate,
+    treeSha: commit.tree?.sha ?? external.treeSha,
+    treeUrl: commit.tree?.url ?? external.treeUrl,
+    parentShas: external.parents ? external.parents.map((p: { sha: string }) => p.sha) : external.parentShas,
+    additions: stats.additions ?? external.additions ?? 0,
+    deletions: stats.deletions ?? external.deletions ?? 0,
+    total: stats.total ?? external.total ?? 0,
+    authorData: external.author ?? external.authorData,
+    committerData: external.committer ?? external.committerData,
+    filesData: external.files ?? external.filesData,
+    verification: commit.verification ?? external.verification,
+    createdAt: commit.author?.date ?? external.createdAt,
+    updatedAt: commit.committer?.date ?? external.updatedAt,
+    metadata:
+      external.metadata ??
+      (external.url || external.comments_url
+        ? {
+            api_url: external.url,
+            comments_url: external.comments_url,
+          }
+        : null),
+  };
+
+  return plainToInstance(GitHubCommitEntity, mapped, {
     excludeExtraneousValues: true,
   });
 }
