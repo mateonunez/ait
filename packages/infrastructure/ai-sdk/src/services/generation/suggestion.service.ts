@@ -1,5 +1,6 @@
 import { getLogger } from "@ait/core";
-import { type AItClient, getAItClient } from "../../client/ai-sdk.client";
+import { generate } from "../../generation/text";
+import type { ChatMessage } from "../../types/chat";
 import { buildSuggestionPrompt } from "../prompts/suggestion.prompt";
 
 const logger = getLogger();
@@ -7,6 +8,7 @@ const logger = getLogger();
 export interface SuggestionContext {
   context?: string;
   history?: string;
+  recentMessages?: ChatMessage[];
 }
 
 export interface Suggestion {
@@ -16,19 +18,15 @@ export interface Suggestion {
 }
 
 export class SuggestionService {
-  private readonly _client: AItClient;
-
-  constructor(client?: AItClient) {
-    this._client = client || getAItClient();
-  }
-
   async generateSuggestions(context: SuggestionContext): Promise<Suggestion[]> {
     try {
-      const prompt = buildSuggestionPrompt(context.context, context.history);
+      const recentMessages = context.recentMessages?.slice(-4);
 
-      const response = await this._client.generateText({
+      const prompt = buildSuggestionPrompt(context.context, context.history, recentMessages);
+
+      const response = await generate({
         prompt,
-        temperature: 0.7, // Slightly higher temperature for creativity
+        temperature: 0.7,
       });
 
       const text = response.text.trim();
@@ -42,24 +40,31 @@ export class SuggestionService {
           suggestionsList = text
             .split("\n")
             .filter((line) => line.trim().length > 0)
-            .map((line) => line.replace(/^\d+\.\s*/, "").replace(/^- \s*/, ""));
+            .map((line) =>
+              line
+                .replace(/^\d+\.\s*/, "")
+                .replace(/^[-•]\s*/, "")
+                .replace(/^["']|["']$/g, ""),
+            );
         }
       } catch (e) {
         logger.warn("Failed to parse suggestions JSON, falling back to raw text split", { error: e });
         suggestionsList = text.split("\n").filter((line) => line.trim().length > 0);
       }
 
-      return suggestionsList.slice(0, 4).map((text, index) => ({
+      const validSuggestions = suggestionsList.map((s) => s.trim()).filter((s) => s.length > 0 && s.length < 60);
+
+      return validSuggestions.slice(0, 4).map((text, index) => ({
         id: `suggestion-${Date.now()}-${index}`,
         type: "question",
-        text: text.trim(),
+        text,
       }));
     } catch (error) {
       logger.error("Failed to generate suggestions:", { error });
       return [
-        { id: "fallback-1", type: "question", text: "What can you do?" },
-        { id: "fallback-2", type: "question", text: "Show me my recent activity" },
-        { id: "fallback-3", type: "question", text: "Check my integrations status" },
+        { id: "fallback-1", type: "question", text: "What can you help me with?" },
+        { id: "fallback-2", type: "question", text: "Show my recent GitHub activity" },
+        { id: "fallback-3", type: "question", text: "What's on my calendar today?" },
       ];
     }
   }

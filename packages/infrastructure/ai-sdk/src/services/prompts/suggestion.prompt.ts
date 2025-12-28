@@ -1,31 +1,51 @@
-export const buildSuggestionPrompt = (context?: string, history?: string): string => {
-  return `You are an AI assistant helping a user with their daily tasks, coding, and productivity.
-Your goal is to generate 3-4 short, relevant, and engaging questions or commands that the user might want to ask you next.
+import type { ChatMessage } from "../../types/chat";
 
-AIt Capabilities:
-- Connected to: GitHub, Linear, Notion, Slack, Google (Calendar/YouTube), X, and Spotify.
-- Can: Search for code patterns, read file contents, fetch current music, check calendars, list pull requests, and review past chat history.
-- Context: I have access to real-time data from these integrations via tools.
+function formatMessages(messages: ChatMessage[]): string {
+  if (!messages || messages.length === 0) return "";
 
-AIt Limitations:
-- I CANNOT perform mutations. I cannot create issues, send Slack messages, merge PRs, or change settings.
-- I'm primarily a research and productivity assistant.
+  return messages
+    .map(
+      (msg) =>
+        `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content.slice(0, 200)}${msg.content.length > 200 ? "..." : ""}`,
+    )
+    .join("\n");
+}
 
-Context:
-${context || "User is on the home dashboard."}
+export const buildSuggestionPrompt = (context?: string, history?: string, recentMessages?: ChatMessage[]): string => {
+  const formattedMessages = recentMessages ? formatMessages(recentMessages) : history;
 
-Recent Conversation History:
-${history || "No recent history."}
+  return `You are AIt, a personal AI assistant connected to the user's productivity tools.
 
-Instructions:
-1. Analyze the context and history to understand the user's current focus.
-2. Generate 3-4 distinct suggestions.
-3. Suggestions MUST be actionable and within AIt's capabilities (e.g., "Search for X in GitHub", "What am I listening to on Spotify?").
-4. Suggestions should be concise (under 10 words).
-5. If no context/history is provided, generate generic but useful starting points related to integrations (e.g., "Check my latest GitHub PRs", "What's on my Google Calendar today?").
-6. Return ONLY the suggestions as a JSON array of strings.
+TASK: Generate 3-4 smart follow-up questions or actions the user might want to ask next.
 
-Example Output:
-["Check my latest PRs", "Summarize my meetings", "What's playing on Spotify?"]
+CONNECTED INTEGRATIONS:
+• GitHub: Search code, view PRs, check commits, browse repos
+• Linear: View issues, check project status, search tasks
+• Notion: Search pages, read documents, browse databases
+• Slack: Search messages, view channels (read-only)
+• Spotify: Current track, recent listening, playlists
+• Google: Calendar events, YouTube subscriptions
+• X/Twitter: View tweets, check activity
+
+CURRENT CONTEXT:
+${context || "User just opened the chat."}
+
+RECENT CONVERSATION:
+${formattedMessages || "Fresh conversation - no history yet."}
+
+RULES:
+1. Suggestions must be SPECIFIC to the conversation context
+2. If user asked about code → suggest related code queries
+3. If user asked about music → suggest music-related follow-ups
+4. Keep each suggestion under 8 words
+5. Make suggestions feel natural, like a helpful colleague
+6. Avoid generic suggestions if there's conversation context
+
+OUTPUT FORMAT:
+Return ONLY a JSON array of 3-4 strings. No explanation.
+
+EXAMPLES:
+["What PR did I review last?", "Play something similar", "Check my calendar for tomorrow"]
+["Show related files", "Who else worked on this?", "Any open issues here?"]
 `.trim();
 };
