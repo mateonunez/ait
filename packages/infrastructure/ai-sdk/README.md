@@ -30,10 +30,9 @@ initAItClient({
   embeddings: { 
     model: 'mxbai-embed-large:latest' 
   },
-  rag: { 
-    collection: 'ait_embeddings_collection',
-    strategy: 'multi-query',
-    maxDocs: 100
+  textGeneration: {
+    retrievalConfig: { limit: 33, scoreThreshold: 0.4 },
+    contextConfig: { maxContextChars: 128000 },
   }
 });
 
@@ -50,7 +49,6 @@ import { initAItClient, getTextGenerationService, smoothStream } from '@ait/ai-s
 initAItClient({
   generation: { model: 'gemma3:latest' },
   embeddings: { model: 'mxbai-embed-large:latest' },
-  rag: { collection: 'ait_embeddings_collection' }
 });
 
 const service = getTextGenerationService();
@@ -79,7 +77,7 @@ const text = await smoothStream(stream, {
 ```typescript
 import { initAItClient, getTextGenerationService, type ChatMessage } from '@ait/ai-sdk';
 
-initAItClient({ rag: { collection: 'ait_embeddings_collection' } });
+initAItClient();
 const service = getTextGenerationService();
 
 const messages: ChatMessage[] = [];
@@ -109,7 +107,7 @@ const stream2 = service.generateStream({
 ```typescript
 import { initAItClient, getTextGenerationService, createAllConnectorTools } from '@ait/ai-sdk';
 
-initAItClient({ rag: { collection: 'ait_embeddings_collection' } });
+initAItClient();
 const service = getTextGenerationService();
 const tools = createAllConnectorTools(/* your connector service */);
 
@@ -130,6 +128,51 @@ for await (const chunk of stream) {
 - `searchSpotify` - Search Spotify tracks, albums, artists, playlists
 - `getRecentlyPlayed` - Get recently played Spotify tracks
 - More connectors coming soon (GitHub, X, Linear)
+
+### Composable RAG Functions
+
+Use `retrieve` and `rerank` for flexible RAG workflows:
+
+```typescript
+import { retrieve, rerank, stream } from '@ait/ai-sdk';
+
+// Retrieve relevant documents from collections
+const docs = await retrieve({
+  query: 'my recent GitHub commits',
+  collections: ['ait_github_collection'],
+  limit: 20,
+});
+
+// Rerank for relevance
+const ranked = await rerank({
+  query: 'my recent GitHub commits',
+  documents: docs.documents,
+  topK: 5,
+});
+
+// Stream response with context
+const { textStream } = await stream({
+  prompt: 'Summarize my recent commits',
+});
+
+for await (const chunk of textStream) {
+  process.stdout.write(chunk);
+}
+```
+
+### Provider Registration
+
+Register external providers for caching and analytics (typically done in gateway):
+
+```typescript
+import { registerCacheProvider, registerAnalyticsProvider } from '@ait/ai-sdk';
+
+// Register a cache provider (e.g., Redis)
+registerCacheProvider(myRedisProvider);
+
+// Register an analytics provider
+registerAnalyticsProvider(myAnalyticsAdapter);
+```
 
 ### Embeddings Generation
 
@@ -217,7 +260,6 @@ LANGFUSE_ENABLED=true
 initAItClient({
   generation: { model: 'gemma3:latest' },
   embeddings: { model: 'mxbai-embed-large:latest' },
-  rag: { collection: 'ait_embeddings_collection' },
   telemetry: {
     enabled: true,
     publicKey: process.env.LANGFUSE_PUBLIC_KEY,
@@ -258,12 +300,12 @@ pnpm build
 
 For advanced features including:
 - Multi-collection RAG architecture
-- Pipeline architecture
-- Custom tools and context building
+- Composable RAG functions (`retrieve`, `rerank`)
+- Custom tools and MCP integration
+- Provider registration (cache, analytics)
 - Performance optimization
-- Migration guides
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed documentation.
+See [ARCHITECTURE.md](../../ARCHITECTURE.md) for detailed documentation.
 
 ## License
 

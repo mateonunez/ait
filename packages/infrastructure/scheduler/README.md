@@ -46,6 +46,13 @@ NODE_ENV=development       # development | production
 # Check the `.env` of the gateway package for the OAuth credentials
 ```
 
+### TypeScript Decorators
+
+The scheduler uses TypeScript decorators for dependency injection. This is configured via:
+- `reflect-metadata` package (imported at entrypoint)
+- `.swcrc` with `legacyDecorator` and `decoratorMetadata` enabled
+- `tsconfig.json` with `experimentalDecorators` and `emitDecoratorMetadata`
+
 ### Job Configuration
 
 Edit `src/scheduler.entrypoint.ts` to customize jobs:

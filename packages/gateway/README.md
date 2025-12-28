@@ -107,6 +107,39 @@ The Gateway uses connectors at runtime. Any secrets or configuration required by
 
 For connector implementation details, see the [Connectors README](../connectors/README.md).
 
+## Internal Services
+
+The Gateway includes application-level services that are initialized at server startup:
+
+### Analytics Services (`services/analytics/`)
+
+- **Performance Metrics**: Tracks latency, throughput, and success rates
+- **Cost Tracking**: Monitors token usage and cost per model
+- **Cache Analytics**: Measures cache hit rates and efficiency
+- **Failure Analysis**: Classifies and tracks error patterns
+
+### Cache Services (`services/cache/`)
+
+- **Semantic Cache**: Caches responses based on query similarity
+- **Query Normalizer**: Normalizes queries for better cache hits
+- **Redis Provider**: Redis-backed cache implementation
+
+### Insights Services (`services/insights/`)
+
+- **Activity Aggregator**: Aggregates user activity across connectors
+- **Anomaly Detector**: Detects unusual patterns in data
+- **Correlation Engine**: Finds relationships between data sources
+
+These services integrate with the AI SDK via provider registration:
+
+```typescript
+import { initializeCacheProvider, initializeAnalyticsProvider } from './services';
+
+// Called at server startup
+initializeCacheProvider(redisUrl);
+initializeAnalyticsProvider();
+```
+
 ## License
 
 [MIT](../../LICENSE)
