@@ -107,7 +107,7 @@ function MyComponent() {
 | `/integrations/x` | `XPage` | X (Twitter) tweets |
 | `/integrations/notion` | `NotionPage` | Notion pages |
 | `/integrations/slack` | `SlackPage` | Slack messages |
-| `/integrations/google` | `GooglePage` | Calendar events, YouTube subscriptions |
+| `/integrations/google` | `GooglePage` | Calendar events, YouTube subscriptions, Contacts |
 | `/stats` | `StatsPage` | System analytics and performance metrics |
 
 ## UI Components
@@ -148,7 +148,7 @@ Available cards:
 - **X**: `TweetCard`
 - **Notion**: `PageCard`
 - **Slack**: `MessageCard`
-- **Google**: `CalendarCard`, `EventCard`, `GoogleYouTubeSubscriptionCard`
+- **Google**: `CalendarCard`, `EventCard`, `GoogleYouTubeSubscriptionCard`, `ContactCard`
 
 ### AI Elements (`components/ai-elements/`)
 

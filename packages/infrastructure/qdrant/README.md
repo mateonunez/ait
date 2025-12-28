@@ -33,6 +33,9 @@ Collections are created per vendor/domain:
 - `ait_github_collection` - Repositories, pull requests
 - `ait_linear_collection` - Issues and tasks
 - `ait_x_collection` - Tweets and social media
+- `ait_google_collection` - Calendar events, YouTube, Contacts
+- `ait_notion_collection` - Pages and databases
+- `ait_slack_collection` - Messages and channels
 
 See the [AI SDK documentation](../ai-sdk/README.md) for details on multi-collection RAG.
 

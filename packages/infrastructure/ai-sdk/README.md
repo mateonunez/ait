@@ -127,7 +127,10 @@ for await (const chunk of stream) {
 **Available Tools:**
 - `searchSpotify` - Search Spotify tracks, albums, artists, playlists
 - `getRecentlyPlayed` - Get recently played Spotify tracks
-- More connectors coming soon (GitHub, X, Linear)
+- `searchGoogle` - Search Google Calendar events, YouTube subscriptions, and Contacts
+- `searchGitHub` - Search GitHub repositories, pull requests, and commits
+- `searchX` - Search X (Twitter) tweets and users
+- `searchLinear` - Search Linear issues and projects
 
 ### Composable RAG Functions
 
