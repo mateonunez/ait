@@ -54,7 +54,7 @@ AIt is designed as a modular monorepo that enables users to connect their data s
 │ • Spotify       │ │ • Embeddings  │ │ • Cron Jobs   │ │ • Transform to Embeddings │
 │ • Linear        │ │ • RAG         │ │ • Priorities  │ │ • Load into Qdrant        │
 │ • X (Twitter)   │ │ • Tools       │ │ • Retries     │ │                           │
-│ • Notion        │ │ • Pipelines   │ │               │ │                           │
+│ • Notion        │ │ • MCP         │ │               │ │                           │
 │ • Slack         │ │               │ │               │ │                           │
 │ • Google        │ │               │ │               │ │                           │
 └────────┬────────┘ └───────┬───────┘ └───────┬───────┘ └─────────────┬─────────────┘
@@ -198,23 +198,23 @@ packages/connectors/
 
 ### AI SDK (`@ait/ai-sdk`)
 
-AI capabilities and RAG pipeline:
+AI capabilities with composable RAG functions:
 
 ```
 packages/infrastructure/ai-sdk/
 ├── src/
 │   ├── client/          # Main AIt client initialization
-│   ├── config/          # Models, presets, collections
-│   ├── pipelines/       # RAG, generation, complete pipelines
+│   ├── config/          # Models, collections
+│   ├── generation/      # stream, generate, generateObject wrappers
+│   ├── rag/             # retrieve, rerank composable functions
+│   ├── interfaces/      # ICacheProvider, IAnalyticsProvider
+│   ├── providers/       # Provider registration
+│   ├── mcp-registry/    # MCP tool registry
 │   ├── services/
 │   │   ├── embeddings/  # Embedding generation
-│   │   ├── generation/  # Query rewriting, suggestions
-│   │   ├── insights/    # Analytics, anomaly detection
-│   │   ├── rag/         # Pipeline stages
-│   │   ├── ranking/     # Reranking services
-│   │   ├── routing/     # Collection routing
-│   │   └── text-generation/  # LLM interaction
-│   ├── stages/          # Pipeline stage implementations
+│   │   ├── generation/  # Suggestions
+│   │   ├── text-generation/  # LLM interaction
+│   │   └── tokenizer/   # Text tokenization
 │   ├── telemetry/       # Langfuse integration
 │   ├── tools/           # Function calling tools
 │   └── types/           # Type definitions
@@ -222,7 +222,7 @@ packages/infrastructure/ai-sdk/
 
 ### Gateway (`@ait/gateway`)
 
-API server and routing:
+API server, routing, and application services:
 
 ```
 packages/gateway/
@@ -232,7 +232,10 @@ packages/gateway/
 │   │   ├── auth/        # OAuth routes per provider
 │   │   ├── chat/        # Chat/RAG endpoints
 │   │   └── data/        # Data retrieval endpoints
-│   └── services/        # Business logic
+│   └── services/
+│       ├── analytics/   # Performance metrics, cost tracking, failure analysis
+│       ├── cache/       # Semantic cache, Redis provider
+│       └── insights/    # Activity aggregation, anomaly detection
 ```
 
 ### Scheduler (`@ait/scheduler`)
@@ -353,23 +356,30 @@ bull:etl-scheduler:delayed    # Scheduled future jobs
    - Add collection config
    - Create tools if needed
 
-### Adding a New Pipeline Stage
+### Using Composable RAG Functions
 
 ```typescript
-import type { IPipelineStage, PipelineContext, StageResult } from '@ait/ai-sdk';
+import { retrieve, rerank, stream } from '@ait/ai-sdk';
 
-export class CustomStage implements IPipelineStage {
-  name = 'custom-stage';
-  
-  async execute(context: PipelineContext): Promise<StageResult> {
-    // Your logic here
-    return {
-      success: true,
-      data: { /* results */ },
-      metadata: { timing: Date.now() - start }
-    };
-  }
-}
+// 1. Retrieve relevant documents from collections
+const docs = await retrieve({
+  query: 'user query here',
+  collections: ['ait_github_collection'],
+  limit: 20,
+});
+
+// 2. Rerank for relevance
+const ranked = await rerank({
+  query: 'user query here',
+  documents: docs,
+  topK: 5,
+});
+
+// 3. Generate response with context
+const { textStream } = await stream({
+  prompt: 'Answer based on context',
+  context: ranked.documents,
+});
 ```
 
 ### Environment Configuration
