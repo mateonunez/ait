@@ -8,6 +8,12 @@ import type { ChatMessage } from "../types/chat";
 import type { TraceContext } from "../types/telemetry";
 import type { Tool } from "../types/tools";
 import { prepareRequestOptions } from "../utils/request.utils";
+import {
+  type FinishSnapshot,
+  computeMaxSteps,
+  defaultToolLoopFallbackMessage,
+  shouldAppendFallback,
+} from "./tool-loop-controller";
 
 const logger = getLogger();
 
@@ -69,7 +75,7 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
 
   const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
   const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5;
-  const maxSteps = coreTools ? maxToolRounds + 1 : 1;
+  const maxSteps = computeMaxSteps({ maxToolRounds, hasTools: !!coreTools });
 
   const commonOptions = {
     model,
@@ -82,6 +88,8 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
   };
 
   const requestOptions = prepareRequestOptions(options.prompt, commonOptions, options.messages);
+
+  let finishSnapshot: FinishSnapshot = { textLength: 0, totalToolResults: 0 };
 
   const result = vercelStreamText({
     ...requestOptions,
@@ -102,6 +110,10 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
       });
     },
     onFinish: (event) => {
+      finishSnapshot = {
+        textLength: event.text.length,
+        totalToolResults: event.toolResults?.length ?? 0,
+      };
       logger.debug("Stream finished", {
         finishReason: event.finishReason,
         textLength: event.text.length,
@@ -112,11 +124,37 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
     },
   });
 
-  const textStream = endSpan ? wrapStreamWithTelemetry(result.textStream, endSpan) : result.textStream;
+  const baseStream = endSpan ? wrapStreamWithTelemetry(result.textStream, endSpan) : result.textStream;
+
+  const hasTools = !!coreTools;
+  const fallbackMessage = defaultToolLoopFallbackMessage();
+
+  function shouldAddFallback(hasAnyText: boolean): boolean {
+    // Keep the policy in one place (stream + text promise use the same rule).
+    return hasTools && shouldAppendFallback(finishSnapshot, hasAnyText ? 1 : 0);
+  }
+
+  async function* streamWithFallback(): AsyncIterable<string> {
+    let sawAnyChunk = false;
+
+    for await (const chunk of baseStream) {
+      sawAnyChunk = true;
+      yield chunk;
+    }
+
+    if (shouldAddFallback(sawAnyChunk)) {
+      yield fallbackMessage;
+    }
+  }
+
+  async function resolveTextWithFallback(): Promise<string> {
+    const generatedText = await result.text;
+    return shouldAddFallback(generatedText.length > 0) ? fallbackMessage : generatedText;
+  }
 
   return {
-    textStream,
-    text: Promise.resolve(result.text) as Promise<string>,
+    textStream: streamWithFallback(),
+    text: resolveTextWithFallback(),
   };
 }
 

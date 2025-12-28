@@ -1,16 +1,9 @@
 import { AItError, getLogger } from "@ait/core";
 import { tool } from "ai";
 import type { Tool as AiInternalTool } from "../types/tools";
+import { safeJsonSize } from "../utils/json.utils";
 
 const logger = getLogger();
-
-function safeJsonSize(value: unknown): number | undefined {
-  try {
-    return JSON.stringify(value).length;
-  } catch {
-    return undefined;
-  }
-}
 
 export function convertToCoreTools(tools: Record<string, AiInternalTool>): Record<string, any> {
   return Object.fromEntries(

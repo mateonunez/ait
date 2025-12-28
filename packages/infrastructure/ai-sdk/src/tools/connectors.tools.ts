@@ -1,9 +1,9 @@
 import type { SpotifyServiceInterface } from "../interfaces/spotify.service.interface";
 import type { MCPClientManager } from "../mcp";
+import { McpToolRegistry } from "../mcp-registry";
 import type { Tool } from "../types/tools";
 import { createSpotifyTools } from "./domains/spotify.tools";
 import { createConversationTools } from "./internal/conversation.tools";
-import { createAllMCPTools } from "./mcp";
 
 export { createSpotifyTools } from "./domains/spotify.tools";
 export { spotifySearchSchema } from "./domains/spotify.tools";
@@ -14,7 +14,7 @@ export type { IGitHubFileRepositoryForTools, IGitHubDataSourceForTools } from ".
 
 export { createConversationTools } from "./internal/conversation.tools";
 
-export { createAllMCPTools, createMCPToolsForVendor, getMCPToolsSummary } from "./mcp";
+export { createMCPToolsForVendor, getMCPToolsSummary } from "./mcp";
 
 /**
  * Create all connector tools (synchronous, without MCP)
@@ -39,7 +39,7 @@ export async function createAllConnectorToolsWithMCP(
     return connectorTools;
   }
 
-  const mcpTools = await createAllMCPTools(mcpManager);
+  const mcpTools = await new McpToolRegistry({ manager: mcpManager }).getToolsForConnectedVendors();
 
   return {
     ...connectorTools,

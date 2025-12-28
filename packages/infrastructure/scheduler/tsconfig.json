@@ -6,7 +6,8 @@
     "moduleResolution": "node",
     "lib": ["ES2022"],
     "outDir": "dist",
-
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

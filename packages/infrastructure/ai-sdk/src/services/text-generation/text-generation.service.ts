@@ -5,6 +5,7 @@ import { getAnalyticsProvider } from "../../providers";
 import { rerank } from "../../rag/rerank";
 import { type RetrievedDocument, retrieve } from "../../rag/retrieve";
 import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
+import { routeToolsAsync } from "../../tools/router/tool-router";
 import { STREAM_EVENT, type StreamEvent } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
@@ -13,7 +14,6 @@ import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
-import { selectToolsForPrompt } from "../tools/tool-selection";
 
 const logger = getLogger();
 
@@ -104,13 +104,8 @@ export class TextGenerationService implements ITextGenerationService {
     const finalPrompt = options.prompt;
     const typeFilter = this._typeFilterService.inferTypes(undefined, finalPrompt);
     const toolSelection = options.tools
-      ? selectToolsForPrompt({
-          prompt: finalPrompt,
-          inferredTypes: typeFilter?.types as any,
-          tools: options.tools,
-        })
+      ? await routeToolsAsync({ prompt: finalPrompt, inferredTypes: typeFilter?.types as any, tools: options.tools })
       : null;
-
     const toolsForModel = toolSelection?.selectedTools ?? options.tools;
 
     const telemetry = createGenerationTelemetry({

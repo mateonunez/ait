@@ -270,11 +270,7 @@ export default function ChatPage() {
                   </div>
                 </div>
               ) : (
-                <Conversation
-                  messages={messages}
-                  streamingMessageId={streamingMessageId}
-                  layoutTrigger={showSuggestions}
-                />
+                <Conversation messages={messages} streamingMessageId={streamingMessageId} />
               )}
             </div>
 
