@@ -67,7 +67,6 @@ export default function ChatPage() {
   const {
     messages,
     isLoading,
-    currentMetadata,
     tokenUsage,
     sendMessage,
     clearMessages,

@@ -16,7 +16,7 @@ export class GitHubRepositoryEntity {
   @Expose()
   description!: string | null;
 
-  @Expose({ name: "stargazers_count" })
+  @Expose()
   @Transform(({ value }) => value ?? 0)
   stars!: number;
 
@@ -30,11 +30,11 @@ export class GitHubRepositoryEntity {
   @Expose()
   url!: string;
 
-  @Expose({ name: "full_name" })
+  @Expose()
   @Transform(({ value }) => value ?? "")
   fullName!: string;
 
-  @Expose({ name: "private" })
+  @Expose()
   @Transform(({ value }) => value ?? false)
   private!: boolean;
 
@@ -54,11 +54,11 @@ export class GitHubRepositoryEntity {
   @Transform(({ value }) => value ?? "public")
   visibility!: string;
 
-  @Expose({ name: "watchers_count" })
+  @Expose()
   @Transform(({ value }) => value ?? 0)
   watchersCount!: number;
 
-  @Expose({ name: "open_issues_count" })
+  @Expose()
   @Transform(({ value }) => value ?? 0)
   openIssuesCount!: number;
 
@@ -66,7 +66,7 @@ export class GitHubRepositoryEntity {
   @Transform(({ value }) => value ?? 0)
   size!: number;
 
-  @Expose({ name: "default_branch" })
+  @Expose()
   @Transform(({ value }) => value ?? "main")
   defaultBranch!: string;
 
@@ -74,74 +74,65 @@ export class GitHubRepositoryEntity {
   @Transform(({ value }) => value ?? [])
   topics!: string[];
 
-  @Expose({ name: "is_template" })
+  @Expose()
   @Transform(({ value }) => value ?? false)
   isTemplate!: boolean;
 
-  @Expose({ name: "has_issues" })
+  @Expose()
   @Transform(({ value }) => value ?? true)
   hasIssues!: boolean;
 
-  @Expose({ name: "has_projects" })
+  @Expose()
   @Transform(({ value }) => value ?? true)
   hasProjects!: boolean;
 
-  @Expose({ name: "has_wiki" })
+  @Expose()
   @Transform(({ value }) => value ?? true)
   hasWiki!: boolean;
 
-  @Expose({ name: "has_pages" })
+  @Expose()
   @Transform(({ value }) => value ?? false)
   hasPages!: boolean;
 
-  @Expose({ name: "has_discussions" })
+  @Expose()
   @Transform(({ value }) => value ?? false)
   hasDiscussions!: boolean;
 
   @Expose()
   homepage!: string | null;
 
-  @Expose({ name: "pushed_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   pushedAt!: Date | null;
 
-  @Expose({ name: "license" })
-  @Transform(({ value }) => value?.name ?? null)
+  @Expose()
+  @Transform(({ value }) => value ?? null)
   licenseName!: string | null;
 
-  @Expose({ name: "clone_url" })
+  @Expose()
   @Transform(({ value }) => value ?? "")
   cloneUrl!: string;
 
-  @Expose({ name: "ssh_url" })
+  @Expose()
   @Transform(({ value }) => value ?? "")
   sshUrl!: string;
 
-  @Expose({ name: "owner" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   ownerData!: Record<string, unknown> | null;
 
-  @Expose({ name: "license" })
+  @Expose()
   @Transform(({ value }) => (value ? { ...value } : null))
   licenseData!: Record<string, unknown> | null;
 
-  @Expose({ name: "html_url" })
-  @Transform(({ obj }) => {
-    const metadata: Record<string, unknown> = {};
-    if (obj.html_url) metadata.html_url = obj.html_url;
-    if (obj.git_url) metadata.git_url = obj.git_url;
-    if (obj.svn_url) metadata.svn_url = obj.svn_url;
-    if (obj.mirror_url) metadata.mirror_url = obj.mirror_url;
-    if (obj.node_id) metadata.node_id = obj.node_id;
-    return Object.keys(metadata).length > 0 ? metadata : null;
-  })
+  @Expose()
   metadata!: Record<string, unknown> | null;
 
-  @Expose({ name: "created_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
-  @Expose({ name: "updated_at" })
+  @Expose()
   @Transform(({ value }) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
@@ -150,8 +141,40 @@ export class GitHubRepositoryEntity {
 
 // --- External API → Domain ---
 
-export function mapGitHubRepository(external: unknown): GitHubRepositoryEntity {
-  return plainToInstance(GitHubRepositoryEntity, external, {
+export function mapGitHubRepository(external: any): GitHubRepositoryEntity {
+  const mapped = {
+    ...external,
+    stars: external.stargazers_count ?? external.stars ?? 0,
+    fullName: external.full_name ?? external.fullName ?? "",
+    watchersCount: external.watchers_count ?? external.watchersCount ?? 0,
+    openIssuesCount: external.open_issues_count ?? external.openIssuesCount ?? 0,
+    defaultBranch: external.default_branch ?? external.defaultBranch ?? "main",
+    isTemplate: external.is_template ?? external.isTemplate ?? false,
+    hasIssues: external.has_issues ?? external.hasIssues ?? true,
+    hasProjects: external.has_projects ?? external.hasProjects ?? true,
+    hasWiki: external.has_wiki ?? external.hasWiki ?? true,
+    hasPages: external.has_pages ?? external.hasPages ?? false,
+    hasDiscussions: external.has_discussions ?? external.hasDiscussions ?? false,
+    pushedAt: external.pushed_at ?? external.pushedAt ?? null,
+    licenseName: external.license?.name ?? external.licenseName ?? null,
+    cloneUrl: external.clone_url ?? external.cloneUrl ?? "",
+    sshUrl: external.ssh_url ?? external.sshUrl ?? "",
+    createdAt: external.created_at ?? external.createdAt ?? null,
+    updatedAt: external.updated_at ?? external.updatedAt ?? null,
+    metadata:
+      external.metadata ??
+      (external.html_url
+        ? {
+            html_url: external.html_url,
+            git_url: external.git_url,
+            svn_url: external.svn_url,
+            mirror_url: external.mirror_url,
+            node_id: external.node_id,
+          }
+        : null),
+  };
+
+  return plainToInstance(GitHubRepositoryEntity, mapped, {
     excludeExtraneousValues: true,
   });
 }
