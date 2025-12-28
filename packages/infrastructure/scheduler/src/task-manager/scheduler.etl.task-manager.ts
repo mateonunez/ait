@@ -22,6 +22,8 @@ import {
   runGoogleCalendarEventETL,
   GoogleYouTubeETLs,
   runGoogleYouTubeSubscriptionETL,
+  GooglePeopleETLs,
+  runGoogleContactETL,
 } from "@ait/retove";
 import { getLogger, RateLimitError } from "@ait/core";
 import type { Scheduler } from "../scheduler.service";
@@ -586,6 +588,48 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         logETL(GoogleYouTubeETLs.subscription);
         await runGoogleYouTubeSubscriptionETL(qdrant, postgres);
         logComplete(GoogleYouTubeETLs.subscription);
+      });
+    });
+
+    // Register Google Contact ETL
+    schedulerRegistry.register(GooglePeopleETLs.contact, async (data) => {
+      logStart(GooglePeopleETLs.contact);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        logFetch(GooglePeopleETLs.contact, "contacts from People API");
+        let totalFetched = 0;
+
+        try {
+          for await (const batch of this._googleService.fetchEntitiesPaginated(
+            GOOGLE_ENTITY_TYPES_ENUM.CONTACT,
+            true, // shouldConnect
+          )) {
+            totalFetched += batch.length;
+            logBatch(
+              GooglePeopleETLs.contact,
+              batch.length,
+              "contacts",
+              `First: ${batch[0].displayName || "untitled"}`,
+            );
+            await this._googleService.connector.store.save(batch);
+          }
+          logFetched(GooglePeopleETLs.contact, totalFetched, "contacts");
+        } catch (error: any) {
+          if (error instanceof RateLimitError && this._scheduler) {
+            const delay = Math.max(0, error.resetTime - Date.now());
+            logRateLimit(GooglePeopleETLs.contact, delay);
+            await this._scheduler.addJob(GooglePeopleETLs.contact, data as Record<string, unknown>, {
+              delay,
+              priority: 2,
+            });
+            return;
+          }
+          logError(GooglePeopleETLs.contact, "Error fetching contacts", error);
+        }
+
+        logETL(GooglePeopleETLs.contact);
+        await runGoogleContactETL(qdrant, postgres);
+        logComplete(GooglePeopleETLs.contact);
       });
     });
   }

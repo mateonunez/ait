@@ -42,7 +42,7 @@ AIt is designed as a modular monorepo that enables users to connect their data s
 │  │                          Gateway (API Server)                                │  │
 │  │              Fastify • OAuth 2.0 • https://localhost:3000                    │  │
 │  │                                                                              │  │
-│  │   /api/github/*  /api/spotify/*  /api/linear/*  /api/x/*  /api/chat/*       │  │
+│  │   /api/github/*  /api/spotify/*  /api/linear/*  /api/x/*  /api/google/*  /api/notion/*  /api/slack/*  /api/chat/*     │  │
 │  └──────────────────────────────────────────────────────────────────────────────┘  │
 └─────────┬─────────────────┬──────────────────┬─────────────────┬───────────────────┘
           │                 │                  │                 │
@@ -289,9 +289,9 @@ Collections are organized by vendor:
 | `ait_github_collection` | 1024 | Repositories, PRs, commits |
 | `ait_linear_collection` | 1024 | Issues, projects |
 | `ait_x_collection` | 1024 | Tweets, threads |
-| `ait_notion_collection` | 1024 | Pages, databases |
-| `ait_slack_collection` | 1024 | Messages, channels |
-| `ait_google_collection` | 1024 | Calendar events, YouTube |
+| `ait_google_collection` | 1024 | Calendar events, YouTube, Contacts |
+| `ait_notion_collection` | 1024 | Pages, Databases |
+| `ait_slack_collection` | 1024 | Messages, Channels |
 
 ### Redis Queues
 

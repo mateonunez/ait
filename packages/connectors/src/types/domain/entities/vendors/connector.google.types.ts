@@ -3,6 +3,7 @@ import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
 } from "../../../../domain/entities/google/google-calendar.entity";
+import type { GoogleContactEntity } from "../../../../domain/entities/google/google-contact.entity";
 import type { GoogleYouTubeSubscriptionEntity } from "../../../../domain/entities/google/google-youtube.entity";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
@@ -33,8 +34,17 @@ export interface IConnectorGoogleYouTubeSubscriptionRepository {
   getSubscriptionsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>>;
 }
 
+export interface IConnectorGoogleContactRepository {
+  saveContact(contact: GoogleContactEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveContacts(contacts: GoogleContactEntity[]): Promise<void>;
+  getContact(id: string): Promise<GoogleContactEntity | null>;
+  fetchContacts(): Promise<GoogleContactEntity[]>;
+  getContactsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleContactEntity>>;
+}
+
 export interface IConnectorGoogleRepository extends IConnectorRepository {
   event: IConnectorGoogleCalendarEventRepository;
   calendar: IConnectorGoogleCalendarCalendarRepository;
   subscription: IConnectorGoogleYouTubeSubscriptionRepository;
+  contact: IConnectorGoogleContactRepository;
 }

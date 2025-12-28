@@ -4,6 +4,7 @@ import { clearOAuthData, getOAuthData, saveOAuthData } from "../../../../shared/
 import type { IConnectorGoogleRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
 import { ConnectorGoogleCalendarCalendarRepository } from "./connector.google-calendar-calendar.repository";
 import { ConnectorGoogleCalendarEventRepository } from "./connector.google-calendar-event.repository";
+import { ConnectorGoogleContactRepository } from "./connector.google-contact.repository";
 import { ConnectorGoogleYouTubeSubscriptionRepository } from "./connector.google-youtube-subscription.repository";
 
 export class ConnectorGoogleRepository
@@ -13,12 +14,14 @@ export class ConnectorGoogleRepository
   private _googleCalendarEventRepository: ConnectorGoogleCalendarEventRepository;
   private _googleCalendarCalendarRepository: ConnectorGoogleCalendarCalendarRepository;
   private _googleYouTubeSubscriptionRepository: ConnectorGoogleYouTubeSubscriptionRepository;
+  private _googleContactRepository: ConnectorGoogleContactRepository;
 
   constructor() {
     super();
     this._googleCalendarEventRepository = new ConnectorGoogleCalendarEventRepository();
     this._googleCalendarCalendarRepository = new ConnectorGoogleCalendarCalendarRepository();
     this._googleYouTubeSubscriptionRepository = new ConnectorGoogleYouTubeSubscriptionRepository();
+    this._googleContactRepository = new ConnectorGoogleContactRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
@@ -55,5 +58,13 @@ export class ConnectorGoogleRepository
 
   set subscription(subscriptionRepository: ConnectorGoogleYouTubeSubscriptionRepository) {
     this._googleYouTubeSubscriptionRepository = subscriptionRepository;
+  }
+
+  get contact(): ConnectorGoogleContactRepository {
+    return this._googleContactRepository;
+  }
+
+  set contact(contactRepository: ConnectorGoogleContactRepository) {
+    this._googleContactRepository = contactRepository;
   }
 }

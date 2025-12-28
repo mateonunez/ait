@@ -68,8 +68,8 @@ const SLACK_COLLECTION: CollectionConfig = {
 const GOOGLE_COLLECTION: CollectionConfig = {
   vendor: "google",
   name: "ait_google_collection",
-  description: "Google Suite (Calendar, Drive, YouTube, etc.)",
-  entityTypes: ["event", "calendar", "subscription"],
+  description: "Google Suite (Calendar, Drive, YouTube, Contacts)",
+  entityTypes: ["event", "calendar", "subscription", "google_contact"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -105,7 +105,12 @@ export function getCollectionConfig(vendor: CollectionVendor): CollectionConfig 
 }
 
 export function getAllCollections(): ReadonlyArray<CollectionConfig> {
-  return Object.values(COLLECTIONS_REGISTRY).filter((c) => c.enabled);
+  const seen = new Set<string>();
+  return Object.values(COLLECTIONS_REGISTRY).filter((c) => {
+    if (!c.enabled || seen.has(c.name)) return false;
+    seen.add(c.name);
+    return true;
+  });
 }
 
 export function getCollectionsNames(): string[] {

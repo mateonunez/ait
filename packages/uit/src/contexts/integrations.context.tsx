@@ -147,6 +147,9 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
               case "subscription":
                 response = await googleService.fetchSubscriptions(params);
                 break;
+              case "google_contact":
+                response = await googleService.fetchContacts(params);
+                break;
               default:
                 throw new Error(`Unknown Google entity type: ${entityType}`);
             }

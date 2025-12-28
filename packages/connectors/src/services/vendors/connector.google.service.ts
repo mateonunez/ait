@@ -1,6 +1,7 @@
 import type {
   GoogleCalendarCalendarExternal,
   GoogleCalendarEventExternal,
+  GoogleContactExternal,
   GoogleYouTubeSubscriptionExternal,
   PaginatedResponse,
   PaginationParams,
@@ -9,6 +10,7 @@ import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
 } from "../../domain/entities/google/google-calendar.entity";
+import type { GoogleContactEntity } from "../../domain/entities/google/google-contact.entity";
 import type { GoogleYouTubeSubscriptionEntity } from "../../domain/entities/google/google-youtube.entity";
 import { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
@@ -24,9 +26,11 @@ export interface IConnectorGoogleService extends ConnectorServiceBase<ConnectorG
   fetchEvents(): Promise<GoogleCalendarEventEntity[]>;
   fetchCalendars(): Promise<GoogleCalendarCalendarEntity[]>;
   fetchSubscriptions(): Promise<GoogleYouTubeSubscriptionEntity[]>;
+  fetchContacts(): Promise<GoogleContactEntity[]>;
   getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>>;
   getCalendarsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarCalendarEntity>>;
   getSubscriptionsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>>;
+  getContactsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleContactEntity>>;
 }
 
 export class ConnectorGoogleService
@@ -77,6 +81,22 @@ export class ConnectorGoogleService
         checksumEnabled: subscriptionConfig.checksumEnabled,
       },
     );
+
+    const contactConfig = connectorEntityConfigs.google[GOOGLE_ENTITY_TYPES_ENUM.CONTACT];
+    if (!contactConfig.paginatedFetcher) {
+      throw new Error("Google contact config missing paginatedFetcher");
+    }
+
+    this.registerPaginatedEntityConfig<GOOGLE_ENTITY_TYPES_ENUM.CONTACT, GoogleContactExternal>(
+      GOOGLE_ENTITY_TYPES_ENUM.CONTACT,
+      {
+        paginatedFetcher: contactConfig.paginatedFetcher,
+        mapper: contactConfig.mapper,
+        cacheTtl: contactConfig.cacheTtl,
+        batchSize: contactConfig.batchSize,
+        checksumEnabled: contactConfig.checksumEnabled,
+      },
+    );
   }
 
   protected createConnector(oauth: ConnectorOAuth): ConnectorGoogle {
@@ -95,6 +115,10 @@ export class ConnectorGoogleService
     return this.fetchEntities(GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION, true);
   }
 
+  async fetchContacts(): Promise<GoogleContactEntity[]> {
+    return this.fetchEntities(GOOGLE_ENTITY_TYPES_ENUM.CONTACT, true);
+  }
+
   async getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>> {
     return this.connector.repository.event.getEventsPaginated(params);
   }
@@ -107,6 +131,10 @@ export class ConnectorGoogleService
     params: PaginationParams,
   ): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>> {
     return this.connector.repository.subscription.getSubscriptionsPaginated(params);
+  }
+
+  async getContactsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleContactEntity>> {
+    return this.connector.repository.contact.getContactsPaginated(params);
   }
 }
 

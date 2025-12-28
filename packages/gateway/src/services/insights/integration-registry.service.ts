@@ -43,6 +43,11 @@ export class IntegrationRegistryService {
     event: { entityType: "event", fetchMethod: "getEventsPaginated", dateField: "startTime" },
     calendar: { entityType: "calendar", fetchMethod: "getCalendarsPaginated", dateField: "updatedAt" },
     subscription: { entityType: "subscription", fetchMethod: "getSubscriptionsPaginated", dateField: "publishedAt" },
+    google_contact: {
+      entityType: "google_contact",
+      fetchMethod: "getContactsPaginated",
+      dateField: "updatedAt",
+    },
   };
 
   getAvailableVendors(): IntegrationVendor[] {
@@ -109,7 +114,7 @@ export class IntegrationRegistryService {
       x: "tweets",
       linear: "tasks",
       notion: "documents",
-      google: "events",
+      google: "items",
       youtube: "subscriptions",
     };
     return units[vendor] || "items";
@@ -123,7 +128,7 @@ export class IntegrationRegistryService {
       x: "social media activity",
       linear: "task management",
       notion: "documentation",
-      google: "calendar events",
+      google: "calendar and contacts activity",
       youtube: "video subscriptions",
     };
     return labels[vendor] || vendor;

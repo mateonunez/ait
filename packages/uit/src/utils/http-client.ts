@@ -30,7 +30,7 @@ export async function apiPost<T, B = unknown>(url: string, body?: B): Promise<Ap
   const result = await requestJson<T>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body ?? {}),
   });
   if (!result.ok) {
     const err = result.error as AItError;
@@ -43,7 +43,7 @@ export async function apiPatch<T>(url: string, body: unknown): Promise<ApiRespon
   const result = await requestJson<T>(url, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+    body: JSON.stringify(body ?? {}),
   });
   if (!result.ok) {
     const err = result.error as AItError;

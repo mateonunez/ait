@@ -1,5 +1,6 @@
 import { CalendarCard } from "@/components/connectors/calendar-card";
 import { EventCard } from "@/components/connectors/event-card";
+import { GoogleContactCard } from "@/components/connectors/google-contact-card";
 import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import { IntegrationLayout } from "@/components/integration-layout";
 import { IntegrationTabs } from "@/components/integration-tabs";
@@ -9,10 +10,11 @@ import { useIntegrationsContext } from "@/contexts/integrations.context";
 import {
   type GoogleCalendarCalendarEntity,
   type GoogleCalendarEventEntity,
+  type GoogleContactEntity,
   type GoogleYouTubeSubscriptionEntity,
   getLogger,
 } from "@ait/core";
-import { Calendar, Youtube } from "lucide-react";
+import { Calendar, User, Youtube } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
@@ -21,6 +23,7 @@ const TABS = [
   { id: "events", label: "Events" },
   { id: "calendars", label: "Calendars" },
   { id: "subscriptions", label: "Subscriptions" },
+  { id: "contacts", label: "Contacts" },
 ];
 
 export default function GooglePage() {
@@ -33,6 +36,7 @@ export default function GooglePage() {
   const [events, setEvents] = useState<GoogleCalendarEventEntity[]>([]);
   const [calendars, setCalendars] = useState<GoogleCalendarCalendarEntity[]>([]);
   const [subscriptions, setSubscriptions] = useState<GoogleYouTubeSubscriptionEntity[]>([]);
+  const [contacts, setContacts] = useState<GoogleContactEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,6 +58,10 @@ export default function GooglePage() {
         } else if (tab === "subscriptions") {
           const response = await fetchEntityData("google", "subscription", { page, limit: pageSize });
           setSubscriptions(response.data as GoogleYouTubeSubscriptionEntity[]);
+          setTotalPages(response.pagination.totalPages);
+        } else if (tab === "contacts") {
+          const response = await fetchEntityData("google", "google_contact", { page, limit: pageSize });
+          setContacts(response.data as GoogleContactEntity[]);
           setTotalPages(response.pagination.totalPages);
         }
       } catch (error) {
@@ -185,13 +193,39 @@ export default function GooglePage() {
       );
     }
 
+    if (activeTab === "contacts") {
+      return (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {contacts.map((contact) => (
+              <GoogleContactCard key={contact.id} contact={contact} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center py-8">
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+            </div>
+          )}
+
+          {contacts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <User className="w-12 h-12 text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground">No contacts found</p>
+              <p className="text-sm text-muted-foreground mt-2">Try refreshing or connecting your Google account</p>
+            </div>
+          )}
+        </>
+      );
+    }
+
     return null;
   };
 
   return (
     <IntegrationLayout
       title="Google"
-      description="Calendar events, schedules, and YouTube subscriptions"
+      description="Calendar events, YouTube subscriptions, and Contacts"
       color="#4285F4"
       onRefresh={handleRefresh}
       isRefreshing={isRefreshing}

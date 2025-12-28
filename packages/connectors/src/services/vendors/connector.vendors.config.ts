@@ -4,6 +4,7 @@ import type {
   GitHubRepositoryExternal,
   GoogleCalendarCalendarExternal,
   GoogleCalendarEventExternal,
+  GoogleContactExternal,
   GoogleYouTubeSubscriptionExternal,
   LinearIssueExternal,
   NotionPageExternal,
@@ -30,6 +31,7 @@ import {
   mapGoogleCalendarCalendar,
   mapGoogleCalendarEvent,
 } from "../../domain/entities/google/google-calendar.entity";
+import { type GoogleContactEntity, mapGoogleContact } from "../../domain/entities/google/google-contact.entity";
 import {
   type GoogleYouTubeSubscriptionEntity,
   mapGoogleYouTubeSubscription,
@@ -136,12 +138,14 @@ export enum GOOGLE_ENTITY_TYPES_ENUM {
   EVENT = "event",
   CALENDAR = "calendar",
   SUBSCRIPTION = "subscription",
+  CONTACT = "google_contact",
 }
 
 export interface GoogleServiceEntityMap {
   [GOOGLE_ENTITY_TYPES_ENUM.EVENT]: GoogleCalendarEventEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.CALENDAR]: GoogleCalendarCalendarEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION]: GoogleYouTubeSubscriptionEntity;
+  [GOOGLE_ENTITY_TYPES_ENUM.CONTACT]: GoogleContactEntity;
 }
 
 const githubEntityConfigs = {
@@ -407,6 +411,21 @@ const googleEntityConfigs = {
     checksumEnabled: true,
     batchSize: 50,
   } satisfies EntityConfig<ConnectorGoogle, GoogleYouTubeSubscriptionExternal, GoogleYouTubeSubscriptionEntity>,
+
+  [GOOGLE_ENTITY_TYPES_ENUM.CONTACT]: {
+    fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchContacts().then((res) => res.connections),
+    paginatedFetcher: async (connector: ConnectorGoogle, cursor?: ConnectorCursor) => {
+      const response = await connector.dataSource.fetchContacts(cursor?.id);
+      return {
+        data: response.connections,
+        nextCursor: response.nextPageToken ? { id: response.nextPageToken, timestamp: new Date() } : undefined,
+      };
+    },
+    mapper: (contact: GoogleContactExternal) => mapGoogleContact(contact),
+    cacheTtl: 3600,
+    checksumEnabled: true,
+    batchSize: 100,
+  } satisfies EntityConfig<ConnectorGoogle, GoogleContactExternal, GoogleContactEntity>,
 } as const;
 
 export const connectorEntityConfigs = {

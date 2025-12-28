@@ -17,7 +17,7 @@ export interface ToolSelectionResult {
   reason: string;
 }
 
-type VendorId = "notion" | "slack" | "linear" | "github" | "spotify" | "internal";
+type VendorId = "notion" | "slack" | "linear" | "github" | "spotify" | "google" | "internal";
 
 type VendorRule = {
   id: VendorId;
@@ -51,12 +51,17 @@ const VENDOR_RULES: VendorRule[] = [
   {
     id: "github",
     toolPrefix: "github_",
-    types: ["repo", "pull_request"],
+    types: ["repo", "pull_request", "repository", "commit", "repository_file"],
   },
   {
     id: "spotify",
     toolNames: ["getCurrentlyPlaying"],
-    types: ["track", "playlist"],
+    types: ["track", "playlist", "artist", "album", "recently_played"],
+  },
+  {
+    id: "google",
+    toolPrefix: "google_",
+    types: ["event", "calendar", "subscription", "google_contact", "contact"],
   },
 ];
 

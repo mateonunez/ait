@@ -156,6 +156,30 @@ export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
     description: "YouTube channel subscriptions (timestamps: publishedAt)",
     timestampFields: ["publishedAt"],
   },
+  google_contact: {
+    label: "Contact",
+    labelPlural: "Contacts",
+    keywords: [
+      "contact",
+      "google",
+      "person",
+      "people",
+      "profile",
+      "name",
+      "info",
+      "information",
+      "email",
+      "phone",
+      "organization",
+      "company",
+      "address",
+      "photo",
+      "biography",
+    ],
+    vendor: "google",
+    description: "Google contacts (timestamps: updatedAt)",
+    timestampFields: ["updatedAt"],
+  },
 } as const;
 
 export function getEntityMetadata(entityType: EntityType): EntityMetadata {

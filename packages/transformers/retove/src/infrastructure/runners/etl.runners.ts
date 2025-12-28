@@ -7,6 +7,7 @@ import { RetoveGitHubFileETL } from "../../etl/vendors/retove.github.file.etl";
 import { RetoveGitHubPullRequestETL } from "../../etl/vendors/retove.github.pull-request.etl";
 import { RetoveGitHubRepositoryETL } from "../../etl/vendors/retove.github.repository.etl";
 import { RetoveGoogleCalendarEventETL } from "../../etl/vendors/retove.google-calendar.event.etl";
+import { RetoveGoogleContactETL } from "../../etl/vendors/retove.google-contact.etl";
 import { RetoveGoogleYouTubeSubscriptionETL } from "../../etl/vendors/retove.google-youtube.subscription.etl";
 import { RetoveLinearIssueETL } from "../../etl/vendors/retove.linear.issue.etl";
 import { RetoveNotionPageETL } from "../../etl/vendors/retove.notion.page.etl";
@@ -216,4 +217,20 @@ export async function runGoogleYouTubeSubscriptionETL(
   logger.info(`🔍 Running RetoveGoogleYouTubeSubscriptionETL → ${collection} with limit of ${LIMIT}...`);
   await googleYouTubeETL.run(LIMIT);
   logger.info(`✅ RetoveGoogleYouTubeSubscriptionETL → ${collection} completed successfully!`);
+}
+
+export const GooglePeopleETLs = {
+  contact: "RetoveGoogleContactETL",
+};
+
+export async function runGoogleContactETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const collection = getCollectionNameByVendor("google");
+  const googleContactETL = new RetoveGoogleContactETL(pgClient, qdrantClient);
+
+  logger.info(`🔍 Running RetoveGoogleContactETL → ${collection} with limit of ${LIMIT}...`);
+  await googleContactETL.run(LIMIT);
+  logger.info(`✅ RetoveGoogleContactETL → ${collection} completed successfully!`);
 }

@@ -5,6 +5,7 @@ import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
 } from "../../../domain/entities/google/google-calendar.entity";
+import type { GoogleContactEntity } from "../../../domain/entities/google/google-contact.entity";
 import type { GoogleYouTubeSubscriptionEntity } from "../../../domain/entities/google/google-youtube.entity";
 import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -40,6 +41,11 @@ export class ConnectorGoogleStore implements IConnectorStore {
               incremental: false,
             },
           );
+          break;
+        case GOOGLE_ENTITY_TYPES_ENUM.CONTACT:
+          await this._ConnectorGoogleRepository.contact.saveContact(item as unknown as GoogleContactEntity, {
+            incremental: false,
+          });
           break;
         default:
           // @ts-ignore: Unreachable code error

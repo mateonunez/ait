@@ -28,6 +28,7 @@ export const GoalTypeSchema = z.enum([
   "event",
   "calendar",
   "subscription",
+  "google_contact",
   "songs",
   "tweets",
   "commits",

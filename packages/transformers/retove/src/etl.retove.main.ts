@@ -7,6 +7,7 @@ import {
   runGitHubPullRequestETL,
   runGitHubRepositoryETL,
   runGoogleCalendarEventETL,
+  runGoogleContactETL,
   runGoogleYouTubeSubscriptionETL,
   runLinearETL,
   runNotionETL,
@@ -37,6 +38,7 @@ const etlRunners: Record<EntityType, any> = {
   message: runSlackETL,
   subscription: runGoogleYouTubeSubscriptionETL,
   event: runGoogleCalendarEventETL,
+  google_contact: runGoogleContactETL,
   calendar: undefined,
 };
 

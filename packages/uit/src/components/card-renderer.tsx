@@ -3,6 +3,7 @@ import { ArtistCard } from "@/components/connectors/artist-card";
 import { CalendarCard } from "@/components/connectors/calendar-card";
 import { CommitCard } from "@/components/connectors/commit-card";
 import { EventCard } from "@/components/connectors/event-card";
+import { GoogleContactCard } from "@/components/connectors/google-contact-card";
 import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import { IssueCard } from "@/components/connectors/issue-card";
 import { MessageCard } from "@/components/connectors/message-card";
@@ -20,6 +21,7 @@ import type {
   GitHubRepositoryEntity,
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
+  GoogleContactEntity,
   GoogleYouTubeSubscriptionEntity,
   LinearIssueEntity,
   NotionPageEntity,
@@ -66,6 +68,8 @@ export function renderCard(item: IntegrationEntity, onClick?: () => void) {
       return <CalendarCard calendar={item as GoogleCalendarCalendarEntity} onClick={onClick} />;
     case "subscription":
       return <GoogleYouTubeSubscriptionCard subscription={item as GoogleYouTubeSubscriptionEntity} onClick={onClick} />;
+    case "google_contact":
+      return <GoogleContactCard contact={item as GoogleContactEntity} onClick={onClick} />;
     default:
       return null;
   }

@@ -11,6 +11,7 @@ import {
   SlackETLs,
   GoogleCalendarETLs,
   GoogleYouTubeETLs,
+  GooglePeopleETLs,
 } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
 import { closePostgresConnection } from "@ait/postgres";
@@ -137,6 +138,13 @@ const SCHEDULED_JOBS: JobConfig[] = [
   },
   {
     name: GoogleYouTubeETLs.subscription,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.mediumPriorityCron,
+    priority: 2,
+    enabled: true,
+  },
+  {
+    name: GooglePeopleETLs.contact,
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
     priority: 2,
