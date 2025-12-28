@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import dotenv from "dotenv";
 import { Scheduler } from "./scheduler.service";
 import type { IRedisConfig } from "@ait/redis";
