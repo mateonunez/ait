@@ -143,10 +143,12 @@ export {
   createAllConnectorTools,
   createAllConnectorToolsWithMCP,
   createSpotifyTools,
-  createAllMCPTools,
   createMCPToolsForVendor,
   getMCPToolsSummary,
 } from "./tools/connectors.tools";
+
+export { McpToolRegistry } from "./mcp-registry";
+export { routeTools } from "./tools/router/tool-router";
 export type { SpotifySearchResult } from "./tools/domains/spotify.tools";
 export type { ModelMetadata, ModelCapabilities, ModelParameters } from "./types/models/model.metadata";
 export { getAllModels, getModelMetadata, MODEL_REGISTRY } from "./services/metadata/model-registry";

@@ -8,6 +8,7 @@ import type { ChatMessage } from "../types/chat";
 import type { TraceContext } from "../types/telemetry";
 import type { Tool } from "../types/tools";
 import { prepareRequestOptions } from "../utils/request.utils";
+import { computeMaxSteps } from "./tool-loop-controller";
 
 const logger = getLogger();
 
@@ -73,7 +74,7 @@ export async function generate(options: TextGenerateOptions): Promise<TextGenera
   // Build request options
   const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
   const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5;
-  const maxSteps = coreTools ? maxToolRounds + 1 : 1;
+  const maxSteps = computeMaxSteps({ maxToolRounds, hasTools: !!coreTools });
   const commonOptions = {
     model,
     system: systemMessage,

@@ -37,36 +37,30 @@ const VENDOR_RULES: VendorRule[] = [
     id: "notion",
     toolPrefix: "notion_",
     types: ["page"],
-    keywords: ["notion"],
   },
   {
     id: "slack",
     toolPrefix: "slack_",
     types: ["message"],
-    keywords: ["slack", "canale", "channel", "#"],
   },
   {
     id: "linear",
     toolPrefix: "linear_",
     types: ["issue"],
-    keywords: ["linear"],
   },
   {
     id: "github",
     toolPrefix: "github_",
     types: ["repo", "pull_request"],
-    keywords: ["github", "repository", "repo", "pull request"],
   },
   {
     id: "spotify",
     toolNames: ["getCurrentlyPlaying"],
     types: ["track", "playlist"],
-    keywords: ["spotify", "playlist", "brano", "playing now"],
   },
 ];
 
-function inferVendors(prompt: string, inferredTypes: InferredEntityType[] | undefined): Set<VendorId> {
-  const text = prompt.toLowerCase();
+function inferVendorsFromTypes(inferredTypes: InferredEntityType[] | undefined): Set<VendorId> {
   const typeSet = new Set((inferredTypes || []).map((t) => String(t).toLowerCase()));
 
   const vendors = new Set<VendorId>(["internal"]);
@@ -74,9 +68,7 @@ function inferVendors(prompt: string, inferredTypes: InferredEntityType[] | unde
     if (rule.id === "internal") continue;
 
     const matchesType = (rule.types || []).some((t) => typeSet.has(t));
-    const matchesKeyword = (rule.keywords || []).some((k) => text.includes(k));
-
-    if (matchesType || matchesKeyword) {
+    if (matchesType) {
       vendors.add(rule.id);
     }
   }
@@ -110,7 +102,7 @@ function toolScore(name: string): number {
 export function selectToolsForPrompt(input: ToolSelectionInput): ToolSelectionResult {
   const originalToolNames = Object.keys(input.tools);
   const writeEnabled = true; // make this configurable
-  const vendors = inferVendors(input.prompt, input.inferredTypes);
+  const vendors = inferVendorsFromTypes(input.inferredTypes);
 
   const selectedTools: Record<string, Tool> = {};
   const selectedToolNames: string[] = [];
@@ -153,5 +145,60 @@ export function selectToolsForPrompt(input: ToolSelectionInput): ToolSelectionRe
     selectedVendors: [...vendors].filter((v) => v !== "internal") as string[],
     writeEnabled,
     reason: "filtered",
+  };
+}
+
+export function selectToolsForVendors(args: {
+  tools: Record<string, Tool>;
+  vendors: Set<string>;
+  originalToolNames?: string[];
+  reason?: string;
+}): ToolSelectionResult {
+  const originalToolNames = args.originalToolNames ?? Object.keys(args.tools);
+  const writeEnabled = true;
+  const vendors = new Set<string>(args.vendors);
+  vendors.add("internal");
+
+  const selectedTools: Record<string, Tool> = {};
+  const selectedToolNames: string[] = [];
+
+  for (const [name, tool] of Object.entries(args.tools)) {
+    for (const vendor of vendors) {
+      const rule = ruleForVendor(vendor as VendorId);
+      if (!rule) continue;
+      if (!matchesVendorTool(rule, name)) continue;
+      selectedTools[name] = tool;
+      selectedToolNames.push(name);
+      break;
+    }
+  }
+
+  const HARD_CAP = 24;
+  if (selectedToolNames.length > HARD_CAP) {
+    const internal = selectedToolNames.filter((n) => n.startsWith("chat_"));
+    const nonInternal = selectedToolNames
+      .filter((n) => !n.startsWith("chat_"))
+      .sort((a, b) => toolScore(b) - toolScore(a));
+    const capped = [...internal, ...nonInternal].slice(0, HARD_CAP);
+    const cappedTools: Record<string, Tool> = {};
+    for (const n of capped) cappedTools[n] = selectedTools[n]!;
+
+    return {
+      selectedTools: cappedTools,
+      selectedToolNames: capped,
+      originalToolNames,
+      selectedVendors: [...vendors].filter((v) => v !== "internal"),
+      writeEnabled,
+      reason: args.reason ? `${args.reason}|capped_to_${HARD_CAP}` : `capped_to_${HARD_CAP}`,
+    };
+  }
+
+  return {
+    selectedTools,
+    selectedToolNames,
+    originalToolNames,
+    selectedVendors: [...vendors].filter((v) => v !== "internal"),
+    writeEnabled,
+    reason: args.reason ?? "filtered",
   };
 }

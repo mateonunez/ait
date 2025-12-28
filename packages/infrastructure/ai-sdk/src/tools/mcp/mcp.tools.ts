@@ -136,6 +136,18 @@ STYLE:
 - 1 to 5 lines, concrete.
 - If it's an announcement, include what changed, impact, and link if available.`,
 
+    // Slack MCP server tool names are prefixed (e.g. slack_post_message).
+    slack_list_channels: `List Slack channels visible to the bot token.
+USE:
+- Always call before posting unless channel_id is already known.`,
+
+    slack_post_message: `Post a Slack message.
+PREREQ:
+- Requires "channel_id" and "text".
+- If you only know a channel name like "#mcp-tests", call slack_list_channels first and find its id.
+FORMAT:
+{ "channel_id": "C01234567", "text": "Hello!" }`,
+
     post_thread_message: `Post a message in an existing Slack thread.
 PREREQ:
 - Requires "channel_id" and "thread_ts".
@@ -226,6 +238,7 @@ export function convertMCPToolToAItTool(mcpTool: MCPTool, vendor: MCPVendor, man
     parameters: parametersSchema,
     execute: async (params: Record<string, unknown>): Promise<ToolResult> => {
       const cleanParams = cleanToolParams(params);
+
       const result = await manager.executeTool(vendor, mcpTool.name, cleanParams);
       return convertMCPResultToToolResult(result);
     },
