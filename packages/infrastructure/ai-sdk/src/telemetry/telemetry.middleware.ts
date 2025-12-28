@@ -123,15 +123,15 @@ export async function* withTelemetryStream<TArgs = unknown, TChunk = unknown>(
   }
 }
 
-export function createTraceContext(name: string, metadata?: SpanMetadata): TraceContext | null {
+export function createTraceContext(name: string, metadata?: SpanMetadata, traceId?: string): TraceContext | null {
   const provider = getLangfuseProvider();
 
   if (!provider || !provider.isEnabled()) {
     return null;
   }
 
-  const traceId = randomUUID();
-  return provider.createTrace(name, traceId, metadata);
+  const id = traceId || randomUUID();
+  return provider.createTrace(name, id, metadata);
 }
 
 /**

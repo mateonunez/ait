@@ -1,10 +1,12 @@
 import { getLogger } from "@ait/core";
-import { type LanguageModel, streamText as vercelStreamText } from "ai";
+import { type LanguageModel, stepCountIs, streamText as vercelStreamText } from "ai";
 import { createModel, getAItClient } from "../client/ai-sdk.client";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../services/prompts/system.prompt";
 import { createSpanWithTiming, shouldEnableTelemetry } from "../telemetry/telemetry.middleware";
+import { convertToCoreTools } from "../tools/tool.converter";
 import type { ChatMessage } from "../types/chat";
 import type { TraceContext } from "../types/telemetry";
+import type { Tool } from "../types/tools";
 import { prepareRequestOptions } from "../utils/request.utils";
 
 const logger = getLogger();
@@ -18,13 +20,9 @@ export interface StreamOptions {
   topP?: number;
   topK?: number;
   enableTelemetry?: boolean;
-  /** Trace context for Langfuse telemetry */
   traceContext?: TraceContext;
-  /** RAG context to inject into system prompt */
   ragContext?: string;
-  /** Custom system message (overrides default AIt prompt) */
   system?: string;
-  /** Model override */
   model?: string | LanguageModel;
 }
 
@@ -47,10 +45,9 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
   } else {
     model = client.model as LanguageModel;
   }
+
   const enableTelemetry = options.enableTelemetry ?? shouldEnableTelemetry();
   const startTime = new Date();
-
-  logger.info("Starting stream generation", { prompt: options.prompt.slice(0, 50) });
 
   // Build AIt system prompt
   const systemMessage =
@@ -65,13 +62,15 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
           "generation",
           options.traceContext,
           { prompt: options.prompt, hasRAGContext: !!options.ragContext },
-          { model: client.generationModelConfig.name },
+          { model: typeof options.model === "string" ? options.model : client.generationModelConfig.name },
           startTime,
         )
       : null;
 
-  // Build request options
-  const coreTools = options.tools as any;
+  const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
+  const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5;
+  const maxSteps = coreTools ? maxToolRounds + 1 : 1;
+
   const commonOptions = {
     model,
     system: systemMessage,
@@ -79,46 +78,68 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
     topP: options.topP ?? client.config.generation.topP,
     topK: options.topK ?? client.config.generation.topK,
     tools: coreTools,
-    maxSteps: options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5,
+    maxSteps,
   };
 
   const requestOptions = prepareRequestOptions(options.prompt, commonOptions, options.messages);
 
-  const result = vercelStreamText(requestOptions);
+  const result = vercelStreamText({
+    ...requestOptions,
+    /**
+     * IMPORTANT:
+     * `streamText` defaults `stopWhen` to `stepCountIs(1)`, which stops after the first step
+     * when tool results exist. That yields tool calls/results but no final assistant text.
+     *
+     * We want true tool-loop behavior up to `maxSteps`.
+     */
+    stopWhen: coreTools ? stepCountIs(maxSteps) : undefined,
+    onStepFinish: (step) => {
+      logger.debug("Step finished", {
+        finishReason: step.finishReason,
+        textLength: step.text?.length ?? 0,
+        toolCallsCount: step.toolCalls?.length ?? 0,
+        toolResultsCount: step.toolResults?.length ?? 0,
+      });
+    },
+    onFinish: (event) => {
+      logger.debug("Stream finished", {
+        finishReason: event.finishReason,
+        textLength: event.text.length,
+        totalToolCalls: event.toolCalls?.length ?? 0,
+        totalToolResults: event.toolResults?.length ?? 0,
+        totalSteps: event.steps?.length ?? 0,
+      });
+    },
+  });
 
-  // Wrap stream with telemetry if we have a span
-  const textStream = endSpan ? wrapStreamWithTelemetrySpan(result.textStream, endSpan) : result.textStream;
+  const textStream = endSpan ? wrapStreamWithTelemetry(result.textStream, endSpan) : result.textStream;
 
   return {
     textStream,
-    text: Promise.resolve(result.text),
+    text: Promise.resolve(result.text) as Promise<string>,
   };
 }
 
-async function* wrapStreamWithTelemetrySpan(
+async function* wrapStreamWithTelemetry(
   inputStream: AsyncIterable<string>,
   endSpan: (output?: Record<string, unknown>) => void,
 ): AsyncIterable<string> {
   let fullResponse = "";
   let chunkCount = 0;
 
-  for await (const chunk of inputStream) {
-    fullResponse += chunk;
-    chunkCount++;
-    yield chunk;
+  try {
+    for await (const chunk of inputStream) {
+      fullResponse += chunk;
+      chunkCount++;
+      yield chunk;
+    }
+  } finally {
+    endSpan({
+      response: fullResponse.slice(0, 500),
+      responseLength: fullResponse.length,
+      chunkCount,
+    });
   }
-
-  // End span with output including response info
-  endSpan({
-    response: fullResponse.slice(0, 500), // Truncate for storage
-    responseLength: fullResponse.length,
-    chunkCount,
-  });
-
-  logger.debug("Stream complete", {
-    responseLength: fullResponse.length,
-    chunkCount,
-  });
 }
 
 /**

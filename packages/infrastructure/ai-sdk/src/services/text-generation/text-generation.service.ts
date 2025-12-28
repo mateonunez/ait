@@ -5,15 +5,15 @@ import { getAnalyticsProvider } from "../../providers";
 import { rerank } from "../../rag/rerank";
 import { type RetrievedDocument, retrieve } from "../../rag/retrieve";
 import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
-import type { StreamEvent } from "../../types";
+import { STREAM_EVENT, type StreamEvent } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { Tool } from "../../types/tools";
 import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
-import { PromptRewriterService } from "../prompts/prompt-rewriter.service";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
+import { selectToolsForPrompt } from "../tools/tool-selection";
 
 const logger = getLogger();
 
@@ -83,7 +83,6 @@ export class TextGenerationService implements ITextGenerationService {
   private readonly _metadataEmitter: MetadataEmitterService;
   private readonly _config: TextGenerationConfig;
   private readonly _contextManager: SmartContextManager;
-  private readonly _queryRewriter: PromptRewriterService;
   private readonly _typeFilterService: TypeFilterService;
 
   constructor(config: TextGenerationConfig = {}) {
@@ -94,7 +93,6 @@ export class TextGenerationService implements ITextGenerationService {
         ? Math.floor(config.contextPreparationConfig.maxContextChars / 4)
         : undefined,
     });
-    this._queryRewriter = new PromptRewriterService();
     this._typeFilterService = new TypeFilterService();
   }
 
@@ -103,43 +101,68 @@ export class TextGenerationService implements ITextGenerationService {
       throw new TextGenerationError("Prompt cannot be empty");
     }
 
+    const finalPrompt = options.prompt;
+    const typeFilter = this._typeFilterService.inferTypes(undefined, finalPrompt);
+    const toolSelection = options.tools
+      ? selectToolsForPrompt({
+          prompt: finalPrompt,
+          inferredTypes: typeFilter?.types as any,
+          tools: options.tools,
+        })
+      : null;
+
+    const toolsForModel = toolSelection?.selectedTools ?? options.tools;
+
     const telemetry = createGenerationTelemetry({
       name: "text-generation",
       enableTelemetry: options.telemetryOptions?.enableTelemetry,
+      traceId: options.telemetryOptions?.traceId,
       userId: options.telemetryOptions?.userId,
       sessionId: options.telemetryOptions?.sessionId,
       tags: options.telemetryOptions?.tags,
-      metadata: options.telemetryOptions?.metadata as any,
+      metadata: {
+        ...(options.telemetryOptions?.metadata as any),
+        toolSelection: toolSelection
+          ? {
+              originalToolsCount: toolSelection.originalToolNames.length,
+              selectedToolsCount: toolSelection.selectedToolNames.length,
+              selectedVendors: toolSelection.selectedVendors,
+              writeEnabled: toolSelection.writeEnabled,
+              reason: toolSelection.reason,
+            }
+          : undefined,
+      },
     });
 
     telemetry.recordInput({
-      prompt: options.prompt,
+      prompt: finalPrompt,
       messages: options.messages,
       enableRAG: options.enableRAG,
-      tools: options.tools,
+      tools: toolsForModel,
       maxToolRounds: options.maxToolRounds,
     });
 
-    try {
-      logger.info(`Starting stream generation for prompt: "${options.prompt.slice(0, 50)}..."`);
+    if (toolSelection) {
+      logger.info("[ToolSelection] Tools filtered for generation", {
+        originalToolsCount: toolSelection.originalToolNames.length,
+        selectedToolsCount: toolSelection.selectedToolNames.length,
+        selectedVendors: toolSelection.selectedVendors,
+        writeEnabled: toolSelection.writeEnabled,
+        reason: toolSelection.reason,
+        selectedToolNames: toolSelection.selectedToolNames.slice(0, 30),
+      });
+    }
 
-      let queryToUse = options.prompt;
+    try {
       let ragContext: string | undefined;
       let ragDocuments: RetrievedDocument[] = [];
 
       // RAG flow using composable functions
       if (options.enableRAG) {
-        // 2. Query Rewriting if needed
-        if (options.messages && options.messages.length > 0) {
-          queryToUse = await this._queryRewriter.rewriteQuery(options.prompt, options.messages);
-        }
-
         // 2.1 Extract Filters
-        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse);
-
         // 3. Retrieval
         const retrieval = await retrieve({
-          query: queryToUse,
+          query: finalPrompt,
           types: typeFilter?.types,
           limit: this._config.multipleQueryPlannerConfig?.maxDocs ?? 20,
           scoreThreshold: this._config.multipleQueryPlannerConfig?.relevanceFloor ?? 0.4,
@@ -156,7 +179,7 @@ export class TextGenerationService implements ITextGenerationService {
         if (retrieval.documents.length > 0) {
           // 4. Reranking
           const ranked = rerank({
-            query: queryToUse,
+            query: finalPrompt,
             documents: retrieval.documents,
             topK: 10,
           });
@@ -202,9 +225,9 @@ export class TextGenerationService implements ITextGenerationService {
       let chunkCount = 0;
 
       const { textStream } = await streamGeneration({
-        prompt: queryToUse,
+        prompt: finalPrompt,
         messages: options.messages,
-        tools: options.tools as any,
+        tools: toolsForModel as any,
         enableTelemetry: options.telemetryOptions?.enableTelemetry,
         traceContext: telemetry.optionalContext, // Pass trace context for Langfuse spans
         ragContext, // Pass RAG context for AIt system prompt
@@ -218,7 +241,7 @@ export class TextGenerationService implements ITextGenerationService {
         yield chunk;
       }
 
-      logger.info("Stream completed", { chunks: chunkCount, responseLength: fullResponse.length });
+      logger.debug("Stream completed", { chunkCount, responseLength: fullResponse.length });
 
       telemetry.recordSuccess({
         response: fullResponse,
@@ -249,6 +272,7 @@ export class TextGenerationService implements ITextGenerationService {
     const telemetry = createGenerationTelemetry({
       name: "text-generation",
       enableTelemetry: options.telemetryOptions?.enableTelemetry,
+      traceId: options.telemetryOptions?.traceId,
       userId: options.telemetryOptions?.userId,
       sessionId: options.telemetryOptions?.sessionId,
       tags: options.telemetryOptions?.tags,
@@ -261,24 +285,17 @@ export class TextGenerationService implements ITextGenerationService {
     });
 
     try {
-      logger.info(`Starting text generation for prompt: "${options.prompt.slice(0, 50)}..."`);
-
-      let queryToUse = options.prompt;
+      const finalPrompt = options.prompt;
       let ragContext: string | undefined;
 
       // RAG flow using composable functions
       if (options.enableRAG) {
-        // 2. Query Rewriting if needed
-        if (options.messages && options.messages.length > 0) {
-          queryToUse = await this._queryRewriter.rewriteQuery(options.prompt, options.messages);
-        }
-
         // 2.1 Extract Filters
-        const typeFilter = this._typeFilterService.inferTypes(undefined, queryToUse);
+        const typeFilter = this._typeFilterService.inferTypes(undefined, finalPrompt);
 
         // 3. Retrieval
         const retrieval = await retrieve({
-          query: queryToUse,
+          query: finalPrompt,
           types: typeFilter?.types,
           limit: this._config.multipleQueryPlannerConfig?.maxDocs ?? 20,
           scoreThreshold: this._config.multipleQueryPlannerConfig?.relevanceFloor ?? 0.4,
@@ -294,7 +311,7 @@ export class TextGenerationService implements ITextGenerationService {
 
         if (retrieval.documents.length > 0) {
           const ranked = rerank({
-            query: queryToUse,
+            query: finalPrompt,
             documents: retrieval.documents,
             topK: 10,
           });
@@ -319,7 +336,7 @@ export class TextGenerationService implements ITextGenerationService {
 
       // Generate using new thin wrapper
       const result = await generateText({
-        prompt: queryToUse,
+        prompt: finalPrompt,
         messages: options.messages,
         tools: options.tools as any,
         enableTelemetry: options.telemetryOptions?.enableTelemetry,
@@ -387,6 +404,22 @@ export class TextGenerationService implements ITextGenerationService {
       suggestedAction: classifiedError.suggestedAction,
     });
 
+    // Ensure we log the original exception (this path intentionally doesn't throw).
+    logger.error("[TextGenerationService] Stream generation failed", {
+      error: {
+        name: classifiedError.originalError.name,
+        message: classifiedError.originalError.message,
+        stack: classifiedError.originalError.stack,
+      },
+      traceId: telemetry.traceContext?.traceId,
+      errorCategory: classifiedError.category,
+      errorSeverity: classifiedError.severity,
+      errorFingerprint: classifiedError.fingerprint,
+      isRetryable: classifiedError.isRetryable,
+      suggestedAction: classifiedError.suggestedAction,
+      errorMetadata: classifiedError.metadata,
+    });
+
     const analytics = getAnalyticsProvider();
     if (analytics) {
       analytics.trackRequest({
@@ -398,6 +431,9 @@ export class TextGenerationService implements ITextGenerationService {
 
     const baseMessage = "I'm having trouble processing your request right now.";
     const reason = error instanceof Error ? error.message : String(error);
-    yield `${baseMessage} (${reason}). Please try again later.`;
+    yield {
+      type: STREAM_EVENT.ERROR,
+      data: `${baseMessage} (${reason}). Please try again later.`,
+    };
   }
 }

@@ -26,9 +26,9 @@ export function formatMessages(prompt: string, messages?: ChatMessage[]) {
 }
 
 export function prepareRequestOptions(prompt: string, commonOptions: CommonRequestOptions, messages?: ChatMessage[]) {
-  const hasMessages = messages && messages.length > 0;
+  const useMessages = messages !== undefined;
 
-  if (hasMessages) {
+  if (useMessages) {
     return {
       ...commonOptions,
       messages: formatMessages(prompt, messages),
