@@ -97,6 +97,7 @@ export function mapXTweet(external: XTweetExternal): XTweetEntity {
     mediaAttachments: external.media ?? [],
     pollData: external.poll ?? null,
     placeData: external.place ?? null,
+    createdAt: external.created_at,
     jsonData: external,
   };
 
