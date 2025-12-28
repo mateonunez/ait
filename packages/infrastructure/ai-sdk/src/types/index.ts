@@ -1,5 +1,3 @@
-// Re-export all types for convenient access
-
 // Config types
 export * from "../config/collections.config";
 
@@ -19,11 +17,10 @@ export * from "./metadata/tool-call.metadata";
 // Model types
 export * from "./models/model.metadata";
 
-// Existing types (keep backwards compatibility)
+// Core types
 export * from "./chat";
 export * from "./tools";
 export * from "./config";
-export * from "./text-generation";
 export * from "./telemetry";
 export * from "./collections";
 export * from "./rag";

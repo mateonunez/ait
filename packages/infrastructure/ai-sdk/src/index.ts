@@ -61,7 +61,6 @@ export {
   getModelCapabilities,
   type AItClient,
   type AItClientConfig,
-  type InitOptions,
 } from "./client/ai-sdk.client";
 
 export {
@@ -76,14 +75,6 @@ export {
   type ModelSpec,
   type ModelType,
 } from "./config/models.config";
-
-export {
-  getPreset,
-  listPresets,
-  mergePresetWithOverrides,
-  type PresetName,
-  type PresetConfig,
-} from "./config/presets.config";
 
 export {
   getAllCollections,
@@ -136,7 +127,7 @@ export type { ChatMessage } from "./types/chat";
 export { formatConversationHistory } from "./utils/chat.utils";
 export type { Tool, ToolResult } from "./types/tools";
 export { createTool, createSuccessResult, createErrorResult } from "./utils/tool.utils";
-export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig, RAGConfig } from "./types/config";
+export type { ClientConfig, GenerationModelConfig, EmbeddingModelConfig } from "./types/config";
 
 export { convertToCoreTools } from "./tools/tool.converter";
 export {

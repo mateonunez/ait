@@ -89,8 +89,8 @@ export class TextGenerationService implements ITextGenerationService {
     this._config = config;
     this._metadataEmitter = new MetadataEmitterService();
     this._contextManager = new SmartContextManager({
-      totalTokenLimit: config.contextPreparationConfig?.maxContextChars
-        ? Math.floor(config.contextPreparationConfig.maxContextChars / 4)
+      totalTokenLimit: config.contextConfig?.maxContextChars
+        ? Math.floor(config.contextConfig.maxContextChars / 4)
         : undefined,
     });
     this._typeFilterService = new TypeFilterService();
@@ -154,13 +154,11 @@ export class TextGenerationService implements ITextGenerationService {
 
       // RAG flow using composable functions
       if (options.enableRAG) {
-        // 2.1 Extract Filters
-        // 3. Retrieval
         const retrieval = await retrieve({
           query: finalPrompt,
           types: typeFilter?.types,
-          limit: this._config.multipleQueryPlannerConfig?.maxDocs ?? 20,
-          scoreThreshold: this._config.multipleQueryPlannerConfig?.relevanceFloor ?? 0.4,
+          limit: this._config.retrievalConfig?.limit ?? 20,
+          scoreThreshold: this._config.retrievalConfig?.scoreThreshold ?? 0.4,
           filter: typeFilter?.timeRange
             ? {
                 fromDate: typeFilter.timeRange.from,
@@ -168,20 +166,18 @@ export class TextGenerationService implements ITextGenerationService {
               }
             : undefined,
           traceContext: telemetry.optionalContext,
-          enableCache: true, // Core feature restoration
+          enableCache: true,
         });
 
         if (retrieval.documents.length > 0) {
-          // 4. Reranking
           const ranked = rerank({
             query: finalPrompt,
             documents: retrieval.documents,
-            topK: 10,
+            topK: this._config.retrievalConfig?.limit ?? 20,
           });
 
           ragDocuments = ranked.documents;
 
-          // 5. Smart Context Assembly
           ragContext = await this._contextManager.assembleContext({
             systemInstructions: "",
             messages: options.messages || [],
@@ -199,15 +195,12 @@ export class TextGenerationService implements ITextGenerationService {
         }
       }
 
-      // Emit RAG metadata if enabled
       if (options.enableMetadata && options.enableRAG && ragContext) {
         yield this._metadataEmitter.createContextMetadataEvent(
           {
             context: ragContext,
             documents: ragDocuments,
             contextMetadata: {
-              documentCount: ragDocuments.length,
-              contextLength: ragContext.length,
               usedTemporalCorrelation: false,
             },
           },
@@ -292,8 +285,8 @@ export class TextGenerationService implements ITextGenerationService {
         const retrieval = await retrieve({
           query: finalPrompt,
           types: typeFilter?.types,
-          limit: this._config.multipleQueryPlannerConfig?.maxDocs ?? 20,
-          scoreThreshold: this._config.multipleQueryPlannerConfig?.relevanceFloor ?? 0.4,
+          limit: this._config.retrievalConfig?.limit ?? 20,
+          scoreThreshold: this._config.retrievalConfig?.scoreThreshold ?? 0.4,
           filter: typeFilter?.timeRange
             ? {
                 fromDate: typeFilter.timeRange.from,
@@ -308,7 +301,7 @@ export class TextGenerationService implements ITextGenerationService {
           const ranked = rerank({
             query: finalPrompt,
             documents: retrieval.documents,
-            topK: 10,
+            topK: this._config.retrievalConfig?.limit ?? 20,
           });
 
           // 5. Smart Context Assembly

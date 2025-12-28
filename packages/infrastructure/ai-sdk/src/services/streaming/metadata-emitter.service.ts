@@ -1,176 +1,101 @@
 import { randomUUID } from "node:crypto";
 import type { RetrievedDocument as RagRetrievedDocument } from "../../rag/retrieve";
-import type { StreamEvent } from "../../types";
+import type { MetadataPayload, StreamEvent } from "../../types";
 import { METADATA_TYPE, STREAM_EVENT } from "../../types";
-import type { BaseMetadata, Document } from "../../types/documents";
-import type { RetrievedDocument } from "../../types/metadata/rag-context.metadata";
+import type {
+  DocumentSource,
+  RAGContextMetadata as UIRAGContextMetadata,
+  RetrievedDocument as UIRetrievedDocument,
+} from "../../types/metadata/rag-context.metadata";
 
-export interface RAGContextMetadata {
+export interface ContextMetadataInput {
   context: string;
-  documents: unknown[];
-  rerankedDocuments?: unknown[];
-  fusedDocuments?: unknown[];
+  documents: RagRetrievedDocument[];
   contextMetadata?: {
-    documentCount: number;
-    contextLength: number;
-    usedTemporalCorrelation: boolean;
+    usedTemporalCorrelation?: boolean;
   };
 }
 
-export interface ToolCallMetadata {
-  toolCalls: unknown[];
-  toolResults: unknown[];
-  hasToolCalls: boolean;
+export interface ToolCallInput {
+  toolCalls: Array<{ id: string; name: string; arguments: Record<string, unknown> }>;
+  toolResults: Array<{ id: string; result?: unknown; error?: string }>;
 }
 
-export class MetadataEmitterService {
-  convertDocumentsToUIFormat(rawDocuments: unknown[]): RetrievedDocument[] {
-    return rawDocuments.map((rawDoc) => {
-      // Handle RagRetrievedDocument (from retrieve.ts) - the primary source
-      const ragDoc = rawDoc as RagRetrievedDocument;
-      if (ragDoc.content !== undefined && ragDoc.score !== undefined && ragDoc.collection !== undefined) {
-        return {
-          id: ragDoc.id || randomUUID(),
-          content: (ragDoc.content || "").slice(0, 500),
-          score: ragDoc.score || 0,
-          source: {
-            type: ragDoc.collection,
-            identifier: ragDoc.id,
-            url: ragDoc.source,
-            metadata: ragDoc.metadata,
-          },
-          timestamp: undefined,
-          entityTypes: [ragDoc.collection],
-        };
-      }
+export interface IMetadataEmitterService {
+  createContextMetadataEvent(input: ContextMetadataInput, query: string): StreamEvent;
+  createToolMetadataEvent(input: ToolCallInput): StreamEvent;
+  createReasoningMetadataEvents<T>(steps: T[]): StreamEvent[];
+  createTaskMetadataEvents<T>(tasks: T[]): StreamEvent[];
+  createSuggestionMetadataEvent<T>(suggestions: T[]): StreamEvent;
+  createModelMetadataEvent<T>(modelInfo: T): StreamEvent | null;
+}
 
-      // Handle Document<BaseMetadata> type (legacy)
-      const legacyDoc = rawDoc as unknown as Document<BaseMetadata>;
-      const metadata = legacyDoc.metadata || ({} as BaseMetadata);
-      const entityType = metadata.__type || "unknown";
-      const score = typeof metadata.score === "number" ? metadata.score : 0;
+export class MetadataEmitterService implements IMetadataEmitterService {
+  createContextMetadataEvent(input: ContextMetadataInput, query: string): StreamEvent {
+    const documents = this._convertDocuments(input.documents);
 
-      const timestamp =
-        metadata.createdAt ||
-        metadata.playedAt ||
-        metadata.mergedAt ||
-        metadata.pushedAt ||
-        metadata.publishedAt ||
-        undefined;
+    const payload: UIRAGContextMetadata = {
+      documents,
+      query,
+      contextLength: input.context.length,
+      documentCount: documents.length,
+      fallbackUsed: false,
+      timestamp: Date.now(),
+      usedTemporalCorrelation: input.contextMetadata?.usedTemporalCorrelation ?? false,
+    };
 
-      let content = legacyDoc.pageContent || "";
-      if (metadata.title && typeof metadata.title === "string") {
-        content = metadata.title;
-        if (metadata.description && typeof metadata.description === "string") {
-          content += ` - ${metadata.description}`;
-        }
-      } else if (metadata.name && typeof metadata.name === "string") {
-        content = metadata.name;
-        if (metadata.artist && typeof metadata.artist === "string") {
-          content += ` by ${metadata.artist}`;
-        }
-      }
+    return this._createMetadataEvent(METADATA_TYPE.CONTEXT, payload);
+  }
 
-      const source: { type: string; identifier?: string; url?: string; metadata?: Record<string, unknown> } = {
-        type: entityType,
-        identifier: metadata.id as string | undefined,
-        url: metadata.url as string | undefined,
-        metadata: {
-          collectionVendor: metadata.collectionVendor,
-          repositoryName: metadata.repositoryName,
-          repositoryFullName: metadata.repositoryFullName,
-        },
-      };
-
-      return {
-        id: (metadata.id as string) || randomUUID(),
-        content: content.slice(0, 500),
-        score,
-        source,
-        timestamp: timestamp ? new Date(timestamp as string | number | Date).getTime() : undefined,
-        entityTypes: [entityType],
-      };
+  createToolMetadataEvent(input: ToolCallInput): StreamEvent {
+    return this._createMetadataEvent(METADATA_TYPE.TOOL_CALL, {
+      toolCalls: input.toolCalls,
+      toolResults: input.toolResults,
     });
   }
 
-  createContextMetadataEvent(ragMetadata: RAGContextMetadata, query: string): StreamEvent {
-    const rawDocuments = ragMetadata.rerankedDocuments || ragMetadata.fusedDocuments || ragMetadata.documents || [];
-    const documentsToSend = this.convertDocumentsToUIFormat(rawDocuments);
+  createReasoningMetadataEvents<T>(steps: T[]): StreamEvent[] {
+    return steps.map((step) => this._createMetadataEvent(METADATA_TYPE.REASONING, step));
+  }
 
+  createTaskMetadataEvents<T>(tasks: T[]): StreamEvent[] {
+    return tasks.map((task) => this._createMetadataEvent(METADATA_TYPE.TASK, task));
+  }
+
+  createSuggestionMetadataEvent<T>(suggestions: T[]): StreamEvent {
+    return this._createMetadataEvent(METADATA_TYPE.SUGGESTION, suggestions);
+  }
+
+  createModelMetadataEvent<T>(modelInfo: T | null | undefined): StreamEvent | null {
+    if (!modelInfo) return null;
+    return this._createMetadataEvent(METADATA_TYPE.MODEL, modelInfo);
+  }
+
+  private _createMetadataEvent(type: MetadataPayload["type"], data: unknown): StreamEvent {
     return {
       type: STREAM_EVENT.METADATA,
-      data: {
-        type: METADATA_TYPE.CONTEXT,
-        data: {
-          documents: documentsToSend as never,
-          query,
-          contextLength: ragMetadata.context?.length || 0,
-          documentCount: documentsToSend.length,
-          usedTemporalCorrelation: ragMetadata.contextMetadata?.usedTemporalCorrelation || false,
-        } as never,
-      },
+      data: { type, data } as MetadataPayload,
     };
   }
 
-  createToolMetadataEvent(toolMetadata: ToolCallMetadata): StreamEvent {
-    return {
-      type: STREAM_EVENT.METADATA,
-      data: {
-        type: METADATA_TYPE.TOOL_CALL,
-        data: {
-          toolCalls: toolMetadata.toolCalls,
-          toolResults: toolMetadata.toolResults,
-        } as never,
-      },
+  private _convertDocuments(documents: RagRetrievedDocument[]): UIRetrievedDocument[] {
+    return documents.map((doc) => this._convertDocument(doc));
+  }
+
+  private _convertDocument(doc: RagRetrievedDocument): UIRetrievedDocument {
+    const source: DocumentSource = {
+      type: doc.collection,
+      identifier: doc.id,
+      url: doc.source,
+      metadata: doc.metadata,
     };
-  }
 
-  createReasoningMetadataEvent(reasoning: unknown[]): StreamEvent[] {
-    if (!reasoning || reasoning.length === 0) {
-      return [];
-    }
-    return reasoning.map((step) => ({
-      type: STREAM_EVENT.METADATA,
-      data: {
-        type: METADATA_TYPE.REASONING,
-        data: step as never,
-      },
-    }));
-  }
-
-  createTaskMetadataEvent(tasks: unknown[]): StreamEvent[] {
-    if (!tasks || tasks.length === 0) {
-      return [];
-    }
-    return tasks.map((task) => ({
-      type: STREAM_EVENT.METADATA,
-      data: {
-        type: METADATA_TYPE.TASK,
-        data: task as never,
-      },
-    }));
-  }
-
-  createSuggestionMetadataEvent(suggestions: unknown[]): StreamEvent {
     return {
-      type: STREAM_EVENT.METADATA,
-      data: {
-        type: METADATA_TYPE.SUGGESTION,
-        data: (suggestions || []) as never,
-      },
-    };
-  }
-
-  createModelMetadataEvent(modelInfo: unknown): StreamEvent | null {
-    if (!modelInfo) {
-      return null;
-    }
-    return {
-      type: STREAM_EVENT.METADATA,
-      data: {
-        type: METADATA_TYPE.MODEL,
-        data: modelInfo as never,
-      },
+      id: doc.id || randomUUID(),
+      content: (doc.content || "").slice(0, 500),
+      score: doc.score ?? 0,
+      source,
+      entityTypes: [doc.collection],
     };
   }
 }

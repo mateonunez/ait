@@ -21,13 +21,9 @@ export interface TextGenerateOptions {
   topP?: number;
   topK?: number;
   enableTelemetry?: boolean;
-  /** Trace context for Langfuse telemetry */
   traceContext?: TraceContext;
-  /** RAG context to inject into system prompt */
   ragContext?: string;
-  /** Custom system message (overrides default AIt prompt) */
   system?: string;
-  /** Model override */
   model?: string | LanguageModel;
 }
 
@@ -73,7 +69,7 @@ export async function generate(options: TextGenerateOptions): Promise<TextGenera
 
   // Build request options
   const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
-  const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5;
+  const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolConfig?.maxRounds ?? 5;
   const maxSteps = computeMaxSteps({ maxToolRounds, hasTools: !!coreTools });
   const commonOptions = {
     model,

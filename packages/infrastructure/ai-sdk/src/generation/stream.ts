@@ -74,7 +74,7 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
       : null;
 
   const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
-  const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5;
+  const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolConfig?.maxRounds ?? 5;
   const maxSteps = computeMaxSteps({ maxToolRounds, hasTools: !!coreTools });
 
   const commonOptions = {

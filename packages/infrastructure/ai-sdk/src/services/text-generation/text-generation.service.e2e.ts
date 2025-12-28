@@ -16,10 +16,6 @@ describe("AIt Personality Integration (AI SDK)", () => {
     initAItClient({
       generation: { model: GenerationModels.GEMMA_3, temperature: 0.7 },
       embeddings: { model: EmbeddingModels.MXBAI_EMBED_LARGE },
-      rag: {
-        strategy: "multi-collection",
-        maxDocs: 100,
-      },
       logger: true,
     });
 
