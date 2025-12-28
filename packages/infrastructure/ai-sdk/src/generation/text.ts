@@ -1,10 +1,12 @@
 import { getLogger } from "@ait/core";
-import { type LanguageModel, generateText as vercelGenerateText } from "ai";
+import { type LanguageModel, stepCountIs, generateText as vercelGenerateText } from "ai";
 import { createModel, getAItClient } from "../client/ai-sdk.client";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../services/prompts/system.prompt";
 import { createSpanWithTiming, shouldEnableTelemetry } from "../telemetry/telemetry.middleware";
+import { convertToCoreTools } from "../tools/tool.converter";
 import type { ChatMessage } from "../types/chat";
 import type { TraceContext } from "../types/telemetry";
+import type { Tool } from "../types/tools";
 import { prepareRequestOptions } from "../utils/request.utils";
 
 const logger = getLogger();
@@ -50,8 +52,6 @@ export async function generate(options: TextGenerateOptions): Promise<TextGenera
   const enableTelemetry = options.enableTelemetry ?? shouldEnableTelemetry();
   const startTime = new Date();
 
-  logger.info("Starting text generation", { prompt: options.prompt.slice(0, 50) });
-
   // Build AIt system prompt
   const systemMessage =
     options.system ??
@@ -65,13 +65,15 @@ export async function generate(options: TextGenerateOptions): Promise<TextGenera
           "generation",
           options.traceContext,
           { prompt: options.prompt, hasRAGContext: !!options.ragContext },
-          { model: client.generationModelConfig.name },
+          { model: typeof options.model === "string" ? options.model : client.generationModelConfig.name },
           startTime,
         )
       : null;
 
   // Build request options
-  const coreTools = options.tools as any;
+  const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
+  const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5;
+  const maxSteps = coreTools ? maxToolRounds + 1 : 1;
   const commonOptions = {
     model,
     system: systemMessage,
@@ -79,12 +81,15 @@ export async function generate(options: TextGenerateOptions): Promise<TextGenera
     topP: options.topP ?? client.config.generation.topP,
     topK: options.topK ?? client.config.generation.topK,
     tools: coreTools,
-    maxSteps: options.maxToolRounds ?? client.config.textGeneration?.toolExecutionConfig?.maxRounds ?? 5,
+    maxSteps,
   };
 
   const requestOptions = prepareRequestOptions(options.prompt, commonOptions, options.messages);
 
-  const result = await vercelGenerateText(requestOptions as any);
+  const result = await vercelGenerateText({
+    ...(requestOptions as any),
+    stopWhen: coreTools ? stepCountIs(maxSteps) : undefined,
+  });
 
   // End telemetry span with output
   if (endSpan) {

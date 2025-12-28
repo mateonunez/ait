@@ -12,6 +12,7 @@ import {
 export interface GenerationTelemetryOptions {
   name: string;
   enableTelemetry?: boolean;
+  traceId?: string;
   userId?: string;
   sessionId?: string;
   tags?: string[];
@@ -54,12 +55,16 @@ export class GenerationTelemetryContext {
     this._enabled = shouldEnableTelemetry({ enableTelemetry: options.enableTelemetry });
 
     if (this._enabled) {
-      this._traceContext = createTraceContext(options.name, {
-        userId: options.userId,
-        sessionId: options.sessionId,
-        tags: options.tags,
-        ...options.metadata,
-      });
+      this._traceContext = createTraceContext(
+        options.name,
+        {
+          userId: options.userId,
+          sessionId: options.sessionId,
+          tags: options.tags,
+          ...options.metadata,
+        },
+        options.traceId,
+      );
     } else {
       this._traceContext = null;
     }

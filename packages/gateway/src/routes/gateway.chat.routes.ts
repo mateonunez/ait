@@ -236,7 +236,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
         const tools = await createAllConnectorToolsWithMCP(fastify.spotifyService, mcpManager);
         const hasMCPConnected = mcpManager.getConnectedVendors().length > 0;
-        const maxToolRounds = hasMCPConnected ? 3 : 1;
+        // Tool loops often need a couple extra rounds for parameter correction / discovery steps.
+        const maxToolRounds = hasMCPConnected ? 6 : 1;
 
         logger.info(
           `💬 Chat: Processing (${Object.keys(tools).length} tools, ${mcpManager.getConnectedVendors().length} MCP vendors)`,
@@ -271,6 +272,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         const conversationService = getConversationService();
         let conversationId = request.body.conversationId;
         let assistantResponse = "";
+        let hadError = false;
 
         // Create conversation if not provided
         if (!conversationId) {
@@ -305,6 +307,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           } else {
             const event = chunk as StreamEvent;
 
+            if (!event) continue;
+
             if (isTextChunk(event)) {
               assistantResponse += event.data;
               reply.raw.write(`${STREAM_EVENT.TEXT}:${JSON.stringify(event.data)}\n`);
@@ -313,6 +317,16 @@ export default async function chatRoutes(fastify: FastifyInstance) {
             } else if (isCompletionData(event)) {
               reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify(event.data)}\n`);
             } else if (isErrorEvent(event)) {
+              hadError = true;
+              fastify.log.error(
+                {
+                  reqId: request.id,
+                  traceId,
+                  route: "/chat",
+                  error: event.data,
+                },
+                "Generation error event emitted.",
+              );
               reply.raw.write(`${STREAM_EVENT.ERROR}:${JSON.stringify(event.data)}\n`);
             }
           }
@@ -331,7 +345,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         }
 
         // Save assistant message
-        if (assistantResponse.trim()) {
+        if (!hadError && assistantResponse.trim()) {
           await conversationService.addMessage({
             conversationId: conversationId!,
             role: "assistant",
@@ -344,7 +358,9 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           });
         }
 
-        reply.raw.write(`${STREAM_EVENT.DATA}:${JSON.stringify({ finishReason: "stop", traceId, conversationId })}\n`);
+        reply.raw.write(
+          `${STREAM_EVENT.DATA}:${JSON.stringify({ finishReason: hadError ? "error" : "stop", traceId, conversationId })}\n`,
+        );
 
         const langfuseProvider = getLangfuseProvider();
         if (langfuseProvider?.isEnabled()) {

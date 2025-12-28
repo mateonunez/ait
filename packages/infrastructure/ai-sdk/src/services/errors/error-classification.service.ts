@@ -48,6 +48,8 @@ export class ErrorClassificationService {
   classify(error: Error | unknown, context?: string): ClassifiedError {
     const err = error instanceof Error ? error : new Error(String(error));
     const message = err.message.toLowerCase();
+    const stack = err.stack?.toLowerCase() ?? "";
+    const haystack = `${message}\n${stack}`;
 
     let category = ErrorCategory.UNKNOWN;
     let severity = ErrorSeverity.ERROR;
@@ -56,13 +58,13 @@ export class ErrorClassificationService {
 
     // RAG failures
     if (
-      message.includes("rag") ||
-      message.includes("retrieval") ||
-      message.includes("vector") ||
-      message.includes("qdrant") ||
-      message.includes("embedding")
+      haystack.includes("rag") ||
+      haystack.includes("retrieval") ||
+      haystack.includes("vector") ||
+      haystack.includes("qdrant") ||
+      haystack.includes("embedding")
     ) {
-      if (message.includes("embedding")) {
+      if (haystack.includes("embedding")) {
         category = ErrorCategory.EMBEDDING_ERROR;
         severity = ErrorSeverity.ERROR;
         isRetryable = true;
@@ -75,8 +77,8 @@ export class ErrorClassificationService {
       }
     }
     // Tool errors
-    else if (message.includes("tool") || context?.includes("tool")) {
-      if (message.includes("timeout")) {
+    else if (haystack.includes("tool") || context?.includes("tool")) {
+      if (haystack.includes("timeout")) {
         category = ErrorCategory.TOOL_TIMEOUT;
         severity = ErrorSeverity.WARNING;
         isRetryable = true;
@@ -90,11 +92,12 @@ export class ErrorClassificationService {
     }
     // LLM errors
     else if (
-      message.includes("llm") ||
-      message.includes("generation") ||
-      message.includes("model") ||
-      message.includes("ollama") ||
-      message.includes("stream")
+      haystack.includes("llm") ||
+      haystack.includes("generation") ||
+      haystack.includes("model") ||
+      haystack.includes("ollama") ||
+      haystack.includes("stream") ||
+      haystack.includes("internal server error")
     ) {
       category = ErrorCategory.LLM_ERROR;
       severity = ErrorSeverity.CRITICAL;
@@ -103,11 +106,11 @@ export class ErrorClassificationService {
     }
     // Network errors
     else if (
-      message.includes("network") ||
-      message.includes("fetch") ||
-      message.includes("econnrefused") ||
-      message.includes("timeout") ||
-      message.includes("enotfound")
+      haystack.includes("network") ||
+      haystack.includes("fetch") ||
+      haystack.includes("econnrefused") ||
+      haystack.includes("timeout") ||
+      haystack.includes("enotfound")
     ) {
       category = ErrorCategory.NETWORK_ERROR;
       severity = ErrorSeverity.ERROR;
@@ -115,7 +118,7 @@ export class ErrorClassificationService {
       suggestedAction = "Check network connectivity and retry";
     }
     // Rate limiting
-    else if (message.includes("rate limit") || message.includes("429") || message.includes("too many requests")) {
+    else if (haystack.includes("rate limit") || haystack.includes("429") || haystack.includes("too many requests")) {
       category = ErrorCategory.RATE_LIMIT;
       severity = ErrorSeverity.WARNING;
       isRetryable = true;
@@ -123,10 +126,10 @@ export class ErrorClassificationService {
     }
     // Authentication
     else if (
-      message.includes("auth") ||
-      message.includes("unauthorized") ||
-      message.includes("401") ||
-      message.includes("403")
+      haystack.includes("auth") ||
+      haystack.includes("unauthorized") ||
+      haystack.includes("401") ||
+      haystack.includes("403")
     ) {
       category = ErrorCategory.AUTHENTICATION;
       severity = ErrorSeverity.ERROR;
@@ -134,7 +137,7 @@ export class ErrorClassificationService {
       suggestedAction = "Check credentials and permissions";
     }
     // Validation
-    else if (message.includes("validation") || message.includes("invalid") || message.includes("required")) {
+    else if (haystack.includes("validation") || haystack.includes("invalid") || haystack.includes("required")) {
       category = ErrorCategory.VALIDATION_ERROR;
       severity = ErrorSeverity.INFO;
       isRetryable = false;

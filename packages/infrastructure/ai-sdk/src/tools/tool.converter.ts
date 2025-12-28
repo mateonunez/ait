@@ -1,6 +1,16 @@
-import { AItError } from "@ait/core";
+import { AItError, getLogger } from "@ait/core";
 import { tool } from "ai";
 import type { Tool as AiInternalTool } from "../types/tools";
+
+const logger = getLogger();
+
+function safeJsonSize(value: unknown): number | undefined {
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return undefined;
+  }
+}
 
 export function convertToCoreTools(tools: Record<string, AiInternalTool>): Record<string, any> {
   return Object.fromEntries(
@@ -16,7 +26,19 @@ export function convertToCoreTools(tools: Record<string, AiInternalTool>): Recor
         tool({
           description: t.description,
           parameters: schema,
-          execute: t.execute ? async (args: any) => t.execute!(args) : undefined,
+          execute: t.execute
+            ? async (args: any) => {
+                const start = Date.now();
+                logger.debug(`Executing tool: ${name}`);
+                const result = await t.execute!(args);
+                logger.debug(`Tool completed: ${name}`, {
+                  durationMs: Date.now() - start,
+                  resultType: result === null ? "null" : Array.isArray(result) ? "array" : typeof result,
+                  resultJsonSize: safeJsonSize(result),
+                });
+                return result;
+              }
+            : undefined,
         } as any),
       ];
     }),
