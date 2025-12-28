@@ -14,7 +14,8 @@ export type EntityType =
   | "message"
   | "event"
   | "calendar"
-  | "subscription";
+  | "subscription"
+  | "google_contact";
 
 export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "track",
@@ -33,4 +34,5 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "event",
   "calendar",
   "subscription",
+  "google_contact",
 ] as const;

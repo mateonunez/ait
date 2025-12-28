@@ -239,6 +239,13 @@
       "when": 1766750053073,
       "tag": "0033_narrow_anthem",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1766926877618,
+      "tag": "0034_clean_nomad",
+      "breakpoints": true
     }
   ]
 }

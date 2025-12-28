@@ -6,7 +6,7 @@ export * from "./services/vendors/connector.spotify.service";
 export * from "./services/vendors/connector.x.service";
 export * from "./services/vendors/connector.notion.service";
 export * from "./services/vendors/connector.slack.service";
-export * from "./services/vendors/connector.google-calendar.service";
+export * from "./services/vendors/connector.google.service";
 
 // Types
 export type * from "./types/infrastructure/connector.interface";

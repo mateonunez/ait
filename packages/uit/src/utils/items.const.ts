@@ -48,7 +48,7 @@ export const AIT_SERVICES: Item[] = [
   {
     id: "google",
     title: "Google",
-    description: "Calendar events and schedule",
+    description: "Calendar events, YouTube subscriptions and Contacts",
     color: "#4285F4",
     size: "md",
     disabled: false,

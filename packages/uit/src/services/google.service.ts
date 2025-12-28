@@ -2,6 +2,7 @@ import { requestJson } from "@ait/core";
 import type {
   GoogleCalendarEntity as GoogleCalendar,
   GoogleCalendarEventEntity as GoogleCalendarEvent,
+  GoogleContactEntity as GoogleContact,
   GoogleYouTubeSubscriptionEntity as GoogleYouTubeSubscription,
   PaginatedResponse,
   PaginationParams,
@@ -33,6 +34,13 @@ export class GoogleService {
   async fetchSubscriptions(params?: PaginationParams) {
     const url = `${this.baseUrl}/data/subscriptions${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<GoogleYouTubeSubscription>>(url);
+    if (!result.ok) throw result.error;
+    return result.value.data;
+  }
+
+  async fetchContacts(params?: PaginationParams) {
+    const url = `${this.baseUrl}/data/contacts${buildQueryString(params)}`;
+    const result = await requestJson<PaginatedResponse<GoogleContact>>(url);
     if (!result.ok) throw result.error;
     return result.value.data;
   }

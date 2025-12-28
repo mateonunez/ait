@@ -2,7 +2,7 @@ import { AItError } from "@ait/core";
 import type { ConnectorServiceConstructor, ConnectorType } from "../types/infrastructure/connector.interface";
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
-import { ConnectorGoogleService } from "./vendors/connector.google-calendar.service";
+import { ConnectorGoogleService } from "./vendors/connector.google.service";
 import { ConnectorLinearService } from "./vendors/connector.linear.service";
 import { ConnectorNotionService } from "./vendors/connector.notion.service";
 import { ConnectorSlackService } from "./vendors/connector.slack.service";

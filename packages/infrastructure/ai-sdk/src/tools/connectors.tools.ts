@@ -9,9 +9,6 @@ export { createSpotifyTools } from "./domains/spotify.tools";
 export { spotifySearchSchema } from "./domains/spotify.tools";
 export type { SpotifySearchResult } from "./domains/spotify.tools";
 
-export { createGitHubTools, githubGetFileSchema, githubSearchSchema } from "./domains/github.tools";
-export type { IGitHubFileRepositoryForTools, IGitHubDataSourceForTools } from "./domains/github.tools";
-
 export { createConversationTools } from "./internal/conversation.tools";
 
 export { createMCPToolsForVendor, getMCPToolsSummary } from "./mcp";

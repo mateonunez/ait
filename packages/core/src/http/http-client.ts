@@ -52,11 +52,24 @@ export async function requestJson<T>(
     });
 
     if (!isSuccessStatus(response.status)) {
+      let body: any;
+      try {
+        const text = await response.text();
+        try {
+          body = JSON.parse(text);
+        } catch {
+          body = text;
+        }
+      } catch {
+        body = "Could not read response body";
+      }
+
       return err(
         new AItError(`HTTP_${response.status}`, "HTTP error", {
           status: response.status,
           url: String(url),
           headers: normalizeHeaders(response.headers),
+          body,
         }),
       );
     }

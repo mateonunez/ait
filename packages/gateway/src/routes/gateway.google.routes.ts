@@ -32,7 +32,8 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         client_id: process.env.GOOGLE_CLIENT_ID!,
         redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
         response_type: "code",
-        scope: "https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/youtube.readonly",
+        scope:
+          "openid email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/contacts.readonly",
         access_type: "online",
         prompt: "consent",
       });
@@ -116,6 +117,17 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     }
   });
 
+  // Fetch contacts from API
+  fastify.get("/contacts", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const contacts = await googleService.fetchContacts();
+      reply.send(contacts);
+    } catch (err: any) {
+      fastify.log.error({ err, route: "/contacts" }, "Failed to fetch contacts.");
+      reply.status(500).send({ error: "Failed to fetch contacts." });
+    }
+  });
+
   // Paginated data routes - fetch from database
   fastify.get(
     "/data/events",
@@ -165,6 +177,22 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.get(
+    "/data/contacts",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+
+        const result = await googleService.getContactsPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/contacts" }, "Failed to fetch contacts from DB.");
+        reply.status(500).send({ error: "Failed to fetch contacts from database." });
+      }
+    },
+  );
+
   // Refresh endpoint with optional entity filter
   // Usage: POST /refresh?entities=events,calendars or POST /refresh (all entities)
   fastify.post(
@@ -174,7 +202,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const { entities: entitiesParam } = request.query;
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
-          : ["events", "calendars", "subscriptions"];
+          : ["events", "calendars", "subscriptions", "contacts"];
 
         const counts: Record<string, number> = {};
 
@@ -194,6 +222,12 @@ export default async function googleRoutes(fastify: FastifyInstance) {
           const subscriptions = await googleService.fetchSubscriptions();
           await googleService.connector.store.save(subscriptions);
           counts.subscriptions = subscriptions.length;
+        }
+
+        if (entitiesToRefresh.includes("contacts")) {
+          const contacts = await googleService.fetchContacts();
+          await googleService.connector.store.save(contacts);
+          counts.contacts = contacts.length;
         }
 
         reply.send({

@@ -33,6 +33,7 @@ const HOME_SECTIONS: HomeSectionType[] = [
       "page",
       "repository",
       "event",
+      "google_contact",
     ],
     variant: "bento",
     viewAllHref: "/connections",
