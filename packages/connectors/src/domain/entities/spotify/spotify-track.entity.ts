@@ -101,6 +101,14 @@ export function mapSpotifyTrack(external: SpotifyTrackExternal): SpotifyTrackEnt
     album: external.album?.name ?? null,
     albumData: external.album ?? null,
     artistsData: external.artists ?? [],
+    durationMs: external.duration_ms,
+    isPlayable: external.is_playable,
+    previewUrl: external.preview_url,
+    trackNumber: external.track_number,
+    discNumber: external.disc_number,
+    isLocal: external.is_local,
+    externalIds: external.external_ids,
+    externalUrls: external.external_urls,
   };
 
   return plainToInstance(SpotifyTrackEntity, mapped, {

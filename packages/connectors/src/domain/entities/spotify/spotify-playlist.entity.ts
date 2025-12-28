@@ -71,6 +71,8 @@ export function mapSpotifyPlaylist(external: SpotifyPlaylistExternal): SpotifyPl
   const mapped = {
     ...external,
     owner: external.owner?.display_name ?? "",
+    snapshotId: external.snapshot_id,
+    followers: 0,
     externalUrls: external.external_urls ? Object.values(external.external_urls).map(String) : [],
     tracks: external.tracks?.items
       ? external.tracks.items
