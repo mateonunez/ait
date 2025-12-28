@@ -11,7 +11,6 @@ import {
   getGenerationModel,
   getModelSpec,
 } from "../config/models.config";
-import { type PresetName, getPreset, mergePresetWithOverrides } from "../config/presets.config";
 import { generateObject as generateStructuredObject } from "../generation/object";
 import { stream } from "../generation/stream";
 import { generate } from "../generation/text";
@@ -19,7 +18,6 @@ import { TextGenerationService } from "../services/text-generation/text-generati
 import { initLangfuseProvider, resetLangfuseProvider } from "../telemetry/langfuse.provider";
 import type { ClientConfig } from "../types/config";
 import type { ModelGenerateOptions, ModelGenerateResult, ModelStreamOptions, ToolCall } from "../types/models";
-
 import type { CompatibleEmbeddingModel, CompatibleLanguageModel } from "../utils/generation.utils";
 
 dotenv.config();
@@ -27,11 +25,6 @@ dotenv.config();
 const logger = getLogger();
 
 export const DEFAULT_OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434";
-const CIRCUIT_BREAKER_OPTIONS = {
-  failureThreshold: 3,
-  resetTimeout: 30000,
-  timeout: 120000,
-};
 
 export type AItClientConfig = ClientConfig;
 
@@ -125,83 +118,66 @@ let _clientInstance: AItClient | null = null;
 let _textGenerationServiceInstance: TextGenerationService | null = null;
 let _config: Required<AItClientConfig> | null = null;
 
-export interface InitOptions {
-  preset?: PresetName;
-  overrides?: Partial<ClientConfig>;
-}
+// Default configs inlined (simplified)
+const DEFAULT_TEXT_GENERATION_CONFIG = {
+  retrievalConfig: { limit: 33, scoreThreshold: 0.4 },
+  contextConfig: { maxContextChars: 128000 },
+  toolConfig: { maxRounds: 2 },
+  retryConfig: { maxRetries: 3, delayMs: 1000 },
+};
 
-export function initAItClient(options: InitOptions | Partial<AItClientConfig> = {}): void {
-  let finalConfig: Required<AItClientConfig>;
+export function initAItClient(options: Partial<AItClientConfig> = {}): void {
+  const generationModelConfig = getGenerationModel();
+  const embeddingModelConfig = getEmbeddingModel();
 
-  if ("preset" in options && options.preset) {
-    finalConfig = mergePresetWithOverrides(options.preset, options.overrides);
-  } else {
-    // Default initialization
-    const presetConfig = getPreset("rag-optimized");
-    const generationModelConfig = getGenerationModel();
-    const embeddingModelConfig = getEmbeddingModel();
-
-    finalConfig = {
-      generation: {
-        model: generationModelConfig.name as GenerationModelName,
-        temperature: generationModelConfig.temperature || 0.7,
-        topP: generationModelConfig.topP || 0.9,
-        topK: generationModelConfig.topK,
-        frequencyPenalty: generationModelConfig.frequencyPenalty,
-        presencePenalty: generationModelConfig.presencePenalty,
-        ...(options as Partial<ClientConfig>).generation,
+  const finalConfig: Required<AItClientConfig> = {
+    generation: {
+      model: generationModelConfig.name as GenerationModelName,
+      temperature: generationModelConfig.temperature || 0.7,
+      topP: generationModelConfig.topP || 0.9,
+      topK: generationModelConfig.topK,
+      frequencyPenalty: generationModelConfig.frequencyPenalty,
+      presencePenalty: generationModelConfig.presencePenalty,
+      ...options.generation,
+    },
+    embeddings: {
+      model: embeddingModelConfig.name as EmbeddingModelName,
+      vectorSize: embeddingModelConfig.vectorSize,
+      ...options.embeddings,
+    },
+    textGeneration: {
+      retrievalConfig: {
+        ...DEFAULT_TEXT_GENERATION_CONFIG.retrievalConfig,
+        ...(options.textGeneration?.retrievalConfig || {}),
       },
-      embeddings: {
-        model: embeddingModelConfig.name as EmbeddingModelName,
-        vectorSize: embeddingModelConfig.vectorSize,
-        ...(options as Partial<ClientConfig>).embeddings,
+      contextConfig: {
+        ...DEFAULT_TEXT_GENERATION_CONFIG.contextConfig,
+        ...(options.textGeneration?.contextConfig || {}),
       },
-      rag: {
-        ...presetConfig.rag,
-        ...(options as Partial<ClientConfig>).rag,
-        collectionRouting: {
-          ...presetConfig.rag.collectionRouting,
-          ...((options as Partial<ClientConfig>).rag?.collectionRouting || {}),
-        },
+      toolConfig: {
+        ...DEFAULT_TEXT_GENERATION_CONFIG.toolConfig,
+        ...(options.textGeneration?.toolConfig || {}),
       },
-      textGeneration: {
-        multipleQueryPlannerConfig: {
-          ...presetConfig.textGeneration.multipleQueryPlannerConfig,
-          ...((options as Partial<ClientConfig>).textGeneration?.multipleQueryPlannerConfig || {}),
-        },
-        conversationConfig: {
-          ...presetConfig.textGeneration.conversationConfig,
-          ...((options as Partial<ClientConfig>).textGeneration?.conversationConfig || {}),
-        },
-        contextPreparationConfig: {
-          ...presetConfig.textGeneration.contextPreparationConfig,
-          ...((options as Partial<ClientConfig>).textGeneration?.contextPreparationConfig || {}),
-        },
-        toolExecutionConfig: {
-          ...presetConfig.textGeneration.toolExecutionConfig,
-          ...((options as Partial<ClientConfig>).textGeneration?.toolExecutionConfig || {}),
-        },
-        retryConfig: {
-          ...presetConfig.textGeneration.retryConfig,
-          ...((options as Partial<ClientConfig>).textGeneration?.retryConfig || {}),
-        },
+      retryConfig: {
+        ...DEFAULT_TEXT_GENERATION_CONFIG.retryConfig,
+        ...(options.textGeneration?.retryConfig || {}),
       },
-      ollama: {
-        baseURL: DEFAULT_OLLAMA_BASE_URL,
-        ...(options as Partial<ClientConfig>).ollama,
-      },
-      telemetry: {
-        enabled: false,
-        publicKey: undefined,
-        secretKey: undefined,
-        baseURL: undefined,
-        flushAt: 1,
-        flushInterval: 1000,
-        ...(options as Partial<ClientConfig>).telemetry,
-      },
-      logger: (options as Partial<ClientConfig>).logger ?? true,
-    };
-  }
+    },
+    ollama: {
+      baseURL: DEFAULT_OLLAMA_BASE_URL,
+      ...options.ollama,
+    },
+    telemetry: {
+      enabled: false,
+      publicKey: undefined,
+      secretKey: undefined,
+      baseURL: undefined,
+      flushAt: 1,
+      flushInterval: 1000,
+      ...options.telemetry,
+    },
+    logger: options.logger ?? true,
+  };
 
   _config = finalConfig;
 
@@ -244,10 +220,9 @@ export function getTextGenerationService(): TextGenerationService {
     const config = _config!;
 
     _textGenerationServiceInstance = new TextGenerationService({
-      multipleQueryPlannerConfig: config.textGeneration.multipleQueryPlannerConfig,
-      conversationConfig: config.textGeneration.conversationConfig,
-      contextPreparationConfig: config.textGeneration.contextPreparationConfig,
-      toolExecutionConfig: config.textGeneration.toolExecutionConfig,
+      retrievalConfig: config.textGeneration.retrievalConfig,
+      contextConfig: config.textGeneration.contextConfig,
+      toolConfig: config.textGeneration.toolConfig,
       retryConfig: config.textGeneration.retryConfig,
     });
   }

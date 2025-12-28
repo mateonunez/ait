@@ -4,10 +4,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const logger = getLogger();
-export enum Models {
-  GENERATION = "generation",
-  EMBEDDING = "embedding",
-}
 
 export enum GenerationModels {
   GPT_OSS_20B = "gpt-oss:20b",
@@ -175,15 +171,6 @@ export function getEmbeddingModel(): ModelSpec {
   };
 
   return result;
-}
-
-export function getAvailableModels(type: ModelType): string[] {
-  return type === "generation" ? Object.keys(GENERATION_MODELS) : Object.keys(EMBEDDING_MODELS);
-}
-
-export function isModelAvailable(modelName: ModelName, type: ModelType): boolean {
-  const models = type === "generation" ? GENERATION_MODELS : EMBEDDING_MODELS;
-  return modelName in models;
 }
 
 export function getModelSpec(modelName: ModelName, type: ModelType): ModelSpec | undefined {
