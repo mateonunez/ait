@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Connectors module provides a reusable framework for integrating platforms into AIt with modular design, shared utilities, and OAuth 2.0 support. Supports GitHub, Linear, Spotify, and X (Twitter).
+The Connectors module provides a reusable framework for integrating platforms into AIt with modular design, shared utilities, and OAuth 2.0 support. Supports GitHub, Linear, Spotify, X (Twitter), Notion, Slack, and Google.
 
 ## Quick Start
 

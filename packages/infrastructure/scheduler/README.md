@@ -22,10 +22,13 @@ High-performance, priority-based job scheduler built on BullMQ and Redis. Manage
 
 ### Monitored Data Sources
 
-- **Spotify**: Tracks, Artists, Playlists, Albums
-- **GitHub**: Repositories
-- **Linear**: Issues (coming soon)
-- **X (Twitter)**: Tweets (coming soon)
+- **Spotify**: Tracks, Artists, Playlists, Albums, Recently Played
+- **GitHub**: Repositories, Pull Requests, Commits, Files
+- **Google**: Calendar Events, YouTube Subscriptions, Contacts
+- **Linear**: Issues
+- **Notion**: Pages
+- **Slack**: Messages
+- **X (Twitter)**: Tweets
 
 ## Configuration
 

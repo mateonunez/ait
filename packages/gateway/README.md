@@ -65,6 +65,9 @@ AIt securely connects to platforms using OAuth 2.0. Visit these URLs to authenti
 - **Linear**: `https://localhost:3000/api/linear/auth`
 - **Spotify**: `https://localhost:3000/api/spotify/auth`
 - **X**: `https://localhost:3000/api/x/auth`
+- **Google**: `https://localhost:3000/api/google/auth`
+- **Notion**: `https://localhost:3000/api/notion/auth`
+- **Slack**: `https://localhost:3000/api/slack/auth`
 
 Once authenticated, OAuth tokens are securely stored in the database for future requests.
 

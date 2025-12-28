@@ -8,7 +8,7 @@
 
 Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /eɪt/). It depends.
 
-AIt is a comprehensive platform for interacting with your own data with multiple sources compatible (GitHub, Linear, Spotify, Notion, X, Google, and more soon). AIt brings you AI-capabilities to your own ecosystem.
+AIt is a comprehensive platform for interacting with your own data with multiple sources compatible (GitHub, Linear, Spotify, Notion, Slack, X, Google, and more soon). AIt brings you AI-capabilities to your own ecosystem.
 
 ## Quick Start
 
@@ -80,7 +80,7 @@ OAuth Auth → Connector → PostgreSQL → ETL/Scheduler → Embeddings → Qdr
 | Package | Path | Description |
 |---------|------|-------------|
 | **Core** | `packages/core` | Shared utilities, types, errors, HTTP client |
-| **Connectors** | `packages/connectors` | OAuth 2.0 integrations (GitHub, Linear, Spotify, X, Notion, Slack, Google Calendar) |
+| **Connectors** | `packages/connectors` | OAuth 2.0 integrations (GitHub, Linear, Spotify, X, Notion, Slack, Google Calendar, Google People) |
 | **Gateway** | `packages/gateway` | Unified API gateway for all connectors |
 | **AI SDK** | `packages/infrastructure/ai-sdk` | RAG, text generation, embeddings with Ollama |
 | **Store** | `packages/infrastructure/store` | Application data store (conversations, feedback, goals) |

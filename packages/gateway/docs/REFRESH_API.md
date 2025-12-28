@@ -8,7 +8,7 @@ The Gateway provides a **unified refresh API** for all vendors. Each endpoint su
 |--------|---------------|-------------------|
 | GitHub | `POST /api/github/refresh` | `repositories`, `pull-requests`, `commits`, `files` |
 | Spotify | `POST /api/spotify/refresh` | `tracks`, `artists`, `playlists`, `albums`, `recently-played` |
-| Google | `POST /api/google/refresh` | `events`, `calendars`, `subscriptions` |
+| Google | `POST /api/google/refresh` | `events`, `calendars`, `subscriptions`, `contacts` |
 | Linear | `POST /api/linear/refresh` | `issues` |
 | Notion | `POST /api/notion/refresh` | `pages` |
 | Slack | `POST /api/slack/refresh` | `messages` |
@@ -74,6 +74,9 @@ curl -X POST "https://localhost:3000/api/google/refresh?entities=events"
 
 # YouTube subscriptions
 curl -X POST "https://localhost:3000/api/google/refresh?entities=subscriptions"
+
+# Google Contacts
+curl -X POST "https://localhost:3000/api/google/refresh?entities=contacts"
 ```
 
 ### Linear

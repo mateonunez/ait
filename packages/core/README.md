@@ -206,6 +206,7 @@ import type {
   NotionPage,
   SlackMessage,
   GoogleCalendarEvent,
+  GoogleContact,
 } from '@ait/core';
 ```
 
