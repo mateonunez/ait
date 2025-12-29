@@ -123,6 +123,7 @@ export class GitHubFileEntity {
   @Transform(({ value }) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
+  @Expose()
   readonly __type = "repository_file" as const;
 }
 

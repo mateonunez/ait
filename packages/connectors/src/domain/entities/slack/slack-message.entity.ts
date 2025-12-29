@@ -70,6 +70,7 @@ export class SlackMessageEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "message" as const;
 }
 

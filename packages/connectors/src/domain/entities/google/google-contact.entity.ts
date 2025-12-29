@@ -54,6 +54,7 @@ export class GoogleContactEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "google_contact" as const;
 }
 

@@ -60,6 +60,7 @@ export class NotionPageEntity {
   @Transform(({ value }) => value ?? null)
   lastEditedBy!: string | null;
 
+  @Expose()
   readonly __type = "page" as const;
 }
 

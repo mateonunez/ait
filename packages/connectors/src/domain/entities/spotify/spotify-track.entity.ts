@@ -87,6 +87,7 @@ export class SpotifyTrackEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "track" as const;
 }
 

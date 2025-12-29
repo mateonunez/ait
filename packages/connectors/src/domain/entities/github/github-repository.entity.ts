@@ -136,6 +136,7 @@ export class GitHubRepositoryEntity {
   @Transform(({ value }) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
+  @Expose()
   readonly __type = "repository" as const;
 }
 

@@ -32,6 +32,7 @@ export class SpotifyArtistEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "artist" as const;
 }
 

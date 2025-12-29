@@ -166,6 +166,7 @@ export class GoogleCalendarEventEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "event" as const;
 }
 
