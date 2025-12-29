@@ -76,6 +76,11 @@ AIt is designed as a modular monorepo that enables users to connect their data s
 │  └───────────────┘  └───────────────┘  └───────────────┘  └───────────────┘       │
 │                                                                                    │
 │  ┌──────────────────────────────────────────────────────────────────────────────┐  │
+│  │                          MinIO / S3 (Object Storage)                          │  │
+│  │              Binary assets (e.g. Google Photos) • :9090                        │  │
+│  └──────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                    │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
 │  │                        Langfuse (Observability)                              │  │
 │  │                    Trace LLM calls • :3333                                   │  │
 │  └──────────────────────────────────────────────────────────────────────────────┘  │
@@ -97,6 +102,7 @@ User → UIt → Gateway → OAuth Provider
 ```
 
 **Process:**
+
 1. User clicks "Connect GitHub" in UIt
 2. Gateway redirects to provider's OAuth consent screen
 3. Provider redirects back to `/api/{provider}/auth/callback`
@@ -120,6 +126,7 @@ Scheduler (cron) → Queue Job → Worker → Connector
 ```
 
 **Process:**
+
 1. Scheduler triggers ETL job based on priority and cron schedule
 2. Worker picks up job from Redis queue
 3. Connector fetches data from external API
@@ -146,6 +153,7 @@ User Query → Gateway → AI SDK
 ```
 
 **Process:**
+
 1. User sends query through UIt chat interface
 2. AI SDK analyzes query intent
 3. Router determines relevant collections (Spotify, GitHub, etc.)
@@ -190,6 +198,7 @@ packages/connectors/
 ```
 
 **Adding a New Connector:**
+
 1. Create API client in `infrastructure/vendors/`
 2. Define entities in `domain/entities/`
 3. Implement mapper in `domain/mappers/`
@@ -264,34 +273,47 @@ packages/transformers/retove/
 │   └── scripts/         # Python embedding alternatives
 ```
 
+### Storage (`@ait/storage`)
+
+Object storage abstraction used for binary assets (S3-compatible; defaults to MinIO in local dev):
+
+```
+packages/infrastructure/storage/
+├── src/
+│   ├── storage.service.ts        # S3/MinIO client wrapper (create bucket + upload/get)
+│   ├── photo-storage.service.ts  # Download and persist Google Photos bytes into object storage
+│   └── constants.ts              # STORAGE_BUCKETS (photos/avatars/documents)
+```
+
 ## Infrastructure
 
 ### PostgreSQL Schema
 
 Key tables:
 
-| Table | Purpose |
-|-------|---------|
-| `oauth_tokens` | Stores encrypted OAuth credentials |
-| `sync_state` | Tracks last sync time per entity type |
-| `spotify_tracks` | Raw Spotify track data |
-| `github_repositories` | Raw GitHub repo data |
-| `linear_issues` | Raw Linear issue data |
-| ... | Similar tables per entity type |
+| Table                 | Purpose                                                         |
+| --------------------- | --------------------------------------------------------------- |
+| `oauth_tokens`        | Stores encrypted OAuth credentials                              |
+| `sync_state`          | Tracks last sync time per entity type                           |
+| `spotify_tracks`      | Raw Spotify track data                                          |
+| `github_repositories` | Raw GitHub repo data                                            |
+| `linear_issues`       | Raw Linear issue data                                           |
+| `google_photos`       | Google Photos metadata (optional `local_path` for stored bytes) |
+| ...                   | Similar tables per entity type                                  |
 
 ### Qdrant Collections
 
 Collections are organized by vendor:
 
-| Collection | Vector Size | Content |
-|------------|-------------|---------|
-| `ait_spotify_collection` | 1024 | Tracks, artists, playlists, albums |
-| `ait_github_collection` | 1024 | Repositories, PRs, commits |
-| `ait_linear_collection` | 1024 | Issues, projects |
-| `ait_x_collection` | 1024 | Tweets, threads |
-| `ait_google_collection` | 1024 | Calendar events, YouTube, Contacts |
-| `ait_notion_collection` | 1024 | Pages, Databases |
-| `ait_slack_collection` | 1024 | Messages, Channels |
+| Collection               | Vector Size | Content                            |
+| ------------------------ | ----------- | ---------------------------------- |
+| `ait_spotify_collection` | 1024        | Tracks, artists, playlists, albums |
+| `ait_github_collection`  | 1024        | Repositories, PRs, commits         |
+| `ait_linear_collection`  | 1024        | Issues, projects                   |
+| `ait_x_collection`       | 1024        | Tweets, threads                    |
+| `ait_google_collection`  | 1024        | Calendar events, YouTube, Contacts |
+| `ait_notion_collection`  | 1024        | Pages, Databases                   |
+| `ait_slack_collection`   | 1024        | Messages, Channels                 |
 
 ### Redis Queues
 
@@ -330,6 +352,7 @@ bull:etl-scheduler:delayed    # Scheduled future jobs
 ### Adding a New Connector
 
 1. **Define Types** (`packages/core/src/types/integrations/`)
+
    ```typescript
    export interface NewServiceTrack {
      id: string;
@@ -339,16 +362,19 @@ bull:etl-scheduler:delayed    # Scheduled future jobs
    ```
 
 2. **Create Connector** (`packages/connectors/src/`)
+
    - API client in `infrastructure/vendors/`
    - Entity in `domain/entities/`
    - Mapper in `domain/mappers/`
    - Service in `services/vendors/`
 
 3. **Add Gateway Routes** (`packages/gateway/src/routes/`)
+
    - OAuth flow routes
    - Data retrieval routes
 
 4. **Create ETL** (`packages/transformers/retove/src/`)
+
    - ETL task for the new vendor
    - Register in scheduler
 
@@ -359,25 +385,25 @@ bull:etl-scheduler:delayed    # Scheduled future jobs
 ### Using Composable RAG Functions
 
 ```typescript
-import { retrieve, rerank, stream } from '@ait/ai-sdk';
+import { retrieve, rerank, stream } from "@ait/ai-sdk";
 
 // 1. Retrieve relevant documents from collections
 const docs = await retrieve({
-  query: 'user query here',
-  collections: ['ait_github_collection'],
+  query: "user query here",
+  collections: ["ait_github_collection"],
   limit: 20,
 });
 
 // 2. Rerank for relevance
 const ranked = await rerank({
-  query: 'user query here',
+  query: "user query here",
   documents: docs,
   topK: 5,
 });
 
 // 3. Generate response with context
 const { textStream } = await stream({
-  prompt: 'Answer based on context',
+  prompt: "Answer based on context",
   context: ranked.documents,
 });
 ```
@@ -419,14 +445,14 @@ initAItClient({
     enabled: true,
     publicKey: process.env.LANGFUSE_PUBLIC_KEY,
     secretKey: process.env.LANGFUSE_SECRET_KEY,
-    baseURL: 'http://localhost:3333',
+    baseURL: "http://localhost:3333",
   },
 });
 ```
 
 Tracks:
+
 - Generation latency and token usage
 - RAG retrieval quality
 - Tool call success rates
 - Error rates and patterns
-

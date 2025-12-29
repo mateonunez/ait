@@ -9,7 +9,7 @@ Lightweight, custom integration with Ollama for text generation and embeddings. 
 **Key Features:**
 - **Zero AI SDK Dependencies**: Direct HTTP calls to Ollama
 - **Advanced RAG**: Multi-query retrieval with Qdrant vector database
-- **Tool Calling**: Connector-specific searches (Spotify, GitHub, X, Linear)
+- **Tool Calling**: Connector-specific searches (Spotify, GitHub, X, Linear, Google)
 - **Streaming**: Real-time text generation
 - **Embeddings**: Intelligent chunking, LRU caching, concurrent processing
 - **Type Safety**: Full TypeScript support
@@ -31,7 +31,7 @@ initAItClient({
     model: 'mxbai-embed-large:latest' 
   },
   textGeneration: {
-    retrievalConfig: { limit: 33, scoreThreshold: 0.4 },
+    retrievalConfig: { limit: 100, scoreThreshold: 0.4 },
     contextConfig: { maxContextChars: 128000 },
   }
 });
