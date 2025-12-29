@@ -21,14 +21,14 @@ export function formatEnrichmentForText(enrichment: EnrichmentResult | null | un
   // Text-based enrichments
   if (enrichment.summary) parts.push(`Summary: ${stringifyValue(enrichment.summary)}`);
   if (enrichment.sentiment) parts.push(`Sentiment: ${stringifyValue(enrichment.sentiment)}`);
-  if (enrichment.entities?.length) parts.push(`Entities: ${enrichment.entities.join(", ")}`);
+  if (enrichment.entities?.length) parts.push(`Entities: ${enrichment.entities.map(stringifyValue).join(", ")}`);
   if (enrichment.intent) parts.push(`Intent: ${stringifyValue(enrichment.intent)}`);
   if (enrichment.technicalDetails) parts.push(`Technical Details: ${stringifyValue(enrichment.technicalDetails)}`);
   if (enrichment.mood) parts.push(`Mood: ${stringifyValue(enrichment.mood)}`);
 
   // Image/vision-specific enrichments
   if (enrichment.ocr) parts.push(`OCR: ${stringifyValue(enrichment.ocr)}`);
-  if (enrichment.objects?.length) parts.push(`Objects: ${enrichment.objects.join(", ")}`);
+  if (enrichment.objects?.length) parts.push(`Objects: ${enrichment.objects.map(stringifyValue).join(", ")}`);
   if (enrichment.style) parts.push(`Style: ${stringifyValue(enrichment.style)}`);
 
   return parts.length > 0 ? `\n\n--- AI Enrichment ---\n${parts.join("\n")}` : "";
