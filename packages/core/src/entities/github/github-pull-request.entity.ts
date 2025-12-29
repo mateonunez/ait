@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import type { GitHubPullRequestDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
 
 /**
@@ -7,7 +6,7 @@ import { Expose, Transform, instanceToPlain, plainToInstance } from "class-trans
  */
 export class GitHubPullRequestEntity {
   @Expose()
-  @Transform(({ value }) => String(value))
+  @Transform(({ value }: any) => String(value))
   id!: string;
 
   @Expose()
@@ -23,11 +22,11 @@ export class GitHubPullRequestEntity {
   state!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   draft!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   locked!: boolean;
 
   @Expose()
@@ -43,42 +42,42 @@ export class GitHubPullRequestEntity {
   issueUrl!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   merged!: boolean;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   mergedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   closedAt!: Date | null;
 
   @Expose()
   mergeCommitSha!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   commits!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   additions!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   deletions!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   changedFiles!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   comments!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   reviewComments!: number;
 
   @Expose()
@@ -112,78 +111,86 @@ export class GitHubPullRequestEntity {
   mergeableState!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   maintainerCanModify!: boolean;
 
   @Expose()
   authorAssociation!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value !== null)
+  @Transform(({ value }: any) => value !== null)
   autoMerge!: boolean | null;
 
   @Expose()
   activeLockReason!: string | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   prCreatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   prUpdatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   userData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   assigneeData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { assignees: value } : null))
+  @Transform(({ value }: any) => (value ? { assignees: value } : null))
   assigneesData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   mergedByData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   labels!: Record<string, unknown>[] | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   milestoneData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { requestedReviewers: value } : null))
+  @Transform(({ value }: any) => (value ? { requestedReviewers: value } : null))
   requestedReviewersData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { requestedTeams: value } : null))
+  @Transform(({ value }: any) => (value ? { requestedTeams: value } : null))
   requestedTeamsData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value?.repo ? { ...value.repo } : null))
+  @Transform(({ value }: any) => (value?.repo ? { ...value.repo } : null))
   headRepoData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value?.repo ? { ...value.repo } : null))
+  @Transform(({ value }: any) => (value?.repo ? { ...value.repo } : null))
   baseRepoData!: Record<string, unknown> | null;
 
   // Use prCreatedAt/prUpdatedAt as createdAt/updatedAt
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()
-  readonly __type = "pull_request" as const;
+  readonly __type = "github_pull_request" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GitHubPullRequestEntity {
+    return plainToInstance(GitHubPullRequestEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -234,6 +241,7 @@ export function mapGitHubPullRequest(external: any): GitHubPullRequestEntity {
 
   return plainToInstance(GitHubPullRequestEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -242,16 +250,4 @@ export function mapGitHubPullRequest(external: any): GitHubPullRequestEntity {
  */
 export function mapGitHubPullRequests(externals: unknown[]): GitHubPullRequestEntity[] {
   return externals.map(mapGitHubPullRequest);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function pullRequestDomainToDataTarget(domain: GitHubPullRequestEntity): GitHubPullRequestDataTarget {
-  return instanceToPlain(domain) as GitHubPullRequestDataTarget;
-}
-
-export function pullRequestDataTargetToDomain(dataTarget: GitHubPullRequestDataTarget): GitHubPullRequestEntity {
-  return plainToInstance(GitHubPullRequestEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

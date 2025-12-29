@@ -76,7 +76,7 @@ describe("ConnectorSpotifyDataSource", () => {
               name: "artist1",
               popularity: 80,
               genres: ["pop"],
-              type: "artist",
+              type: "spotify_artist",
             },
           },
         ],

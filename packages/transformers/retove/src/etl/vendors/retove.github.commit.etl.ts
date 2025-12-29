@@ -40,7 +40,7 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract<GitHubCommitDat
   }
 
   protected override _getEntityType(): EntityType {
-    return "commit";
+    return "github_commit";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubCommitDataTarget[]> {
@@ -72,7 +72,7 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract<GitHubCommitDat
     if (!("id" in enriched.target)) {
       payload.id = (enriched.target as any).sha;
     }
-    return { ...payload, __type: "commit" } as RetoveGitHubCommitVectorPoint["payload"];
+    return { ...payload, __type: "github_commit" } as RetoveGitHubCommitVectorPoint["payload"];
   }
 
   protected getCursorFromItem(item: unknown): ETLCursor {
@@ -86,6 +86,6 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract<GitHubCommitDat
 
 export interface RetoveGitHubCommitVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "commit";
+    __type: "github_commit";
   } & Partial<GitHubCommitDataTarget>;
 }

@@ -40,7 +40,7 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract<Spotif
   }
 
   protected override _getEntityType(): EntityType {
-    return "recently_played";
+    return "spotify_recently_played";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<SpotifyRecentlyPlayedDataTarget[]> {
@@ -90,6 +90,6 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract<Spotif
 
 export interface RetoveSpotifyRecentlyPlayedVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "recently_played";
+    __type: "spotify_recently_played";
   } & Partial<SpotifyRecentlyPlayedDataTarget>;
 }

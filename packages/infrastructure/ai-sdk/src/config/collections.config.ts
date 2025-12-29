@@ -15,7 +15,7 @@ const SPOTIFY_COLLECTION: CollectionConfig = {
   vendor: "spotify",
   name: "ait_spotify_collection",
   description: "Spotify music data including tracks, artists, playlists, albums, and listening history",
-  entityTypes: ["track", "artist", "playlist", "album", "recently_played"],
+  entityTypes: ["spotify_track", "spotify_artist", "spotify_playlist", "spotify_album", "spotify_recently_played"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -24,7 +24,7 @@ const GITHUB_COLLECTION: CollectionConfig = {
   vendor: "github",
   name: "ait_github_collection",
   description: "GitHub repositories, pull requests, commits, and repository code files",
-  entityTypes: ["repository", "pull_request", "commit", "repository_file"],
+  entityTypes: ["github_repository", "github_pull_request", "github_commit", "github_file"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -33,7 +33,7 @@ const LINEAR_COLLECTION: CollectionConfig = {
   vendor: "linear",
   name: "ait_linear_collection",
   description: "Linear issues, tasks, and project management data",
-  entityTypes: ["issue"],
+  entityTypes: ["linear_issue"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -42,7 +42,7 @@ const X_COLLECTION: CollectionConfig = {
   vendor: "x",
   name: "ait_x_collection",
   description: "X (Twitter) tweets, posts, and social media activity",
-  entityTypes: ["tweet"],
+  entityTypes: ["x_tweet"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -51,7 +51,7 @@ const NOTION_COLLECTION: CollectionConfig = {
   vendor: "notion",
   name: "ait_notion_collection",
   description: "Notion pages, notes, and knowledge base content",
-  entityTypes: ["page"],
+  entityTypes: ["notion_page"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -60,7 +60,7 @@ const SLACK_COLLECTION: CollectionConfig = {
   vendor: "slack",
   name: "ait_slack_collection",
   description: "Slack messages, channels, and team communication",
-  entityTypes: ["message"],
+  entityTypes: ["slack_message"],
   defaultWeight: 1.0,
   enabled: true,
 };
@@ -69,7 +69,13 @@ const GOOGLE_COLLECTION: CollectionConfig = {
   vendor: "google",
   name: "ait_google_collection",
   description: "Google Suite (Calendar, Drive, YouTube, Photos, Contacts)",
-  entityTypes: ["event", "calendar", "subscription", "google_contact", "google_photo"],
+  entityTypes: [
+    "google_calendar_event",
+    "google_calendar_calendar",
+    "google_youtube_subscription",
+    "google_contact",
+    "google_photo",
+  ],
   defaultWeight: 1.0,
   enabled: true,
 };

@@ -1,5 +1,6 @@
+import type { GitHubCommitEntity, GitHubPullRequestEntity, GitHubRepositoryEntity } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { GitHubEntity } from "@ait/core";
+import type { GitHubEntityType } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { GITHUB_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -13,19 +14,28 @@ export class ConnectorGitHubStore implements IConnectorStore {
     this._connectorGitHubRepository = connectorGitHubRepository;
   }
 
-  async save<T extends GitHubEntity>(data: T | T[]): Promise<void> {
+  async save<T extends GitHubEntityType>(data: T | T[]): Promise<void> {
     const items = this._resolveItems(data);
 
     for (const item of items) {
       switch (item.__type) {
         case GITHUB_ENTITY_TYPES_ENUM.REPOSITORY:
-          await this._connectorGitHubRepository.repo.saveRepository(item, { incremental: false });
+          await this._connectorGitHubRepository.repo.saveRepository(item as unknown as GitHubRepositoryEntity, {
+            incremental: false,
+          });
           break;
         case GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST:
-          await this._connectorGitHubRepository.pullRequest.savePullRequest(item, { incremental: false });
+          await this._connectorGitHubRepository.pullRequest.savePullRequest(
+            item as unknown as GitHubPullRequestEntity,
+            {
+              incremental: false,
+            },
+          );
           break;
         case GITHUB_ENTITY_TYPES_ENUM.COMMIT:
-          await this._connectorGitHubRepository.commit.saveCommit(item, { incremental: false });
+          await this._connectorGitHubRepository.commit.saveCommit(item as unknown as GitHubCommitEntity, {
+            incremental: false,
+          });
           break;
         default:
           throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
@@ -41,7 +51,7 @@ export class ConnectorGitHubStore implements IConnectorStore {
     return this._connectorGitHubRepository.getAuthenticationData();
   }
 
-  private _resolveItems<T extends GitHubEntity>(data: T | T[]): T[] {
+  private _resolveItems<T extends GitHubEntityType>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }
 }

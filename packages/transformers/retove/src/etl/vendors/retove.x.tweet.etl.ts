@@ -36,7 +36,7 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract<XTweetDataTarget> {
   }
 
   protected override _getEntityType(): EntityType {
-    return "tweet";
+    return "x_tweet";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<XTweetDataTarget[]> {
@@ -76,7 +76,7 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract<XTweetDataTarget> {
 
 export interface RetoveXTweetVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "tweet";
+    __type: "x_tweet";
   } & Partial<XTweetDataTarget>;
 }
 

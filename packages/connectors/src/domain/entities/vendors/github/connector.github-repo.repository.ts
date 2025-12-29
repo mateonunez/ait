@@ -1,15 +1,8 @@
 import { randomUUID } from "node:crypto";
-import {
-  AItError,
-  type GitHubRepositoryEntity,
-  type PaginatedResponse,
-  type PaginationParams,
-  getLogger,
-} from "@ait/core";
-import { drizzleOrm, getPostgresClient, githubRepositories } from "@ait/postgres";
+import { AItError, GitHubRepositoryEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { type GitHubRepositoryDataTarget, drizzleOrm, getPostgresClient, githubRepositories } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubRepoRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
-import { repositoryDataTargetToDomain, repositoryDomainToDataTarget } from "../../../entities/github";
 
 const logger = getLogger();
 
@@ -24,7 +17,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
     const repositoryId = incremental ? randomUUID() : repository.id;
 
     try {
-      const repositoryData = repositoryDomainToDataTarget(repository);
+      const repositoryData = repository.toPlain<GitHubRepositoryDataTarget>();
       repositoryData.id = repositoryId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -118,7 +111,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: repositories.map((repo) => repositoryDataTargetToDomain(repo)),
+      data: repositories.map((repo) => GitHubRepositoryEntity.fromPlain(repo as GitHubRepositoryDataTarget)),
       pagination: {
         page,
         limit,

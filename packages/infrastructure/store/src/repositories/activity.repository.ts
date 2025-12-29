@@ -153,21 +153,21 @@ export class ActivityRepository implements IActivityRepository {
 
   private _getTableForEntity(entityType: EntityType): { table: any; dateColumn: any } | null {
     switch (entityType) {
-      case "repository":
+      case "github_repository":
         return { table: githubRepositories, dateColumn: githubRepositories.updatedAt };
-      case "commit":
+      case "github_commit":
         return { table: githubCommits, dateColumn: githubCommits.committerDate };
-      case "pull_request":
+      case "github_pull_request":
         return { table: githubPullRequests, dateColumn: githubPullRequests.prUpdatedAt };
-      case "recently_played":
+      case "spotify_recently_played":
         return { table: spotifyRecentlyPlayed, dateColumn: spotifyRecentlyPlayed.playedAt };
-      case "message":
+      case "slack_message":
         return { table: slackMessages, dateColumn: slackMessages.createdAt };
-      case "issue":
+      case "linear_issue":
         return { table: linearIssues, dateColumn: linearIssues.updatedAt };
-      case "page":
+      case "notion_page":
         return { table: notionPages, dateColumn: notionPages.updatedAt };
-      case "tweet":
+      case "x_tweet":
         return { table: xTweets, dateColumn: xTweets.createdAt };
       default:
         return null;

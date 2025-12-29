@@ -195,30 +195,30 @@ export const GitHubCommitSchema = z
 
 // --- External Types (from OpenAPI) ---
 
-export interface BaseGitHubEntity {
-  __type: "repository" | "issue" | "pull_request" | "commit";
+export interface BaseGitHubEntityType {
+  __type: "github_repository" | "github_pull_request" | "github_commit" | "github_file";
 }
 
 type GitHubRepository = GitHubComponents["schemas"]["repository"];
-export interface GitHubRepositoryExternal extends Omit<GitHubRepository, "__type">, BaseGitHubEntity {
-  __type: "repository";
+export interface GitHubRepositoryExternal extends Omit<GitHubRepository, "__type">, BaseGitHubEntityType {
+  __type: "github_repository";
 }
 
 type GitHubPullRequest = GitHubComponents["schemas"]["pull-request"];
 export interface GitHubPullRequestExternal extends Omit<GitHubPullRequest, "__type"> {
-  __type: "pull_request";
+  __type: "github_pull_request";
 }
 
 type GitHubCommit = GitHubComponents["schemas"]["commit"];
 export interface GitHubCommitExternal extends Omit<GitHubCommit, "__type"> {
-  __type: "commit";
+  __type: "github_commit";
 }
 
 export type GitHubExternal = GitHubRepositoryExternal | GitHubPullRequestExternal | GitHubCommitExternal;
 
 // --- Domain Types (Zod-inferred for consistency) ---
 
-export const GitHubRepositoryEntitySchema = z.object({
+export const GitHubRepositoryEntityTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
@@ -253,10 +253,10 @@ export const GitHubRepositoryEntitySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
-  __type: z.literal("repository"),
+  __type: z.literal("github_repository"),
 });
 
-export const GitHubPullRequestEntitySchema = z.object({
+export const GitHubPullRequestEntityTypeSchema = z.object({
   id: z.string(),
   number: z.number(),
   title: z.string(),
@@ -306,10 +306,10 @@ export const GitHubPullRequestEntitySchema = z.object({
   baseRepoData: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
-  __type: z.literal("pull_request"),
+  __type: z.literal("github_pull_request"),
 });
 
-export const GitHubCommitEntitySchema = z.object({
+export const GitHubCommitEntityTypeSchema = z.object({
   sha: z.string(),
   message: z.string(),
   messageBody: z.string().nullable(),
@@ -338,7 +338,7 @@ export const GitHubCommitEntitySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
-  __type: z.literal("commit"),
+  __type: z.literal("github_commit"),
 });
 
 // --- Repository File Types (for code ingestion) ---
@@ -350,7 +350,7 @@ export interface GitHubTreeItemExternal {
   sha: string;
   size?: number;
   url: string;
-  __type: "tree_item";
+  __type: "github_tree_item";
 }
 
 export interface GitHubFileContentExternal {
@@ -359,10 +359,10 @@ export interface GitHubFileContentExternal {
   content: string;
   size: number;
   encoding?: string;
-  __type: "file_content";
+  __type: "github_file_content";
 }
 
-export const GitHubFileEntitySchema = z.object({
+export const GitHubFileEntityTypeSchema = z.object({
   id: z.string(), // Composite: repoId:path:sha
   repositoryId: z.string(),
   repositoryFullName: z.string(),
@@ -377,12 +377,16 @@ export const GitHubFileEntitySchema = z.object({
   linesOfCode: z.number(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
-  __type: z.literal("repository_file"),
+  __type: z.literal("github_file"),
 });
 
-export type GitHubRepositoryEntity = z.infer<typeof GitHubRepositoryEntitySchema>;
-export type GitHubPullRequestEntity = z.infer<typeof GitHubPullRequestEntitySchema>;
-export type GitHubCommitEntity = z.infer<typeof GitHubCommitEntitySchema>;
-export type GitHubFileEntity = z.infer<typeof GitHubFileEntitySchema>;
+export type GitHubRepositoryEntityType = z.infer<typeof GitHubRepositoryEntityTypeSchema>;
+export type GitHubPullRequestEntityType = z.infer<typeof GitHubPullRequestEntityTypeSchema>;
+export type GitHubCommitEntityType = z.infer<typeof GitHubCommitEntityTypeSchema>;
+export type GitHubFileEntityType = z.infer<typeof GitHubFileEntityTypeSchema>;
 
-export type GitHubEntity = GitHubRepositoryEntity | GitHubPullRequestEntity | GitHubCommitEntity | GitHubFileEntity;
+export type GitHubEntityType =
+  | GitHubRepositoryEntityType
+  | GitHubPullRequestEntityType
+  | GitHubCommitEntityType
+  | GitHubFileEntityType;

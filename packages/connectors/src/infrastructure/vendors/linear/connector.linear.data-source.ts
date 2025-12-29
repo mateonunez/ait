@@ -94,11 +94,11 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
 
       const issues = payload.data.issues.nodes.map((issue: any) => ({
         ...issue,
-        __type: "issue" as const,
-      }));
+        __type: "linear_issue" as const,
+      })) as LinearIssueExternal[];
 
       // Sort by priority and state
-      const sortedIssues = issues.sort((a: any, b: any) => {
+      const sortedIssues = issues.sort((a, b) => {
         const priorityA = a.priority ?? 4;
         const priorityB = b.priority ?? 4;
         if (priorityA !== priorityB) {

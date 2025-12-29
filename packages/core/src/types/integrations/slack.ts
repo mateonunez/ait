@@ -1,7 +1,7 @@
 import { z } from "zod";
 
-export interface BaseSlackEntity {
-  __type: "message";
+export interface BaseSlackEntityType {
+  __type: "slack_message";
 }
 
 /**
@@ -144,7 +144,7 @@ const SlackReactionSchema = z.object({
   users: z.array(z.string()).optional(),
 });
 
-export const SlackMessageEntitySchema = z.object({
+export const SlackMessageEntityTypeSchema = z.object({
   id: z.string(),
   channelId: z.string(),
   channelName: z.string(),
@@ -167,16 +167,16 @@ export const SlackMessageEntitySchema = z.object({
   ts: z.string(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("message"),
+  __type: z.literal("slack_message"),
 });
 
-export type SlackMessageEntity = z.infer<typeof SlackMessageEntitySchema>;
+export type SlackMessageEntityType = z.infer<typeof SlackMessageEntityTypeSchema>;
 
 /**
  * External Slack message representation from the API
  * This matches the Slack API response structure with optional enrichment fields
  */
-export interface SlackMessageExternal extends BaseSlackEntity {
+export interface SlackMessageExternal extends BaseSlackEntityType {
   ts: string;
   channel?: string; // Added during enrichment
   channelName?: string; // Added during enrichment
@@ -195,8 +195,8 @@ export interface SlackMessageExternal extends BaseSlackEntity {
   reactions?: SlackReaction[];
   edited?: { user?: string; ts?: string };
   pinned_to?: string[];
-  __type: "message";
+  __type: "slack_message";
 }
 
-export type SlackEntity = SlackMessageEntity;
+export type SlackEntityType = SlackMessageEntityType;
 export type SlackExternal = SlackMessageExternal;

@@ -1,13 +1,13 @@
-import type { GoogleEntity } from "@ait/core";
+import type { GoogleEntityType } from "@ait/core";
 import { AItError } from "@ait/core";
-import type { OAuthTokenDataTarget } from "@ait/postgres";
 import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
-} from "../../../domain/entities/google/google-calendar.entity";
-import type { GoogleContactEntity } from "../../../domain/entities/google/google-contact.entity";
-import type { GooglePhotoEntity } from "../../../domain/entities/google/google-photo.entity";
-import type { GoogleYouTubeSubscriptionEntity } from "../../../domain/entities/google/google-youtube.entity";
+  GoogleContactEntity,
+  GooglePhotoEntity,
+  GoogleYouTubeSubscriptionEntity,
+} from "@ait/core";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorGoogleRepository } from "../../../types/domain/entities/vendors/connector.google.types";
@@ -20,7 +20,7 @@ export class ConnectorGoogleStore implements IConnectorStore {
     this._ConnectorGoogleRepository = ConnectorGoogleRepository;
   }
 
-  async save<T extends GoogleEntity>(data: T | T[]): Promise<void> {
+  async save<T extends GoogleEntityType>(data: T | T[]): Promise<void> {
     const items = this._resolveItems(data);
 
     for (const item of items) {
@@ -68,7 +68,7 @@ export class ConnectorGoogleStore implements IConnectorStore {
     return this._ConnectorGoogleRepository.getAuthenticationData();
   }
 
-  private _resolveItems<T extends GoogleEntity>(data: T | T[]): T[] {
+  private _resolveItems<T extends GoogleEntityType>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }
 }

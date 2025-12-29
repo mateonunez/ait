@@ -39,7 +39,7 @@ describe("ConnectorSlackStore", () => {
         ts: "1234567890.123456",
         createdAt: new Date(),
         updatedAt: new Date(),
-        __type: "message",
+        __type: "slack_message",
       } as unknown as SlackMessageEntity;
 
       await store.save(message);
@@ -69,7 +69,7 @@ describe("ConnectorSlackStore", () => {
           ts: "1234567890.123456",
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "message",
+          __type: "slack_message",
         } as unknown as SlackMessageEntity,
         {
           id: "msg-2",
@@ -84,7 +84,7 @@ describe("ConnectorSlackStore", () => {
           ts: "1234567891.123456",
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "message",
+          __type: "slack_message",
         } as unknown as SlackMessageEntity,
       ];
 
@@ -99,7 +99,7 @@ describe("ConnectorSlackStore", () => {
       const unsupportedItem = {
         id: "unsupported-1",
         name: "Some Entity",
-        __type: "unsupported" as "message", // this generates a type error
+        __type: "unsupported" as "slack_message", // this generates a type error
       } as unknown as SlackEntity;
 
       await assert.rejects(async () => {

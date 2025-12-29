@@ -67,7 +67,7 @@ describe("ConnectorGoogleYouTubeDataSource", () => {
       const result = await dataSource.fetchSubscriptions();
 
       assert.equal(result.items.length, 1);
-      assert.equal(result.items[0]?.__type, "subscription");
+      assert.equal(result.items[0]?.__type, "google_youtube_subscription");
       assert.equal(result.items[0]?.id, "sub-1");
       assert.equal(result.items[0]?.snippet.title, "Channel Title");
       assert.equal(result.items[0]?.snippet.resourceId.channelId, "channel-1");

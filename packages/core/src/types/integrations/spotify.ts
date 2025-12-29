@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { components as SpotifyComponents } from "../openapi/openapi.spotify.types";
 
-export interface BaseSpotifyEntity {
-  __type: "track" | "album" | "artist" | "playlist" | "recently_played";
+export interface BaseSpotifyEntityType {
+  __type: "spotify_track" | "spotify_album" | "spotify_artist" | "spotify_playlist" | "spotify_recently_played";
 }
 
 export interface SpotifyImage {
@@ -22,7 +22,7 @@ const SpotifyImageSchema = z.object({
   width: z.number(),
 });
 
-export const SpotifyTrackEntitySchema = z.object({
+export const SpotifyTrackEntityTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
   artist: z.string(),
@@ -44,10 +44,10 @@ export const SpotifyTrackEntitySchema = z.object({
   addedAt: z.date().nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("track"),
+  __type: z.literal("spotify_track"),
 });
 
-export const SpotifyArtistEntitySchema = z.object({
+export const SpotifyArtistEntityTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
   popularity: z.number(),
@@ -55,7 +55,7 @@ export const SpotifyArtistEntitySchema = z.object({
   images: z.array(SpotifyImageSchema).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("artist"),
+  __type: z.literal("spotify_artist"),
 });
 
 export const SpotifyPlaylistTrackItemSchema = z.object({
@@ -74,7 +74,7 @@ export const SpotifyPlaylistTrackItemSchema = z.object({
 
 export type SpotifyPlaylistTrackItem = z.infer<typeof SpotifyPlaylistTrackItemSchema>;
 
-export const SpotifyPlaylistEntitySchema = z.object({
+export const SpotifyPlaylistEntityTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
@@ -90,10 +90,10 @@ export const SpotifyPlaylistEntitySchema = z.object({
   images: z.array(SpotifyImageSchema).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("playlist"),
+  __type: z.literal("spotify_playlist"),
 });
 
-export const SpotifyAlbumEntitySchema = z.object({
+export const SpotifyAlbumEntityTypeSchema = z.object({
   id: z.string(),
   name: z.string(),
   albumType: z.string(),
@@ -113,10 +113,10 @@ export const SpotifyAlbumEntitySchema = z.object({
   images: z.array(SpotifyImageSchema).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("album"),
+  __type: z.literal("spotify_album"),
 });
 
-export const SpotifyRecentlyPlayedEntitySchema = z.object({
+export const SpotifyRecentlyPlayedEntityTypeSchema = z.object({
   id: z.string(),
   trackId: z.string(),
   trackName: z.string(),
@@ -135,14 +135,14 @@ export const SpotifyRecentlyPlayedEntitySchema = z.object({
   albumData: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("recently_played"),
+  __type: z.literal("spotify_recently_played"),
 });
 
-export type SpotifyTrackEntity = z.infer<typeof SpotifyTrackEntitySchema>;
-export type SpotifyArtistEntity = z.infer<typeof SpotifyArtistEntitySchema>;
-export type SpotifyPlaylistEntity = z.infer<typeof SpotifyPlaylistEntitySchema>;
-export type SpotifyAlbumEntity = z.infer<typeof SpotifyAlbumEntitySchema>;
-export type SpotifyRecentlyPlayedEntity = z.infer<typeof SpotifyRecentlyPlayedEntitySchema>;
+export type SpotifyTrackEntityType = z.infer<typeof SpotifyTrackEntityTypeSchema>;
+export type SpotifyArtistEntityType = z.infer<typeof SpotifyArtistEntityTypeSchema>;
+export type SpotifyPlaylistEntityType = z.infer<typeof SpotifyPlaylistEntityTypeSchema>;
+export type SpotifyAlbumEntityType = z.infer<typeof SpotifyAlbumEntityTypeSchema>;
+export type SpotifyRecentlyPlayedEntityType = z.infer<typeof SpotifyRecentlyPlayedEntityTypeSchema>;
 
 type SpotifyArtist = SpotifyComponents["schemas"]["ArtistObject"];
 type SpotifyTrack = SpotifyComponents["schemas"]["TrackObject"];
@@ -150,24 +150,24 @@ type SpotifyPlaylist = SpotifyComponents["schemas"]["PlaylistObject"];
 type SpotifyAlbum = SpotifyComponents["schemas"]["AlbumObject"];
 type SpotifyRecentlyPlayed = SpotifyComponents["schemas"]["PlayHistoryObject"];
 
-export interface SpotifyTrackExternal extends Omit<SpotifyTrack, "__type">, BaseSpotifyEntity {
-  __type: "track";
+export interface SpotifyTrackExternal extends Omit<SpotifyTrack, "__type">, BaseSpotifyEntityType {
+  __type: "spotify_track";
 }
 
-export interface SpotifyArtistExternal extends Omit<SpotifyArtist, "__type">, BaseSpotifyEntity {
-  __type: "artist";
+export interface SpotifyArtistExternal extends Omit<SpotifyArtist, "__type">, BaseSpotifyEntityType {
+  __type: "spotify_artist";
 }
 
-export interface SpotifyAlbumExternal extends Omit<SpotifyAlbum, "__type">, BaseSpotifyEntity {
-  __type: "album";
+export interface SpotifyAlbumExternal extends Omit<SpotifyAlbum, "__type">, BaseSpotifyEntityType {
+  __type: "spotify_album";
 }
 
-export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">, BaseSpotifyEntity {
-  __type: "playlist";
+export interface SpotifyPlaylistExternal extends Omit<SpotifyPlaylist, "__type">, BaseSpotifyEntityType {
+  __type: "spotify_playlist";
 }
 
-export interface SpotifyRecentlyPlayedExternal extends Omit<SpotifyRecentlyPlayed, "__type">, BaseSpotifyEntity {
-  __type: "recently_played";
+export interface SpotifyRecentlyPlayedExternal extends Omit<SpotifyRecentlyPlayed, "__type">, BaseSpotifyEntityType {
+  __type: "spotify_recently_played";
 }
 
 export interface SpotifyPlaylistTrackExternal {
@@ -196,12 +196,12 @@ export interface SpotifyCurrentlyPlayingExternal {
   } | null;
 }
 
-export type SpotifyEntity =
-  | SpotifyTrackEntity
-  | SpotifyArtistEntity
-  | SpotifyPlaylistEntity
-  | SpotifyAlbumEntity
-  | SpotifyRecentlyPlayedEntity;
+export type SpotifyEntityType =
+  | SpotifyTrackEntityType
+  | SpotifyArtistEntityType
+  | SpotifyPlaylistEntityType
+  | SpotifyAlbumEntityType
+  | SpotifyRecentlyPlayedEntityType;
 export type SpotifyExternal =
   | SpotifyTrackExternal
   | SpotifyArtistExternal

@@ -37,7 +37,7 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
       const events: GoogleCalendarEventExternal[] =
         response?.items?.map((event) => ({
           ...event,
-          __type: "event" as const,
+          __type: "google_calendar_event" as const,
         })) ?? [];
 
       return {
@@ -59,7 +59,7 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
       return (
         response?.items?.map((calendar) => ({
           ...calendar,
-          __type: "calendar" as const,
+          __type: "google_calendar_calendar" as const,
         })) ?? []
       );
     } catch (error) {

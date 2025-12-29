@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, SpotifyArtistEntity, getLogger } from "@ait/core";
 import { type SpotifyArtistDataTarget, drizzleOrm, getPostgresClient, spotifyArtists } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyArtistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { spotifyArtistDataTargetToDomain, spotifyArtistDomainToDataTarget } from "../../spotify/spotify-artist.entity";
-import type { SpotifyArtistEntity } from "../../spotify/spotify-artist.entity";
 
 const logger = getLogger();
 
@@ -20,7 +17,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     const artistId = incremental ? randomUUID() : artist.id;
 
     try {
-      const artistDataTarget = spotifyArtistDomainToDataTarget(artist);
+      const artistDataTarget = artist.toPlain<SpotifyArtistDataTarget>();
       artistDataTarget.id = artistId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -33,7 +30,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
 
         await tx
           .insert(spotifyArtists)
-          .values(artistDataTarget)
+          .values(artistDataTarget as any)
           .onConflictDoUpdate({
             target: spotifyArtists.id,
             set: updateValues,
@@ -57,8 +54,6 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     }
 
     try {
-      logger.debug("Saving artists to Spotify repository:", { artists });
-
       for (const artist of artists) {
         await this.saveArtist(artist, { incremental: false });
       }
@@ -69,13 +64,22 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
   }
 
   async getArtist(id: string): Promise<SpotifyArtistEntity | null> {
-    logger.info("Getting artist from Spotify repository", { id });
-    return null;
+    const result = await this._pgClient.db
+      .select()
+      .from(spotifyArtists)
+      .where(drizzleOrm.eq(spotifyArtists.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return SpotifyArtistEntity.fromPlain(result[0]! as SpotifyArtistDataTarget);
   }
 
   async fetchArtists(): Promise<SpotifyArtistEntity[]> {
-    logger.info("Getting artists from Spotify repository");
-    return [];
+    const artists = await this._pgClient.db.select().from(spotifyArtists);
+    return artists.map((artist) => SpotifyArtistEntity.fromPlain(artist as SpotifyArtistDataTarget));
   }
 
   async getArtistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyArtistEntity>> {
@@ -97,7 +101,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: artists.map((artist) => spotifyArtistDataTargetToDomain(artist as SpotifyArtistDataTarget)),
+      data: artists.map((artist) => SpotifyArtistEntity.fromPlain(artist as SpotifyArtistDataTarget)),
       pagination: {
         page,
         limit,

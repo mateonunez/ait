@@ -114,7 +114,7 @@ All refresh endpoints return:
 ```json
 {
   "success": true,
-  "message": "GitHub data refreshed successfully",
+  "slack_message": "GitHub data refreshed successfully",
   "counts": {
     "repositories": 42,
     "pullRequests": 15,

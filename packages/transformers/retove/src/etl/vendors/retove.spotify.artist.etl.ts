@@ -72,13 +72,13 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract<SpotifyArtistD
   }
 
   protected override _getEntityType(): EntityType {
-    return "artist";
+    return "spotify_artist";
   }
 }
 
 export interface RetoveSpotifyTrackVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "track";
+    __type: "spotify_artist";
   } & Partial<SpotifyArtistDataTarget>;
 }
 export type RetoveSpotifyVectorPoint = RetoveSpotifyTrackVectorPoint;

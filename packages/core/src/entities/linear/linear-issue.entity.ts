@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { LinearIssueExternal } from "@ait/core";
-import type { LinearIssueDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { LinearIssueExternal } from "../../types/integrations";
 
 /**
  * Linear Issue entity with class-transformer decorators.
@@ -14,56 +13,64 @@ export class LinearIssueEntity {
   title!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   description!: string | null;
 
   @Expose()
   state!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   priority!: number | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   assigneeId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   assigneeName!: string | null;
 
   @Expose()
   teamId!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   teamName!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   projectId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   projectName!: string | null;
 
   @Expose()
   url!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   labels!: string[];
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "issue" as const;
+  readonly __type = "linear_issue" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): LinearIssueEntity {
+    return plainToInstance(LinearIssueEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -84,6 +91,7 @@ export function mapLinearIssue(external: LinearIssueExternal): LinearIssueEntity
 
   return plainToInstance(LinearIssueEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -92,16 +100,4 @@ export function mapLinearIssue(external: LinearIssueExternal): LinearIssueEntity
  */
 export function mapLinearIssues(externals: LinearIssueExternal[]): LinearIssueEntity[] {
   return externals.map(mapLinearIssue);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function linearIssueDomainToDataTarget(domain: LinearIssueEntity): LinearIssueDataTarget {
-  return instanceToPlain(domain) as LinearIssueDataTarget;
-}
-
-export function linearIssueDataTargetToDomain(dataTarget: LinearIssueDataTarget): LinearIssueEntity {
-  return plainToInstance(LinearIssueEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

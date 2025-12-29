@@ -122,7 +122,7 @@ export function PullRequestCard({ pullRequest, onClick, className }: PullRequest
           <ConnectorCardStats className="font-mono">
             {pullRequest.commits !== null && pullRequest.commits > 0 && (
               <span className="text-muted-foreground font-medium">
-                {pullRequest.commits} {pullRequest.commits === 1 ? "commit" : "commits"}
+                {pullRequest.commits} {pullRequest.commits === 1 ? "github_commit" : "commits"}
               </span>
             )}
             {pullRequest.additions !== null && (

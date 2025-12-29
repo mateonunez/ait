@@ -57,7 +57,7 @@ export { CODE_INGESTION_REPOS } from "./shared/constants/code-ingestion.constant
 export {
   mapGitHubFile,
   type GitHubFileExternalWithContent,
-} from "./domain/entities/github";
+} from "@ait/core";
 export {
   ConnectorGitHubFileRepository,
   type IConnectorGitHubFileRepository,

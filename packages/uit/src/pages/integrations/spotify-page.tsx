@@ -47,35 +47,35 @@ export default function SpotifyPage() {
       try {
         switch (activeTab) {
           case "tracks": {
-            const response = await fetchEntityData("spotify", "track", { page, limit: pageSize });
+            const response = await fetchEntityData("spotify", "spotify_track", { page, limit: pageSize });
             setTracks(response.data as SpotifyTrack[]);
             setTotalPages(response.pagination.totalPages);
             setTotalTracks(response.pagination.total);
             break;
           }
           case "artists": {
-            const response = await fetchEntityData("spotify", "artist", { page, limit: pageSize });
+            const response = await fetchEntityData("spotify", "spotify_artist", { page, limit: pageSize });
             setArtists(response.data as SpotifyArtist[]);
             setTotalPages(response.pagination.totalPages);
             setTotalArtists(response.pagination.total);
             break;
           }
           case "playlists": {
-            const response = await fetchEntityData("spotify", "playlist", { page, limit: pageSize });
+            const response = await fetchEntityData("spotify", "spotify_playlist", { page, limit: pageSize });
             setPlaylists(response.data as SpotifyPlaylist[]);
             setTotalPages(response.pagination.totalPages);
             setTotalPlaylists(response.pagination.total);
             break;
           }
           case "albums": {
-            const response = await fetchEntityData("spotify", "album", { page, limit: pageSize });
+            const response = await fetchEntityData("spotify", "spotify_album", { page, limit: pageSize });
             setAlbums(response.data as SpotifyAlbum[]);
             setTotalPages(response.pagination.totalPages);
             setTotalAlbums(response.pagination.total);
             break;
           }
           case "recently-played": {
-            const response = await fetchEntityData("spotify", "recently_played", { page, limit: pageSize });
+            const response = await fetchEntityData("spotify", "spotify_recently_played", { page, limit: pageSize });
             setRecentlyPlayed(response.data as SpotifyRecentlyPlayed[]);
             setTotalPages(response.pagination.totalPages);
             setTotalRecentlyPlayed(response.pagination.total);

@@ -1,12 +1,13 @@
-import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GoogleCalendarEventEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  getLogger,
+} from "@ait/core";
 import { type GoogleCalendarEventDataTarget, drizzleOrm, getPostgresClient, googleCalendarEvents } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarEventRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import {
-  googleCalendarEventDataTargetToDomain,
-  googleCalendarEventDomainToDataTarget,
-} from "../../google/google-calendar.entity";
-import type { GoogleCalendarEventEntity } from "../../google/google-calendar.entity";
 
 const logger = getLogger();
 
@@ -20,7 +21,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
     const eventId = event.id;
 
     try {
-      const eventDataTarget = googleCalendarEventDomainToDataTarget(event);
+      const eventDataTarget = event.toPlain<GoogleCalendarEventDataTarget>();
       eventDataTarget.id = eventId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -90,14 +91,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
       return;
     }
 
-    try {
-      for (const event of events) {
-        await this.saveEvent(event, { incremental: false });
-      }
-    } catch (error) {
-      logger.error("Error saving events:", { error });
-      throw new AItError("GOOGLE_CALENDAR_SAVE_EVENT_BULK", "Failed to save events to repository");
-    }
+    await Promise.all(events.map((event) => this.saveEvent(event)));
   }
 
   async getEvent(id: string): Promise<GoogleCalendarEventEntity | null> {
@@ -111,7 +105,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
       return null;
     }
 
-    return googleCalendarEventDataTargetToDomain(result[0]! as GoogleCalendarEventDataTarget);
+    return GoogleCalendarEventEntity.fromPlain(result[0]! as GoogleCalendarEventDataTarget);
   }
 
   async fetchEvents(): Promise<GoogleCalendarEventEntity[]> {
@@ -120,7 +114,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
       .from(googleCalendarEvents)
       .orderBy(drizzleOrm.desc(googleCalendarEvents.startTime));
 
-    return events.map((event) => googleCalendarEventDataTargetToDomain(event as GoogleCalendarEventDataTarget));
+    return events.map((event) => GoogleCalendarEventEntity.fromPlain(event as GoogleCalendarEventDataTarget));
   }
 
   async getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>> {
@@ -142,7 +136,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: events.map((event) => googleCalendarEventDataTargetToDomain(event as GoogleCalendarEventDataTarget)),
+      data: events.map((event) => GoogleCalendarEventEntity.fromPlain(event as GoogleCalendarEventDataTarget)),
       pagination: {
         page,
         limit,

@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { SpotifyRecentlyPlayedExternal } from "@ait/core";
-import type { SpotifyRecentlyPlayedDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { SpotifyRecentlyPlayedExternal } from "../../types/integrations";
 
 /**
  * Spotify Recently Played entity with class-transformer decorators.
@@ -20,42 +19,50 @@ export class SpotifyRecentlyPlayedEntity {
   artist!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   album!: string | null;
 
   @Expose()
   durationMs!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   explicit!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   popularity!: number | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   playedAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   context!: { type: string; uri: string } | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   albumData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "recently_played" as const;
+  readonly __type = "spotify_recently_played" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): SpotifyRecentlyPlayedEntity {
+    return plainToInstance(SpotifyRecentlyPlayedEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -67,7 +74,7 @@ export function mapSpotifyRecentlyPlayed(external: SpotifyRecentlyPlayedExternal
     id: `${external.track?.id ?? ""}-${external.played_at ?? ""}`,
     trackId: external.track?.id ?? "",
     trackName: external.track?.name ?? "",
-    artist: external.track?.artists?.map((a) => a.name).join(", ") ?? "",
+    artist: external.track?.artists?.map((a: any) => a.name).join(", ") ?? "",
     album: external.track?.album?.name ?? null,
     durationMs: external.track?.duration_ms ?? 0,
     explicit: external.track?.explicit ?? false,
@@ -94,6 +101,7 @@ export function mapSpotifyRecentlyPlayed(external: SpotifyRecentlyPlayedExternal
 
   return plainToInstance(SpotifyRecentlyPlayedEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -104,20 +112,4 @@ export function mapSpotifyRecentlyPlayedItems(
   externals: SpotifyRecentlyPlayedExternal[],
 ): SpotifyRecentlyPlayedEntity[] {
   return externals.map(mapSpotifyRecentlyPlayed);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function spotifyRecentlyPlayedDomainToDataTarget(
-  domain: SpotifyRecentlyPlayedEntity,
-): SpotifyRecentlyPlayedDataTarget {
-  return instanceToPlain(domain) as SpotifyRecentlyPlayedDataTarget;
-}
-
-export function spotifyRecentlyPlayedDataTargetToDomain(
-  dataTarget: SpotifyRecentlyPlayedDataTarget,
-): SpotifyRecentlyPlayedEntity {
-  return plainToInstance(SpotifyRecentlyPlayedEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

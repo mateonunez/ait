@@ -2,12 +2,12 @@ import { z } from "zod";
 
 // --- External Types (from Google Calendar API) ---
 
-export interface BaseGoogleCalendarEntity {
-  __type: "event" | "calendar";
+export interface BaseGoogleCalendarEntityType {
+  __type: "google_calendar_event" | "google_calendar_calendar";
 }
 
-export interface GoogleCalendarEventExternal extends BaseGoogleCalendarEntity {
-  __type: "event";
+export interface GoogleCalendarEventExternal extends BaseGoogleCalendarEntityType {
+  __type: "google_calendar_event";
   id: string;
   status: string;
   htmlLink: string;
@@ -131,8 +131,8 @@ export interface GoogleCalendarEventExternal extends BaseGoogleCalendarEntity {
   eventType?: string;
 }
 
-export interface GoogleCalendarCalendarExternal extends BaseGoogleCalendarEntity {
-  __type: "calendar";
+export interface GoogleCalendarCalendarExternal extends BaseGoogleCalendarEntityType {
+  __type: "google_calendar_calendar";
   id: string;
   summary?: string;
   description?: string;
@@ -280,7 +280,7 @@ export const GoogleCalendarCalendarSchema = z
 
 // --- Domain Types (normalized for app use) ---
 
-export const GoogleCalendarEventEntitySchema = z.object({
+export const GoogleCalendarEventEntityTypeSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable(),
@@ -322,10 +322,10 @@ export const GoogleCalendarEventEntitySchema = z.object({
   eventUpdatedAt: z.date().nullable(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
-  __type: z.literal("event"),
+  __type: z.literal("google_calendar_event"),
 });
 
-export const GoogleCalendarCalendarEntitySchema = z.object({
+export const GoogleCalendarCalendarEntityTypeSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable(),
@@ -345,10 +345,10 @@ export const GoogleCalendarCalendarEntitySchema = z.object({
   metadata: z.record(z.string(), z.unknown()).nullable(),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
-  __type: z.literal("calendar"),
+  __type: z.literal("google_calendar_calendar"),
 });
 
-export type GoogleCalendarEventEntity = z.infer<typeof GoogleCalendarEventEntitySchema>;
-export type GoogleCalendarCalendarEntity = z.infer<typeof GoogleCalendarCalendarEntitySchema>;
+export type GoogleCalendarEventEntityType = z.infer<typeof GoogleCalendarEventEntityTypeSchema>;
+export type GoogleCalendarCalendarEntityType = z.infer<typeof GoogleCalendarCalendarEntityTypeSchema>;
 
-export type GoogleCalendarEntity = GoogleCalendarEventEntity | GoogleCalendarCalendarEntity;
+export type GoogleCalendarEntityType = GoogleCalendarEventEntityType | GoogleCalendarCalendarEntityType;

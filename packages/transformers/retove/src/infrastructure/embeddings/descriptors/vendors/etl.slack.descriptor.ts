@@ -73,7 +73,7 @@ export class ETLSlackMessageDescriptor implements IETLEmbeddingDescriptor<SlackM
     };
 
     return {
-      __type: "message",
+      __type: "slack_message",
       ...sanitizedPayload,
     } as unknown as U;
   }

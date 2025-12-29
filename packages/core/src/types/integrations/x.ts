@@ -1,14 +1,14 @@
 import { z } from "zod";
 import type { components as XComponents } from "../openapi/openapi.x.types";
 
-export interface BaseXEntity {
-  __type: "tweet";
+export interface BaseXEntityType {
+  __type: "x_tweet";
 }
 
 // Media entity for photos, videos, GIFs
 export interface XMediaEntity {
   media_key: string;
-  type: "photo" | "video" | "animated_gif";
+  type: "google_photo" | "video" | "animated_gif";
   url?: string;
   preview_image_url?: string;
   width?: number;
@@ -63,7 +63,7 @@ export interface XTweetIncludes {
 
 const XMediaEntitySchema = z.object({
   media_key: z.string(),
-  type: z.enum(["photo", "video", "animated_gif"]),
+  type: z.enum(["google_photo", "video", "animated_gif"]),
   url: z.string().optional(),
   preview_image_url: z.string().optional(),
   width: z.number().optional(),
@@ -107,7 +107,7 @@ const XPlaceEntitySchema = z.object({
     .optional(),
 });
 
-export const XTweetEntitySchema = z.object({
+export const XTweetEntityTypeSchema = z.object({
   id: z.string(),
   text: z.string(),
   authorId: z.string(),
@@ -126,21 +126,21 @@ export const XTweetEntitySchema = z.object({
   jsonData: z.record(z.string(), z.unknown()),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("tweet"),
+  __type: z.literal("x_tweet"),
 });
 
-export type XTweetEntity = z.infer<typeof XTweetEntitySchema>;
+export type XTweetEntityType = z.infer<typeof XTweetEntityTypeSchema>;
 
 type XTweet = XComponents["schemas"]["Tweet"];
 
-export interface XTweetExternal extends Omit<XTweet, "__type">, BaseXEntity {
+export interface XTweetExternal extends Omit<XTweet, "__type">, BaseXEntityType {
   username?: string;
   name?: string;
   media?: XMediaEntity[];
   poll?: XPollEntity;
   place?: XPlaceEntity;
-  __type: "tweet";
+  __type: "x_tweet";
 }
 
-export type XEntity = XTweetEntity;
+export type XEntityType = XTweetEntityType;
 export type XExternal = XTweetExternal;

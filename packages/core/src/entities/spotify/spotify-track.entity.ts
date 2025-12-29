@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { SpotifyTrackExternal } from "@ait/core";
-import type { SpotifyTrackDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { SpotifyTrackExternal } from "../../types/integrations";
 
 /**
  * Spotify Track entity with class-transformer decorators.
@@ -17,78 +16,86 @@ export class SpotifyTrackEntity {
   artist!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   album!: string | null;
 
   @Expose()
   durationMs!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   explicit!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   isPlayable!: boolean | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   previewUrl!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   trackNumber!: number | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   discNumber!: number | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   uri!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   href!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isLocal!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   popularity!: number | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   albumData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   artistsData!: Record<string, unknown>[];
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   externalIds!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   externalUrls!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   addedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "track" as const;
+  readonly __type = "spotify_track" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): SpotifyTrackEntity {
+    return plainToInstance(SpotifyTrackEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -114,6 +121,7 @@ export function mapSpotifyTrack(external: SpotifyTrackExternal): SpotifyTrackEnt
 
   return plainToInstance(SpotifyTrackEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -122,16 +130,4 @@ export function mapSpotifyTrack(external: SpotifyTrackExternal): SpotifyTrackEnt
  */
 export function mapSpotifyTracks(externals: SpotifyTrackExternal[]): SpotifyTrackEntity[] {
   return externals.map(mapSpotifyTrack);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function spotifyTrackDomainToDataTarget(domain: SpotifyTrackEntity): SpotifyTrackDataTarget {
-  return instanceToPlain(domain) as SpotifyTrackDataTarget;
-}
-
-export function spotifyTrackDataTargetToDomain(dataTarget: SpotifyTrackDataTarget): SpotifyTrackEntity {
-  return plainToInstance(SpotifyTrackEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

@@ -123,7 +123,7 @@ export class ETLGoogleCalendarEventDescriptor implements IETLEmbeddingDescriptor
     };
 
     return {
-      __type: "event",
+      __type: "google_calendar_event",
       ...sanitizedPayload,
     } as unknown as U;
   }

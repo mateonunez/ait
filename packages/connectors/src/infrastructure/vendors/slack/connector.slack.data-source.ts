@@ -368,7 +368,7 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
             attachments: msg.attachments || [],
             reactions: msg.reactions || [],
             pinned_to: msg.pinned_to || [],
-            __type: "message" as const,
+            __type: "slack_message" as const,
           }),
         );
       }
@@ -391,7 +391,7 @@ export class ConnectorSlackDataSource implements IConnectorSlackDataSource {
               attachments: reply.attachments || [],
               reactions: reply.reactions || [],
               pinned_to: reply.pinned_to || [],
-              __type: "message" as const,
+              __type: "slack_message" as const,
             }),
           );
         });

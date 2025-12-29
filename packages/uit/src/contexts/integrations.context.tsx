@@ -65,19 +65,19 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
         switch (vendor) {
           case "spotify": {
             switch (entityType) {
-              case "track":
+              case "spotify_track":
                 response = await spotifyService.fetchTracks(params);
                 break;
-              case "artist":
+              case "spotify_artist":
                 response = await spotifyService.fetchArtists(params);
                 break;
-              case "playlist":
+              case "spotify_playlist":
                 response = await spotifyService.fetchPlaylists(params);
                 break;
-              case "album":
+              case "spotify_album":
                 response = await spotifyService.fetchAlbums(params);
                 break;
-              case "recently_played":
+              case "spotify_recently_played":
                 response = await spotifyService.fetchRecentlyPlayed(params);
                 break;
               default:
@@ -87,16 +87,16 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
           }
           case "github": {
             switch (entityType) {
-              case "repository":
+              case "github_repository":
                 response = await githubService.fetchRepositories(params);
                 break;
-              case "pull_request":
+              case "github_pull_request":
                 response = await githubService.fetchPullRequests(params);
                 break;
-              case "commit":
+              case "github_commit":
                 response = await githubService.fetchCommits(params);
                 break;
-              case "repository_file":
+              case "github_file":
                 response = await githubService.fetchFiles(params);
                 break;
               default:
@@ -105,7 +105,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
             break;
           }
           case "x": {
-            if (entityType === "tweet") {
+            if (entityType === "x_tweet") {
               response = await xService.fetchTweets(params);
             } else {
               throw new Error(`Unknown X entity type: ${entityType}`);
@@ -113,7 +113,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
             break;
           }
           case "linear": {
-            if (entityType === "issue") {
+            if (entityType === "linear_issue") {
               response = await linearService.fetchIssues(params);
             } else {
               throw new Error(`Unknown Linear entity type: ${entityType}`);
@@ -121,7 +121,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
             break;
           }
           case "notion": {
-            if (entityType === "page") {
+            if (entityType === "notion_page") {
               response = await notionService.fetchPages(params);
             } else {
               throw new Error(`Unknown Notion entity type: ${entityType}`);
@@ -129,7 +129,7 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
             break;
           }
           case "slack": {
-            if (entityType === "message") {
+            if (entityType === "slack_message") {
               response = await slackService.fetchMessages(params);
             } else {
               throw new Error(`Unknown Slack entity type: ${entityType}`);
@@ -138,13 +138,13 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
           }
           case "google": {
             switch (entityType) {
-              case "event":
+              case "google_calendar_event":
                 response = await googleService.fetchEvents(params);
                 break;
-              case "calendar":
+              case "google_calendar_calendar":
                 response = await googleService.fetchCalendars(params);
                 break;
-              case "subscription":
+              case "google_youtube_subscription":
                 response = await googleService.fetchSubscriptions(params);
                 break;
               case "google_contact":

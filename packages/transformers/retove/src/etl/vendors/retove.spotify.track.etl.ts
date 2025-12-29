@@ -39,7 +39,7 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract<SpotifyTrackDat
   }
 
   protected override _getEntityType(): EntityType {
-    return "track";
+    return "spotify_track";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<SpotifyTrackDataTarget[]> {
@@ -85,7 +85,7 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract<SpotifyTrackDat
 
 export interface RetoveSpotifyTrackVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "track";
+    __type: "spotify_track";
   } & Partial<SpotifyTrackDataTarget>;
 }
 /**

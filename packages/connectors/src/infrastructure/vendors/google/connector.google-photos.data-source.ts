@@ -1,6 +1,5 @@
-import type { GooglePhotoExternal } from "@ait/core";
+import type { GooglePhotoExternal, PickerPhotoInput } from "@ait/core";
 import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
-import type { PickerPhotoInput } from "../../../domain/entities/google/google-photo.entity";
 import type { GooglePhotosPaginatedResponse } from "../../../types/infrastructure/connector.google-photos.data-source.interface";
 
 export class ConnectorGooglePhotosDataSource {

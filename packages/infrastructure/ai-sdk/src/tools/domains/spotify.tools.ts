@@ -5,7 +5,7 @@ import { createTool } from "../../utils/tool.utils";
 export const spotifySearchSchema = z.object({
   query: z.string().describe("The search query for Spotify content"),
   type: z
-    .enum(["playlist", "track", "artist", "album", "all"])
+    .enum(["spotify_playlist", "spotify_track", "spotify_artist", "spotify_album", "all"])
     .optional()
     .default("all")
     .describe("Type of Spotify content to search for"),
@@ -37,7 +37,7 @@ export interface SpotifyCurrentlyPlayingResult {
     explicit: boolean;
     popularity: number | null;
     uri: string | null;
-    __type: "track";
+    __type: "spotify_track";
   };
   progress_ms: number;
   timestamp: number;
@@ -57,7 +57,7 @@ export interface SpotifyRecentlyPlayedResult {
     explicit: boolean;
     popularity: number | null;
     uri: string | null;
-    __type: "track";
+    __type: "spotify_track";
   };
   playedAt: string;
   context?: {
@@ -109,7 +109,7 @@ export function createSpotifyTools(spotifyService?: SpotifyServiceInterface) {
               explicit: currentlyPlaying.item.explicit!,
               popularity: currentlyPlaying.item.popularity!,
               uri: currentlyPlaying.item.uri!,
-              __type: currentlyPlaying.item.__type as "track",
+              __type: currentlyPlaying.item.__type as "spotify_track",
             },
             progress_ms: currentlyPlaying.progress_ms,
             timestamp: currentlyPlaying.timestamp,

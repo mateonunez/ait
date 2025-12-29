@@ -70,7 +70,7 @@ export function PlaylistCard({ playlist, onClick, className }: PlaylistCardProps
           {/* Stats */}
           <ConnectorCardStats className="mt-auto pt-2">
             <ConnectorCardStatItem icon={<Music className="h-3.5 w-3.5" />}>
-              {trackCount} {trackCount === 1 ? "track" : "tracks"}
+              {trackCount} {trackCount === 1 ? "spotify_track" : "tracks"}
             </ConnectorCardStatItem>
             {playlist.followers > 0 && (
               <ConnectorCardStatItem icon={<Users className="h-3.5 w-3.5" />}>

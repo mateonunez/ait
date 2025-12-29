@@ -60,7 +60,7 @@ describe("ConnectorGoogleCalendarDataSource", () => {
       const result = await dataSource.fetchEvents();
 
       assert.equal(result.items.length, 1);
-      assert.equal(result.items[0]?.__type, "event");
+      assert.equal(result.items[0]?.__type, "google_calendar_event");
       assert.equal(result.items[0]?.id, "event-1");
       assert.equal(result.items[0]?.summary, "Team Meeting");
       assert.equal(result.items[0]?.status, "confirmed");
@@ -259,7 +259,7 @@ describe("ConnectorGoogleCalendarDataSource", () => {
       const result = await dataSource.fetchCalendars();
 
       assert.equal(result.length, 2);
-      assert.equal(result[0]?.__type, "calendar");
+      assert.equal(result[0]?.__type, "google_calendar_calendar");
       assert.equal(result[0]?.id, "primary");
       assert.equal(result[0]?.summary, "Primary Calendar");
       assert.equal(result[0]?.primary, true);

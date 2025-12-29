@@ -27,3 +27,5 @@ export * from "./types/activity";
 export * from "./types/goals";
 export * from "./types/feedback";
 export * from "./types/insights";
+
+export * from "./entities";

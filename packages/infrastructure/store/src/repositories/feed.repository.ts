@@ -72,35 +72,35 @@ export class FeedRepository implements IFeedRepository {
     } = postgresSchemas as any;
 
     switch (entityType) {
-      case "repository":
+      case "github_repository":
         return githubRepositories;
-      case "commit":
+      case "github_commit":
         return githubCommits;
-      case "pull_request":
+      case "github_pull_request":
         return githubPullRequests;
-      case "recently_played":
+      case "spotify_recently_played":
         return spotifyRecentlyPlayed;
-      case "track":
+      case "spotify_track":
         return spotifyTracks;
-      case "artist":
+      case "spotify_artist":
         return spotifyArtists;
-      case "playlist":
+      case "spotify_playlist":
         return spotifyPlaylists;
-      case "album":
+      case "spotify_album":
         return spotifyAlbums;
-      case "message":
+      case "slack_message":
         return slackMessages;
-      case "issue":
+      case "linear_issue":
         return linearIssues;
-      case "page":
+      case "notion_page":
         return notionPages;
-      case "tweet":
+      case "x_tweet":
         return xTweets;
-      case "event":
+      case "google_calendar_event":
         return googleCalendarEvents;
-      case "calendar":
+      case "google_calendar_calendar":
         return googleCalendars;
-      case "subscription":
+      case "google_youtube_subscription":
         return googleYouTubeSubscriptions;
       case "google_contact":
         return googleContacts;
@@ -113,23 +113,23 @@ export class FeedRepository implements IFeedRepository {
 
   private _getSortColumnForEntity(entityType: EntityType, table: any): any {
     switch (entityType) {
-      case "repository":
+      case "github_repository":
         return table.updatedAt;
-      case "commit":
+      case "github_commit":
         return table.committerDate;
-      case "pull_request":
+      case "github_pull_request":
         return table.prUpdatedAt;
-      case "recently_played":
+      case "spotify_recently_played":
         return table.playedAt;
-      case "message":
+      case "slack_message":
         return table.createdAt;
-      case "issue":
+      case "linear_issue":
         return table.updatedAt;
-      case "page":
+      case "notion_page":
         return table.updatedAt;
-      case "tweet":
+      case "x_tweet":
         return table.createdAt;
-      case "event":
+      case "google_calendar_event":
         return table.startTime;
       case "google_photo":
         return table.creationTime;

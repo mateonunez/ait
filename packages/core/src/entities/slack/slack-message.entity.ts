@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { SlackMessageExternal } from "@ait/core";
-import type { SlackMessageDataTarget } from "@ait/postgres";
-import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import { Expose, Type, instanceToPlain, plainToInstance } from "class-transformer";
+import type { SlackMessageExternal } from "../../types/integrations";
 
 /**
  * Slack Message entity with class-transformer decorators.
@@ -20,58 +19,66 @@ export class SlackMessageEntity {
   text!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Type(() => String)
   userId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Type(() => String)
   userName!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Type(() => String)
   threadTs!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Type(() => Number)
   replyCount!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Type(() => String)
   permalink!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Type(() => Array)
   files!: any[];
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Type(() => Array)
   attachments!: any[];
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Type(() => Array)
   reactions!: any[];
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Type(() => Object)
   edited!: { user?: string; ts?: string } | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Type(() => Array)
   pinnedTo!: string[];
 
   @Expose()
   ts!: string;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Type(() => Date)
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Type(() => Date)
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "message" as const;
+  readonly __type = "slack_message" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): SlackMessageEntity {
+    return plainToInstance(SlackMessageEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -92,6 +99,7 @@ export function mapSlackMessage(external: SlackMessageExternal): SlackMessageEnt
 
   return plainToInstance(SlackMessageEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -100,16 +108,4 @@ export function mapSlackMessage(external: SlackMessageExternal): SlackMessageEnt
  */
 export function mapSlackMessages(externals: SlackMessageExternal[]): SlackMessageEntity[] {
   return externals.map(mapSlackMessage);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function slackMessageDomainToDataTarget(domain: SlackMessageEntity): SlackMessageDataTarget {
-  return instanceToPlain(domain) as SlackMessageDataTarget;
-}
-
-export function slackMessageDataTargetToDomain(dataTarget: SlackMessageDataTarget): SlackMessageEntity {
-  return plainToInstance(SlackMessageEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

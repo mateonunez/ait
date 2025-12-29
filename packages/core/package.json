@@ -26,6 +26,8 @@
   "author": "@mateonunez <mateonunez95@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "class-transformer": "^0.5.1",
+    "reflect-metadata": "^0.2.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {

@@ -1,17 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { GoogleYouTubeSubscriptionExternal } from "@ait/core";
-import {
-  googleYouTubeSubscriptionDomainToDataTarget,
-  mapGoogleYouTubeSubscription,
-} from "../../../src/domain/entities/google/google-youtube.entity";
+import { type GoogleYouTubeSubscriptionExternal, mapGoogleYouTubeSubscription } from "@ait/core";
 
 describe("Google YouTube Mappers", () => {
   describe("connectorGoogleYouTubeSubscriptionMapper", () => {
     describe("externalToDomain", () => {
       it("should map external subscription to domain entity", () => {
         const externalSubscription: GoogleYouTubeSubscriptionExternal = {
-          __type: "subscription",
+          __type: "google_youtube_subscription",
           kind: "youtube#subscription",
           etag: "etag",
           id: "sub-123",
@@ -51,12 +47,12 @@ describe("Google YouTube Mappers", () => {
         assert.equal(domainSubscription.totalItemCount, 100);
         assert.equal(domainSubscription.newItemCount, 5);
         assert.equal(domainSubscription.activityType, "all");
-        assert.equal(domainSubscription.__type, "subscription");
+        assert.equal(domainSubscription.__type, "google_youtube_subscription");
       });
 
       it("should handle missing optional fields", () => {
         const externalSubscription: GoogleYouTubeSubscriptionExternal = {
-          __type: "subscription",
+          __type: "google_youtube_subscription",
           kind: "youtube#subscription",
           etag: "etag",
           id: "sub-123",
@@ -94,7 +90,7 @@ describe("Google YouTube Mappers", () => {
     describe("domainToDataTarget", () => {
       it("should map domain subscription to data target", () => {
         const externalSubscription: GoogleYouTubeSubscriptionExternal = {
-          __type: "subscription",
+          __type: "google_youtube_subscription",
           kind: "youtube#subscription",
           etag: "etag",
           id: "sub-123",
@@ -122,7 +118,7 @@ describe("Google YouTube Mappers", () => {
         };
 
         const domainSubscription = mapGoogleYouTubeSubscription(externalSubscription);
-        const dataTarget = googleYouTubeSubscriptionDomainToDataTarget(domainSubscription);
+        const dataTarget = domainSubscription.toPlain();
 
         assert.equal(dataTarget.id, "sub-123");
         assert.equal(dataTarget.title, "Subscribed Channel");

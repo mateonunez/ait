@@ -1,14 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, SpotifyPlaylistEntity, getLogger } from "@ait/core";
 import { type SpotifyPlaylistDataTarget, drizzleOrm, getPostgresClient, spotifyPlaylists } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyPlaylistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import {
-  spotifyPlaylistDataTargetToDomain,
-  spotifyPlaylistDomainToDataTarget,
-} from "../../spotify/spotify-playlist.entity";
-import type { SpotifyPlaylistEntity } from "../../spotify/spotify-playlist.entity";
 
 const logger = getLogger();
 
@@ -23,7 +17,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     const playlistId = incremental ? randomUUID() : playlist.id;
 
     try {
-      const playlistDataTarget = spotifyPlaylistDomainToDataTarget(playlist);
+      const playlistDataTarget = playlist.toPlain<SpotifyPlaylistDataTarget>();
       playlistDataTarget.id = playlistId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -32,9 +26,9 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
           description: playlistDataTarget.description,
           public: playlistDataTarget.public,
           collaborative: playlistDataTarget.collaborative,
-          owner: playlistDataTarget.owner,
+          owner: playlistDataTarget.owner as any,
           tracks: playlistDataTarget.tracks as any,
-          followers: playlistDataTarget.followers,
+          followers: playlistDataTarget.followers as any,
           snapshotId: playlistDataTarget.snapshotId,
           uri: playlistDataTarget.uri,
           href: playlistDataTarget.href,
@@ -68,8 +62,6 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     }
 
     try {
-      logger.debug("Saving playlists to Spotify repository:", { playlists });
-
       for (const playlist of playlists) {
         await this.savePlaylist(playlist, { incremental: false });
       }
@@ -80,13 +72,22 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
   }
 
   async getPlaylist(id: string): Promise<SpotifyPlaylistEntity | null> {
-    logger.info("Getting playlist from Spotify repository", { id });
-    return null;
+    const result = await this._pgClient.db
+      .select()
+      .from(spotifyPlaylists)
+      .where(drizzleOrm.eq(spotifyPlaylists.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return SpotifyPlaylistEntity.fromPlain(result[0]! as SpotifyPlaylistDataTarget);
   }
 
   async fetchPlaylists(): Promise<SpotifyPlaylistEntity[]> {
-    logger.info("Getting playlists from Spotify repository");
-    return [];
+    const playlists = await this._pgClient.db.select().from(spotifyPlaylists);
+    return playlists.map((playlist) => SpotifyPlaylistEntity.fromPlain(playlist as SpotifyPlaylistDataTarget));
   }
 
   async getPlaylistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyPlaylistEntity>> {
@@ -108,7 +109,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: playlists.map((playlist) => spotifyPlaylistDataTargetToDomain(playlist as SpotifyPlaylistDataTarget)),
+      data: playlists.map((playlist) => SpotifyPlaylistEntity.fromPlain(playlist as SpotifyPlaylistDataTarget)),
       pagination: {
         page,
         limit,

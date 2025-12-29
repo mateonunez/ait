@@ -1,11 +1,10 @@
 import "reflect-metadata";
-import type { GooglePhotoExternal, GooglePhotoMediaMetadata } from "@ait/core";
-import { Expose, Type, plainToInstance } from "class-transformer";
-
-export interface GooglePhotoContributorInfo {
-  profilePictureBaseUrl: string;
-  displayName: string;
-}
+import { Expose, Type, instanceToPlain, plainToInstance } from "class-transformer";
+import type {
+  GooglePhotoContributorInfo,
+  GooglePhotoExternal,
+  GooglePhotoMediaMetadata,
+} from "../../types/integrations";
 
 export class GooglePhotoEntity {
   @Expose()
@@ -46,6 +45,14 @@ export class GooglePhotoEntity {
 
   @Expose()
   readonly __type = "google_photo" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GooglePhotoEntity {
+    return plainToInstance(GooglePhotoEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 export function mapGooglePhoto(external: GooglePhotoExternal): GooglePhotoEntity {
@@ -57,6 +64,7 @@ export function mapGooglePhoto(external: GooglePhotoExternal): GooglePhotoEntity
 
   return plainToInstance(GooglePhotoEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -133,5 +141,6 @@ export function mapGooglePickerPhoto(item: PickerPhotoInput, localPath?: string)
 
   return plainToInstance(GooglePhotoEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }

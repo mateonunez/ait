@@ -29,7 +29,7 @@ describe("ConnectorSpotifyStore", () => {
       const track: SpotifyTrackEntity = {
         id: "track-1",
         name: "Track One",
-        __type: "track",
+        __type: "spotify_track",
         artist: "An Artist",
         album: "An Album",
         durationMs: 180000,
@@ -55,7 +55,7 @@ describe("ConnectorSpotifyStore", () => {
         {
           id: "track-1",
           name: "Track One",
-          __type: "track",
+          __type: "spotify_track",
           artist: "Artist One",
           album: "Album One",
           durationMs: 180000,
@@ -66,7 +66,7 @@ describe("ConnectorSpotifyStore", () => {
         {
           id: "track-2",
           name: "Track Two",
-          __type: "track",
+          __type: "spotify_track",
           artist: "Artist Two",
           album: "Album Two",
           durationMs: 240000,

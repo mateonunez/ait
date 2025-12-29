@@ -8,18 +8,16 @@ import type {
   PaginationParams,
 } from "@ait/core";
 import { getLogger } from "@ait/core";
-import { photoStorageService } from "@ait/storage";
-import type {
-  GoogleCalendarCalendarEntity,
-  GoogleCalendarEventEntity,
-} from "../../domain/entities/google/google-calendar.entity";
-import type { GoogleContactEntity } from "../../domain/entities/google/google-contact.entity";
 import {
+  type GoogleCalendarCalendarEntity,
+  type GoogleCalendarEventEntity,
+  type GoogleContactEntity,
   type GooglePhotoEntity,
+  type GoogleYouTubeSubscriptionEntity,
   type PickerPhotoInput,
   mapGooglePickerPhoto,
-} from "../../domain/entities/google/google-photo.entity";
-import type { GoogleYouTubeSubscriptionEntity } from "../../domain/entities/google/google-youtube.entity";
+} from "@ait/core";
+import { photoStorageService } from "@ait/storage";
 import { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { getOAuthData } from "../../shared/auth/lib/oauth/connector.oauth.utils";

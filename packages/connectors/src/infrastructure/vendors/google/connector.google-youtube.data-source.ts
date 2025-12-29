@@ -36,7 +36,7 @@ export class ConnectorGoogleYouTubeDataSource implements IConnectorGoogleYouTube
       ...response,
       items: response.items.map((item) => ({
         ...item,
-        __type: "subscription",
+        __type: "google_youtube_subscription",
       })),
     };
   }

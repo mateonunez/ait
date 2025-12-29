@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, SpotifyAlbumEntity, getLogger } from "@ait/core";
 import { type SpotifyAlbumDataTarget, drizzleOrm, getPostgresClient, spotifyAlbums } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyAlbumRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { spotifyAlbumDataTargetToDomain, spotifyAlbumDomainToDataTarget } from "../../spotify/spotify-album.entity";
-import type { SpotifyAlbumEntity } from "../../spotify/spotify-album.entity";
 
 const logger = getLogger();
 
@@ -20,7 +17,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
     const albumId = incremental ? randomUUID() : album.id;
 
     try {
-      const albumDataTarget = spotifyAlbumDomainToDataTarget(album);
+      const albumDataTarget = album.toPlain<SpotifyAlbumDataTarget>();
       albumDataTarget.id = albumId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -79,13 +76,22 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
   }
 
   async getAlbum(id: string): Promise<SpotifyAlbumEntity | null> {
-    logger.info("Getting album from Spotify repository", { id });
-    return null;
+    const result = await this._pgClient.db
+      .select()
+      .from(spotifyAlbums)
+      .where(drizzleOrm.eq(spotifyAlbums.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return SpotifyAlbumEntity.fromPlain(result[0]! as SpotifyAlbumDataTarget);
   }
 
   async fetchAlbums(): Promise<SpotifyAlbumEntity[]> {
-    logger.info("Getting albums from Spotify repository");
-    return [];
+    const albums = await this._pgClient.db.select().from(spotifyAlbums);
+    return albums.map((album) => SpotifyAlbumEntity.fromPlain(album as SpotifyAlbumDataTarget));
   }
 
   async getAlbumsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyAlbumEntity>> {
@@ -107,7 +113,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: albums.map((album) => spotifyAlbumDataTargetToDomain(album as SpotifyAlbumDataTarget)),
+      data: albums.map((album) => SpotifyAlbumEntity.fromPlain(album as SpotifyAlbumDataTarget)),
       pagination: {
         page,
         limit,

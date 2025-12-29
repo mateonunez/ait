@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
-import type {
+import {
   SpotifyAlbumEntity,
   SpotifyArtistEntity,
   SpotifyPlaylistEntity,
@@ -40,14 +40,13 @@ describe("ConnectorSpotifyRepository", () => {
 
     describe("saveTrack", () => {
       it("should save track successfully", async () => {
-        const track: SpotifyTrackEntity = {
+        const track = SpotifyTrackEntity.fromPlain({
           id: "test-id",
           name: "Test Track",
           artist: "Test Artist",
           album: "Test Album",
           durationMs: 60000,
           popularity: 50,
-          // New fields
           explicit: false,
           isPlayable: true,
           previewUrl: "https://example.com/preview",
@@ -63,8 +62,7 @@ describe("ConnectorSpotifyRepository", () => {
           addedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "track",
-        };
+        });
 
         await trackRepository.saveTrack(track);
 
@@ -93,8 +91,8 @@ describe("ConnectorSpotifyRepository", () => {
     describe("saveTracks", () => {
       it("should save multiple tracks", async () => {
         const now = new Date();
-        const tracks: SpotifyTrackEntity[] = [
-          {
+        const tracks = [
+          SpotifyTrackEntity.fromPlain({
             id: "track-1",
             name: "Track 1",
             artist: "Artist 1",
@@ -116,9 +114,8 @@ describe("ConnectorSpotifyRepository", () => {
             addedAt: now,
             createdAt: now,
             updatedAt: now,
-            __type: "track",
-          },
-          {
+          }),
+          SpotifyTrackEntity.fromPlain({
             id: "track-2",
             name: "Track 2",
             artist: "Artist 2",
@@ -140,8 +137,7 @@ describe("ConnectorSpotifyRepository", () => {
             addedAt: now,
             createdAt: now,
             updatedAt: now,
-            __type: "track",
-          },
+          }),
         ];
 
         await trackRepository.saveTracks(tracks);
@@ -160,30 +156,31 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getTracksPaginated", () => {
       it("should return paginated tracks", async () => {
         const now = new Date();
-        const tracks: SpotifyTrackEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `track-${i + 1}`,
-          name: `Track ${i + 1}`,
-          artist: `Artist ${(i % 3) + 1}`,
-          album: `Album ${(i % 2) + 1}`,
-          durationMs: (i + 1) * 60000,
-          popularity: (i + 1) * 5,
-          explicit: i % 2 === 0,
-          isPlayable: true,
-          previewUrl: `https://example.com/preview-${i + 1}`,
-          trackNumber: (i % 10) + 1,
-          discNumber: 1,
-          uri: `spotify:track:track-${i + 1}`,
-          href: `https://api.spotify.com/v1/tracks/track-${i + 1}`,
-          isLocal: false,
-          albumData: { name: `Album ${(i % 2) + 1}`, id: `album-${(i % 2) + 1}` },
-          artistsData: [{ name: `Artist ${(i % 3) + 1}`, id: `artist-${(i % 3) + 1}` }],
-          externalIds: { isrc: `TEST${i + 1}` },
-          externalUrls: { spotify: `https://open.spotify.com/track/track-${i + 1}` },
-          addedAt: new Date(now.getTime() + i * 1000),
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "track",
-        }));
+        const tracks: SpotifyTrackEntity[] = Array.from({ length: 15 }, (_, i) =>
+          SpotifyTrackEntity.fromPlain({
+            id: `track-${i + 1}`,
+            name: `Track ${i + 1}`,
+            artist: `Artist ${(i % 3) + 1}`,
+            album: `Album ${(i % 2) + 1}`,
+            durationMs: (i + 1) * 60000,
+            popularity: (i + 1) * 5,
+            explicit: i % 2 === 0,
+            isPlayable: true,
+            previewUrl: `https://example.com/preview-${i + 1}`,
+            trackNumber: (i % 10) + 1,
+            discNumber: 1,
+            uri: `spotify:track:track-${i + 1}`,
+            href: `https://api.spotify.com/v1/tracks/track-${i + 1}`,
+            isLocal: false,
+            albumData: { name: `Album ${(i % 2) + 1}`, id: `album-${(i % 2) + 1}` },
+            artistsData: [{ name: `Artist ${(i % 3) + 1}`, id: `artist-${(i % 3) + 1}` }],
+            externalIds: { isrc: `TEST${i + 1}` },
+            externalUrls: { spotify: `https://open.spotify.com/track/track-${i + 1}` },
+            addedAt: new Date(now.getTime() + i * 1000),
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await trackRepository.saveTracks(tracks);
 
@@ -197,30 +194,31 @@ describe("ConnectorSpotifyRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const tracks: SpotifyTrackEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `track-${i + 1}`,
-          name: `Track ${i + 1}`,
-          artist: "Test Artist",
-          album: "Test Album",
-          durationMs: 60000,
-          popularity: 50,
-          explicit: false,
-          isPlayable: true,
-          previewUrl: null,
-          trackNumber: i + 1,
-          discNumber: 1,
-          uri: `spotify:track:track-${i + 1}`,
-          href: `https://api.spotify.com/v1/tracks/track-${i + 1}`,
-          isLocal: false,
-          albumData: null,
-          artistsData: [],
-          externalIds: {},
-          externalUrls: {},
-          addedAt: new Date(now.getTime() + i * 1000),
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "track",
-        }));
+        const tracks: SpotifyTrackEntity[] = Array.from({ length: 10 }, (_, i) =>
+          SpotifyTrackEntity.fromPlain({
+            id: `track-${i + 1}`,
+            name: `Track ${i + 1}`,
+            artist: "Test Artist",
+            album: "Test Album",
+            durationMs: 60000,
+            popularity: 50,
+            explicit: false,
+            isPlayable: true,
+            previewUrl: null,
+            trackNumber: i + 1,
+            discNumber: 1,
+            uri: `spotify:track:track-${i + 1}`,
+            href: `https://api.spotify.com/v1/tracks/track-${i + 1}`,
+            isLocal: false,
+            albumData: null,
+            artistsData: [],
+            externalIds: {},
+            externalUrls: {},
+            addedAt: new Date(now.getTime() + i * 1000),
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await trackRepository.saveTracks(tracks);
 
@@ -249,15 +247,14 @@ describe("ConnectorSpotifyRepository", () => {
     describe("saveArtist", () => {
       it("should save artist successfully", async () => {
         const now = new Date();
-        const artist: SpotifyArtistEntity = {
+        const artist = SpotifyArtistEntity.fromPlain({
           id: "test-id",
           name: "Artist One",
           popularity: 70,
           genres: ["Pop", "Rock"],
           createdAt: now,
           updatedAt: now,
-          __type: "artist",
-        } as SpotifyArtistEntity;
+        });
 
         await artistRepository.saveArtist(artist);
 
@@ -283,26 +280,24 @@ describe("ConnectorSpotifyRepository", () => {
     describe("saveArtists", () => {
       it("should save multiple artists", async () => {
         const now = new Date();
-        const artists: SpotifyArtistEntity[] = [
-          {
+        const artists = [
+          SpotifyArtistEntity.fromPlain({
             id: "artist-1",
             name: "Artist One",
             popularity: 70,
             genres: ["Pop", "Rock"],
             createdAt: now,
             updatedAt: now,
-            __type: "artist",
-          },
-          {
+          }),
+          SpotifyArtistEntity.fromPlain({
             id: "artist-2",
             name: "Artist Two",
             popularity: 80,
             genres: ["Hip Hop"],
             createdAt: now,
             updatedAt: now,
-            __type: "artist",
-          },
-        ] as SpotifyArtistEntity[];
+          }),
+        ];
 
         await artistRepository.saveArtists(artists);
         const saved = await db.select().from(spotifyArtists).execute();
@@ -319,15 +314,16 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getArtistsPaginated", () => {
       it("should return paginated artists", async () => {
         const now = new Date();
-        const artists: SpotifyArtistEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `artist-${i + 1}`,
-          name: `Artist ${i + 1}`,
-          popularity: (i + 1) * 5,
-          genres: [`genre-${(i % 3) + 1}`],
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "artist",
-        })) as SpotifyArtistEntity[];
+        const artists: SpotifyArtistEntity[] = Array.from({ length: 15 }, (_, i) =>
+          SpotifyArtistEntity.fromPlain({
+            id: `artist-${i + 1}`,
+            name: `Artist ${i + 1}`,
+            popularity: (i + 1) * 5,
+            genres: [`genre-${(i % 3) + 1}`],
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await artistRepository.saveArtists(artists);
 
@@ -341,15 +337,16 @@ describe("ConnectorSpotifyRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const artists: SpotifyArtistEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `artist-${i + 1}`,
-          name: `Artist ${i + 1}`,
-          popularity: 70,
-          genres: ["Pop"],
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "artist",
-        })) as SpotifyArtistEntity[];
+        const artists: SpotifyArtistEntity[] = Array.from({ length: 10 }, (_, i) =>
+          SpotifyArtistEntity.fromPlain({
+            id: `artist-${i + 1}`,
+            name: `Artist ${i + 1}`,
+            popularity: 70,
+            genres: ["Pop"],
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await artistRepository.saveArtists(artists);
 
@@ -378,7 +375,7 @@ describe("ConnectorSpotifyRepository", () => {
     describe("savePlaylist", () => {
       it("should save playlist successfully", async () => {
         const now = new Date();
-        const playlist: SpotifyPlaylistEntity = {
+        const playlist = SpotifyPlaylistEntity.fromPlain({
           id: "test-playlist-id",
           name: "Test Playlist",
           description: "Test Description",
@@ -391,11 +388,10 @@ describe("ConnectorSpotifyRepository", () => {
           images: null,
           createdAt: now,
           updatedAt: now,
-          __type: "playlist",
           tracks: [],
           followers: 0,
           externalUrls: [],
-        };
+        });
 
         await playlistRepository.savePlaylist(playlist);
 
@@ -429,8 +425,8 @@ describe("ConnectorSpotifyRepository", () => {
     describe("savePlaylists", () => {
       it("should save multiple playlists", async () => {
         const now = new Date();
-        const playlists: SpotifyPlaylistEntity[] = [
-          {
+        const playlists = [
+          SpotifyPlaylistEntity.fromPlain({
             id: "playlist-1",
             name: "Playlist One",
             description: "First Test Playlist",
@@ -443,12 +439,11 @@ describe("ConnectorSpotifyRepository", () => {
             images: null,
             createdAt: now,
             updatedAt: now,
-            __type: "playlist",
             tracks: [],
             followers: 0,
             externalUrls: [],
-          },
-          {
+          }),
+          SpotifyPlaylistEntity.fromPlain({
             id: "playlist-2",
             name: "Playlist Two",
             description: "Second Test Playlist",
@@ -461,11 +456,10 @@ describe("ConnectorSpotifyRepository", () => {
             images: null,
             createdAt: now,
             updatedAt: now,
-            __type: "playlist",
             tracks: [],
             followers: 0,
             externalUrls: [],
-          },
+          }),
         ];
 
         await playlistRepository.savePlaylists(playlists);
@@ -484,24 +478,25 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getPlaylistsPaginated", () => {
       it("should return paginated playlists", async () => {
         const now = new Date();
-        const playlists: SpotifyPlaylistEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `playlist-${i + 1}`,
-          name: `Playlist ${i + 1}`,
-          description: `Description ${i + 1}`,
-          public: i % 2 === 0,
-          collaborative: i % 3 === 0,
-          owner: `owner-${(i % 2) + 1}`,
-          snapshotId: `snapshot-${i + 1}`,
-          uri: `spotify:playlist:playlist-${i + 1}`,
-          href: `https://api.spotify.com/v1/playlists/playlist-${i + 1}`,
-          images: null,
-          tracks: [],
-          followers: i * 10,
-          externalUrls: [],
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "playlist",
-        }));
+        const playlists: SpotifyPlaylistEntity[] = Array.from({ length: 15 }, (_, i) =>
+          SpotifyPlaylistEntity.fromPlain({
+            id: `playlist-${i + 1}`,
+            name: `Playlist ${i + 1}`,
+            description: `Description ${i + 1}`,
+            public: i % 2 === 0,
+            collaborative: i % 3 === 0,
+            owner: `owner-${(i % 2) + 1}`,
+            snapshotId: `snapshot-${i + 1}`,
+            uri: `spotify:playlist:playlist-${i + 1}`,
+            href: `https://api.spotify.com/v1/playlists/playlist-${i + 1}`,
+            images: null,
+            tracks: [],
+            followers: i * 10,
+            externalUrls: [],
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await playlistRepository.savePlaylists(playlists);
 
@@ -515,24 +510,25 @@ describe("ConnectorSpotifyRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const playlists: SpotifyPlaylistEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `playlist-${i + 1}`,
-          name: `Playlist ${i + 1}`,
-          description: `Description ${i + 1}`,
-          public: true,
-          collaborative: false,
-          owner: "test-user",
-          snapshotId: `snapshot-${i + 1}`,
-          uri: `spotify:playlist:playlist-${i + 1}`,
-          href: `https://api.spotify.com/v1/playlists/playlist-${i + 1}`,
-          images: null,
-          tracks: [],
-          followers: 0,
-          externalUrls: [],
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "playlist",
-        }));
+        const playlists: SpotifyPlaylistEntity[] = Array.from({ length: 10 }, (_, i) =>
+          SpotifyPlaylistEntity.fromPlain({
+            id: `playlist-${i + 1}`,
+            name: `Playlist ${i + 1}`,
+            description: `Description ${i + 1}`,
+            public: true,
+            collaborative: false,
+            owner: "test-user",
+            snapshotId: `snapshot-${i + 1}`,
+            uri: `spotify:playlist:playlist-${i + 1}`,
+            href: `https://api.spotify.com/v1/playlists/playlist-${i + 1}`,
+            images: null,
+            tracks: [],
+            followers: 0,
+            externalUrls: [],
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await playlistRepository.savePlaylists(playlists);
 
@@ -563,10 +559,10 @@ describe("ConnectorSpotifyRepository", () => {
     describe("saveAlbum", () => {
       it("should save album successfully", async () => {
         const now = new Date();
-        const album: SpotifyAlbumEntity = {
+        const album = SpotifyAlbumEntity.fromPlain({
           id: "test-album-id",
           name: "Test Album",
-          albumType: "album",
+          albumType: "spotify_album",
           artists: [],
           tracks: [],
           totalTracks: 2,
@@ -582,9 +578,9 @@ describe("ConnectorSpotifyRepository", () => {
           images: null,
           createdAt: now,
           updatedAt: now,
-          __type: "album",
+          __type: "spotify_album", // Ensure type is present even if fromPlain sets it, for explicitness if needed or matching existing pattern
           externalIds: [],
-        };
+        });
 
         await albumRepository.saveAlbum(album);
 
@@ -604,11 +600,11 @@ describe("ConnectorSpotifyRepository", () => {
     describe("saveAlbums", () => {
       it("should save multiple albums", async () => {
         const now = new Date();
-        const albums: SpotifyAlbumEntity[] = [
-          {
+        const albums = [
+          SpotifyAlbumEntity.fromPlain({
             id: "album-1",
             name: "Album One",
-            albumType: "album",
+            albumType: "spotify_album",
             artists: [],
             tracks: [],
             totalTracks: 1,
@@ -625,9 +621,9 @@ describe("ConnectorSpotifyRepository", () => {
             images: null,
             createdAt: now,
             updatedAt: now,
-            __type: "album",
-          },
-          {
+            __type: "spotify_album",
+          }),
+          SpotifyAlbumEntity.fromPlain({
             id: "album-2",
             name: "Album Two",
             albumType: "single",
@@ -647,8 +643,8 @@ describe("ConnectorSpotifyRepository", () => {
             images: null,
             createdAt: now,
             updatedAt: now,
-            __type: "album",
-          },
+            __type: "spotify_album",
+          }),
         ];
 
         await albumRepository.saveAlbums(albums);
@@ -667,28 +663,29 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getAlbumsPaginated", () => {
       it("should return paginated albums", async () => {
         const now = new Date();
-        const albums: SpotifyAlbumEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `album-${i + 1}`,
-          name: `Album ${i + 1}`,
-          albumType: i % 2 === 0 ? "album" : "single",
-          artists: [],
-          tracks: [],
-          totalTracks: (i + 1) * 5,
-          releaseDate: `2024-${String((i % 12) + 1).padStart(2, "0")}-15`,
-          releaseDatePrecision: "day",
-          isPlayable: true,
-          uri: `spotify:album:album-${i + 1}`,
-          href: `https://api.spotify.com/v1/albums/album-${i + 1}`,
-          popularity: (i + 1) * 5,
-          label: `Label ${(i % 3) + 1}`,
-          copyrights: [],
-          externalIds: [],
-          genres: [`genre-${(i % 3) + 1}`],
-          images: null,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "album",
-        }));
+        const albums: SpotifyAlbumEntity[] = Array.from({ length: 15 }, (_, i) =>
+          SpotifyAlbumEntity.fromPlain({
+            id: `album-${i + 1}`,
+            name: `Album ${i + 1}`,
+            albumType: i % 2 === 0 ? "spotify_album" : "single",
+            artists: [],
+            tracks: [],
+            totalTracks: (i + 1) * 5,
+            releaseDate: `2024-${String((i % 12) + 1).padStart(2, "0")}-15`,
+            releaseDatePrecision: "day",
+            isPlayable: true,
+            uri: `spotify:album:album-${i + 1}`,
+            href: `https://api.spotify.com/v1/albums/album-${i + 1}`,
+            popularity: (i + 1) * 5,
+            label: `Label ${(i % 3) + 1}`,
+            copyrights: [],
+            externalIds: [],
+            genres: [`genre-${(i % 3) + 1}`],
+            images: null,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await albumRepository.saveAlbums(albums);
 
@@ -702,28 +699,29 @@ describe("ConnectorSpotifyRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const albums: SpotifyAlbumEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `album-${i + 1}`,
-          name: `Album ${i + 1}`,
-          albumType: "album",
-          artists: [],
-          tracks: [],
-          totalTracks: 10,
-          releaseDate: "2024-03-15",
-          releaseDatePrecision: "day",
-          isPlayable: true,
-          uri: `spotify:album:album-${i + 1}`,
-          href: `https://api.spotify.com/v1/albums/album-${i + 1}`,
-          popularity: 65,
-          label: "Test Label",
-          copyrights: [],
-          externalIds: [],
-          genres: ["Pop"],
-          images: null,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "album",
-        }));
+        const albums: SpotifyAlbumEntity[] = Array.from({ length: 10 }, (_, i) =>
+          SpotifyAlbumEntity.fromPlain({
+            id: `album-${i + 1}`,
+            name: `Album ${i + 1}`,
+            albumType: "spotify_album",
+            artists: [],
+            tracks: [],
+            totalTracks: 10,
+            releaseDate: "2024-03-15",
+            releaseDatePrecision: "day",
+            isPlayable: true,
+            uri: `spotify:album:album-${i + 1}`,
+            href: `https://api.spotify.com/v1/albums/album-${i + 1}`,
+            popularity: 65,
+            label: "Test Label",
+            copyrights: [],
+            externalIds: [],
+            genres: ["Pop"],
+            images: null,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await albumRepository.saveAlbums(albums);
 
@@ -756,7 +754,7 @@ describe("ConnectorSpotifyRepository", () => {
       it("should save recently played item successfully", async () => {
         const now = new Date();
         const playedAt = new Date(now.getTime() - 60000); // 1 minute ago
-        const recentlyPlayed: SpotifyRecentlyPlayedEntity = {
+        const recentlyPlayed = SpotifyRecentlyPlayedEntity.fromPlain({
           id: `track-1-${playedAt.toISOString()}`,
           trackId: "track-1",
           trackName: "Test Track",
@@ -767,14 +765,13 @@ describe("ConnectorSpotifyRepository", () => {
           popularity: 75,
           playedAt: playedAt,
           context: {
-            type: "playlist",
+            type: "spotify_playlist",
             uri: "spotify:playlist:test-playlist",
           },
           albumData: null,
           createdAt: now,
           updatedAt: now,
-          __type: "recently_played",
-        };
+        });
 
         await recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed);
 
@@ -799,7 +796,7 @@ describe("ConnectorSpotifyRepository", () => {
       it("should update existing recently played item on conflict", async () => {
         const now = new Date();
         const playedAt = new Date(now.getTime() - 60000);
-        const recentlyPlayed: SpotifyRecentlyPlayedEntity = {
+        const recentlyPlayed = SpotifyRecentlyPlayedEntity.fromPlain({
           id: `track-1-${playedAt.toISOString()}`,
           trackId: "track-1",
           trackName: "Test Track",
@@ -813,18 +810,17 @@ describe("ConnectorSpotifyRepository", () => {
           albumData: null,
           createdAt: now,
           updatedAt: now,
-          __type: "recently_played",
-        };
+        });
 
         // Save first time
         await recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed);
 
         // Update with new data
-        const updatedItem: SpotifyRecentlyPlayedEntity = {
-          ...recentlyPlayed,
+        const updatedItem = SpotifyRecentlyPlayedEntity.fromPlain({
+          ...recentlyPlayed.toPlain(),
           trackName: "Updated Track Name",
           popularity: 85,
-        };
+        });
 
         await recentlyPlayedRepository.saveRecentlyPlayed(updatedItem);
 
@@ -850,8 +846,8 @@ describe("ConnectorSpotifyRepository", () => {
     describe("saveRecentlyPlayedBatch", () => {
       it("should save multiple recently played items", async () => {
         const now = new Date();
-        const items: SpotifyRecentlyPlayedEntity[] = [
-          {
+        const items = [
+          SpotifyRecentlyPlayedEntity.fromPlain({
             id: `track-1-${now.toISOString()}`,
             trackId: "track-1",
             trackName: "Track One",
@@ -862,15 +858,14 @@ describe("ConnectorSpotifyRepository", () => {
             popularity: 70,
             playedAt: new Date(now.getTime() - 120000), // 2 minutes ago
             context: {
-              type: "playlist",
+              type: "spotify_playlist",
               uri: "spotify:playlist:playlist-1",
             },
             albumData: null,
             createdAt: now,
             updatedAt: now,
-            __type: "recently_played",
-          },
-          {
+          }),
+          SpotifyRecentlyPlayedEntity.fromPlain({
             id: `track-2-${now.toISOString()}`,
             trackId: "track-2",
             trackName: "Track Two",
@@ -881,14 +876,13 @@ describe("ConnectorSpotifyRepository", () => {
             popularity: 80,
             playedAt: new Date(now.getTime() - 60000), // 1 minute ago
             context: {
-              type: "album",
+              type: "spotify_album",
               uri: "spotify:album:album-2",
             },
             albumData: null,
             createdAt: now,
             updatedAt: now,
-            __type: "recently_played",
-          },
+          }),
         ];
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
@@ -907,8 +901,8 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getRecentlyPlayed", () => {
       it("should retrieve recently played items ordered by playedAt", async () => {
         const now = new Date();
-        const items: SpotifyRecentlyPlayedEntity[] = [
-          {
+        const items = [
+          SpotifyRecentlyPlayedEntity.fromPlain({
             id: "track-1-old",
             trackId: "track-1",
             trackName: "Old Track",
@@ -922,9 +916,8 @@ describe("ConnectorSpotifyRepository", () => {
             albumData: null,
             createdAt: now,
             updatedAt: now,
-            __type: "recently_played",
-          },
-          {
+          }),
+          SpotifyRecentlyPlayedEntity.fromPlain({
             id: "track-2-recent",
             trackId: "track-2",
             trackName: "Recent Track",
@@ -938,8 +931,7 @@ describe("ConnectorSpotifyRepository", () => {
             albumData: null,
             createdAt: now,
             updatedAt: now,
-            __type: "recently_played",
-          },
+          }),
         ];
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
@@ -953,22 +945,23 @@ describe("ConnectorSpotifyRepository", () => {
 
       it("should respect the limit parameter", async () => {
         const now = new Date();
-        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 5 }, (_, i) => ({
-          id: `track-${i}-${now.toISOString()}`,
-          trackId: `track-${i}`,
-          trackName: `Track ${i}`,
-          artist: `Artist ${i}`,
-          album: `Album ${i}`,
-          durationMs: 180000,
-          explicit: false,
-          popularity: 70,
-          playedAt: new Date(now.getTime() - i * 60000), // i minutes ago
-          context: null,
-          albumData: null,
-          createdAt: now,
-          updatedAt: now,
-          __type: "recently_played",
-        }));
+        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 5 }, (_, i) =>
+          SpotifyRecentlyPlayedEntity.fromPlain({
+            id: `track-${i}-${now.toISOString()}`,
+            trackId: `track-${i}`,
+            trackName: `Track ${i}`,
+            artist: `Artist ${i}`,
+            album: `Album ${i}`,
+            durationMs: 180000,
+            explicit: false,
+            popularity: 70,
+            playedAt: new Date(now.getTime() - i * 60000), // i minutes ago
+            context: null,
+            albumData: null,
+            createdAt: now,
+            updatedAt: now,
+          }),
+        );
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
 
@@ -980,7 +973,7 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getRecentlyPlayedById", () => {
       it("should retrieve a specific recently played item by ID", async () => {
         const now = new Date();
-        const recentlyPlayed: SpotifyRecentlyPlayedEntity = {
+        const recentlyPlayed = SpotifyRecentlyPlayedEntity.fromPlain({
           id: "test-id-123",
           trackId: "track-1",
           trackName: "Test Track",
@@ -991,14 +984,13 @@ describe("ConnectorSpotifyRepository", () => {
           popularity: 75,
           playedAt: new Date(now.getTime() - 60000),
           context: {
-            type: "playlist",
+            type: "spotify_playlist",
             uri: "spotify:playlist:test",
           },
           albumData: null,
           createdAt: now,
           updatedAt: now,
-          __type: "recently_played",
-        };
+        });
 
         await recentlyPlayedRepository.saveRecentlyPlayed(recentlyPlayed);
 
@@ -1018,25 +1010,26 @@ describe("ConnectorSpotifyRepository", () => {
     describe("getRecentlyPlayedPaginated", () => {
       it("should return paginated recently played items", async () => {
         const now = new Date();
-        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `track-${i + 1}-${now.toISOString()}`,
-          trackId: `track-${i + 1}`,
-          trackName: `Track ${i + 1}`,
-          artist: `Artist ${(i % 3) + 1}`,
-          album: `Album ${(i % 2) + 1}`,
-          durationMs: 180000,
-          explicit: i % 2 === 0,
-          popularity: (i + 1) * 5,
-          playedAt: new Date(now.getTime() - i * 60000),
-          context: {
-            type: "playlist",
-            uri: `spotify:playlist:playlist-${(i % 3) + 1}`,
-          },
-          albumData: null,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "recently_played",
-        }));
+        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 15 }, (_, i) =>
+          SpotifyRecentlyPlayedEntity.fromPlain({
+            id: `track-${i + 1}-${now.toISOString()}`,
+            trackId: `track-${i + 1}`,
+            trackName: `Track ${i + 1}`,
+            artist: `Artist ${(i % 3) + 1}`,
+            album: `Album ${(i % 2) + 1}`,
+            durationMs: 180000,
+            explicit: i % 2 === 0,
+            popularity: (i + 1) * 5,
+            playedAt: new Date(now.getTime() - i * 60000),
+            context: {
+              type: "spotify_playlist",
+              uri: `spotify:playlist:playlist-${(i % 3) + 1}`,
+            },
+            albumData: null,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
 
@@ -1050,22 +1043,23 @@ describe("ConnectorSpotifyRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `track-${i + 1}-${now.toISOString()}`,
-          trackId: `track-${i + 1}`,
-          trackName: `Track ${i + 1}`,
-          artist: "Test Artist",
-          album: "Test Album",
-          durationMs: 180000,
-          explicit: false,
-          popularity: 70,
-          playedAt: new Date(now.getTime() - i * 60000),
-          context: null,
-          albumData: null,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "recently_played",
-        }));
+        const items: SpotifyRecentlyPlayedEntity[] = Array.from({ length: 10 }, (_, i) =>
+          SpotifyRecentlyPlayedEntity.fromPlain({
+            id: `track-${i + 1}-${now.toISOString()}`,
+            trackId: `track-${i + 1}`,
+            trackName: `Track ${i + 1}`,
+            artist: "Test Artist",
+            album: "Test Album",
+            durationMs: 180000,
+            explicit: false,
+            popularity: 70,
+            playedAt: new Date(now.getTime() - i * 60000),
+            context: null,
+            albumData: null,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await recentlyPlayedRepository.saveRecentlyPlayedBatch(items);
 

@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { SpotifyPlaylistExternal } from "@ait/core";
-import type { SpotifyPlaylistDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { SpotifyPlaylistExternal } from "../../types/integrations";
 
 /**
  * Spotify Playlist entity with class-transformer decorators.
@@ -14,33 +13,33 @@ export class SpotifyPlaylistEntity {
   name!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   public!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   collaborative!: boolean;
 
   @Expose()
   owner!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   tracks!: any[];
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   followers!: number;
 
   @Expose()
   snapshotId!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   externalUrls!: string[];
 
   @Expose()
@@ -50,19 +49,27 @@ export class SpotifyPlaylistEntity {
   href!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   images!: { url: string; height: number; width: number }[] | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "playlist" as const;
+  readonly __type = "spotify_playlist" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): SpotifyPlaylistEntity {
+    return plainToInstance(SpotifyPlaylistEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -96,6 +103,7 @@ export function mapSpotifyPlaylist(external: SpotifyPlaylistExternal): SpotifyPl
 
   return plainToInstance(SpotifyPlaylistEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -104,16 +112,4 @@ export function mapSpotifyPlaylist(external: SpotifyPlaylistExternal): SpotifyPl
  */
 export function mapSpotifyPlaylists(externals: SpotifyPlaylistExternal[]): SpotifyPlaylistEntity[] {
   return externals.map(mapSpotifyPlaylist);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function spotifyPlaylistDomainToDataTarget(domain: SpotifyPlaylistEntity): SpotifyPlaylistDataTarget {
-  return instanceToPlain(domain) as SpotifyPlaylistDataTarget;
-}
-
-export function spotifyPlaylistDataTargetToDomain(dataTarget: SpotifyPlaylistDataTarget): SpotifyPlaylistEntity {
-  return plainToInstance(SpotifyPlaylistEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

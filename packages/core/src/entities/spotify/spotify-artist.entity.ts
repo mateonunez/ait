@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { SpotifyArtistExternal } from "@ait/core";
-import type { SpotifyArtistDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { SpotifyArtistExternal } from "../../types/integrations";
 
 /**
  * Spotify Artist entity with class-transformer decorators.
@@ -17,23 +16,31 @@ export class SpotifyArtistEntity {
   popularity!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   genres!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   images!: { url: string; height: number; width: number }[] | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "artist" as const;
+  readonly __type = "spotify_artist" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): SpotifyArtistEntity {
+    return plainToInstance(SpotifyArtistEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -42,6 +49,7 @@ export class SpotifyArtistEntity {
 export function mapSpotifyArtist(external: SpotifyArtistExternal): SpotifyArtistEntity {
   return plainToInstance(SpotifyArtistEntity, external, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -50,16 +58,4 @@ export function mapSpotifyArtist(external: SpotifyArtistExternal): SpotifyArtist
  */
 export function mapSpotifyArtists(externals: SpotifyArtistExternal[]): SpotifyArtistEntity[] {
   return externals.map(mapSpotifyArtist);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function spotifyArtistDomainToDataTarget(domain: SpotifyArtistEntity): SpotifyArtistDataTarget {
-  return instanceToPlain(domain) as SpotifyArtistDataTarget;
-}
-
-export function spotifyArtistDataTargetToDomain(dataTarget: SpotifyArtistDataTarget): SpotifyArtistEntity {
-  return plainToInstance(SpotifyArtistEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

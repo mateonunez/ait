@@ -1,15 +1,8 @@
 import { randomUUID } from "node:crypto";
-import {
-  AItError,
-  type GitHubPullRequestEntity,
-  type PaginatedResponse,
-  type PaginationParams,
-  getLogger,
-} from "@ait/core";
-import { drizzleOrm, getPostgresClient, githubPullRequests } from "@ait/postgres";
+import { AItError, GitHubPullRequestEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { type GitHubPullRequestDataTarget, drizzleOrm, getPostgresClient, githubPullRequests } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubPullRequestRepository } from "../../../../types/domain/entities/vendors/connector.github.pull-request.types";
-import { pullRequestDataTargetToDomain, pullRequestDomainToDataTarget } from "../../../entities/github";
 
 const logger = getLogger();
 
@@ -24,7 +17,7 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
     const pullRequestId = incremental ? randomUUID() : pullRequest.id;
 
     try {
-      const pullRequestData = pullRequestDomainToDataTarget(pullRequest);
+      const pullRequestData = pullRequest.toPlain<GitHubPullRequestDataTarget>();
       pullRequestData.id = pullRequestId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -121,7 +114,7 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: pullRequests.map((pr) => pullRequestDataTargetToDomain(pr)),
+      data: pullRequests.map((pr) => GitHubPullRequestEntity.fromPlain(pr as GitHubPullRequestDataTarget)),
       pagination: {
         page,
         limit,

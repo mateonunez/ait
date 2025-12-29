@@ -45,7 +45,7 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract<GitHubPull
   }
 
   protected override _getEntityType(): EntityType {
-    return "pull_request";
+    return "github_pull_request";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubPullRequestDataTarget[]> {
@@ -92,6 +92,6 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract<GitHubPull
 
 export interface RetoveGitHubPullRequestVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "pull_request";
+    __type: "github_pull_request";
   } & Partial<GitHubPullRequestDataTarget>;
 }

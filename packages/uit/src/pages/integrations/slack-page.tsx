@@ -22,7 +22,7 @@ export default function SlackPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const response = await fetchEntityData("slack", "message", { page, limit: pageSize });
+        const response = await fetchEntityData("slack", "slack_message", { page, limit: pageSize });
         setMessages(response.data as SlackMessageEntity[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  SpotifyRecentlyPlayedEntity,
+  getLogger,
+} from "@ait/core";
 import {
   type SpotifyRecentlyPlayedDataTarget,
   drizzleOrm,
@@ -9,11 +14,6 @@ import {
 } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyRecentlyPlayedRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import {
-  spotifyRecentlyPlayedDataTargetToDomain,
-  spotifyRecentlyPlayedDomainToDataTarget,
-} from "../../spotify/spotify-recently-played.entity";
-import type { SpotifyRecentlyPlayedEntity } from "../../spotify/spotify-recently-played.entity";
 
 const logger = getLogger();
 
@@ -28,7 +28,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
     const itemId = incremental ? randomUUID() : item.id;
 
     try {
-      const itemDataTarget = spotifyRecentlyPlayedDomainToDataTarget(item);
+      const itemDataTarget = item.toPlain<SpotifyRecentlyPlayedDataTarget>();
       itemDataTarget.id = itemId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -88,7 +88,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       .limit(limit)
       .execute();
 
-    return results.map((result) => spotifyRecentlyPlayedDataTargetToDomain(result as SpotifyRecentlyPlayedDataTarget));
+    return results.map((result) => SpotifyRecentlyPlayedEntity.fromPlain(result as SpotifyRecentlyPlayedDataTarget));
   }
 
   async getRecentlyPlayedById(id: string): Promise<SpotifyRecentlyPlayedEntity | null> {
@@ -100,7 +100,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       .execute();
 
     if (result.length > 0 && result[0]) {
-      return spotifyRecentlyPlayedDataTargetToDomain(result[0] as SpotifyRecentlyPlayedDataTarget);
+      return SpotifyRecentlyPlayedEntity.fromPlain(result[0] as SpotifyRecentlyPlayedDataTarget);
     }
 
     return null;
@@ -126,7 +126,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
 
     return {
       data: recentlyPlayed.map((item) =>
-        spotifyRecentlyPlayedDataTargetToDomain(item as SpotifyRecentlyPlayedDataTarget),
+        SpotifyRecentlyPlayedEntity.fromPlain(item as SpotifyRecentlyPlayedDataTarget),
       ),
       pagination: {
         page,

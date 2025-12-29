@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "@ait/core";
-import type { GoogleCalendarCalendarDataTarget, GoogleCalendarEventDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "../../types/integrations";
 
 /**
  * Google Calendar Event entity with class-transformer decorators.
@@ -11,163 +10,171 @@ export class GoogleCalendarEventEntity {
   id!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "Untitled Event")
+  @Transform(({ value }: any) => value ?? "Untitled Event")
   title!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   startTime!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   endTime!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isAllDay!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   timeZone!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   location!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "confirmed")
+  @Transform(({ value }: any) => value ?? "confirmed")
   status!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "")
+  @Transform(({ value }: any) => value ?? "")
   htmlUrl!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   colorId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "default")
+  @Transform(({ value }: any) => value ?? "default")
   visibility!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "opaque")
+  @Transform(({ value }: any) => value ?? "opaque")
   transparency!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   iCalUid!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   sequence!: number | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   calendarId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   recurringEventId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "default")
+  @Transform(({ value }: any) => value ?? "default")
   eventType!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   hangoutLink!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   anyoneCanAddSelf!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? true)
+  @Transform(({ value }: any) => value ?? true)
   guestsCanInviteOthers!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   guestsCanModify!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? true)
+  @Transform(({ value }: any) => value ?? true)
   guestsCanSeeOtherGuests!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   privateCopy!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   locked!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   attendeesOmitted!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   attendeesCount!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   creatorData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   organizerData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   attendeesData!: any[] | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   recurrenceData!: string[] | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   remindersData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   conferenceData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   attachmentsData!: any[] | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   extendedPropertiesData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   eventCreatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   eventUpdatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "event" as const;
+  readonly __type = "google_calendar_event" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GoogleCalendarEventEntity {
+    return plainToInstance(GoogleCalendarEventEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -178,78 +185,87 @@ export class GoogleCalendarCalendarEntity {
   id!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "Untitled Calendar")
+  @Transform(({ value }: any) => value ?? "Untitled Calendar")
   title!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   location!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   timeZone!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   colorId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   backgroundColor!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   foregroundColor!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "reader")
+  @Transform(({ value }: any) => value ?? "reader")
   accessRole!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isPrimary!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isHidden!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? true)
+  @Transform(({ value }: any) => value ?? true)
   isSelected!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isDeleted!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   defaultRemindersData!: any[] | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   notificationSettingsData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   conferencePropertiesData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
-  readonly __type = "calendar" as const;
+  @Expose()
+  readonly __type = "google_calendar_calendar" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GoogleCalendarCalendarEntity {
+    return plainToInstance(GoogleCalendarCalendarEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -262,6 +278,8 @@ export function mapGoogleCalendarEvent(
   const mapped = {
     ...external,
     title: external.summary ?? "Untitled Event",
+    description: external.description ?? null,
+    location: external.location ?? null,
     startTime: external.start?.dateTime ?? external.start?.date ?? null,
     endTime: external.end?.dateTime ?? external.end?.date ?? null,
     isAllDay: !!external.start?.date && !external.start?.dateTime,
@@ -285,6 +303,7 @@ export function mapGoogleCalendarEvent(
 
   return plainToInstance(GoogleCalendarEventEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -295,6 +314,8 @@ export function mapGoogleCalendarCalendar(external: GoogleCalendarCalendarExtern
   const mapped = {
     ...external,
     title: external.summaryOverride ?? external.summary ?? "Untitled Calendar",
+    description: external.description ?? null,
+    location: external.location ?? null,
     isPrimary: external.primary ?? false,
     isHidden: external.hidden ?? false,
     isSelected: external.selected ?? true,
@@ -306,35 +327,6 @@ export function mapGoogleCalendarCalendar(external: GoogleCalendarCalendarExtern
 
   return plainToInstance(GoogleCalendarCalendarEntity, mapped, {
     excludeExtraneousValues: true,
-  });
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function googleCalendarEventDomainToDataTarget(
-  domain: GoogleCalendarEventEntity,
-): GoogleCalendarEventDataTarget {
-  return instanceToPlain(domain) as GoogleCalendarEventDataTarget;
-}
-
-export function googleCalendarEventDataTargetToDomain(
-  dataTarget: GoogleCalendarEventDataTarget,
-): GoogleCalendarEventEntity {
-  return plainToInstance(GoogleCalendarEventEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
-}
-
-export function googleCalendarCalendarDomainToDataTarget(
-  domain: GoogleCalendarCalendarEntity,
-): GoogleCalendarCalendarDataTarget {
-  return instanceToPlain(domain) as GoogleCalendarCalendarDataTarget;
-}
-
-export function googleCalendarCalendarDataTargetToDomain(
-  dataTarget: GoogleCalendarCalendarDataTarget,
-): GoogleCalendarCalendarEntity {
-  return plainToInstance(GoogleCalendarCalendarEntity, dataTarget, {
-    excludeExtraneousValues: false,
+    exposeDefaultValues: true,
   });
 }

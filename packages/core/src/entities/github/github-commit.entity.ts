@@ -1,5 +1,3 @@
-import "reflect-metadata";
-import type { GitHubCommitDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
 
 /**
@@ -10,11 +8,11 @@ export class GitHubCommitEntity {
   sha!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "")
+  @Transform(({ value }: any) => value ?? "")
   message!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   messageBody!: string | null;
 
   @Expose()
@@ -33,7 +31,7 @@ export class GitHubCommitEntity {
   authorEmail!: string | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   authorDate!: Date | null;
 
   @Expose()
@@ -43,7 +41,7 @@ export class GitHubCommitEntity {
   committerEmail!: string | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   committerDate!: Date | null;
 
   @Expose()
@@ -53,19 +51,19 @@ export class GitHubCommitEntity {
   treeUrl!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   parentShas!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   additions!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   deletions!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   total!: number;
 
   // These are populated externally (from context)
@@ -79,36 +77,44 @@ export class GitHubCommitEntity {
   repositoryFullName: string | null = null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   authorData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   committerData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   filesData!: Record<string, unknown>[] | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   verification!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   // Use author date as createdAt/updatedAt
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()
-  readonly __type = "commit" as const;
+  readonly __type = "github_commit" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GitHubCommitEntity {
+    return plainToInstance(GitHubCommitEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -160,6 +166,7 @@ export function mapGitHubCommit(external: any): GitHubCommitEntity {
 
   return plainToInstance(GitHubCommitEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -168,16 +175,4 @@ export function mapGitHubCommit(external: any): GitHubCommitEntity {
  */
 export function mapGitHubCommits(externals: unknown[]): GitHubCommitEntity[] {
   return externals.map(mapGitHubCommit);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function commitDomainToDataTarget(domain: GitHubCommitEntity): GitHubCommitDataTarget {
-  return instanceToPlain(domain) as GitHubCommitDataTarget;
-}
-
-export function commitDataTargetToDomain(dataTarget: GitHubCommitDataTarget): GitHubCommitEntity {
-  return plainToInstance(GitHubCommitEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

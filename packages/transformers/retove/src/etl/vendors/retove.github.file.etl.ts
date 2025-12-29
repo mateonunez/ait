@@ -39,7 +39,7 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract<GitHubFileDataTar
   }
 
   protected override _getEntityType(): EntityType {
-    return "repository_file";
+    return "github_file";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubFileDataTarget[]> {
@@ -92,6 +92,6 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract<GitHubFileDataTar
 
 export interface RetoveGitHubFileVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "repository_file";
+    __type: "github_file";
   } & Partial<GitHubFileDataTarget>;
 }

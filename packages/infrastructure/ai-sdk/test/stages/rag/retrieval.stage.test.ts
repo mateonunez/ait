@@ -58,7 +58,7 @@ describe("RetrievalStage", () => {
       const input: RetrievalInput = {
         query: "Test query",
         intent: {
-          entityTypes: ["commit"],
+          entityTypes: ["github_commit"],
           isTemporalQuery: false,
           primaryFocus: "github",
           complexityScore: 3,
@@ -92,7 +92,7 @@ describe("RetrievalStage", () => {
       const input: RetrievalInput = {
         query: "Preserve this query",
         intent: {
-          entityTypes: ["playlist"],
+          entityTypes: ["spotify_playlist"],
           isTemporalQuery: false,
           primaryFocus: "github",
           complexityScore: 2,
@@ -125,7 +125,7 @@ describe("RetrievalStage", () => {
       const input: RetrievalInput = {
         query: "Multi collection query",
         intent: {
-          entityTypes: ["commit", "playlist"],
+          entityTypes: ["github_commit", "spotify_playlist"],
           isTemporalQuery: false,
           primaryFocus: "github",
           complexityScore: 5,
@@ -165,7 +165,7 @@ describe("RetrievalStage", () => {
       const input: RetrievalInput = {
         query: "Simple query",
         intent: {
-          entityTypes: ["commit"],
+          entityTypes: ["github_commit"],
           isTemporalQuery: false,
           primaryFocus: "github",
           complexityScore: 2,
@@ -196,7 +196,7 @@ describe("RetrievalStage", () => {
       const input: RetrievalInput = {
         query: "Complex query",
         intent: {
-          entityTypes: ["commit", "message"],
+          entityTypes: ["github_commit", "slack_message"],
           isTemporalQuery: true,
           primaryFocus: "github",
           complexityScore: 7,

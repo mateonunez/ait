@@ -1,4 +1,10 @@
-import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GoogleCalendarCalendarEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  getLogger,
+} from "@ait/core";
 import {
   type GoogleCalendarCalendarDataTarget,
   drizzleOrm,
@@ -7,11 +13,6 @@ import {
 } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleCalendarCalendarRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import {
-  googleCalendarCalendarDataTargetToDomain,
-  googleCalendarCalendarDomainToDataTarget,
-} from "../../google/google-calendar.entity";
-import type { GoogleCalendarCalendarEntity } from "../../google/google-calendar.entity";
 
 const logger = getLogger();
 
@@ -25,7 +26,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
     const calendarId = calendar.id;
 
     try {
-      const calendarDataTarget = googleCalendarCalendarDomainToDataTarget(calendar);
+      const calendarDataTarget = calendar.toPlain<GoogleCalendarCalendarDataTarget>();
       calendarDataTarget.id = calendarId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -95,7 +96,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
       return null;
     }
 
-    return googleCalendarCalendarDataTargetToDomain(result[0]! as GoogleCalendarCalendarDataTarget);
+    return GoogleCalendarCalendarEntity.fromPlain(result[0]! as GoogleCalendarCalendarDataTarget);
   }
 
   async fetchCalendars(): Promise<GoogleCalendarCalendarEntity[]> {
@@ -105,7 +106,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
       .orderBy(drizzleOrm.desc(googleCalendarCalendars.isPrimary));
 
     return calendars.map((calendar) =>
-      googleCalendarCalendarDataTargetToDomain(calendar as GoogleCalendarCalendarDataTarget),
+      GoogleCalendarCalendarEntity.fromPlain(calendar as GoogleCalendarCalendarDataTarget),
     );
   }
 
@@ -129,7 +130,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
 
     return {
       data: calendars.map((calendar) =>
-        googleCalendarCalendarDataTargetToDomain(calendar as GoogleCalendarCalendarDataTarget),
+        GoogleCalendarCalendarEntity.fromPlain(calendar as GoogleCalendarCalendarDataTarget),
       ),
       pagination: {
         page,

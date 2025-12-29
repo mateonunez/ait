@@ -57,6 +57,6 @@ export class RepositoryFileTextTokenizer implements ITextTokenizer {
   }
 
   getName(): EntityType {
-    return "repository_file";
+    return "github_file";
   }
 }

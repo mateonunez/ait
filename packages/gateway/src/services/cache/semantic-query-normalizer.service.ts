@@ -27,13 +27,13 @@ RESPOND ONLY with a JSON object in this exact format:
 {"entity":"<entity>","collection":"<collection>","action":"<action>"}
 
 Examples:
-- "Show me my favorite artists on Spotify" → {"entity":"artist","collection":"spotify","action":"list"}
-- "List my Spotify artists" → {"entity":"artist","collection":"spotify","action":"list"}
-- "Please, list my Spotify artists" → {"entity":"artist","collection":"spotify","action":"list"}
-- "What are my top GitHub repositories?" → {"entity":"repository","collection":"github","action":"list"}
-- "List my GitHub repos" → {"entity":"repository","collection":"github","action":"list"}
-- "Show recent Slack messages" → {"entity":"message","collection":"slack","action":"list"}
-- "Get my Notion pages" → {"entity":"page","collection":"notion","action":"list"}
+- "Show me my favorite artists on Spotify" → {"entity":"spotify_artist","collection":"spotify","action":"list"}
+- "List my Spotify artists" → {"entity":"spotify_artist","collection":"spotify","action":"list"}
+- "Please, list my Spotify artists" → {"entity":"spotify_artist","collection":"spotify","action":"list"}
+- "What are my top GitHub repositories?" → {"entity":"github_repository","collection":"github","action":"list"}
+- "List my GitHub repos" → {"entity":"github_repository","collection":"github","action":"list"}
+- "Show recent Slack messages" → {"entity":"slack_message","collection":"slack","action":"list"}
+- "Get my Notion pages" → {"entity":"notion_page","collection":"notion","action":"list"}
 
 User Query: `;
 

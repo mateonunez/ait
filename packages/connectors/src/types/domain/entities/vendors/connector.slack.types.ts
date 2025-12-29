@@ -1,5 +1,4 @@
-import type { PaginatedResponse, PaginationParams } from "@ait/core";
-import type { SlackMessageEntity } from "../../../../domain/entities/slack/slack-message.entity";
+import type { PaginatedResponse, PaginationParams, SlackMessageEntity } from "@ait/core";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorSlackMessageRepository {

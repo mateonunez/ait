@@ -12,7 +12,7 @@ const MAX_PAST_DAYS = 7;
 
 function isCalendarEventRelevant(entity: IntegrationEntity): boolean {
   const entityAny = entity as any;
-  if (entityAny.__type !== "event") return true;
+  if (entityAny.__type !== "google_calendar_event") return true;
   if (!entityAny.startTime) return false;
 
   const startTime = new Date(entityAny.startTime);
@@ -33,7 +33,7 @@ function deduplicateRecurringEvents(items: IntegrationEntity[]): IntegrationEnti
 
   return items.filter((item) => {
     const entityAny = item as any;
-    if (entityAny.__type !== "event") return true;
+    if (entityAny.__type !== "google_calendar_event") return true;
     if (entityAny.recurringEventId) {
       if (seenRecurring.has(entityAny.recurringEventId)) return false;
       seenRecurring.add(entityAny.recurringEventId);

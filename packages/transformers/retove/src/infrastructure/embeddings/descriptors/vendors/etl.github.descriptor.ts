@@ -236,7 +236,7 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
     };
 
     return {
-      __type: "repository",
+      __type: "github_repository",
       ...sanitizedPayload,
     } as unknown as U;
   }
@@ -469,7 +469,7 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
     };
 
     return {
-      __type: "pull_request",
+      __type: "github_pull_request",
       ...sanitizedPayload,
     } as unknown as U;
   }
@@ -654,7 +654,7 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
     };
 
     return {
-      __type: "commit",
+      __type: "github_commit",
       ...sanitizedPayload,
     } as unknown as U;
   }

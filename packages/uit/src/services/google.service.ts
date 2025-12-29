@@ -1,6 +1,6 @@
 import { requestJson } from "@ait/core";
 import type {
-  GoogleCalendarEntity as GoogleCalendar,
+  GoogleCalendarEntityType as GoogleCalendar,
   GoogleCalendarEventEntity as GoogleCalendarEvent,
   GoogleContactEntity as GoogleContact,
   GooglePhotoEntity as GooglePhoto,

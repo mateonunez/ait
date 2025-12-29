@@ -1,9 +1,7 @@
-import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { AItError, GooglePhotoEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { type GooglePhotoDataTarget, drizzleOrm, getPostgresClient, googlePhotos } from "@ait/postgres";
-import { instanceToPlain, plainToInstance } from "class-transformer";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGooglePhotoRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import { GooglePhotoEntity } from "../../google/google-photo.entity";
 
 const logger = getLogger();
 
@@ -15,7 +13,7 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
     _options: IConnectorRepositorySaveOptions = { incremental: false },
   ): Promise<void> {
     try {
-      const dataTarget = instanceToPlain(photo) as GooglePhotoDataTarget;
+      const dataTarget = photo.toPlain<GooglePhotoDataTarget>();
 
       // Fix: id/primary key conflict
       await this._pgClient.db
@@ -57,7 +55,7 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
       .limit(1);
 
     if (result.length === 0) return null;
-    return plainToInstance(GooglePhotoEntity, result[0], { excludeExtraneousValues: false });
+    return GooglePhotoEntity.fromPlain(result[0] as GooglePhotoDataTarget);
   }
 
   async fetchPhotos(): Promise<GooglePhotoEntity[]> {
@@ -66,7 +64,7 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
       .from(googlePhotos)
       .orderBy(drizzleOrm.desc(googlePhotos.creationTime));
 
-    return photos.map((p) => plainToInstance(GooglePhotoEntity, p, { excludeExtraneousValues: false }));
+    return photos.map((p) => GooglePhotoEntity.fromPlain(p as GooglePhotoDataTarget));
   }
 
   async getPhotosPaginated(params: PaginationParams): Promise<PaginatedResponse<GooglePhotoEntity>> {
@@ -88,7 +86,7 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: photos.map((p) => plainToInstance(GooglePhotoEntity, p, { excludeExtraneousValues: false })),
+      data: photos.map((p) => GooglePhotoEntity.fromPlain(p as GooglePhotoDataTarget)),
       pagination: {
         page,
         limit,

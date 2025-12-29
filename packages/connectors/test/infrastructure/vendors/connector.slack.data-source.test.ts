@@ -68,7 +68,7 @@ describe("ConnectorSlackDataSource", () => {
             ts: "1234567890.123456",
             user: "user-1",
             text: "Hello, world!",
-            type: "message",
+            type: "slack_message",
           },
         ],
         has_more: false,
@@ -124,7 +124,7 @@ describe("ConnectorSlackDataSource", () => {
       const result = await dataSource.fetchMessages();
 
       assert.equal(result.messages.length, 1);
-      assert.equal(result.messages[0]?.__type, "message");
+      assert.equal(result.messages[0]?.__type, "slack_message");
       assert.equal(result.messages[0]?.channel, "channel-1");
       assert.equal(result.messages[0]?.channelName, "general");
       assert.equal(result.messages[0]?.text, "Hello, world!");
@@ -265,26 +265,26 @@ describe("ConnectorSlackDataSource", () => {
             ts: "1234567890.123456",
             user: "user-1",
             text: "Valid message",
-            type: "message",
+            type: "slack_message",
           },
           {
             ts: "1234567890.123457",
             bot_id: "bot-1",
             text: "Bot message",
-            type: "message",
+            type: "slack_message",
           },
           {
             ts: "1234567890.123458",
             user: "user-2",
             text: "",
-            type: "message",
+            type: "slack_message",
           },
           {
             ts: "1234567890.123459",
             user: "user-3",
             text: "System message",
             subtype: "channel_join",
-            type: "message",
+            type: "slack_message",
           },
         ],
         has_more: false,
@@ -456,7 +456,7 @@ describe("ConnectorSlackDataSource", () => {
             ts: "1234567890.123456",
             user: "user-1",
             text: "Message in member channel",
-            type: "message",
+            type: "slack_message",
           },
         ],
         has_more: false,
@@ -535,13 +535,13 @@ describe("ConnectorSlackDataSource", () => {
             ts: "1234567890.100000", // Older
             user: "user-1",
             text: "Older message",
-            type: "message",
+            type: "slack_message",
           },
           {
             ts: "1234567890.200000", // Newer
             user: "user-2",
             text: "Newer message",
-            type: "message",
+            type: "slack_message",
           },
         ],
         has_more: false,
