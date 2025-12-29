@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, SpotifyTrackEntity, getLogger } from "@ait/core";
 import { type SpotifyTrackDataTarget, drizzleOrm, getPostgresClient, spotifyTracks } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyTrackRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
-import { spotifyTrackDataTargetToDomain, spotifyTrackDomainToDataTarget } from "../../spotify/spotify-track.entity";
-import type { SpotifyTrackEntity } from "../../spotify/spotify-track.entity";
 
 const logger = getLogger();
 
@@ -20,7 +17,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     const trackId = incremental ? randomUUID() : track.id;
 
     try {
-      const trackDataTarget = spotifyTrackDomainToDataTarget(track);
+      const trackDataTarget = track.toPlain<SpotifyTrackDataTarget>();
       trackDataTarget.id = trackId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -38,17 +35,17 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
           href: trackDataTarget.href,
           isLocal: trackDataTarget.isLocal,
           popularity: trackDataTarget.popularity,
-          albumData: trackDataTarget.albumData,
-          artistsData: trackDataTarget.artistsData,
-          externalIds: trackDataTarget.externalIds,
-          externalUrls: trackDataTarget.externalUrls,
+          albumData: trackDataTarget.albumData as any,
+          artistsData: trackDataTarget.artistsData as any,
+          externalIds: trackDataTarget.externalIds as any,
+          externalUrls: trackDataTarget.externalUrls as any,
           addedAt: trackDataTarget.addedAt,
           updatedAt: new Date(),
         };
 
         await tx
           .insert(spotifyTracks)
-          .values(trackDataTarget)
+          .values(trackDataTarget as any)
           .onConflictDoUpdate({
             target: spotifyTracks.id,
             set: updateValues,
@@ -72,8 +69,6 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     }
 
     try {
-      logger.debug("Saving tracks to Spotify repository:", { tracks });
-
       for (const track of tracks) {
         await this.saveTrack(track, { incremental: false });
       }
@@ -84,13 +79,22 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
   }
 
   async getTrack(id: string): Promise<SpotifyTrackEntity | null> {
-    logger.info("Getting track from Spotify repository", { id });
-    return null;
+    const result = await this._pgClient.db
+      .select()
+      .from(spotifyTracks)
+      .where(drizzleOrm.eq(spotifyTracks.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return SpotifyTrackEntity.fromPlain(result[0]! as SpotifyTrackDataTarget);
   }
 
   async fetchTracks(): Promise<SpotifyTrackEntity[]> {
-    logger.info("Getting tracks from Spotify repository");
-    return [];
+    const tracks = await this._pgClient.db.select().from(spotifyTracks);
+    return tracks.map((track) => SpotifyTrackEntity.fromPlain(track as SpotifyTrackDataTarget));
   }
 
   async getTracksPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyTrackEntity>> {
@@ -112,7 +116,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tracks.map((track) => spotifyTrackDataTargetToDomain(track as SpotifyTrackDataTarget)),
+      data: tracks.map((track) => SpotifyTrackEntity.fromPlain(track as SpotifyTrackDataTarget)),
       pagination: {
         page,
         limit,

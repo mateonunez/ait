@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, XTweetEntity, getLogger } from "@ait/core";
 import {
   type OAuthTokenDataTarget,
   type XTweetDataTarget,
@@ -14,8 +14,6 @@ import type {
   IConnectorXRepository,
   IConnectorXTweetRepository,
 } from "../../../../types/domain/entities/vendors/connector.x.repository.types";
-import { xTweetDataTargetToDomain, xTweetDomainToDataTarget } from "../../x/x-tweet.entity";
-import type { XTweetEntity } from "../../x/x-tweet.entity";
 
 const logger = getLogger();
 
@@ -27,7 +25,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
     const tweetId = incremental ? randomUUID() : tweet.id;
 
     try {
-      const tweetData = xTweetDomainToDataTarget(tweet);
+      const tweetData = tweet.toPlain<XTweetDataTarget>();
       tweetData.id = tweetId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -72,13 +70,18 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
   }
 
   async getTweet(id: string): Promise<XTweetEntity | null> {
-    logger.debug("Getting tweet from X repository", { id });
-    return null;
+    const result = await this._pgClient.db.select().from(xTweets).where(drizzleOrm.eq(xTweets.id, id)).limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return XTweetEntity.fromPlain(result[0]! as XTweetDataTarget);
   }
 
   async fetchTweets(): Promise<XTweetEntity[]> {
-    logger.debug("Getting tweets from X repository");
-    return [];
+    const results = await this._pgClient.db.select().from(xTweets);
+    return results.map((result) => XTweetEntity.fromPlain(result as XTweetDataTarget));
   }
 
   async getTweetsPaginated(params: PaginationParams): Promise<PaginatedResponse<XTweetEntity>> {
@@ -95,7 +98,7 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: tweets.map((tweet) => xTweetDataTargetToDomain(tweet as XTweetDataTarget)),
+      data: tweets.map((tweet) => XTweetEntity.fromPlain(tweet as XTweetDataTarget)),
       pagination: {
         page,
         limit,

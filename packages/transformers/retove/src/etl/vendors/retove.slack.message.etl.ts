@@ -79,13 +79,13 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract<SlackMessageDat
   }
 
   protected override _getEntityType(): EntityType {
-    return "message";
+    return "slack_message";
   }
 }
 
 export interface RetoveSlackMessageVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "message";
+    __type: "slack_message";
   } & Partial<SlackMessageDataTarget>;
 }
 

@@ -28,7 +28,7 @@ describe("ConnectorNotionDataSource", () => {
         object: "list",
         results: [
           {
-            object: "page",
+            object: "notion_page",
             id: "page-1",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-02T00:00:00.000Z",
@@ -97,7 +97,7 @@ describe("ConnectorNotionDataSource", () => {
 
       assert.equal(result.pages.length, 1);
       assert.equal(result.pages[0]?.id, "page-1");
-      assert.equal(result.pages[0]?.__type, "page");
+      assert.equal(result.pages[0]?.__type, "notion_page");
       assert.equal(result.pages[0]?.url, "https://notion.so/page-1");
       assert.ok(result.pages[0]?.content?.includes("This is test content"));
     });
@@ -107,7 +107,7 @@ describe("ConnectorNotionDataSource", () => {
         object: "list",
         results: [
           {
-            object: "page",
+            object: "notion_page",
             id: "page-1",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-02T00:00:00.000Z",
@@ -129,7 +129,7 @@ describe("ConnectorNotionDataSource", () => {
         object: "list",
         results: [
           {
-            object: "page",
+            object: "notion_page",
             id: "page-2",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-02T00:00:00.000Z",
@@ -267,7 +267,7 @@ describe("ConnectorNotionDataSource", () => {
         object: "list",
         results: [
           {
-            object: "page",
+            object: "notion_page",
             id: "page-1",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-02T00:00:00.000Z",
@@ -318,7 +318,7 @@ describe("ConnectorNotionDataSource", () => {
         object: "list",
         results: [
           {
-            object: "page",
+            object: "notion_page",
             id: "page-1",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-02T00:00:00.000Z",
@@ -396,7 +396,7 @@ describe("ConnectorNotionDataSource", () => {
         object: "list",
         results: [
           {
-            object: "page",
+            object: "notion_page",
             id: "page-old",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-01T00:00:00.000Z",
@@ -410,7 +410,7 @@ describe("ConnectorNotionDataSource", () => {
             url: "https://notion.so/page-old",
           },
           {
-            object: "page",
+            object: "notion_page",
             id: "page-new",
             created_time: "2025-01-01T00:00:00.000Z",
             last_edited_time: "2025-01-03T00:00:00.000Z",

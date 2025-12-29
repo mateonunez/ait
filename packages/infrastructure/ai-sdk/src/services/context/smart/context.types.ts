@@ -41,7 +41,7 @@ export interface ContextItem {
   id: string;
   tier: ContextTier;
   content: string;
-  type: "message" | "document" | "summary" | "tool_result" | "system";
+  type: "slack_message" | "document" | "summary" | "tool_result" | "system";
   tokens: number;
   metadata?: Record<string, unknown>;
   /**

@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { XTweetExternal } from "@ait/core";
-import type { XTweetDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { XTweetExternal } from "../../types/integrations";
 
 /**
  * X (Twitter) Tweet entity with class-transformer decorators.
@@ -17,67 +16,75 @@ export class XTweetEntity {
   authorId!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   authorUsername!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   authorName!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "en")
+  @Transform(({ value }: any) => value ?? "en")
   lang = "en";
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   retweetCount = 0;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   likeCount = 0;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   replyCount = 0;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   quoteCount = 0;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   conversationId: string | null = null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   inReplyToUserId: string | null = null;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   mediaAttachments: any[] = [];
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   pollData: any = null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   placeData: any = null;
 
   @Expose()
-  @Transform(({ value }) => value ?? {})
+  @Transform(({ value }: any) => value ?? {})
   jsonData: Record<string, unknown> = {};
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "tweet" as const;
+  readonly __type = "x_tweet" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): XTweetEntity {
+    return plainToInstance(XTweetEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -104,6 +111,7 @@ export function mapXTweet(external: XTweetExternal): XTweetEntity {
 
   return plainToInstance(XTweetEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -112,16 +120,4 @@ export function mapXTweet(external: XTweetExternal): XTweetEntity {
  */
 export function mapXTweets(externals: XTweetExternal[]): XTweetEntity[] {
   return externals.map(mapXTweet);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function xTweetDomainToDataTarget(domain: XTweetEntity): XTweetDataTarget {
-  return instanceToPlain(domain) as XTweetDataTarget;
-}
-
-export function xTweetDataTargetToDomain(dataTarget: XTweetDataTarget): XTweetEntity {
-  return plainToInstance(XTweetEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

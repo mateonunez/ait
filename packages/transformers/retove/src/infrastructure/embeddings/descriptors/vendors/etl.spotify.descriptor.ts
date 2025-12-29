@@ -1,4 +1,5 @@
 import { getAIDescriptorService } from "@ait/ai-sdk";
+import type { SpotifyTrackExternal } from "@ait/core";
 import type {
   SpotifyAlbumDataTarget,
   SpotifyArtistDataTarget,
@@ -45,7 +46,7 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
       durationStr ? `(${durationStr})` : null,
       albumName ? `from "${albumName}"` : null,
       releaseDate ? `released ${(releaseDate as string).split("-")[0]}` : null,
-      albumType && albumType !== "album" ? albumType : null,
+      albumType && albumType !== "spotify_album" ? albumType : null,
       track.explicit ? "explicit" : null,
       track.popularity && track.popularity > 70 ? "popular" : null,
       track.popularity && track.popularity < 30 ? "underground" : null,
@@ -76,7 +77,7 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
     };
 
     return {
-      __type: "track",
+      __type: "spotify_track",
       ...sanitizedPayload,
     } as unknown as U;
   }
@@ -124,7 +125,7 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
     const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
-      __type: "artist",
+      __type: "spotify_artist",
       ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
@@ -157,14 +158,7 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
     // tracks is stored as JSONB - cast to expected structure
     const tracks = playlist.tracks as Array<{
       added_at?: string;
-      track?: {
-        id: string;
-        name: string;
-        artist: string;
-        album: string | null;
-        durationMs: number;
-        uri: string | null;
-      };
+      track?: SpotifyTrackExternal;
     }> | null;
     const trackCount = Array.isArray(tracks) ? tracks.length : 0;
 
@@ -172,7 +166,7 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
     const trackPreview = Array.isArray(tracks)
       ? tracks
           .slice(0, 5)
-          .map((t) => (t?.track ? `"${t.track.name}" by ${t.track.artist}` : null))
+          .map(({ track }) => (track ? `"${track.name}" by ${track.artists?.join(", ")}` : null))
           .filter(Boolean)
           .join("; ")
       : null;
@@ -227,7 +221,7 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
       : [];
 
     return {
-      __type: "playlist",
+      __type: "spotify_playlist",
       ...entityWithoutLargeFields,
       trackCount,
       tracks: compactTracks,
@@ -252,7 +246,7 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
 
   public getEmbeddingText(enriched: EnrichedEntity<SpotifyAlbumDataTarget>): string {
     const { target: album, enrichment } = enriched;
-    const albumType = album.albumType || "album";
+    const albumType = album.albumType || "spotify_album";
 
     const parts = [
       `Saved ${albumType}: "${album.name}"`,
@@ -272,7 +266,7 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
     const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
-      __type: "album",
+      __type: "spotify_album",
       ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
@@ -311,9 +305,9 @@ export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescript
     let contextInfo = "";
     if (item.context && typeof item.context === "object") {
       const ctx = item.context as { type?: string };
-      if (ctx.type === "playlist") contextInfo = "via playlist";
-      else if (ctx.type === "album") contextInfo = "via album";
-      else if (ctx.type === "artist") contextInfo = "via artist radio";
+      if (ctx.type === "spotify_playlist") contextInfo = "via playlist";
+      else if (ctx.type === "spotify_album") contextInfo = "via album";
+      else if (ctx.type === "spotify_artist") contextInfo = "via artist radio";
       else if (ctx.type === "collection") contextInfo = "from liked songs";
     }
 
@@ -336,16 +330,16 @@ export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescript
     const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
-      __type: "recently_played",
+      __type: "spotify_recently_played",
       ...entityWithoutInternalTimestamps,
     } as unknown as U;
   }
 }
 
 export const spotifyDescriptorsETL = {
-  track: new ETLSpotifyTrackDescriptor(),
-  artist: new ETLSpotifyArtistDescriptor(),
-  playlist: new ETLSpotifyPlaylistDescriptor(),
-  album: new ETLSpotifyAlbumDescriptor(),
-  recentlyPlayed: new ETLSpotifyRecentlyPlayedDescriptor(),
+  spotify_track: new ETLSpotifyTrackDescriptor(),
+  spotify_artist: new ETLSpotifyArtistDescriptor(),
+  spotify_playlist: new ETLSpotifyPlaylistDescriptor(),
+  spotify_album: new ETLSpotifyAlbumDescriptor(),
+  spotify_recently_played: new ETLSpotifyRecentlyPlayedDescriptor(),
 };

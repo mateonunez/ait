@@ -35,7 +35,7 @@ describe("ConnectorXStore", () => {
       const tweet: XTweetEntity = {
         id: "tweet-1",
         text: "Test tweet",
-        __type: "tweet",
+        __type: "x_tweet",
         authorId: "author-1",
         authorUsername: "user1",
         authorName: "User One",
@@ -70,7 +70,7 @@ describe("ConnectorXStore", () => {
         {
           id: "tweet-1",
           text: "First tweet",
-          __type: "tweet",
+          __type: "x_tweet",
           authorId: "author-1",
           authorUsername: "user1",
           authorName: "User One",
@@ -91,7 +91,7 @@ describe("ConnectorXStore", () => {
         {
           id: "tweet-2",
           text: "Second tweet",
-          __type: "tweet",
+          __type: "x_tweet",
           authorId: "author-2",
           authorUsername: "user2",
           authorName: "User Two",

@@ -15,7 +15,7 @@ import {
   type SpotifyRecentlyPlayedEntity,
   type SpotifyTrackEntity,
   mapSpotifyTrack,
-} from "../../domain/entities/spotify";
+} from "@ait/core";
 import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
 import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";

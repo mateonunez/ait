@@ -111,7 +111,7 @@ export const GoogleContactSchema = z
 
 // --- Domain Types (normalized for app use) ---
 
-export const GoogleContactEntitySchema = z.object({
+export const GoogleContactEntityTypeSchema = z.object({
   id: z.string(),
   displayName: z.string(),
   givenName: z.string().nullable(),
@@ -127,4 +127,4 @@ export const GoogleContactEntitySchema = z.object({
   updatedAt: z.date().nullable(),
 });
 
-export type GoogleContactEntity = z.infer<typeof GoogleContactEntitySchema>;
+export type GoogleContactEntityType = z.infer<typeof GoogleContactEntityTypeSchema>;

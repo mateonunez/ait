@@ -74,12 +74,12 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract<SpotifyPlayl
   }
 
   protected override _getEntityType(): EntityType {
-    return "playlist";
+    return "spotify_playlist";
   }
 }
 
 export interface RetoveSpotifyPlaylistVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "playlist";
+    __type: "spotify_playlist";
   } & Partial<SpotifyPlaylistDataTarget>;
 }

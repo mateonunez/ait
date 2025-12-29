@@ -21,10 +21,10 @@ function createMockIntentService(): IQueryIntentService {
 
       // Entity detection patterns
       const entityTypes: EntityType[] = [];
-      if (/github|commits?|pull\s*requests?|pr/i.test(lowerQuery)) entityTypes.push("repository_file");
-      if (/spotify|playlist|song|music/i.test(lowerQuery)) entityTypes.push("track");
-      if (/slack|message/i.test(lowerQuery)) entityTypes.push("message");
-      if (/calendar|event|meeting/i.test(lowerQuery)) entityTypes.push("event");
+      if (/github|commits?|pull\s*requests?|pr/i.test(lowerQuery)) entityTypes.push("github_file");
+      if (/spotify|playlist|song|music/i.test(lowerQuery)) entityTypes.push("spotify_track");
+      if (/slack|message/i.test(lowerQuery)) entityTypes.push("slack_message");
+      if (/calendar|event|meeting/i.test(lowerQuery)) entityTypes.push("google_calendar_event");
 
       // Greeting detection
       const isGreeting = /^(hi|hello|hey|ciao|hola|bonjour)[!,.\s]*/i.test(query);

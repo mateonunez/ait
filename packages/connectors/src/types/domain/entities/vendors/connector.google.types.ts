@@ -1,11 +1,12 @@
-import type { PaginatedResponse, PaginationParams } from "@ait/core";
 import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
-} from "../../../../domain/entities/google/google-calendar.entity";
-import type { GoogleContactEntity } from "../../../../domain/entities/google/google-contact.entity";
-import type { GooglePhotoEntity } from "../../../../domain/entities/google/google-photo.entity";
-import type { GoogleYouTubeSubscriptionEntity } from "../../../../domain/entities/google/google-youtube.entity";
+  GoogleContactEntity,
+  GooglePhotoEntity,
+  GoogleYouTubeSubscriptionEntity,
+  PaginatedResponse,
+  PaginationParams,
+} from "@ait/core";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorGoogleCalendarEventRepository {

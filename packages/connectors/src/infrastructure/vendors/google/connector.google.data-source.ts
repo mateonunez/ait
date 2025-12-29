@@ -4,8 +4,8 @@ import type {
   GoogleContactExternal,
   GooglePhotoExternal,
   GoogleYouTubeSubscriptionExternal,
+  PickerPhotoInput,
 } from "@ait/core";
-import type { PickerPhotoInput } from "../../../domain/entities/google/google-photo.entity";
 import type { GoogleCalendarPaginatedResponse } from "../../../types/infrastructure/connector.google-calendar.data-source.interface";
 import type { GooglePeoplePaginatedResponse } from "../../../types/infrastructure/connector.google-contact.data-source.interface";
 import type { GooglePhotosPaginatedResponse } from "../../../types/infrastructure/connector.google-photos.data-source.interface";

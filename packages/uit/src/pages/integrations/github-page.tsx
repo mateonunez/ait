@@ -42,22 +42,22 @@ export default function GitHubPage() {
       setIsLoading(true);
       try {
         if (activeTab === "repositories") {
-          const response = await fetchEntityData("github", "repository", { page, limit: pageSize });
+          const response = await fetchEntityData("github", "github_repository", { page, limit: pageSize });
           setRepositories(response.data as GitHubRepository[]);
           setTotalPages(response.pagination.totalPages);
           setTotalRepositories(response.pagination.total);
         } else if (activeTab === "pull-requests") {
-          const response = await fetchEntityData("github", "pull_request", { page, limit: pageSize });
+          const response = await fetchEntityData("github", "github_pull_request", { page, limit: pageSize });
           setPullRequests(response.data as GitHubPullRequest[]);
           setTotalPages(response.pagination.totalPages);
           setTotalPullRequests(response.pagination.total);
         } else if (activeTab === "commits") {
-          const response = await fetchEntityData("github", "commit", { page, limit: pageSize });
+          const response = await fetchEntityData("github", "github_commit", { page, limit: pageSize });
           setCommits(response.data as GitHubCommit[]);
           setTotalPages(response.pagination.totalPages);
           setTotalCommits(response.pagination.total);
         } else if (activeTab === "files") {
-          const response = await fetchEntityData("github", "repository_file", { page, limit: pageSize });
+          const response = await fetchEntityData("github", "github_file", { page, limit: pageSize });
           setFiles(response.data as GitHubFile[]);
           setTotalPages(response.pagination.totalPages);
           setTotalFiles(response.pagination.total);

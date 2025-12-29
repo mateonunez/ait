@@ -56,7 +56,7 @@ export class ETLNotionPageDescriptor implements IETLEmbeddingDescriptor<NotionPa
     };
 
     return {
-      __type: "page",
+      __type: "notion_page",
       ...sanitizedPayload,
     } as unknown as U;
   }

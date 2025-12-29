@@ -22,7 +22,7 @@ export default function LinearPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const response = await fetchEntityData("linear", "issue", { page, limit: pageSize });
+        const response = await fetchEntityData("linear", "linear_issue", { page, limit: pageSize });
         setIssues(response.data as LinearIssue[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {

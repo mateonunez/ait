@@ -1,10 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { AItError, LinearIssueEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { type LinearIssueDataTarget, drizzleOrm, getPostgresClient, linearIssues } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
-import { linearIssueDataTargetToDomain, linearIssueDomainToDataTarget } from "../../linear/linear-issue.entity";
-import type { LinearIssueEntity } from "../../linear/linear-issue.entity";
 
 const logger = getLogger();
 
@@ -19,7 +17,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     const issueId = incremental ? randomUUID() : issue.id;
 
     try {
-      const issueDataTarget = linearIssueDomainToDataTarget(issue);
+      const issueDataTarget = issue.toPlain<LinearIssueDataTarget>();
       issueDataTarget.id = issueId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -62,8 +60,6 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     }
 
     try {
-      logger.debug("Saving issues to Linear repository:", { issues });
-
       for (const issue of issues) {
         await this.saveIssue(issue, { incremental: true });
       }
@@ -74,13 +70,22 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
   }
 
   async getIssue(id: string): Promise<LinearIssueEntity | null> {
-    logger.info("Getting issue from Linear repository", { id });
-    return null;
+    const result = await this._pgClient.db
+      .select()
+      .from(linearIssues)
+      .where(drizzleOrm.eq(linearIssues.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return LinearIssueEntity.fromPlain(result[0]! as LinearIssueDataTarget);
   }
 
   async fetchIssues(): Promise<LinearIssueEntity[]> {
-    logger.info("Getting issues from Linear repository");
-    return [];
+    const results = await this._pgClient.db.select().from(linearIssues);
+    return results.map((result) => LinearIssueEntity.fromPlain(result as LinearIssueDataTarget));
   }
 
   async getIssuesPaginated(params: PaginationParams): Promise<PaginatedResponse<LinearIssueEntity>> {
@@ -102,7 +107,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: issues.map((issue) => linearIssueDataTargetToDomain(issue as LinearIssueDataTarget)),
+      data: issues.map((issue) => LinearIssueEntity.fromPlain(issue as LinearIssueDataTarget)),
       pagination: {
         page,
         limit,

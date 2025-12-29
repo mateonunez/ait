@@ -3,32 +3,33 @@ import type { EntityType } from "./entities";
 
 export type GoalType =
   | EntityType
-  | "songs" // Alias for "recently_played" (backward compatibility)
-  | "tweets" // Alias for "tweet" (backward compatibility)
-  | "commits" // Alias for "commit" (backward compatibility)
-  | "tasks" // Alias for "issue" (backward compatibility)
-  | "documents" // Alias for "page" (backward compatibility)
-  | "messages" // Alias for "message" (backward compatibility)
-  | "meetings"; // Alias for "event" (backward compatibility)
+  | "songs" // Alias for "spotify_recently_played" (backward compatibility)
+  | "tweets" // Alias for "x_tweet" (backward compatibility)
+  | "commits" // Alias for "github_commit" (backward compatibility)
+  | "tasks" // Alias for "linear_issue" (backward compatibility)
+  | "documents" // Alias for "notion_page" (backward compatibility)
+  | "messages" // Alias for "slack_message" (backward compatibility)
+  | "meetings"; // Alias for "google_calendar_event" (backward compatibility)
 
 export const GoalTypeSchema = z.enum([
-  "track",
-  "artist",
-  "playlist",
-  "album",
-  "recently_played",
-  "repository",
-  "pull_request",
-  "commit",
-  "repository_file",
-  "issue",
-  "tweet",
-  "page",
-  "message",
-  "event",
-  "calendar",
-  "subscription",
+  "spotify_track",
+  "spotify_artist",
+  "spotify_playlist",
+  "spotify_album",
+  "spotify_recently_played",
+  "github_repository",
+  "github_pull_request",
+  "github_commit",
+  "github_file",
+  "linear_issue",
+  "x_tweet",
+  "notion_page",
+  "slack_message",
+  "google_calendar_event",
+  "google_calendar_calendar",
+  "google_youtube_subscription",
   "google_contact",
+  "google_photo",
   "songs",
   "tweets",
   "commits",
@@ -36,7 +37,6 @@ export const GoalTypeSchema = z.enum([
   "documents",
   "messages",
   "meetings",
-  "google_photo",
 ]);
 
 export type GoalPeriod = "daily" | "weekly" | "monthly";

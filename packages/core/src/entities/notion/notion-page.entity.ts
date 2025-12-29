@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { NotionPageExternal } from "@ait/core";
-import type { NotionPageDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { NotionPageExternal } from "../../types/integrations";
 
 /**
  * Notion Page entity with class-transformer decorators.
@@ -17,51 +16,59 @@ export class NotionPageEntity {
   url!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   parentType!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   parentId!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   archived!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   icon!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   cover!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   content!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? {})
+  @Transform(({ value }: any) => value ?? {})
   properties!: Record<string, unknown>;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   createdBy!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   lastEditedBy!: string | null;
 
   @Expose()
-  readonly __type = "page" as const;
+  readonly __type = "notion_page" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): NotionPageEntity {
+    return plainToInstance(NotionPageEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -103,6 +110,7 @@ export function mapNotionPage(external: NotionPageExternal): NotionPageEntity {
 
   return plainToInstance(NotionPageEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -111,16 +119,4 @@ export function mapNotionPage(external: NotionPageExternal): NotionPageEntity {
  */
 export function mapNotionPages(externals: NotionPageExternal[]): NotionPageEntity[] {
   return externals.map(mapNotionPage);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function notionPageDomainToDataTarget(domain: NotionPageEntity): NotionPageDataTarget {
-  return instanceToPlain(domain) as NotionPageDataTarget;
-}
-
-export function notionPageDataTargetToDomain(dataTarget: NotionPageDataTarget): NotionPageEntity {
-  return plainToInstance(NotionPageEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

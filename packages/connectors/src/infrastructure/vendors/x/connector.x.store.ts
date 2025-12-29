@@ -1,5 +1,5 @@
 import { AItError } from "@ait/core";
-import type { XEntity, XTweetEntity } from "@ait/core";
+import type { XEntityType, XTweetEntity } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { X_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -13,14 +13,13 @@ export class ConnectorXStore implements IConnectorStore {
     this._connectorXRepository = connectorXRepository;
   }
 
-  async save<T extends XEntity>(data: T | T[]): Promise<void> {
+  async save<T extends XEntityType>(data: T | T[]): Promise<void> {
     const items = this._resolveItems(data);
 
     for (const item of items) {
       switch (item.__type) {
         case X_ENTITY_TYPES_ENUM.TWEET:
-          // TODO: fix this
-          await this._connectorXRepository.tweet.saveTweet(item as XTweetEntity as any);
+          await this._connectorXRepository.tweet.saveTweet(item as unknown as XTweetEntity);
           break;
         default:
           throw new AItError("STORE_UNSUPPORTED_TYPE", `Type ${item.__type} is not supported`);
@@ -36,7 +35,7 @@ export class ConnectorXStore implements IConnectorStore {
     return this._connectorXRepository.getAuthenticationData();
   }
 
-  private _resolveItems<T extends XEntity>(data: T | T[]): T[] {
+  private _resolveItems<T extends XEntityType>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }
 }

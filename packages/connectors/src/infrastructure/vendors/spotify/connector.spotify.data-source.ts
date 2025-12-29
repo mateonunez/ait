@@ -49,11 +49,11 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       total: number;
     }>(`/me/tracks?${params.toString()}`);
 
-    const tracks =
+    const tracks: SpotifyTrackExternal[] =
       response?.items?.map((item) => ({
         ...item.track,
         addedAt: item.added_at,
-        __type: "track" as const,
+        __type: "spotify_track" as const,
       })) ?? [];
 
     return {
@@ -69,7 +69,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
 
     return response.items.map((artist) => ({
       ...artist,
-      __type: "artist" as const,
+      __type: "spotify_artist" as const,
     }));
   }
 
@@ -97,7 +97,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     const response = await this._fetchFromSpotify<SpotifyPlaylistExternal>(`/playlists/${playlistId}`);
     return {
       ...response,
-      __type: "playlist" as const,
+      __type: "spotify_playlist" as const,
     };
   }
 
@@ -121,7 +121,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     const albums = response.items.map((item) => ({
       ...item.album,
       addedAt: item.added_at,
-      __type: "album" as const,
+      __type: "spotify_album" as const,
     }));
 
     // Sort by popularity (most popular first)
@@ -137,7 +137,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     const response = await this._fetchFromSpotify<SpotifyAlbumExternal>(`/albums/${albumId}`);
     return {
       ...response,
-      __type: "album" as const,
+      __type: "spotify_album" as const,
     };
   }
 
@@ -162,7 +162,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
     return {
       items: response.items.map((item) => ({
         ...item,
-        __type: "recently_played" as const,
+        __type: "spotify_recently_played" as const,
       })),
       nextCursor: response.cursors?.after,
     };
@@ -229,7 +229,7 @@ export class ConnectorSpotifyDataSource implements IConnectorSpotifyDataSource {
       is_playing: response.is_playing,
       item: {
         ...response.item,
-        __type: "track" as const,
+        __type: "spotify_track" as const,
       },
       progress_ms: response.progress_ms,
       timestamp: response.timestamp,

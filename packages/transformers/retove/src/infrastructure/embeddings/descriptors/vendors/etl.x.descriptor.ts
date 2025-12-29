@@ -26,7 +26,7 @@ export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTa
     // Add media context
     if (tweet.mediaAttachments && Array.isArray(tweet.mediaAttachments) && tweet.mediaAttachments.length > 0) {
       const mediaTypes = tweet.mediaAttachments.map((m: any) => m.type);
-      const photoCount = mediaTypes.filter((t) => t === "photo").length;
+      const photoCount = mediaTypes.filter((t) => t === "google_photo").length;
       const videoCount = mediaTypes.filter((t) => t === "video").length;
       const gifCount = mediaTypes.filter((t) => t === "animated_gif").length;
 
@@ -104,7 +104,7 @@ export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTa
     };
 
     return {
-      __type: "tweet",
+      __type: "x_tweet",
       ...sanitizedPayload,
     } as unknown as U;
   }

@@ -22,7 +22,7 @@ export default function NotionPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const response = await fetchEntityData("notion", "page", { page, limit: pageSize });
+        const response = await fetchEntityData("notion", "notion_page", { page, limit: pageSize });
         setPages(response.data as NotionPageEntity[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {

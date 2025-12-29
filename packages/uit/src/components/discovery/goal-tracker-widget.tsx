@@ -20,7 +20,7 @@ const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string; icon: string; c
   { value: "tasks", label: "Tasks", icon: "✅", color: "#5E6AD2" },
   { value: "documents", label: "Documents", icon: "📝", color: "#787774" },
   { value: "meetings", label: "Meetings", icon: "📅", color: "#4285F4" },
-  { value: "subscription", label: "Subscriptions", icon: "📺", color: "#FF0000" },
+  { value: "google_youtube_subscription", label: "Subscriptions", icon: "📺", color: "#FF0000" },
   { value: "google_contact", label: "Contacts", icon: "👤", color: "#4285F4" },
   { value: "google_photo", label: "Photos", icon: "📸", color: "#FE2C25" },
 ];

@@ -91,13 +91,13 @@ export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract<GoogleCa
   }
 
   protected override _getEntityType(): EntityType {
-    return "event";
+    return "google_calendar_event";
   }
 }
 
 export interface RetoveGoogleCalendarEventVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "event";
+    __type: "google_calendar_event";
   } & Partial<GoogleCalendarEventDataTarget>;
 }
 

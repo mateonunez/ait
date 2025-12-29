@@ -142,7 +142,7 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
       const requestBody: Record<string, unknown> = {
         filter: {
           property: "object",
-          value: "page",
+          value: "notion_page",
         },
         page_size: 50,
       };
@@ -173,7 +173,7 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
 
       // Process pages with throttling to avoid rate limits
       const pages: NotionPageExternal[] = [];
-      const pageResults = response.results.filter((page: NotionPageRaw) => page.object === "page");
+      const pageResults = response.results.filter((page: NotionPageRaw) => page.object === "notion_page");
 
       for (const page of pageResults) {
         const content = await this.fetchPageContent(page.id);
@@ -191,7 +191,7 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
           properties: page.properties || {},
           url: page.url || "",
           content: content || null,
-          __type: "page" as const,
+          __type: "notion_page" as const,
         } as NotionPageExternal);
       }
 

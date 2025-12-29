@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
-import type { SlackMessageEntity } from "@ait/core";
+import { SlackMessageEntity } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient, slackMessages } from "@ait/postgres";
 import { ConnectorSlackMessageRepository } from "../../../../src/domain/entities/vendors/slack/connector.slack-message.repository";
 
@@ -20,7 +20,7 @@ describe("ConnectorSlackMessageRepository", () => {
     describe("saveMessage", () => {
       it("should save message successfully", async () => {
         const now = new Date();
-        const message: SlackMessageEntity = {
+        const message = SlackMessageEntity.fromPlain({
           id: "test-msg-1",
           channelId: "channel-1",
           channelName: "general",
@@ -33,8 +33,7 @@ describe("ConnectorSlackMessageRepository", () => {
           ts: "1234567890.123456",
           createdAt: now,
           updatedAt: now,
-          __type: "message",
-        } as unknown as SlackMessageEntity;
+        });
 
         await repository.saveMessage(message);
 
@@ -53,7 +52,7 @@ describe("ConnectorSlackMessageRepository", () => {
 
       it("should update existing message on conflict", async () => {
         const now = new Date();
-        const message: SlackMessageEntity = {
+        const message = SlackMessageEntity.fromPlain({
           id: "test-msg-update",
           channelId: "channel-1",
           channelName: "general",
@@ -66,18 +65,17 @@ describe("ConnectorSlackMessageRepository", () => {
           ts: "1234567890.123456",
           createdAt: now,
           updatedAt: now,
-          __type: "message",
-        } as unknown as SlackMessageEntity;
+        });
 
         await repository.saveMessage(message);
 
         // Update the message
-        const updatedMessage: SlackMessageEntity = {
-          ...message,
+        const updatedMessage = SlackMessageEntity.fromPlain({
+          ...message.toPlain(),
           text: "Updated message",
           replyCount: 2,
           updatedAt: new Date(),
-        } as unknown as SlackMessageEntity;
+        });
 
         await repository.saveMessage(updatedMessage);
 
@@ -104,8 +102,8 @@ describe("ConnectorSlackMessageRepository", () => {
     describe("saveMessages", () => {
       it("should save multiple messages", async () => {
         const now = new Date();
-        const messages: SlackMessageEntity[] = [
-          {
+        const messages = [
+          SlackMessageEntity.fromPlain({
             id: "msg-1",
             channelId: "channel-1",
             channelName: "general",
@@ -118,9 +116,8 @@ describe("ConnectorSlackMessageRepository", () => {
             ts: "1234567890.123456",
             createdAt: now,
             updatedAt: now,
-            __type: "message",
-          },
-          {
+          }),
+          SlackMessageEntity.fromPlain({
             id: "msg-2",
             channelId: "channel-2",
             channelName: "random",
@@ -133,9 +130,8 @@ describe("ConnectorSlackMessageRepository", () => {
             ts: "1234567891.123456",
             createdAt: now,
             updatedAt: now,
-            __type: "message",
-          },
-        ] as SlackMessageEntity[];
+          }),
+        ];
 
         await repository.saveMessages(messages);
 
@@ -153,21 +149,22 @@ describe("ConnectorSlackMessageRepository", () => {
     describe("getMessagesPaginated", () => {
       it("should return paginated messages", async () => {
         const now = new Date();
-        const messages: SlackMessageEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `msg-${i + 1}`,
-          channelId: `channel-${(i % 3) + 1}`,
-          channelName: `channel-${(i % 3) + 1}`,
-          text: `Message ${i + 1}`,
-          userId: `user-${(i % 2) + 1}`,
-          userName: `User ${(i % 2) + 1}`,
-          threadTs: null,
-          replyCount: i,
-          permalink: `https://testworkspace.slack.com/archives/channel-${(i % 3) + 1}/p${1234567890 + i}`,
-          ts: `${1234567890 + i}.123456`,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "message",
-        })) as SlackMessageEntity[];
+        const messages: SlackMessageEntity[] = Array.from({ length: 15 }, (_, i) =>
+          SlackMessageEntity.fromPlain({
+            id: `msg-${i + 1}`,
+            channelId: `channel-${(i % 3) + 1}`,
+            channelName: `channel-${(i % 3) + 1}`,
+            text: `Message ${i + 1}`,
+            userId: `user-${(i % 2) + 1}`,
+            userName: `User ${(i % 2) + 1}`,
+            threadTs: null,
+            replyCount: i,
+            permalink: `https://testworkspace.slack.com/archives/channel-${(i % 3) + 1}/p${1234567890 + i}`,
+            ts: `${1234567890 + i}.123456`,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await repository.saveMessages(messages);
 
@@ -181,21 +178,22 @@ describe("ConnectorSlackMessageRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const messages: SlackMessageEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `msg-${i + 1}`,
-          channelId: "channel-1",
-          channelName: "general",
-          text: `Message ${i + 1}`,
-          userId: "user-1",
-          userName: "Test User",
-          threadTs: null,
-          replyCount: 0,
-          permalink: `https://testworkspace.slack.com/archives/channel-1/p${1234567890 + i}`,
-          ts: `${1234567890 + i}.123456`,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "message",
-        })) as SlackMessageEntity[];
+        const messages: SlackMessageEntity[] = Array.from({ length: 10 }, (_, i) =>
+          SlackMessageEntity.fromPlain({
+            id: `msg-${i + 1}`,
+            channelId: "channel-1",
+            channelName: "general",
+            text: `Message ${i + 1}`,
+            userId: "user-1",
+            userName: "Test User",
+            threadTs: null,
+            replyCount: 0,
+            permalink: `https://testworkspace.slack.com/archives/channel-1/p${1234567890 + i}`,
+            ts: `${1234567890 + i}.123456`,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+          }),
+        );
 
         await repository.saveMessages(messages);
 

@@ -21,7 +21,7 @@ describe("selectToolsForPrompt", () => {
 
     const result = selectToolsForPrompt({
       prompt: "Crea una pagina su Notion e invia un messaggio su Slack",
-      inferredTypes: ["page", "message"],
+      inferredTypes: ["notion_page", "slack_message"],
       tools,
     });
 

@@ -1,9 +1,7 @@
-import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { AItError, GoogleContactEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
 import { type GoogleContactDataTarget, drizzleOrm, getPostgresClient, googleContacts } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleContactRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import { googleContactDataTargetToDomain, googleContactDomainToDataTarget } from "../../google/google-contact.entity";
-import type { GoogleContactEntity } from "../../google/google-contact.entity";
 
 const logger = getLogger();
 
@@ -17,7 +15,7 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
     const contactId = contact.id;
 
     try {
-      const contactDataTarget = googleContactDomainToDataTarget(contact);
+      const contactDataTarget = contact.toPlain<GoogleContactDataTarget>();
       contactDataTarget.id = contactId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -59,14 +57,7 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
       return;
     }
 
-    try {
-      for (const contact of contacts) {
-        await this.saveContact(contact);
-      }
-    } catch (error) {
-      logger.error("Error saving contacts:", { error });
-      throw new AItError("GOOGLE_CONTACT_SAVE_CONTACT_BULK", "Failed to save contacts to repository");
-    }
+    await Promise.all(contacts.map((contact) => this.saveContact(contact)));
   }
 
   async getContact(id: string): Promise<GoogleContactEntity | null> {
@@ -80,7 +71,7 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
       return null;
     }
 
-    return googleContactDataTargetToDomain(result[0]! as GoogleContactDataTarget);
+    return GoogleContactEntity.fromPlain(result[0]! as GoogleContactDataTarget);
   }
 
   async fetchContacts(): Promise<GoogleContactEntity[]> {
@@ -89,7 +80,7 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
       .from(googleContacts)
       .orderBy(drizzleOrm.asc(googleContacts.displayName));
 
-    return contacts.map((contact) => googleContactDataTargetToDomain(contact as GoogleContactDataTarget));
+    return contacts.map((contact) => GoogleContactEntity.fromPlain(contact as GoogleContactDataTarget));
   }
 
   async getContactsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleContactEntity>> {
@@ -111,7 +102,7 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: contacts.map((contact) => googleContactDataTargetToDomain(contact as GoogleContactDataTarget)),
+      data: contacts.map((contact) => GoogleContactEntity.fromPlain(contact as GoogleContactDataTarget)),
       pagination: {
         page,
         limit,

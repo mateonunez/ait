@@ -1,4 +1,4 @@
-import type { SlackEntity } from "@ait/core";
+import type { SlackEntityType, SlackMessageEntity } from "@ait/core";
 import { AItError } from "@ait/core";
 import { SLACK_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -12,13 +12,15 @@ export class ConnectorSlackStore implements IConnectorStore {
     this._connectorSlackRepository = connectorSlackRepository;
   }
 
-  async save<T extends SlackEntity>(data: T | T[]): Promise<void> {
+  async save<T extends SlackEntityType>(data: T | T[]): Promise<void> {
     const items = this._resolveItems(data);
 
     for (const item of items) {
       switch (item.__type) {
         case SLACK_ENTITY_TYPES_ENUM.MESSAGE:
-          await this._connectorSlackRepository.message.saveMessage(item, { incremental: false });
+          await this._connectorSlackRepository.message.saveMessage(item as unknown as SlackMessageEntity, {
+            incremental: false,
+          });
           break;
         default:
           // @ts-ignore: Unreachable code error
@@ -35,7 +37,7 @@ export class ConnectorSlackStore implements IConnectorStore {
     return this._connectorSlackRepository.getAuthenticationData();
   }
 
-  private _resolveItems<T extends SlackEntity>(data: T | T[]): T[] {
+  private _resolveItems<T extends SlackEntityType>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }
 }

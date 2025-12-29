@@ -1,11 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams } from "@ait/core";
-import { getLogger } from "@ait/core";
+import { AItError, type PaginatedResponse, type PaginationParams, SlackMessageEntity, getLogger } from "@ait/core";
 import { type SlackMessageDataTarget, drizzleOrm, getPostgresClient, slackMessages } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSlackMessageRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
-import { slackMessageDataTargetToDomain, slackMessageDomainToDataTarget } from "../../slack/slack-message.entity";
-import type { SlackMessageEntity } from "../../slack/slack-message.entity";
 
 const logger = getLogger();
 
@@ -20,7 +17,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     const messageId = incremental ? randomUUID() : message.id;
 
     try {
-      const messageDataTarget = slackMessageDomainToDataTarget(message);
+      const messageDataTarget = message.toPlain<SlackMessageDataTarget>();
       messageDataTarget.id = messageId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -62,8 +59,6 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     }
 
     try {
-      logger.debug("Saving messages to Slack repository:", { count: messages.length });
-
       for (const message of messages) {
         await this.saveMessage(message, { incremental: false });
       }
@@ -74,13 +69,22 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
   }
 
   async getMessage(id: string): Promise<SlackMessageEntity | null> {
-    logger.info("Getting message from Slack repository", { id });
-    return null;
+    const result = await this._pgClient.db
+      .select()
+      .from(slackMessages)
+      .where(drizzleOrm.eq(slackMessages.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    return SlackMessageEntity.fromPlain(result[0]! as SlackMessageDataTarget);
   }
 
   async fetchMessages(): Promise<SlackMessageEntity[]> {
-    logger.info("Getting messages from Slack repository");
-    return [];
+    const results = await this._pgClient.db.select().from(slackMessages);
+    return results.map((result) => SlackMessageEntity.fromPlain(result as SlackMessageDataTarget));
   }
 
   async getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<SlackMessageEntity>> {
@@ -102,7 +106,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: messages.map((message) => slackMessageDataTargetToDomain(message as SlackMessageDataTarget)),
+      data: messages.map((message) => SlackMessageEntity.fromPlain(message as SlackMessageDataTarget)),
       pagination: {
         page,
         limit,

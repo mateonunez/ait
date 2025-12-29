@@ -1,13 +1,13 @@
 import type {
   EntityType,
-  GitHubEntity,
-  GoogleEntity,
-  LinearEntity,
-  NotionEntity,
+  GitHubEntityType,
+  GoogleEntityType,
+  LinearEntityType,
+  NotionEntityType,
   PaginationMeta,
-  SlackEntity,
-  SpotifyEntity,
-  XEntity,
+  SlackEntityType,
+  SpotifyEntityType,
+  XEntityType,
 } from "@ait/core";
 
 /**
@@ -15,13 +15,13 @@ import type {
  * Composed from vendor-specific union types defined in @ait/core.
  */
 export type IntegrationEntity =
-  | SpotifyEntity
-  | GitHubEntity
-  | LinearEntity
-  | XEntity
-  | NotionEntity
-  | SlackEntity
-  | GoogleEntity;
+  | SpotifyEntityType
+  | GitHubEntityType
+  | LinearEntityType
+  | XEntityType
+  | NotionEntityType
+  | SlackEntityType
+  | GoogleEntityType;
 
 export interface CachedEntityData {
   data: IntegrationEntity[];

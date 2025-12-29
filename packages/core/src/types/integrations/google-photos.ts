@@ -43,7 +43,7 @@ export interface GooglePhotoListResponse {
 
 // --- Domain Types (normalized for app use) ---
 
-export const GooglePhotoEntitySchema = z.object({
+export const GooglePhotoEntityTypeSchema = z.object({
   id: z.string(),
   productUrl: z.string(),
   baseUrl: z.string(),
@@ -86,4 +86,4 @@ export const GooglePhotoEntitySchema = z.object({
   __type: z.literal("google_photo"),
 });
 
-export type GooglePhotoEntity = z.infer<typeof GooglePhotoEntitySchema>;
+export type GooglePhotoEntityType = z.infer<typeof GooglePhotoEntityTypeSchema>;

@@ -98,14 +98,14 @@ export class GoalService {
     const counts: Partial<Record<GoalType, number>> = {};
 
     const mapping: Record<IntegrationVendorWithYoutube, GoalType[]> = {
-      github: ["commit", "commits"],
-      spotify: ["recently_played", "songs", "track"],
-      slack: ["message", "messages"],
-      x: ["tweet", "tweets"],
-      linear: ["issue", "tasks"],
-      notion: ["page", "documents"],
-      google: ["event", "meetings"],
-      youtube: ["subscription"],
+      github: ["github_commit", "commits"],
+      spotify: ["spotify_recently_played", "songs", "spotify_track"],
+      slack: ["slack_message", "messages"],
+      x: ["x_tweet", "tweets"],
+      linear: ["linear_issue", "tasks"],
+      notion: ["notion_page", "documents"],
+      google: ["google_calendar_event", "meetings"],
+      youtube: ["google_youtube_subscription"],
     };
 
     for (const [vendor, goalTypes] of Object.entries(mapping)) {

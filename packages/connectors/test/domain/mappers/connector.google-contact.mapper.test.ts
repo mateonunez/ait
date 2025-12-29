@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { GoogleContactExternal } from "@ait/core";
-import {
-  googleContactDomainToDataTarget,
-  mapGoogleContact,
-} from "../../../src/domain/entities/google/google-contact.entity";
+import { type GoogleContactExternal, mapGoogleContact } from "@ait/core";
 
 describe("Google Contact Mappers", () => {
   describe("connectorGoogleContactMapper", () => {
@@ -82,7 +78,7 @@ describe("Google Contact Mappers", () => {
         };
 
         const domainContact = mapGoogleContact(externalContact);
-        const dataTarget = googleContactDomainToDataTarget(domainContact) as any;
+        const dataTarget = domainContact.toPlain();
 
         assert.equal(dataTarget.id, "people/c789");
         assert.equal(dataTarget.displayName, "Target Contact");

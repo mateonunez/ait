@@ -10,7 +10,7 @@ export const measurementId = import.meta.env.VITE_GOOGLE_ANALYTICS_ID;
 // https://developers.google.com/analytics/devguides/collection/ga4/events?client_type=gtag
 export const trackEvent = ({ action, category, label, value }: GTagEvent) => {
   if (typeof window.gtag !== "undefined") {
-    window.gtag("event", action, {
+    window.gtag("google_calendar_event", action, {
       event_category: category,
       event_label: label,
       value: value,
@@ -35,7 +35,7 @@ export const setConsent = (consented: boolean) => {
   }
 };
 
-export type GTagCommand = "config" | "event" | "consent" | "js";
+export type GTagCommand = "config" | "google_calendar_event" | "consent" | "js";
 
 // Vercel Analytics utility functions
 export const trackVercelEvent = (eventName: string, eventData?: Record<string, any>) => {
@@ -43,7 +43,7 @@ export const trackVercelEvent = (eventName: string, eventData?: Record<string, a
   // The Analytics component automatically tracks page views and web vitals
   // For custom events, we can use this function if needed
   if (typeof window.va !== "undefined") {
-    window.va("event", {
+    window.va("google_calendar_event", {
       name: eventName,
       ...(eventData && { data: eventData }),
     });

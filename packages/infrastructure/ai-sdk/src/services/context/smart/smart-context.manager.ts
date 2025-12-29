@@ -75,7 +75,7 @@ export class SmartContextManager implements IContextManager {
         id: `msg-${index}`,
         tier: ContextTier.WORKING_SET,
         content: content,
-        type: "message",
+        type: "slack_message",
         tokens: this.tokenizer.countTokens(content),
         timestamp: Date.now() - (request.messages.length - index) * 1000,
       });

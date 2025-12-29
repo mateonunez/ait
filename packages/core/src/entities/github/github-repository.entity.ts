@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import type { GitHubRepositoryDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
 
 /**
@@ -7,7 +6,7 @@ import { Expose, Transform, instanceToPlain, plainToInstance } from "class-trans
  */
 export class GitHubRepositoryEntity {
   @Expose()
-  @Transform(({ value }) => String(value))
+  @Transform(({ value }: any) => String(value))
   id!: string;
 
   @Expose()
@@ -17,11 +16,11 @@ export class GitHubRepositoryEntity {
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   stars!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   forks!: number;
 
   @Expose()
@@ -31,113 +30,121 @@ export class GitHubRepositoryEntity {
   url!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "")
+  @Transform(({ value }: any) => value ?? "")
   fullName!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   private!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   fork!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   archived!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   disabled!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? "public")
+  @Transform(({ value }: any) => value ?? "public")
   visibility!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   watchersCount!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   openIssuesCount!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   size!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? "main")
+  @Transform(({ value }: any) => value ?? "main")
   defaultBranch!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   topics!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isTemplate!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? true)
+  @Transform(({ value }: any) => value ?? true)
   hasIssues!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? true)
+  @Transform(({ value }: any) => value ?? true)
   hasProjects!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? true)
+  @Transform(({ value }: any) => value ?? true)
   hasWiki!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   hasPages!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   hasDiscussions!: boolean;
 
   @Expose()
   homepage!: string | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   pushedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   licenseName!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? "")
+  @Transform(({ value }: any) => value ?? "")
   cloneUrl!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "")
+  @Transform(({ value }: any) => value ?? "")
   sshUrl!: string;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   ownerData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? { ...value } : null))
+  @Transform(({ value }: any) => (value ? { ...value } : null))
   licenseData!: Record<string, unknown> | null;
 
   @Expose()
   metadata!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : null))
+  @Transform(({ value }: any) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()
-  readonly __type = "repository" as const;
+  readonly __type = "github_repository" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GitHubRepositoryEntity {
+    return plainToInstance(GitHubRepositoryEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 // --- External API → Domain ---
@@ -177,21 +184,10 @@ export function mapGitHubRepository(external: any): GitHubRepositoryEntity {
 
   return plainToInstance(GitHubRepositoryEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
 export function mapGitHubRepositories(externals: unknown[]): GitHubRepositoryEntity[] {
   return externals.map(mapGitHubRepository);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function repositoryDomainToDataTarget(domain: GitHubRepositoryEntity): GitHubRepositoryDataTarget {
-  return instanceToPlain(domain) as GitHubRepositoryDataTarget;
-}
-
-export function repositoryDataTargetToDomain(dataTarget: GitHubRepositoryDataTarget): GitHubRepositoryEntity {
-  return plainToInstance(GitHubRepositoryEntity, dataTarget, {
-    excludeExtraneousValues: false, // DataTarget already has correct field names
-  });
 }

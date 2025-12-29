@@ -61,7 +61,7 @@ export class ETLGoogleYouTubeSubscriptionDescriptor implements IETLEmbeddingDesc
     };
 
     return {
-      __type: "subscription",
+      __type: "google_youtube_subscription",
       ...sanitizedPayload,
     } as unknown as U;
   }

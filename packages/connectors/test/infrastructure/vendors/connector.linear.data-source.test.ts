@@ -58,7 +58,7 @@ describe("ConnectorLinearDataSource", () => {
       const result = await dataSource.fetchIssues();
       assert.equal(result.issues.length, 1);
       assert.equal(result.issues[0]?.id, "issue-1");
-      assert.equal(result.issues[0]?.__type, "issue");
+      assert.equal(result.issues[0]?.__type, "linear_issue");
     });
 
     it("should handle invalid access token error", async () => {

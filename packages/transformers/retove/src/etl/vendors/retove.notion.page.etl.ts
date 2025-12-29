@@ -77,13 +77,13 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract<NotionPageDataTar
   }
 
   protected override _getEntityType(): EntityType {
-    return "page";
+    return "notion_page";
   }
 }
 
 export interface RetoveNotionPageVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "page";
+    __type: "notion_page";
   } & Partial<NotionPageDataTarget>;
 }
 

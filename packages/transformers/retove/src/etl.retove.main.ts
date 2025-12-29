@@ -24,24 +24,30 @@ import {
 const logger = getLogger();
 
 const etlRunners: Record<EntityType, any> = {
-  track: runSpotifyTrackETL,
-  artist: runSpotifyArtistETL,
-  playlist: runSpotifyPlaylistETL,
-  album: runSpotifyAlbumETL,
-  recently_played: runSpotifyRecentlyPlayedETL,
-  repository: runGitHubRepositoryETL,
-  pull_request: runGitHubPullRequestETL,
-  commit: runGitHubCommitETL,
-  repository_file: runGitHubFileETL,
-  tweet: runXETL,
-  issue: runLinearETL,
-  page: runNotionETL,
-  message: runSlackETL,
-  subscription: runGoogleYouTubeSubscriptionETL,
-  event: runGoogleCalendarEventETL,
+  spotify_track: runSpotifyTrackETL,
+  spotify_artist: runSpotifyArtistETL,
+  spotify_playlist: runSpotifyPlaylistETL,
+  spotify_album: runSpotifyAlbumETL,
+  spotify_recently_played: runSpotifyRecentlyPlayedETL,
+
+  github_repository: runGitHubRepositoryETL,
+  github_pull_request: runGitHubPullRequestETL,
+  github_commit: runGitHubCommitETL,
+  github_file: runGitHubFileETL,
+
+  linear_issue: runLinearETL,
+
+  x_tweet: runXETL,
+
+  notion_page: runNotionETL,
+
+  slack_message: runSlackETL,
+
+  google_youtube_subscription: runGoogleYouTubeSubscriptionETL,
+  google_calendar_event: runGoogleCalendarEventETL,
   google_contact: runGoogleContactETL,
   google_photo: runGooglePhotoETL,
-  calendar: runGoogleCalendarEventETL,
+  google_calendar_calendar: runGoogleCalendarEventETL,
 };
 
 async function main() {

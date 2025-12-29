@@ -40,7 +40,7 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract<GitHubRepos
   }
 
   protected override _getEntityType(): EntityType {
-    return "repository";
+    return "github_repository";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<GitHubRepositoryDataTarget[]> {
@@ -88,7 +88,7 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract<GitHubRepos
 }
 export interface RetoveGitHubRepositoryVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "repository";
+    __type: "github_repository";
   } & Partial<GitHubRepositoryDataTarget>;
 }
 /**

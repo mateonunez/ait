@@ -22,7 +22,7 @@ export default function XPage() {
     async (page: number) => {
       setIsLoading(true);
       try {
-        const response = await fetchEntityData("x", "tweet", { page, limit: pageSize });
+        const response = await fetchEntityData("x", "x_tweet", { page, limit: pageSize });
         setTweets(response.data as XTweet[]);
         setTotalPages(response.pagination.totalPages);
       } catch (error) {

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
+import type { GitHubPullRequestEntity } from "@ait/core";
+import { GitHubPullRequestEntity as GitHubPullRequestEntityClass } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient, githubPullRequests } from "@ait/postgres";
-import type { GitHubPullRequestEntity } from "../../../../src/domain/entities/github/github-pull-request.entity";
 import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";
 
 describe("ConnectorGitHubPullRequestRepository", () => {
@@ -19,7 +20,7 @@ describe("ConnectorGitHubPullRequestRepository", () => {
 
     describe("savePullRequest", () => {
       it("should save pull request successfully", async () => {
-        const pr: GitHubPullRequestEntity = {
+        const pr = GitHubPullRequestEntityClass.fromPlain({
           id: "test-pr-id",
           number: 123,
           title: "Add new feature",
@@ -57,8 +58,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
           requestedReviewersData: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "pull_request",
-        } as unknown as GitHubPullRequestEntity;
+          __type: "github_pull_request",
+        });
 
         await prRepository.savePullRequest(pr);
 
@@ -85,8 +86,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
 
     describe("savePullRequests", () => {
       it("should save multiple pull requests", async () => {
-        const prs: GitHubPullRequestEntity[] = [
-          {
+        const prs = [
+          GitHubPullRequestEntityClass.fromPlain({
             id: "pr-1",
             number: 1,
             title: "PR 1",
@@ -136,9 +137,9 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             baseRepoData: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "pull_request",
-          },
-          {
+            __type: "github_pull_request",
+          }),
+          GitHubPullRequestEntityClass.fromPlain({
             id: "pr-2",
             number: 2,
             title: "PR 2",
@@ -191,8 +192,8 @@ describe("ConnectorGitHubPullRequestRepository", () => {
             baseRepoData: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "pull_request",
-          },
+            __type: "github_pull_request",
+          }),
         ];
 
         await prRepository.savePullRequests(prs);
@@ -210,58 +211,60 @@ describe("ConnectorGitHubPullRequestRepository", () => {
 
     describe("getPullRequestsPaginated", () => {
       it("should return paginated pull requests", async () => {
-        const prs: GitHubPullRequestEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `pr-${i + 1}`,
-          number: i + 1,
-          title: `PR ${i + 1}`,
-          body: `Body ${i + 1}`,
-          state: i % 2 === 0 ? "open" : "closed",
-          draft: false,
-          locked: false,
-          htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
-          diffUrl: null,
-          patchUrl: null,
-          issueUrl: null,
-          merged: i % 3 === 0,
-          mergedAt: i % 3 === 0 ? new Date() : null,
-          closedAt: i % 2 === 1 ? new Date() : null,
-          mergeCommitSha: null,
-          commits: i + 1,
-          additions: (i + 1) * 10,
-          deletions: (i + 1) * 2,
-          changedFiles: i + 1,
-          comments: i,
-          reviewComments: i,
-          headRef: `feature-${i + 1}`,
-          headSha: `sha-${i + 1}`,
-          baseRef: "main",
-          baseSha: "base-sha",
-          repositoryId: "repo-1",
-          repositoryName: "ait",
-          repositoryFullName: "mateonunez/ait",
-          mergeable: true,
-          rebaseable: true,
-          mergeableState: "clean",
-          maintainerCanModify: false,
-          authorAssociation: "OWNER",
-          autoMerge: null,
-          activeLockReason: null,
-          prCreatedAt: new Date(Date.now() + i * 1000),
-          prUpdatedAt: new Date(Date.now() + i * 1000),
-          userData: null,
-          assigneeData: null,
-          assigneesData: null,
-          mergedByData: null,
-          labels: null,
-          milestoneData: null,
-          requestedReviewersData: null,
-          requestedTeamsData: null,
-          headRepoData: null,
-          baseRepoData: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "pull_request",
-        })) as unknown as GitHubPullRequestEntity[];
+        const prs = Array.from({ length: 15 }, (_, i) =>
+          GitHubPullRequestEntityClass.fromPlain({
+            id: `pr-${i + 1}`,
+            number: i + 1,
+            title: `PR ${i + 1}`,
+            body: `Body ${i + 1}`,
+            state: i % 2 === 0 ? "open" : "closed",
+            draft: false,
+            locked: false,
+            htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
+            diffUrl: null,
+            patchUrl: null,
+            issueUrl: null,
+            merged: i % 3 === 0,
+            mergedAt: i % 3 === 0 ? new Date() : null,
+            closedAt: i % 2 === 1 ? new Date() : null,
+            mergeCommitSha: null,
+            commits: i + 1,
+            additions: (i + 1) * 10,
+            deletions: (i + 1) * 2,
+            changedFiles: i + 1,
+            comments: i,
+            reviewComments: i,
+            headRef: `feature-${i + 1}`,
+            headSha: `sha-${i + 1}`,
+            baseRef: "main",
+            baseSha: "base-sha",
+            repositoryId: "repo-1",
+            repositoryName: "ait",
+            repositoryFullName: "mateonunez/ait",
+            mergeable: true,
+            rebaseable: true,
+            mergeableState: "clean",
+            maintainerCanModify: false,
+            authorAssociation: "OWNER",
+            autoMerge: null,
+            activeLockReason: null,
+            prCreatedAt: new Date(Date.now() + i * 1000),
+            prUpdatedAt: new Date(Date.now() + i * 1000),
+            userData: null,
+            assigneeData: null,
+            assigneesData: null,
+            mergedByData: null,
+            labels: null,
+            milestoneData: null,
+            requestedReviewersData: null,
+            requestedTeamsData: null,
+            headRepoData: null,
+            baseRepoData: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_pull_request",
+          }),
+        );
 
         await prRepository.savePullRequests(prs);
 
@@ -274,58 +277,60 @@ describe("ConnectorGitHubPullRequestRepository", () => {
       });
 
       it("should return correct page for second page", async () => {
-        const prs: GitHubPullRequestEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `pr-${i + 1}`,
-          number: i + 1,
-          title: `PR ${i + 1}`,
-          body: `Body ${i + 1}`,
-          state: "open",
-          draft: false,
-          locked: false,
-          htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
-          diffUrl: null,
-          patchUrl: null,
-          issueUrl: null,
-          merged: false,
-          mergedAt: null,
-          closedAt: null,
-          mergeCommitSha: null,
-          commits: 5,
-          additions: 150,
-          deletions: 20,
-          changedFiles: 8,
-          comments: 3,
-          reviewComments: 2,
-          headRef: "feature-branch",
-          headSha: "abc123",
-          baseRef: "main",
-          baseSha: "def456",
-          repositoryId: "repo-123",
-          repositoryName: "ait",
-          repositoryFullName: "mateonunez/ait",
-          mergeable: true,
-          rebaseable: true,
-          mergeableState: "clean",
-          maintainerCanModify: true,
-          authorAssociation: "OWNER",
-          autoMerge: null,
-          activeLockReason: null,
-          prCreatedAt: new Date(Date.now() + i * 1000),
-          prUpdatedAt: new Date(Date.now() + i * 1000),
-          userData: null,
-          assigneeData: null,
-          assigneesData: null,
-          mergedByData: null,
-          labels: null,
-          milestoneData: null,
-          requestedReviewersData: null,
-          requestedTeamsData: null,
-          headRepoData: null,
-          baseRepoData: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "pull_request",
-        })) as unknown as GitHubPullRequestEntity[];
+        const prs = Array.from({ length: 10 }, (_, i) =>
+          GitHubPullRequestEntityClass.fromPlain({
+            id: `pr-${i + 1}`,
+            number: i + 1,
+            title: `PR ${i + 1}`,
+            body: `Body ${i + 1}`,
+            state: "open",
+            draft: false,
+            locked: false,
+            htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
+            diffUrl: null,
+            patchUrl: null,
+            issueUrl: null,
+            merged: false,
+            mergedAt: null,
+            closedAt: null,
+            mergeCommitSha: null,
+            commits: 5,
+            additions: 150,
+            deletions: 20,
+            changedFiles: 8,
+            comments: 3,
+            reviewComments: 2,
+            headRef: "feature-branch",
+            headSha: "abc123",
+            baseRef: "main",
+            baseSha: "def456",
+            repositoryId: "repo-123",
+            repositoryName: "ait",
+            repositoryFullName: "mateonunez/ait",
+            mergeable: true,
+            rebaseable: true,
+            mergeableState: "clean",
+            maintainerCanModify: true,
+            authorAssociation: "OWNER",
+            autoMerge: null,
+            activeLockReason: null,
+            prCreatedAt: new Date(Date.now() + i * 1000),
+            prUpdatedAt: new Date(Date.now() + i * 1000),
+            userData: null,
+            assigneeData: null,
+            assigneesData: null,
+            mergedByData: null,
+            labels: null,
+            milestoneData: null,
+            requestedReviewersData: null,
+            requestedTeamsData: null,
+            headRepoData: null,
+            baseRepoData: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_pull_request",
+          }),
+        );
 
         await prRepository.savePullRequests(prs);
 

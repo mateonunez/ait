@@ -41,7 +41,7 @@ describe("ConnectorNotionStore", () => {
         createdBy: "user-1",
         lastEditedBy: "user-2",
         properties: {},
-        __type: "page",
+        __type: "notion_page",
       } as unknown as NotionPageEntity;
 
       await store.save(page);
@@ -73,7 +73,7 @@ describe("ConnectorNotionStore", () => {
           createdBy: "user-1",
           lastEditedBy: "user-2",
           properties: {},
-          __type: "page",
+          __type: "notion_page",
         } as unknown as NotionPageEntity,
         {
           id: "page-2",
@@ -90,7 +90,7 @@ describe("ConnectorNotionStore", () => {
           createdBy: "user-1",
           lastEditedBy: "user-2",
           properties: {},
-          __type: "page",
+          __type: "notion_page",
         } as unknown as NotionPageEntity,
       ];
 
@@ -105,7 +105,7 @@ describe("ConnectorNotionStore", () => {
       const unsupportedItem = {
         id: "unsupported-1",
         name: "Some Entity",
-        __type: "unsupported" as "page", // this generates a type error
+        __type: "unsupported" as "notion_page", // this generates a type error
       } as unknown as NotionEntity;
 
       await assert.rejects(async () => {

@@ -1,8 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type GitHubFileEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
-import { drizzleOrm, getPostgresClient, githubRepositoryFiles } from "@ait/postgres";
+import { AItError, GitHubFileEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { type GitHubFileDataTarget, drizzleOrm, getPostgresClient, githubRepositoryFiles } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
-import { fileDataTargetToDomain, fileDomainToDataTarget } from "../../../entities/github";
 
 const logger = getLogger();
 
@@ -33,7 +32,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
     const fileId = incremental ? randomUUID() : file.id;
 
     try {
-      const fileData = fileDomainToDataTarget(file);
+      const fileData = file.toPlain<GitHubFileDataTarget>();
       fileData.id = fileId;
 
       await this._pgClient.db.transaction(async (tx) => {
@@ -89,7 +88,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
       return null;
     }
 
-    return fileDataTargetToDomain(result[0]!);
+    return GitHubFileEntity.fromPlain(result[0]! as GitHubFileDataTarget);
   }
 
   async getFilesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubFileEntity>> {
@@ -111,7 +110,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: files.map((file) => fileDataTargetToDomain(file)),
+      data: files.map((file) => GitHubFileEntity.fromPlain(file as GitHubFileDataTarget)),
       pagination: {
         page,
         limit,
@@ -133,7 +132,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
       .limit(limit)
       .offset(offset);
 
-    return files.map((file) => fileDataTargetToDomain(file));
+    return files.map((file) => GitHubFileEntity.fromPlain(file as GitHubFileDataTarget));
   }
 
   /**

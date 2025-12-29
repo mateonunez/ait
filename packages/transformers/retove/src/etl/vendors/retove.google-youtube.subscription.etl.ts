@@ -80,13 +80,13 @@ export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract<Go
   }
 
   protected override _getEntityType(): EntityType {
-    return "subscription";
+    return "google_youtube_subscription";
   }
 }
 
 export interface RetoveGoogleYouTubeSubscriptionVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "subscription";
+    __type: "google_youtube_subscription";
   } & Partial<GoogleSubscriptionDataTarget>;
 }
 

@@ -4,6 +4,7 @@ import { CalendarCard } from "@/components/connectors/calendar-card";
 import { CommitCard } from "@/components/connectors/commit-card";
 import { EventCard } from "@/components/connectors/event-card";
 import { GoogleContactCard } from "@/components/connectors/google-contact-card";
+import { GooglePhotoCard } from "@/components/connectors/google-photo-card";
 import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
 import { IssueCard } from "@/components/connectors/issue-card";
 import { MessageCard } from "@/components/connectors/message-card";
@@ -22,6 +23,7 @@ import type {
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
   GoogleContactEntity,
+  GooglePhotoEntity,
   GoogleYouTubeSubscriptionEntity,
   LinearIssueEntity,
   NotionPageEntity,
@@ -38,38 +40,40 @@ export function renderCard(item: IntegrationEntity, onClick?: () => void) {
   const type = (item as any).__type;
 
   switch (type) {
-    case "track":
+    case "spotify_track":
       return <TrackCard track={item as SpotifyTrackEntity} onClick={onClick} />;
-    case "artist":
+    case "spotify_artist":
       return <ArtistCard artist={item as SpotifyArtistEntity} onClick={onClick} />;
-    case "playlist":
+    case "spotify_playlist":
       return <PlaylistCard playlist={item as SpotifyPlaylistEntity} onClick={onClick} />;
-    case "album":
+    case "spotify_album":
       return <AlbumCard album={item as SpotifyAlbumEntity} onClick={onClick} />;
-    case "recently_played":
+    case "spotify_recently_played":
       return <RecentlyPlayedCard recentlyPlayed={item as SpotifyRecentlyPlayedEntity} onClick={onClick} />;
-    case "repository":
+    case "github_repository":
       return <RepositoryCard repository={item as GitHubRepositoryEntity} onClick={onClick} />;
-    case "pull_request":
+    case "github_pull_request":
       return <PullRequestCard pullRequest={item as GitHubPullRequestEntity} onClick={onClick} />;
-    case "commit":
+    case "github_commit":
       return <CommitCard commit={item as GitHubCommitEntity} onClick={onClick} />;
-    case "issue":
+    case "linear_issue":
       return <IssueCard issue={item as LinearIssueEntity} onClick={onClick} />;
-    case "tweet":
+    case "x_tweet":
       return <TweetCard tweet={item as XTweetEntity} onClick={onClick} />;
-    case "page":
+    case "notion_page":
       return <PageCard page={item as NotionPageEntity} onClick={onClick} />;
-    case "message":
+    case "slack_message":
       return <MessageCard message={item as SlackMessageEntity} onClick={onClick} />;
-    case "event":
+    case "google_calendar_event":
       return <EventCard event={item as GoogleCalendarEventEntity} onClick={onClick} />;
-    case "calendar":
+    case "google_calendar_calendar":
       return <CalendarCard calendar={item as GoogleCalendarCalendarEntity} onClick={onClick} />;
-    case "subscription":
+    case "google_youtube_subscription":
       return <GoogleYouTubeSubscriptionCard subscription={item as GoogleYouTubeSubscriptionEntity} onClick={onClick} />;
     case "google_contact":
       return <GoogleContactCard contact={item as GoogleContactEntity} onClick={onClick} />;
+    case "google_photo":
+      return <GooglePhotoCard photo={item as GooglePhotoEntity} />;
     default:
       return null;
   }

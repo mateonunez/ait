@@ -1,6 +1,14 @@
 import type { Tool } from "../../types/tools";
 
-export type InferredEntityType = "page" | "message" | "issue" | "repo" | "pull_request" | "track" | "playlist" | string;
+export type InferredEntityType =
+  | "notion_page"
+  | "slack_message"
+  | "linear_issue"
+  | "repo"
+  | "github_pull_request"
+  | "spotify_track"
+  | "spotify_playlist"
+  | string;
 
 export interface ToolSelectionInput {
   prompt: string;
@@ -36,32 +44,38 @@ const VENDOR_RULES: VendorRule[] = [
   {
     id: "notion",
     toolPrefix: "notion_",
-    types: ["page"],
+    types: ["notion_page"],
   },
   {
     id: "slack",
     toolPrefix: "slack_",
-    types: ["message"],
+    types: ["slack_message"],
   },
   {
     id: "linear",
     toolPrefix: "linear_",
-    types: ["issue"],
+    types: ["linear_issue"],
   },
   {
     id: "github",
     toolPrefix: "github_",
-    types: ["repo", "pull_request", "repository", "commit", "repository_file"],
+    types: ["repo", "github_pull_request", "github_repository", "github_commit", "github_file"],
   },
   {
     id: "spotify",
     toolNames: ["getCurrentlyPlaying"],
-    types: ["track", "playlist", "artist", "album", "recently_played"],
+    types: ["spotify_track", "spotify_playlist", "spotify_artist", "spotify_album", "spotify_recently_played"],
   },
   {
     id: "google",
     toolPrefix: "google_",
-    types: ["event", "calendar", "subscription", "google_contact", "contact"],
+    types: [
+      "google_calendar_event",
+      "google_calendar_calendar",
+      "google_youtube_subscription",
+      "google_contact",
+      "google_contact",
+    ],
   },
 ];
 

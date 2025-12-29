@@ -115,7 +115,7 @@ describe("telemetry.middleware", () => {
     });
 
     it("should accept different span types", () => {
-      const types = ["generation", "span", "event"] as const;
+      const types = ["generation", "span", "google_calendar_event"] as const;
 
       for (const type of types) {
         recordSpan(`test-${type}`, type as SpanType, { traceId: "test", spanId: "test" });

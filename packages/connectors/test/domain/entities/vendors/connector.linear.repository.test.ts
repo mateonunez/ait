@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
-import type { LinearIssueEntity } from "@ait/core";
+import { LinearIssueEntity } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient, linearIssues } from "@ait/postgres";
 import { ConnectorLinearIssueRepository } from "../../../../src/domain/entities/vendors/linear/connector.linear-issue.repository";
 
@@ -20,7 +20,7 @@ describe("ConnectorLinearRepository", () => {
     describe("saveIssue", () => {
       it("should save issue successfully", async () => {
         const now = new Date();
-        const issue: LinearIssueEntity = {
+        const issue = LinearIssueEntity.fromPlain({
           id: "test-issue-1",
           title: "Test Issue",
           description: "Test Description",
@@ -36,8 +36,7 @@ describe("ConnectorLinearRepository", () => {
           labels: ["bug", "frontend"],
           createdAt: now,
           updatedAt: now,
-          __type: "issue",
-        };
+        });
 
         await repository.saveIssue(issue);
 
@@ -59,8 +58,8 @@ describe("ConnectorLinearRepository", () => {
     describe("saveIssues", () => {
       it("should save multiple issues", async () => {
         const now = new Date();
-        const issues: LinearIssueEntity[] = [
-          {
+        const issues = [
+          LinearIssueEntity.fromPlain({
             id: "issue-1",
             title: "Issue 1",
             description: "Description 1",
@@ -76,9 +75,8 @@ describe("ConnectorLinearRepository", () => {
             labels: ["bug"],
             createdAt: now,
             updatedAt: now,
-            __type: "issue",
-          },
-          {
+          }),
+          LinearIssueEntity.fromPlain({
             id: "issue-2",
             title: "Issue 2",
             description: "Description 2",
@@ -94,8 +92,7 @@ describe("ConnectorLinearRepository", () => {
             labels: ["feature", "backend"],
             createdAt: now,
             updatedAt: now,
-            __type: "issue",
-          },
+          }),
         ];
 
         await repository.saveIssues(issues);
@@ -114,24 +111,26 @@ describe("ConnectorLinearRepository", () => {
     describe("getIssuesPaginated", () => {
       it("should return paginated issues", async () => {
         const now = new Date();
-        const issues: LinearIssueEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `issue-${i + 1}`,
-          title: `Issue ${i + 1}`,
-          description: `Description ${i + 1}`,
-          state: i % 3 === 0 ? "Todo" : i % 3 === 1 ? "In Progress" : "Done",
-          priority: (i % 4) + 1,
-          assigneeId: i % 2 === 0 ? `assignee-${(i % 2) + 1}` : null,
-          assigneeName: i % 2 === 0 ? `Assignee ${(i % 2) + 1}` : null,
-          teamId: `team-${(i % 3) + 1}`,
-          teamName: `Team ${(i % 3) + 1}`,
-          projectId: i % 2 === 0 ? `project-${(i % 2) + 1}` : null,
-          projectName: i % 2 === 0 ? `Project ${(i % 2) + 1}` : null,
-          url: `https://linear.app/issue/issue-${i + 1}`,
-          labels: [`label-${(i % 2) + 1}`],
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "issue",
-        }));
+        const issues: LinearIssueEntity[] = Array.from({ length: 15 }, (_, i) =>
+          LinearIssueEntity.fromPlain({
+            id: `issue-${i + 1}`,
+            title: `Issue ${i + 1}`,
+            description: `Description ${i + 1}`,
+            state: i % 3 === 0 ? "Todo" : i % 3 === 1 ? "In Progress" : "Done",
+            priority: (i % 4) + 1,
+            assigneeId: i % 2 === 0 ? `assignee-${(i % 2) + 1}` : null,
+            assigneeName: i % 2 === 0 ? `Assignee ${(i % 2) + 1}` : null,
+            teamId: `team-${(i % 3) + 1}`,
+            teamName: `Team ${(i % 3) + 1}`,
+            projectId: i % 2 === 0 ? `project-${(i % 2) + 1}` : null,
+            projectName: i % 2 === 0 ? `Project ${(i % 2) + 1}` : null,
+            url: `https://linear.app/issue/issue-${i + 1}`,
+            labels: [`label-${(i % 2) + 1}`],
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+            __type: "linear_issue",
+          }),
+        );
 
         await repository.saveIssues(issues);
 
@@ -145,24 +144,26 @@ describe("ConnectorLinearRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const issues: LinearIssueEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `issue-${i + 1}`,
-          title: `Issue ${i + 1}`,
-          description: `Description ${i + 1}`,
-          state: "Todo",
-          priority: 1,
-          assigneeId: null,
-          assigneeName: null,
-          teamId: "team-1",
-          teamName: "Team One",
-          projectId: null,
-          projectName: null,
-          url: `https://linear.app/issue/issue-${i + 1}`,
-          labels: [],
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          __type: "issue",
-        }));
+        const issues: LinearIssueEntity[] = Array.from({ length: 10 }, (_, i) =>
+          LinearIssueEntity.fromPlain({
+            id: `issue-${i + 1}`,
+            title: `Issue ${i + 1}`,
+            description: `Description ${i + 1}`,
+            state: "Todo",
+            priority: 1,
+            assigneeId: null,
+            assigneeName: null,
+            teamId: "team-1",
+            teamName: "Team One",
+            projectId: null,
+            projectName: null,
+            url: `https://linear.app/issue/issue-${i + 1}`,
+            labels: [],
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+            __type: "linear_issue",
+          }),
+        );
 
         await repository.saveIssues(issues);
 

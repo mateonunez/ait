@@ -70,7 +70,7 @@ export class ETLLinearIssueDescriptor implements IETLEmbeddingDescriptor<LinearI
     };
 
     return {
-      __type: "issue",
+      __type: "linear_issue",
       ...sanitizedPayload,
     } as unknown as U;
   }

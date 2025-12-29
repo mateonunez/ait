@@ -224,7 +224,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
                 )}
                 {attachment.fields && attachment.fields.length > 0 && (
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                    {attachment.fields.map((field, fieldIdx) => (
+                    {attachment.fields.map((field: { title?: string; value?: string }, fieldIdx: number) => (
                       <div key={`field-${fieldIdx}-${field.title || field.value || fieldIdx}`}>
                         {field.title && <div className="font-semibold">{field.title}</div>}
                         {field.value && <div className="text-muted-foreground">{field.value}</div>}

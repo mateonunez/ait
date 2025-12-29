@@ -1,4 +1,4 @@
-import type { LinearEntity } from "@ait/core";
+import type { LinearEntityType, LinearIssueEntity } from "@ait/core";
 import { AItError } from "@ait/core";
 import { LINEAR_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -12,13 +12,15 @@ export class ConnectorLinearStore implements IConnectorStore {
     this._connectorLinearRepository = connectorLinearRepository;
   }
 
-  async save<T extends LinearEntity>(data: T | T[]): Promise<void> {
+  async save<T extends LinearEntityType>(data: T | T[]): Promise<void> {
     const items = this._resolveItems(data);
 
     for (const item of items) {
       switch (item.__type) {
         case LINEAR_ENTITY_TYPES_ENUM.ISSUE:
-          await this._connectorLinearRepository.issue.saveIssue(item, { incremental: false });
+          await this._connectorLinearRepository.issue.saveIssue(item as unknown as LinearIssueEntity, {
+            incremental: false,
+          });
           break;
         default:
           // @ts-ignore: Unreachable code error
@@ -35,7 +37,7 @@ export class ConnectorLinearStore implements IConnectorStore {
     return this._connectorLinearRepository.getAuthenticationData();
   }
 
-  private _resolveItems<T extends LinearEntity>(data: T | T[]): T[] {
+  private _resolveItems<T extends LinearEntityType>(data: T | T[]): T[] {
     return Array.isArray(data) ? data : [data];
   }
 }

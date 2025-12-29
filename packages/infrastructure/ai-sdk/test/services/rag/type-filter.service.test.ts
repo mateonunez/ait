@@ -20,8 +20,8 @@ describe("TypeFilterService", () => {
       for (const query of queries) {
         const result = service.inferTypes([], query);
         assert.ok(result, `Should detect filter for: ${query}`);
-        assert.ok(result?.types?.includes("repository"), `Should include repository for: ${query}`);
-        assert.ok(result?.types?.includes("pull_request"), `Should include pull_request for: ${query}`);
+        assert.ok(result?.types?.includes("github_repository"), `Should include repository for: ${query}`);
+        assert.ok(result?.types?.includes("github_pull_request"), `Should include pull_request for: ${query}`);
       }
     });
 
@@ -33,7 +33,7 @@ describe("TypeFilterService", () => {
       for (const query of queries) {
         const result = service.inferTypes([], query);
         assert.ok(result, `Should detect filter for: ${query}`);
-        assert.deepEqual(result?.types, ["issue"]);
+        assert.deepEqual(result?.types, ["linear_issue"]);
       }
     });
 
@@ -45,7 +45,13 @@ describe("TypeFilterService", () => {
       for (const query of queries) {
         const result = service.inferTypes([], query);
         assert.ok(result, `Should detect filter for: ${query}`);
-        assert.deepEqual(result?.types, ["track", "artist", "playlist", "album", "recently_played"]);
+        assert.deepEqual(result?.types, [
+          "spotify_track",
+          "spotify_artist",
+          "spotify_playlist",
+          "spotify_album",
+          "spotify_recently_played",
+        ]);
       }
     });
 
@@ -57,7 +63,7 @@ describe("TypeFilterService", () => {
       for (const query of queries) {
         const result = service.inferTypes([], query);
         assert.ok(result, `Should detect filter for: ${query}`);
-        assert.deepEqual(result?.types, ["tweet"]);
+        assert.deepEqual(result?.types, ["x_tweet"]);
       }
     });
 
@@ -77,8 +83,14 @@ describe("TypeFilterService", () => {
 
       const result = service.inferTypes([], "spotify tracks and albums");
       assert.ok(result);
-      assert.deepEqual(result.types, ["track", "artist", "playlist", "album", "recently_played"]);
-      assert.ok(!result.types.includes("repository"), "Should not include repository");
+      assert.deepEqual(result.types, [
+        "spotify_track",
+        "spotify_artist",
+        "spotify_playlist",
+        "spotify_album",
+        "spotify_recently_played",
+      ]);
+      assert.ok(!result.types.includes("github_repository"), "Should not include repository");
     });
 
     it("should detect multiple domains when both keywords present", () => {
@@ -87,8 +99,8 @@ describe("TypeFilterService", () => {
       const result = service.inferTypes([], "playlist from github repositories");
       assert.ok(result);
       // Should detect both music and code types
-      assert.ok(result.types?.includes("playlist"), "Should include playlist");
-      assert.ok(result.types?.includes("repository"), "Should include repository");
+      assert.ok(result.types?.includes("spotify_playlist"), "Should include playlist");
+      assert.ok(result.types?.includes("github_repository"), "Should include repository");
     });
 
     it("should be case insensitive", () => {
@@ -98,9 +110,9 @@ describe("TypeFilterService", () => {
       const result2 = service.inferTypes([], "GitHub Repositories");
       const result3 = service.inferTypes([], "github repositories");
 
-      assert.ok(result1?.types?.includes("repository"));
-      assert.ok(result2?.types?.includes("repository"));
-      assert.ok(result3?.types?.includes("repository"));
+      assert.ok(result1?.types?.includes("github_repository"));
+      assert.ok(result2?.types?.includes("github_repository"));
+      assert.ok(result3?.types?.includes("github_repository"));
     });
 
     it("should handle multiple type keywords in same domain", () => {
@@ -108,8 +120,8 @@ describe("TypeFilterService", () => {
 
       const result = service.inferTypes([], "github repositories and projects and code");
       assert.ok(result);
-      assert.ok(result.types?.includes("repository"));
-      assert.ok(result.types?.includes("pull_request"));
+      assert.ok(result.types?.includes("github_repository"));
+      assert.ok(result.types?.includes("github_pull_request"));
     });
 
     it("should detect x.com as Twitter", () => {
@@ -117,7 +129,7 @@ describe("TypeFilterService", () => {
 
       const result = service.inferTypes([], "posts on x.com");
       assert.ok(result);
-      assert.deepEqual(result.types, ["tweet"]);
+      assert.deepEqual(result.types, ["x_tweet"]);
     });
 
     it("should handle queries with punctuation", () => {
@@ -125,7 +137,7 @@ describe("TypeFilterService", () => {
 
       const result = service.inferTypes([], "What are my github repositories?");
       assert.ok(result);
-      assert.ok(result.types?.includes("repository"));
+      assert.ok(result.types?.includes("github_repository"));
     });
 
     it("should handle queries with extra whitespace", () => {
@@ -133,29 +145,29 @@ describe("TypeFilterService", () => {
 
       const result = service.inferTypes([], "  github    repositories  ");
       assert.ok(result);
-      assert.ok(result.types?.includes("repository"));
+      assert.ok(result.types?.includes("github_repository"));
     });
 
     it("should use LLM intent when provided", () => {
       service = new TypeFilterService();
 
       const intent = {
-        entityTypes: ["track", "recently_played"],
+        entityTypes: ["spotify_track", "spotify_recently_played"],
         isTemporalQuery: false,
         primaryFocus: "some query",
       };
 
       const result = service.inferTypes([], "some query", { intent });
       assert.ok(result);
-      assert.deepEqual(result.types, ["track", "recently_played"]);
+      assert.deepEqual(result.types, ["spotify_track", "spotify_recently_played"]);
     });
 
     it("should use tags when provided", () => {
       service = new TypeFilterService();
 
-      const result = service.inferTypes(["github", "repository"], "some query");
+      const result = service.inferTypes(["github", "github_repository"], "some query");
       assert.ok(result);
-      assert.ok(result.types?.includes("repository"));
+      assert.ok(result.types?.includes("github_repository"));
     });
   });
 });

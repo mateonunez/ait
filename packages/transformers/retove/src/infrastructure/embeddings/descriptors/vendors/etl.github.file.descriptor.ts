@@ -67,7 +67,7 @@ export class ETLGitHubFileDescriptor implements IETLEmbeddingDescriptor<GitHubFi
     const sanitizedContent = entity.content ? CodeSanitizer.sanitize(entity.content) : null;
 
     return {
-      __type: "repository_file",
+      __type: "github_file",
       ...entityWithoutUpdatedAt,
       content: sanitizedContent,
       title: CodeSanitizer.formatChunkTitle(entity.repositoryFullName || "unknown", entity.path || "unknown"),

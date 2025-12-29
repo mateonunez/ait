@@ -38,7 +38,7 @@ describe("ConnectorGitHubDataSource", () => {
         private: false,
         owner: { login: "mateonunez" },
         stargazers_count: 10,
-        __type: "repository",
+        __type: "github_repository",
       },
       {
         id: "2",
@@ -47,7 +47,7 @@ describe("ConnectorGitHubDataSource", () => {
         private: false,
         owner: { login: "other" },
         stargazers_count: 5,
-        __type: "repository",
+        __type: "github_repository",
       },
     ] as unknown as ConnectorGitHubFetchRepositoriesResponse;
 
@@ -212,7 +212,7 @@ describe("ConnectorGitHubDataSource", () => {
 
       assert.ok(Array.isArray(result));
       assert.equal(result.length, 1);
-      assert.equal(result[0]?.__type, "pull_request");
+      assert.equal(result[0]?.__type, "github_pull_request");
       assert.equal(result[0]?.number, 1);
       assert.equal(result[0]?.title, "Test PR 1");
       assert.equal(result[0]?.merged, true);

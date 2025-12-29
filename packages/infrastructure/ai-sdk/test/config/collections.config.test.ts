@@ -108,35 +108,35 @@ describe("Collections Configuration", () => {
 
   describe("getCollectionByEntityType", () => {
     it("should return collection for track entity", () => {
-      const collection = getCollectionByEntityType("track");
+      const collection = getCollectionByEntityType("spotify_track");
 
       assert.ok(collection);
       assert.equal(collection.vendor, "spotify");
-      assert.ok(collection.entityTypes.includes("track"));
+      assert.ok(collection.entityTypes.includes("spotify_track"));
     });
 
     it("should return collection for pull_request entity", () => {
-      const collection = getCollectionByEntityType("pull_request");
+      const collection = getCollectionByEntityType("github_pull_request");
 
       assert.ok(collection);
       assert.equal(collection.vendor, "github");
-      assert.ok(collection.entityTypes.includes("pull_request"));
+      assert.ok(collection.entityTypes.includes("github_pull_request"));
     });
 
     it("should return collection for issue entity", () => {
-      const collection = getCollectionByEntityType("issue");
+      const collection = getCollectionByEntityType("linear_issue");
 
       assert.ok(collection);
       assert.equal(collection.vendor, "linear");
-      assert.ok(collection.entityTypes.includes("issue"));
+      assert.ok(collection.entityTypes.includes("linear_issue"));
     });
 
     it("should return collection for tweet entity", () => {
-      const collection = getCollectionByEntityType("tweet");
+      const collection = getCollectionByEntityType("x_tweet");
 
       assert.ok(collection);
       assert.equal(collection.vendor, "x");
-      assert.ok(collection.entityTypes.includes("tweet"));
+      assert.ok(collection.entityTypes.includes("x_tweet"));
     });
 
     it("should return undefined for unknown entity type", () => {
@@ -148,7 +148,7 @@ describe("Collections Configuration", () => {
 
   describe("getCollectionsByEntityTypes", () => {
     it("should return collections for multiple entity types", () => {
-      const collections = getCollectionsByEntityTypes(["track", "pull_request"]);
+      const collections = getCollectionsByEntityTypes(["spotify_track", "github_pull_request"]);
 
       assert.equal(collections.length, 2);
       assert.ok(collections.some((c) => c.vendor === "spotify"));
@@ -156,7 +156,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should deduplicate collections for same vendor", () => {
-      const collections = getCollectionsByEntityTypes(["track", "artist", "playlist"]);
+      const collections = getCollectionsByEntityTypes(["spotify_track", "spotify_artist", "spotify_playlist"]);
 
       // All three are in Spotify collection
       assert.equal(collections.length, 1);
@@ -170,7 +170,11 @@ describe("Collections Configuration", () => {
     });
 
     it("should handle mix of valid and invalid entity types", () => {
-      const collections = getCollectionsByEntityTypes(["track", "unknown" as EntityType, "pull_request"]);
+      const collections = getCollectionsByEntityTypes([
+        "spotify_track",
+        "unknown" as EntityType,
+        "github_pull_request",
+      ]);
 
       assert.equal(collections.length, 2);
       assert.ok(collections.some((c) => c.vendor === "spotify"));
@@ -229,19 +233,19 @@ describe("Collections Configuration", () => {
 
   describe("getCollectionNameByEntityType", () => {
     it("should return collection name for track entity", () => {
-      const name = getCollectionNameByEntityType("track");
+      const name = getCollectionNameByEntityType("spotify_track");
 
       assert.equal(name, "ait_spotify_collection");
     });
 
     it("should return collection name for pull_request entity", () => {
-      const name = getCollectionNameByEntityType("pull_request");
+      const name = getCollectionNameByEntityType("github_pull_request");
 
       assert.equal(name, "ait_github_collection");
     });
 
     it("should return collection name for issue entity", () => {
-      const name = getCollectionNameByEntityType("issue");
+      const name = getCollectionNameByEntityType("linear_issue");
 
       assert.equal(name, "ait_linear_collection");
     });
@@ -284,16 +288,16 @@ describe("Collections Configuration", () => {
 
     it("should contain expected entity types", () => {
       const expectedTypes: EntityType[] = [
-        "track",
-        "artist",
-        "playlist",
-        "album",
-        "recently_played",
-        "repository",
-        "pull_request",
-        "tweet",
-        "issue",
-        "page",
+        "spotify_track",
+        "spotify_artist",
+        "spotify_playlist",
+        "spotify_album",
+        "spotify_recently_played",
+        "github_repository",
+        "github_pull_request",
+        "x_tweet",
+        "linear_issue",
+        "notion_page",
       ];
 
       for (const type of expectedTypes) {
@@ -313,7 +317,13 @@ describe("Collections Configuration", () => {
 
   describe("Collection Entity Types Mapping", () => {
     it("should map Spotify entity types correctly", () => {
-      const spotifyTypes: EntityType[] = ["track", "artist", "playlist", "album", "recently_played"];
+      const spotifyTypes: EntityType[] = [
+        "spotify_track",
+        "spotify_artist",
+        "spotify_playlist",
+        "spotify_album",
+        "spotify_recently_played",
+      ];
 
       for (const type of spotifyTypes) {
         const collection = getCollectionByEntityType(type);
@@ -323,7 +333,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should map GitHub entity types correctly", () => {
-      const githubTypes: EntityType[] = ["repository", "pull_request"];
+      const githubTypes: EntityType[] = ["github_repository", "github_pull_request"];
 
       for (const type of githubTypes) {
         const collection = getCollectionByEntityType(type);
@@ -333,7 +343,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should map Linear entity types correctly", () => {
-      const linearTypes: EntityType[] = ["issue"];
+      const linearTypes: EntityType[] = ["linear_issue"];
 
       for (const type of linearTypes) {
         const collection = getCollectionByEntityType(type);
@@ -343,7 +353,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should map X entity types correctly", () => {
-      const xTypes: EntityType[] = ["tweet"];
+      const xTypes: EntityType[] = ["x_tweet"];
 
       for (const type of xTypes) {
         const collection = getCollectionByEntityType(type);
@@ -353,7 +363,7 @@ describe("Collections Configuration", () => {
     });
 
     it("should map Notion entity types correctly", () => {
-      const notionTypes: EntityType[] = ["page"];
+      const notionTypes: EntityType[] = ["notion_page"];
 
       for (const type of notionTypes) {
         const collection = getCollectionByEntityType(type);

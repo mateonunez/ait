@@ -86,7 +86,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
       return (parsedData as GitHubRepositoryExternal[]).map((repo) => ({
         ...repo,
-        __type: "repository" as const,
+        __type: "github_repository" as const,
       }));
     } catch (error: any) {
       this._handleError(error, "GITHUB_FETCH_REPOS");
@@ -174,7 +174,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             const fullName = repo.full_name || `${owner}/${repoName}`;
             allCommits.push({
               ...commit,
-              __type: "commit" as const,
+              __type: "github_commit" as const,
               _repositoryContext: {
                 id: repo.id.toString(),
                 name: repo.name,
@@ -345,7 +345,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             (commit) =>
               ({
                 ...commit,
-                __type: "commit" as const,
+                __type: "github_commit" as const,
                 _repositoryContext: {
                   id: repo.id.toString(),
                   name: repo.name,
@@ -409,7 +409,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       (pr) =>
         ({
           ...pr,
-          __type: "pull_request" as const,
+          __type: "github_pull_request" as const,
         }) as GitHubPullRequestExternal,
     );
   }
@@ -472,7 +472,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             sha: item.sha || "",
             size: item.size,
             url: item.url || "",
-            __type: "tree_item" as const,
+            __type: "github_tree_item" as const,
           }))
       );
     } catch (error: any) {

@@ -1,4 +1,4 @@
-import type { PaginatedResponse, PaginationParams } from "@ait/core";
+import { GoogleYouTubeSubscriptionEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
 import {
   type GoogleSubscriptionDataTargetInsert,
   drizzleOrm,
@@ -7,11 +7,6 @@ import {
 } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleYouTubeSubscriptionRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
-import {
-  googleYouTubeSubscriptionDataTargetToDomain,
-  googleYouTubeSubscriptionDomainToDataTarget,
-} from "../../google/google-youtube.entity";
-import type { GoogleYouTubeSubscriptionEntity } from "../../google/google-youtube.entity";
 
 export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorGoogleYouTubeSubscriptionRepository {
   private _pgClient = getPostgresClient();
@@ -20,7 +15,7 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
     entity: GoogleYouTubeSubscriptionEntity,
     options?: IConnectorRepositorySaveOptions,
   ): Promise<void> {
-    const data = googleYouTubeSubscriptionDomainToDataTarget(entity);
+    const data = entity.toPlain<GoogleSubscriptionDataTargetInsert>();
 
     await this._pgClient.db
       .insert(googleSubscriptions)
@@ -33,7 +28,7 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
 
   async saveSubscriptions(entities: GoogleYouTubeSubscriptionEntity[]): Promise<void> {
     if (entities.length === 0) return;
-    const data = entities.map((e) => googleYouTubeSubscriptionDomainToDataTarget(e));
+    const data = entities.map((e) => e.toPlain<GoogleSubscriptionDataTargetInsert>());
 
     await this._pgClient.db
       .insert(googleSubscriptions)
@@ -60,7 +55,7 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
       .limit(1);
 
     if (result.length === 0) return null;
-    return googleYouTubeSubscriptionDataTargetToDomain(result[0]! as GoogleSubscriptionDataTargetInsert);
+    return GoogleYouTubeSubscriptionEntity.fromPlain(result[0]! as GoogleSubscriptionDataTargetInsert);
   }
 
   async fetchSubscriptions(): Promise<GoogleYouTubeSubscriptionEntity[]> {
@@ -68,7 +63,7 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
       .select()
       .from(googleSubscriptions)
       .orderBy(drizzleOrm.desc(googleSubscriptions.publishedAt));
-    return results.map((r) => googleYouTubeSubscriptionDataTargetToDomain(r as GoogleSubscriptionDataTargetInsert));
+    return results.map((r) => GoogleYouTubeSubscriptionEntity.fromPlain(r as GoogleSubscriptionDataTargetInsert));
   }
 
   async getSubscriptionsPaginated(
@@ -91,7 +86,7 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
     const total = Number(countResult[0]?.count || 0);
 
     return {
-      data: results.map((r) => googleYouTubeSubscriptionDataTargetToDomain(r as GoogleSubscriptionDataTargetInsert)),
+      data: results.map((r) => GoogleYouTubeSubscriptionEntity.fromPlain(r as GoogleSubscriptionDataTargetInsert)),
       pagination: {
         page,
         limit,

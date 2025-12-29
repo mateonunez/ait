@@ -11,38 +11,61 @@ export interface EntityFetchConfig {
 
 export class IntegrationRegistryService {
   private static readonly FETCH_CONFIGS: Partial<Record<EntityType, EntityFetchConfig>> = {
-    repository: {
-      entityType: "repository",
+    github_repository: {
+      entityType: "github_repository",
       fetchMethod: "getRepositoriesPaginated",
       dateField: ["updatedAt", "pushedAt", "createdAt"],
     },
-    pull_request: {
-      entityType: "pull_request",
+    github_pull_request: {
+      entityType: "github_pull_request",
       fetchMethod: "getPullRequestsPaginated",
       dateField: ["updatedAt", "prUpdatedAt", "createdAt", "prCreatedAt"],
     },
-    commit: {
-      entityType: "commit",
+    github_commit: {
+      entityType: "github_commit",
       fetchMethod: "getCommitsPaginated",
       dateField: ["committerDate", "authorDate", "updatedAt", "createdAt"],
     },
-    repository_file: { entityType: "repository_file", fetchMethod: "getFilesPaginated", dateField: "updatedAt" },
-    issue: { entityType: "issue", fetchMethod: "getIssuesPaginated", dateField: ["updatedAt", "createdAt"] },
-    track: { entityType: "track", fetchMethod: "getTracksPaginated", dateField: "updatedAt" },
-    artist: { entityType: "artist", fetchMethod: "getArtistsPaginated", dateField: "updatedAt" },
-    playlist: { entityType: "playlist", fetchMethod: "getPlaylistsPaginated", dateField: "updatedAt" },
-    album: { entityType: "album", fetchMethod: "getAlbumsPaginated", dateField: "updatedAt" },
-    recently_played: {
-      entityType: "recently_played",
+    github_file: { entityType: "github_file", fetchMethod: "getFilesPaginated", dateField: "updatedAt" },
+
+    linear_issue: {
+      entityType: "linear_issue",
+      fetchMethod: "getIssuesPaginated",
+      dateField: ["updatedAt", "createdAt"],
+    },
+
+    spotify_track: { entityType: "spotify_track", fetchMethod: "getTracksPaginated", dateField: "updatedAt" },
+    spotify_artist: { entityType: "spotify_artist", fetchMethod: "getArtistsPaginated", dateField: "updatedAt" },
+    spotify_playlist: { entityType: "spotify_playlist", fetchMethod: "getPlaylistsPaginated", dateField: "updatedAt" },
+    spotify_album: { entityType: "spotify_album", fetchMethod: "getAlbumsPaginated", dateField: "updatedAt" },
+    spotify_recently_played: {
+      entityType: "spotify_recently_played",
       fetchMethod: "getRecentlyPlayedPaginated",
       dateField: "playedAt",
     },
-    tweet: { entityType: "tweet", fetchMethod: "getTweetsPaginated", dateField: "createdAt" },
-    page: { entityType: "page", fetchMethod: "getPagesPaginated", dateField: "updatedAt" },
-    message: { entityType: "message", fetchMethod: "getMessagesPaginated", dateField: ["ts", "createdAt"] },
-    event: { entityType: "event", fetchMethod: "getEventsPaginated", dateField: "startTime" },
-    calendar: { entityType: "calendar", fetchMethod: "getCalendarsPaginated", dateField: "updatedAt" },
-    subscription: { entityType: "subscription", fetchMethod: "getSubscriptionsPaginated", dateField: "publishedAt" },
+
+    x_tweet: { entityType: "x_tweet", fetchMethod: "getTweetsPaginated", dateField: "createdAt" },
+
+    notion_page: { entityType: "notion_page", fetchMethod: "getPagesPaginated", dateField: "updatedAt" },
+
+    slack_message: { entityType: "slack_message", fetchMethod: "getMessagesPaginated", dateField: ["ts", "createdAt"] },
+
+    google_calendar_event: {
+      entityType: "google_calendar_event",
+      fetchMethod: "getEventsPaginated",
+      dateField: "startTime",
+    },
+    google_calendar_calendar: {
+      entityType: "google_calendar_calendar",
+      fetchMethod: "getCalendarsPaginated",
+      dateField: "updatedAt",
+    },
+
+    google_youtube_subscription: {
+      entityType: "google_youtube_subscription",
+      fetchMethod: "getSubscriptionsPaginated",
+      dateField: "publishedAt",
+    },
     google_contact: {
       entityType: "google_contact",
       fetchMethod: "getContactsPaginated",

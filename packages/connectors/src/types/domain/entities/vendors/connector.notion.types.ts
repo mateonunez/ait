@@ -1,5 +1,4 @@
-import type { PaginatedResponse, PaginationParams } from "@ait/core";
-import type { NotionPageEntity } from "../../../../domain/entities/notion/notion-page.entity";
+import type { NotionPageEntity, PaginatedResponse, PaginationParams } from "@ait/core";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
 
 export interface IConnectorNotionPageRepository {

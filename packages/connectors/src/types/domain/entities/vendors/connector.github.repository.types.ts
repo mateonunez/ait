@@ -1,5 +1,4 @@
-import type { PaginatedResponse, PaginationParams } from "@ait/core";
-import type { GitHubRepositoryEntity } from "../../../../domain/entities/github/github-repository.entity";
+import type { GitHubRepositoryEntity, PaginatedResponse, PaginationParams } from "@ait/core";
 
 export type { GitHubRepositoryEntity };
 import type { IConnectorGitHubFileRepository } from "../../../../domain/entities/vendors/github/connector.github.file.repository";
@@ -8,8 +7,8 @@ import type { IConnectorGitHubCommitRepository } from "./connector.github.commit
 import type { IConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.types";
 
 export interface IConnectorGitHubRepoRepository {
-  saveRepository(repository: Partial<GitHubRepositoryEntity>, options?: IConnectorRepositorySaveOptions): Promise<void>;
-  saveRepositories(repositories: Partial<GitHubRepositoryEntity>[]): Promise<void>;
+  saveRepository(repository: GitHubRepositoryEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
+  saveRepositories(repositories: GitHubRepositoryEntity[]): Promise<void>;
   getRepository(id: string): Promise<GitHubRepositoryEntity | null>;
   fetchRepositories(): Promise<GitHubRepositoryEntity[]>;
   getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>>;

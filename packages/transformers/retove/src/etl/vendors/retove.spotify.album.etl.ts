@@ -73,12 +73,12 @@ export class RetoveSpotifyAlbumETL extends RetoveBaseETLAbstract<SpotifyAlbumDat
   }
 
   protected override _getEntityType(): EntityType {
-    return "album";
+    return "spotify_album";
   }
 }
 
 export interface RetoveSpotifyAlbumVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "album";
+    __type: "spotify_album";
   } & Partial<SpotifyAlbumDataTarget>;
 }

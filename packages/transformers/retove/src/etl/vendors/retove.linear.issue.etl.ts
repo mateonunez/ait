@@ -38,7 +38,7 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract<LinearIssueDataT
   }
 
   protected override _getEntityType(): EntityType {
-    return "issue";
+    return "linear_issue";
   }
 
   protected async extract(limit: number, cursor?: ETLCursor): Promise<LinearIssueDataTarget[]> {
@@ -84,7 +84,7 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract<LinearIssueDataT
 
 export interface RetoveLinearIssueVectorPoint extends BaseVectorPoint {
   payload: {
-    __type: "issue";
+    __type: "linear_issue";
   } & Partial<LinearIssueDataTarget>;
 }
 

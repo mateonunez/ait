@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export interface BaseLinearEntity {
-  __type: "issue";
+export interface BaseLinearEntityType {
+  __type: "linear_issue";
 }
 
-export interface LinearIssueExternal extends BaseLinearEntity {
+export interface LinearIssueExternal extends BaseLinearEntityType {
   id: string;
   title: string;
   description?: string;
@@ -17,10 +17,10 @@ export interface LinearIssueExternal extends BaseLinearEntity {
   labels: { nodes: Array<{ name: string }> };
   createdAt: string;
   updatedAt: string;
-  __type: "issue";
+  __type: "linear_issue";
 }
 
-export const LinearIssueEntitySchema = z.object({
+export const LinearIssueEntityTypeSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable(),
@@ -36,10 +36,10 @@ export const LinearIssueEntitySchema = z.object({
   labels: z.array(z.string()),
   createdAt: z.date(),
   updatedAt: z.date(),
-  __type: z.literal("issue"),
+  __type: z.literal("linear_issue"),
 });
 
-export type LinearIssueEntity = z.infer<typeof LinearIssueEntitySchema>;
+export type LinearIssueEntityType = z.infer<typeof LinearIssueEntityTypeSchema>;
 
-export type LinearEntity = LinearIssueEntity;
+export type LinearEntityType = LinearIssueEntityType;
 export type LinearExternal = LinearIssueExternal;

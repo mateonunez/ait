@@ -124,7 +124,7 @@ export class ConnectorXDataSource implements IConnectorXDataSource {
         ...tweet,
         username: userInfo.username,
         name: userInfo.name,
-        __type: "tweet" as const,
+        __type: "x_tweet" as const,
       };
 
       const attachments = tweet.attachments as { media_keys?: string[]; poll_ids?: string[] } | undefined;

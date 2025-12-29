@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { GoogleYouTubeSubscriptionExternal } from "@ait/core";
-import type { GoogleSubscriptionDataTargetInsert } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { GoogleYouTubeSubscriptionExternal } from "../../types/integrations";
 
 /**
  * Google YouTube Subscription entity with class-transformer decorators.
@@ -14,7 +13,7 @@ export class GoogleYouTubeSubscriptionEntity {
   title!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   description!: string | null;
 
   @Expose()
@@ -24,35 +23,43 @@ export class GoogleYouTubeSubscriptionEntity {
   resourceChannelId!: string;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   publishedAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   thumbnailUrl!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   totalItemCount!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   newItemCount!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   activityType!: string | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "subscription" as const;
+  readonly __type = "google_youtube_subscription" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): GoogleYouTubeSubscriptionEntity {
+    return plainToInstance(GoogleYouTubeSubscriptionEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -80,6 +87,7 @@ export function mapGoogleYouTubeSubscription(
 
   return plainToInstance(GoogleYouTubeSubscriptionEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -90,20 +98,4 @@ export function mapGoogleYouTubeSubscriptions(
   externals: GoogleYouTubeSubscriptionExternal[],
 ): GoogleYouTubeSubscriptionEntity[] {
   return externals.map(mapGoogleYouTubeSubscription);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function googleYouTubeSubscriptionDomainToDataTarget(
-  domain: GoogleYouTubeSubscriptionEntity,
-): GoogleSubscriptionDataTargetInsert {
-  return instanceToPlain(domain) as GoogleSubscriptionDataTargetInsert;
-}
-
-export function googleYouTubeSubscriptionDataTargetToDomain(
-  dataTarget: GoogleSubscriptionDataTargetInsert,
-): GoogleYouTubeSubscriptionEntity {
-  return plainToInstance(GoogleYouTubeSubscriptionEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

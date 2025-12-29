@@ -26,6 +26,7 @@ export interface BaseVectorPoint {
   vector: number[];
   sparseVector?: SparseVector;
   payload: Record<string, unknown>;
+  __type: EntityType;
 }
 
 export interface RetryOptions {
@@ -312,7 +313,7 @@ export abstract class RetoveBaseETLAbstract<T> {
   }
 
   /**
-   * Get the entity type for this ETL (e.g., "repository", "pull_request", "track").
+   * Get the entity type for this ETL (e.g., "github_repository", "github_pull_request", "spotify_track").
    * Override in subclasses if needed.
    */
   protected _getEntityType(): EntityType | "unknown" {
@@ -518,11 +519,12 @@ export abstract class RetoveBaseETLAbstract<T> {
           id: entityId,
           enrichment: enriched.enrichment,
           __source: "retove",
-          __type: payloadObj.__type as string,
+          __type: payloadObj.__type as EntityType,
           __collection: this._collectionName,
           __indexed_at: new Date().toISOString(),
         },
       },
+      __type: this._getEntityType() as EntityType,
     };
   }
 
@@ -613,6 +615,7 @@ export abstract class RetoveBaseETLAbstract<T> {
         ...hit.payload,
         _score: hit.score,
       },
+      __type: this._getEntityType(),
     })) as BaseVectorPoint[];
   }
 

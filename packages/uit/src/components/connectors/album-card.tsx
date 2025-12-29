@@ -31,7 +31,7 @@ export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
 
   const getAlbumTypeColor = () => {
     switch (album.albumType?.toLowerCase()) {
-      case "album":
+      case "spotify_album":
         return "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20";
       case "single":
         return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20";
@@ -91,7 +91,7 @@ export function AlbumCard({ album, onClick, className }: AlbumCardProps) {
           {/* Stats */}
           <ConnectorCardStats className="mt-auto pt-2">
             <ConnectorCardStatItem icon={<Music className="h-3.5 w-3.5" />}>
-              {album.tracks.length} {album.tracks.length === 1 ? "track" : "tracks"}
+              {album.tracks.length} {album.tracks.length === 1 ? "spotify_track" : "tracks"}
             </ConnectorCardStatItem>
             {album.popularity !== null && (
               <ConnectorCardStatItem icon={<TrendingUp className="h-3.5 w-3.5 text-green-500" />}>

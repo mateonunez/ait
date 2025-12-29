@@ -1,10 +1,10 @@
 import { z } from "zod";
 
-export interface BaseNotionEntity {
-  __type: "page";
+export interface BaseNotionEntityType {
+  __type: "notion_page";
 }
 
-export interface NotionPageExternal extends BaseNotionEntity {
+export interface NotionPageExternal extends BaseNotionEntityType {
   id: string;
   created_time: string;
   last_edited_time: string;
@@ -37,9 +37,9 @@ export interface NotionPageExternal extends BaseNotionEntity {
   properties: Record<string, unknown>;
   url: string;
   content: string | null;
-  __type: "page";
+  __type: "notion_page";
 }
-export const NotionPageEntitySchema = z.object({
+export const NotionPageEntityTypeSchema = z.object({
   id: z.string(),
   title: z.string(),
   url: z.string(),
@@ -54,10 +54,10 @@ export const NotionPageEntitySchema = z.object({
   createdBy: z.string().nullable(),
   lastEditedBy: z.string().nullable(),
   properties: z.record(z.string(), z.unknown()),
-  __type: z.literal("page"),
+  __type: z.literal("notion_page"),
 });
 
-export type NotionPageEntity = z.infer<typeof NotionPageEntitySchema>;
+export type NotionPageEntityType = z.infer<typeof NotionPageEntityTypeSchema>;
 
-export type NotionEntity = NotionPageEntity;
+export type NotionEntityType = NotionPageEntityType;
 export type NotionExternal = NotionPageExternal;

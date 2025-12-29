@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
-import type { NotionPageEntity } from "@ait/core";
+import { NotionPageEntity } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient, notionPages } from "@ait/postgres";
 import { ConnectorNotionPageRepository } from "../../../../src/domain/entities/vendors/notion/connector.notion-page.repository";
 
@@ -20,7 +20,7 @@ describe("ConnectorNotionPageRepository", () => {
     describe("savePage", () => {
       it("should save page successfully", async () => {
         const now = new Date();
-        const page: NotionPageEntity = {
+        const page = NotionPageEntity.fromPlain({
           id: "test-page-1",
           title: "Test Page",
           url: "https://notion.so/test-page-1",
@@ -35,8 +35,7 @@ describe("ConnectorNotionPageRepository", () => {
           createdBy: "user-1",
           lastEditedBy: "user-2",
           properties: {},
-          __type: "page",
-        } as unknown as NotionPageEntity;
+        });
 
         await repository.savePage(page);
 
@@ -50,7 +49,7 @@ describe("ConnectorNotionPageRepository", () => {
 
       it("should update existing page on conflict", async () => {
         const now = new Date();
-        const page: NotionPageEntity = {
+        const page = NotionPageEntity.fromPlain({
           id: "test-page-update",
           title: "Original Title",
           url: "https://notion.so/test-page-update",
@@ -65,18 +64,17 @@ describe("ConnectorNotionPageRepository", () => {
           createdBy: "user-1",
           lastEditedBy: "user-2",
           properties: {},
-          __type: "page",
-        } as unknown as NotionPageEntity;
+        });
 
         await repository.savePage(page);
 
         // Update the page
-        const updatedPage: NotionPageEntity = {
-          ...page,
+        const updatedPage = NotionPageEntity.fromPlain({
+          ...page.toPlain(),
           title: "Updated Title",
           content: "Updated content",
           updatedAt: new Date(),
-        } as unknown as NotionPageEntity;
+        });
 
         await repository.savePage(updatedPage);
 
@@ -99,8 +97,8 @@ describe("ConnectorNotionPageRepository", () => {
     describe("savePages", () => {
       it("should save multiple pages", async () => {
         const now = new Date();
-        const pages: NotionPageEntity[] = [
-          {
+        const pages = [
+          NotionPageEntity.fromPlain({
             id: "page-1",
             title: "Page 1",
             url: "https://notion.so/page-1",
@@ -115,9 +113,8 @@ describe("ConnectorNotionPageRepository", () => {
             createdBy: "user-1",
             lastEditedBy: "user-2",
             properties: {},
-            __type: "page",
-          },
-          {
+          }),
+          NotionPageEntity.fromPlain({
             id: "page-2",
             title: "Page 2",
             url: "https://notion.so/page-2",
@@ -132,9 +129,8 @@ describe("ConnectorNotionPageRepository", () => {
             createdBy: "user-1",
             lastEditedBy: "user-2",
             properties: {},
-            __type: "page",
-          },
-        ] as NotionPageEntity[];
+          }),
+        ];
 
         await repository.savePages(pages);
 
@@ -152,23 +148,24 @@ describe("ConnectorNotionPageRepository", () => {
     describe("getPagesPaginated", () => {
       it("should return paginated pages", async () => {
         const now = new Date();
-        const pages: NotionPageEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `page-${i + 1}`,
-          title: `Page ${i + 1}`,
-          url: `https://notion.so/page-${i + 1}`,
-          parentType: "workspace",
-          parentId: null,
-          archived: false,
-          icon: null,
-          cover: null,
-          content: `Content ${i + 1}`,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          createdBy: "user-1",
-          lastEditedBy: "user-2",
-          properties: {},
-          __type: "page",
-        })) as NotionPageEntity[];
+        const pages: NotionPageEntity[] = Array.from({ length: 15 }, (_, i) =>
+          NotionPageEntity.fromPlain({
+            id: `page-${i + 1}`,
+            title: `Page ${i + 1}`,
+            url: `https://notion.so/page-${i + 1}`,
+            parentType: "workspace",
+            parentId: null,
+            archived: false,
+            icon: null,
+            cover: null,
+            content: `Content ${i + 1}`,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+            createdBy: "user-1",
+            lastEditedBy: "user-2",
+            properties: {},
+          }),
+        );
 
         await repository.savePages(pages);
 
@@ -182,23 +179,24 @@ describe("ConnectorNotionPageRepository", () => {
 
       it("should return correct page for second page", async () => {
         const now = new Date();
-        const pages: NotionPageEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `page-${i + 1}`,
-          title: `Page ${i + 1}`,
-          url: `https://notion.so/page-${i + 1}`,
-          parentType: "workspace",
-          parentId: null,
-          archived: false,
-          icon: null,
-          cover: null,
-          content: `Content ${i + 1}`,
-          createdAt: new Date(now.getTime() + i * 1000),
-          updatedAt: new Date(now.getTime() + i * 1000),
-          createdBy: "user-1",
-          lastEditedBy: "user-2",
-          properties: {},
-          __type: "page",
-        })) as NotionPageEntity[];
+        const pages: NotionPageEntity[] = Array.from({ length: 10 }, (_, i) =>
+          NotionPageEntity.fromPlain({
+            id: `page-${i + 1}`,
+            title: `Page ${i + 1}`,
+            url: `https://notion.so/page-${i + 1}`,
+            parentType: "workspace",
+            parentId: null,
+            archived: false,
+            icon: null,
+            cover: null,
+            content: `Content ${i + 1}`,
+            createdAt: new Date(now.getTime() + i * 1000),
+            updatedAt: new Date(now.getTime() + i * 1000),
+            createdBy: "user-1",
+            lastEditedBy: "user-2",
+            properties: {},
+          }),
+        );
 
         await repository.savePages(pages);
 

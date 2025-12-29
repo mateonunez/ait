@@ -3,7 +3,7 @@ import { RepositoryFileTextTokenizer } from "./code-text.tokenizer";
 import { DefaultTextTokenizer } from "./default-text.tokenizer";
 import type { ITextTokenizer } from "./text-tokenizer.interface";
 
-const CODE_ENTITY_TYPES: EntityType[] = ["repository_file", "commit", "pull_request", "repository"];
+const CODE_ENTITY_TYPES: EntityType[] = ["github_file", "github_commit", "github_pull_request", "github_repository"];
 
 let _defaultTokenizer: DefaultTextTokenizer | null = null;
 let _repositoryFileTokenizer: RepositoryFileTextTokenizer | null = null;

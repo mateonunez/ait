@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import { after, beforeEach, describe, it } from "node:test";
+import {
+  GitHubCommitEntity as GitHubCommitEntityClass,
+  GitHubPullRequestEntity as GitHubPullRequestEntityClass,
+  GitHubRepositoryEntity as GitHubRepositoryEntityClass,
+} from "@ait/core";
+import type { GitHubCommitEntity } from "@ait/core";
+import type { GitHubPullRequestEntity } from "@ait/core";
+import type { GitHubRepositoryEntity } from "@ait/core";
 import { closePostgresConnection, drizzleOrm, getPostgresClient } from "@ait/postgres";
 import { githubCommits, githubPullRequests, githubRepositories } from "@ait/postgres";
-import type { GitHubCommitEntity } from "../../../../src/domain/entities/github/github-commit.entity";
-import type { GitHubPullRequestEntity } from "../../../../src/domain/entities/github/github-pull-request.entity";
-import type { GitHubRepositoryEntity } from "../../../../src/domain/entities/github/github-repository.entity";
 import { ConnectorGitHubRepoRepository } from "../../../../src/domain/entities/vendors/github/connector.github-repo.repository";
 import { ConnectorGitHubCommitRepository } from "../../../../src/domain/entities/vendors/github/connector.github.commit.repository";
 import { ConnectorGitHubPullRequestRepository } from "../../../../src/domain/entities/vendors/github/connector.github.pull-request.repository";
@@ -24,7 +29,7 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("saveRepository", () => {
       it("should save repository successfully", async () => {
-        const repo: GitHubRepositoryEntity = {
+        const repo = GitHubRepositoryEntityClass.fromPlain({
           id: "test-id",
           name: "Test Repository",
           description: "Test Description",
@@ -59,8 +64,8 @@ describe("ConnectorGitHubRepository", () => {
           metadata: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "repository",
-        } as unknown as GitHubRepositoryEntity;
+          __type: "github_repository",
+        });
 
         await repoRepository.saveRepository(repo);
 
@@ -85,8 +90,8 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("saveRepositories", () => {
       it("should save multiple repositories", async () => {
-        const repos: GitHubRepositoryEntity[] = [
-          {
+        const repos = [
+          GitHubRepositoryEntityClass.fromPlain({
             id: "repo-1",
             name: "Repository 1",
             description: "Description 1",
@@ -121,9 +126,9 @@ describe("ConnectorGitHubRepository", () => {
             metadata: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "repository",
-          },
-          {
+            __type: "github_repository",
+          }),
+          GitHubRepositoryEntityClass.fromPlain({
             id: "repo-2",
             name: "Repository 2",
             description: "Description 2",
@@ -158,9 +163,9 @@ describe("ConnectorGitHubRepository", () => {
             metadata: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "repository",
-          },
-        ] as GitHubRepositoryEntity[];
+            __type: "github_repository",
+          }),
+        ];
 
         await repoRepository.saveRepositories(repos);
 
@@ -177,43 +182,45 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("getRepositoriesPaginated", () => {
       it("should return paginated repositories", async () => {
-        const repos: GitHubRepositoryEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `repo-${i + 1}`,
-          name: `Repository ${i + 1}`,
-          description: `Description ${i + 1}`,
-          stars: (i + 1) * 10,
-          forks: (i + 1) * 5,
-          language: i % 2 === 0 ? "TypeScript" : "JavaScript",
-          url: `https://github.com/mateonunez/repo-${i + 1}`,
-          fullName: `mateonunez/repo-${i + 1}`,
-          private: false,
-          fork: false,
-          archived: false,
-          disabled: false,
-          visibility: "public",
-          watchersCount: (i + 1) * 2,
-          openIssuesCount: i + 1,
-          size: (i + 1) * 100,
-          defaultBranch: "main",
-          topics: [`topic-${i + 1}`],
-          isTemplate: false,
-          hasIssues: true,
-          hasProjects: true,
-          hasWiki: true,
-          hasPages: false,
-          hasDiscussions: false,
-          homepage: null,
-          pushedAt: new Date(Date.now() + i * 1000),
-          licenseName: "MIT",
-          cloneUrl: `https://github.com/mateonunez/repo-${i + 1}.git`,
-          sshUrl: `git@github.com:mateonunez/repo-${i + 1}.git`,
-          ownerData: null,
-          licenseData: null,
-          metadata: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "repository",
-        })) as unknown as GitHubRepositoryEntity[];
+        const repos = Array.from({ length: 15 }, (_, i) =>
+          GitHubRepositoryEntityClass.fromPlain({
+            id: `repo-${i + 1}`,
+            name: `Repository ${i + 1}`,
+            description: `Description ${i + 1}`,
+            stars: (i + 1) * 10,
+            forks: (i + 1) * 5,
+            language: i % 2 === 0 ? "TypeScript" : "JavaScript",
+            url: `https://github.com/mateonunez/repo-${i + 1}`,
+            fullName: `mateonunez/repo-${i + 1}`,
+            private: false,
+            fork: false,
+            archived: false,
+            disabled: false,
+            visibility: "public",
+            watchersCount: (i + 1) * 2,
+            openIssuesCount: i + 1,
+            size: (i + 1) * 100,
+            defaultBranch: "main",
+            topics: [`topic-${i + 1}`],
+            isTemplate: false,
+            hasIssues: true,
+            hasProjects: true,
+            hasWiki: true,
+            hasPages: false,
+            hasDiscussions: false,
+            homepage: null,
+            pushedAt: new Date(Date.now() + i * 1000),
+            licenseName: "MIT",
+            cloneUrl: `https://github.com/mateonunez/repo-${i + 1}.git`,
+            sshUrl: `git@github.com:mateonunez/repo-${i + 1}.git`,
+            ownerData: null,
+            licenseData: null,
+            metadata: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_repository",
+          }),
+        );
 
         await repoRepository.saveRepositories(repos);
 
@@ -226,43 +233,45 @@ describe("ConnectorGitHubRepository", () => {
       });
 
       it("should return correct page for second page", async () => {
-        const repos: GitHubRepositoryEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `repo-${i + 1}`,
-          name: `Repository ${i + 1}`,
-          description: `Description ${i + 1}`,
-          stars: 100,
-          forks: 50,
-          language: "TypeScript",
-          url: `https://github.com/mateonunez/repo-${i + 1}`,
-          fullName: `mateonunez/repo-${i + 1}`,
-          private: false,
-          fork: false,
-          archived: false,
-          disabled: false,
-          visibility: "public",
-          watchersCount: 10,
-          openIssuesCount: 5,
-          size: 1024,
-          defaultBranch: "main",
-          topics: [],
-          isTemplate: false,
-          hasIssues: true,
-          hasProjects: true,
-          hasWiki: true,
-          hasPages: false,
-          hasDiscussions: false,
-          homepage: null,
-          pushedAt: new Date(Date.now() + i * 1000),
-          licenseName: "MIT",
-          cloneUrl: `https://github.com/mateonunez/repo-${i + 1}.git`,
-          sshUrl: `git@github.com:mateonunez/repo-${i + 1}.git`,
-          ownerData: null,
-          licenseData: null,
-          metadata: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "repository",
-        })) as unknown as GitHubRepositoryEntity[];
+        const repos = Array.from({ length: 10 }, (_, i) =>
+          GitHubRepositoryEntityClass.fromPlain({
+            id: `repo-${i + 1}`,
+            name: `Repository ${i + 1}`,
+            description: `Description ${i + 1}`,
+            stars: 100,
+            forks: 50,
+            language: "TypeScript",
+            url: `https://github.com/mateonunez/repo-${i + 1}`,
+            fullName: `mateonunez/repo-${i + 1}`,
+            private: false,
+            fork: false,
+            archived: false,
+            disabled: false,
+            visibility: "public",
+            watchersCount: 10,
+            openIssuesCount: 5,
+            size: 1024,
+            defaultBranch: "main",
+            topics: [],
+            isTemplate: false,
+            hasIssues: true,
+            hasProjects: true,
+            hasWiki: true,
+            hasPages: false,
+            hasDiscussions: false,
+            homepage: null,
+            pushedAt: new Date(Date.now() + i * 1000),
+            licenseName: "MIT",
+            cloneUrl: `https://github.com/mateonunez/repo-${i + 1}.git`,
+            sshUrl: `git@github.com:mateonunez/repo-${i + 1}.git`,
+            ownerData: null,
+            licenseData: null,
+            metadata: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_repository",
+          }),
+        );
 
         await repoRepository.saveRepositories(repos);
 
@@ -292,7 +301,7 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("savePullRequest", () => {
       it("should save pull request successfully", async () => {
-        const pr: GitHubPullRequestEntity = {
+        const pr = GitHubPullRequestEntityClass.fromPlain({
           id: "test-pr-id",
           number: 123,
           title: "Add new feature",
@@ -330,8 +339,8 @@ describe("ConnectorGitHubRepository", () => {
           requestedReviewersData: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "pull_request",
-        } as unknown as GitHubPullRequestEntity;
+          __type: "github_pull_request",
+        });
 
         await prRepository.savePullRequest(pr);
 
@@ -358,8 +367,8 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("savePullRequests", () => {
       it("should save multiple pull requests", async () => {
-        const prs: GitHubPullRequestEntity[] = [
-          {
+        const prs = [
+          GitHubPullRequestEntityClass.fromPlain({
             id: "pr-1",
             number: 1,
             title: "PR 1",
@@ -409,9 +418,9 @@ describe("ConnectorGitHubRepository", () => {
             baseRepoData: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "pull_request",
-          },
-          {
+            __type: "github_pull_request",
+          }),
+          GitHubPullRequestEntityClass.fromPlain({
             id: "pr-2",
             number: 2,
             title: "PR 2",
@@ -464,8 +473,8 @@ describe("ConnectorGitHubRepository", () => {
             baseRepoData: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "pull_request",
-          },
+            __type: "github_pull_request",
+          }),
         ];
 
         await prRepository.savePullRequests(prs);
@@ -483,58 +492,60 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("getPullRequestsPaginated", () => {
       it("should return paginated pull requests", async () => {
-        const prs: GitHubPullRequestEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          id: `pr-${i + 1}`,
-          number: i + 1,
-          title: `PR ${i + 1}`,
-          body: `Body ${i + 1}`,
-          state: i % 2 === 0 ? "open" : "closed",
-          draft: false,
-          locked: false,
-          htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
-          diffUrl: null,
-          patchUrl: null,
-          issueUrl: null,
-          merged: i % 3 === 0,
-          mergedAt: i % 3 === 0 ? new Date() : null,
-          closedAt: i % 2 === 1 ? new Date() : null,
-          mergeCommitSha: null,
-          commits: i + 1,
-          additions: (i + 1) * 10,
-          deletions: (i + 1) * 2,
-          changedFiles: i + 1,
-          comments: i,
-          reviewComments: i,
-          headRef: `feature-${i + 1}`,
-          headSha: `sha-${i + 1}`,
-          baseRef: "main",
-          baseSha: "base-sha",
-          repositoryId: "repo-1",
-          repositoryName: "ait",
-          repositoryFullName: "mateonunez/ait",
-          mergeable: true,
-          rebaseable: true,
-          mergeableState: "clean",
-          maintainerCanModify: false,
-          authorAssociation: "OWNER",
-          autoMerge: null,
-          activeLockReason: null,
-          prCreatedAt: new Date(Date.now() + i * 1000),
-          prUpdatedAt: new Date(Date.now() + i * 1000),
-          userData: null,
-          assigneeData: null,
-          assigneesData: null,
-          mergedByData: null,
-          labels: null,
-          milestoneData: null,
-          requestedReviewersData: null,
-          requestedTeamsData: null,
-          headRepoData: null,
-          baseRepoData: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "pull_request",
-        })) as unknown as GitHubPullRequestEntity[];
+        const prs = Array.from({ length: 15 }, (_, i) =>
+          GitHubPullRequestEntityClass.fromPlain({
+            id: `pr-${i + 1}`,
+            number: i + 1,
+            title: `PR ${i + 1}`,
+            body: `Body ${i + 1}`,
+            state: i % 2 === 0 ? "open" : "closed",
+            draft: false,
+            locked: false,
+            htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
+            diffUrl: null,
+            patchUrl: null,
+            issueUrl: null,
+            merged: i % 3 === 0,
+            mergedAt: i % 3 === 0 ? new Date() : null,
+            closedAt: i % 2 === 1 ? new Date() : null,
+            mergeCommitSha: null,
+            commits: i + 1,
+            additions: (i + 1) * 10,
+            deletions: (i + 1) * 2,
+            changedFiles: i + 1,
+            comments: i,
+            reviewComments: i,
+            headRef: `feature-${i + 1}`,
+            headSha: `sha-${i + 1}`,
+            baseRef: "main",
+            baseSha: "base-sha",
+            repositoryId: "repo-1",
+            repositoryName: "ait",
+            repositoryFullName: "mateonunez/ait",
+            mergeable: true,
+            rebaseable: true,
+            mergeableState: "clean",
+            maintainerCanModify: false,
+            authorAssociation: "OWNER",
+            autoMerge: null,
+            activeLockReason: null,
+            prCreatedAt: new Date(Date.now() + i * 1000),
+            prUpdatedAt: new Date(Date.now() + i * 1000),
+            userData: null,
+            assigneeData: null,
+            assigneesData: null,
+            mergedByData: null,
+            labels: null,
+            milestoneData: null,
+            requestedReviewersData: null,
+            requestedTeamsData: null,
+            headRepoData: null,
+            baseRepoData: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_pull_request",
+          }),
+        );
 
         await prRepository.savePullRequests(prs);
 
@@ -547,58 +558,60 @@ describe("ConnectorGitHubRepository", () => {
       });
 
       it("should return correct page for second page", async () => {
-        const prs: GitHubPullRequestEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          id: `pr-${i + 1}`,
-          number: i + 1,
-          title: `PR ${i + 1}`,
-          body: `Body ${i + 1}`,
-          state: "open",
-          draft: false,
-          locked: false,
-          htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
-          diffUrl: null,
-          patchUrl: null,
-          issueUrl: null,
-          merged: false,
-          mergedAt: null,
-          closedAt: null,
-          mergeCommitSha: null,
-          commits: 5,
-          additions: 150,
-          deletions: 20,
-          changedFiles: 8,
-          comments: 3,
-          reviewComments: 2,
-          headRef: "feature-branch",
-          headSha: "abc123",
-          baseRef: "main",
-          baseSha: "def456",
-          repositoryId: "repo-123",
-          repositoryName: "ait",
-          repositoryFullName: "mateonunez/ait",
-          mergeable: true,
-          rebaseable: true,
-          mergeableState: "clean",
-          maintainerCanModify: true,
-          authorAssociation: "OWNER",
-          autoMerge: null,
-          activeLockReason: null,
-          prCreatedAt: new Date(Date.now() + i * 1000),
-          prUpdatedAt: new Date(Date.now() + i * 1000),
-          userData: null,
-          assigneeData: null,
-          assigneesData: null,
-          mergedByData: null,
-          labels: null,
-          milestoneData: null,
-          requestedReviewersData: null,
-          requestedTeamsData: null,
-          headRepoData: null,
-          baseRepoData: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "pull_request",
-        })) as unknown as GitHubPullRequestEntity[];
+        const prs = Array.from({ length: 10 }, (_, i) =>
+          GitHubPullRequestEntityClass.fromPlain({
+            id: `pr-${i + 1}`,
+            number: i + 1,
+            title: `PR ${i + 1}`,
+            body: `Body ${i + 1}`,
+            state: "open",
+            draft: false,
+            locked: false,
+            htmlUrl: `https://github.com/mateonunez/ait/pull/${i + 1}`,
+            diffUrl: null,
+            patchUrl: null,
+            issueUrl: null,
+            merged: false,
+            mergedAt: null,
+            closedAt: null,
+            mergeCommitSha: null,
+            commits: 5,
+            additions: 150,
+            deletions: 20,
+            changedFiles: 8,
+            comments: 3,
+            reviewComments: 2,
+            headRef: "feature-branch",
+            headSha: "abc123",
+            baseRef: "main",
+            baseSha: "def456",
+            repositoryId: "repo-123",
+            repositoryName: "ait",
+            repositoryFullName: "mateonunez/ait",
+            mergeable: true,
+            rebaseable: true,
+            mergeableState: "clean",
+            maintainerCanModify: true,
+            authorAssociation: "OWNER",
+            autoMerge: null,
+            activeLockReason: null,
+            prCreatedAt: new Date(Date.now() + i * 1000),
+            prUpdatedAt: new Date(Date.now() + i * 1000),
+            userData: null,
+            assigneeData: null,
+            assigneesData: null,
+            mergedByData: null,
+            labels: null,
+            milestoneData: null,
+            requestedReviewersData: null,
+            requestedTeamsData: null,
+            headRepoData: null,
+            baseRepoData: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_pull_request",
+          }),
+        );
 
         await prRepository.savePullRequests(prs);
 
@@ -628,7 +641,7 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("saveCommit", () => {
       it("should save commit successfully", async () => {
-        const commit: GitHubCommitEntity = {
+        const commit = GitHubCommitEntityClass.fromPlain({
           sha: "abc123def456",
           message: "Fix bug in authentication",
           messageBody: "This commit fixes a critical bug in the authentication flow.",
@@ -660,8 +673,8 @@ describe("ConnectorGitHubRepository", () => {
           metadata: { url: "https://api.github.com/repos/mateonunez/test-repo/commits/abc123def456" },
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "commit",
-        } as GitHubCommitEntity;
+          __type: "github_commit",
+        });
 
         await commitRepository.saveCommit(commit);
 
@@ -688,7 +701,7 @@ describe("ConnectorGitHubRepository", () => {
       });
 
       it("should update existing commit on conflict", async () => {
-        const commit: GitHubCommitEntity = {
+        const commit = GitHubCommitEntityClass.fromPlain({
           sha: "existing-sha",
           message: "Initial commit",
           messageBody: null,
@@ -717,19 +730,19 @@ describe("ConnectorGitHubRepository", () => {
           metadata: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "commit",
-        } as GitHubCommitEntity;
+          __type: "github_commit",
+        });
 
         await commitRepository.saveCommit(commit);
 
         // Update the commit
-        const updatedCommit: GitHubCommitEntity = {
-          ...commit,
+        const updatedCommit = GitHubCommitEntityClass.fromPlain({
+          ...commit.toPlain<Record<string, unknown>>(),
           message: "Updated commit message",
           messageBody: "Updated body",
           additions: 100,
           deletions: 50,
-        } as GitHubCommitEntity;
+        });
 
         await commitRepository.saveCommit(updatedCommit);
 
@@ -749,8 +762,8 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("saveCommits", () => {
       it("should save multiple commits", async () => {
-        const commits: GitHubCommitEntity[] = [
-          {
+        const commits = [
+          GitHubCommitEntityClass.fromPlain({
             sha: "commit-1",
             message: "First commit",
             messageBody: null,
@@ -779,9 +792,9 @@ describe("ConnectorGitHubRepository", () => {
             metadata: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "commit",
-          },
-          {
+            __type: "github_commit",
+          }),
+          GitHubCommitEntityClass.fromPlain({
             sha: "commit-2",
             message: "Second commit",
             messageBody: "Added new feature",
@@ -810,9 +823,9 @@ describe("ConnectorGitHubRepository", () => {
             metadata: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "commit",
-          },
-        ] as GitHubCommitEntity[];
+            __type: "github_commit",
+          }),
+        ];
 
         await commitRepository.saveCommits(commits);
 
@@ -829,37 +842,39 @@ describe("ConnectorGitHubRepository", () => {
 
     describe("getCommitsPaginated", () => {
       it("should return paginated commits", async () => {
-        const commits: GitHubCommitEntity[] = Array.from({ length: 15 }, (_, i) => ({
-          sha: `commit-${i + 1}`,
-          message: `Commit message ${i + 1}`,
-          messageBody: i % 2 === 0 ? `Body for commit ${i + 1}` : null,
-          htmlUrl: `https://github.com/mateonunez/test-repo/commit/commit-${i + 1}`,
-          commentsUrl: `https://api.github.com/repos/mateonunez/test-repo/commits/commit-${i + 1}/comments`,
-          nodeId: `MDY6Q29tbWl0Y29tbWl0LTE=${i + 1}`,
-          authorName: `Author ${i + 1}`,
-          authorEmail: `author${i + 1}@example.com`,
-          authorDate: new Date(Date.now() - i * 86400000), // Different dates
-          committerName: `Committer ${i + 1}`,
-          committerEmail: `committer${i + 1}@example.com`,
-          committerDate: new Date(Date.now() - i * 86400000),
-          treeSha: `tree${i + 1}`,
-          treeUrl: `https://api.github.com/repos/mateonunez/test-repo/git/trees/tree${i + 1}`,
-          parentShas: i > 0 ? [`commit-${i}`] : [],
-          additions: (i + 1) * 10,
-          deletions: (i + 1) * 5,
-          total: (i + 1) * 15,
-          repositoryId: "repo-123",
-          repositoryName: "test-repo",
-          repositoryFullName: "mateonunez/test-repo",
-          authorData: null,
-          committerData: null,
-          filesData: i % 3 === 0 ? [{ filename: `file${i}.ts`, additions: 10, deletions: 5 }] : null,
-          verification: i % 2 === 0 ? { verified: true } : null,
-          metadata: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "commit",
-        })) as unknown as GitHubCommitEntity[];
+        const commits = Array.from({ length: 15 }, (_, i) =>
+          GitHubCommitEntityClass.fromPlain({
+            sha: `commit-${i + 1}`,
+            message: `Commit message ${i + 1}`,
+            messageBody: i % 2 === 0 ? `Body for commit ${i + 1}` : null,
+            htmlUrl: `https://github.com/mateonunez/test-repo/commit/commit-${i + 1}`,
+            commentsUrl: `https://api.github.com/repos/mateonunez/test-repo/commits/commit-${i + 1}/comments`,
+            nodeId: `MDY6Q29tbWl0Y29tbWl0LTE=${i + 1}`,
+            authorName: `Author ${i + 1}`,
+            authorEmail: `author${i + 1}@example.com`,
+            authorDate: new Date(Date.now() - i * 86400000), // Different dates
+            committerName: `Committer ${i + 1}`,
+            committerEmail: `committer${i + 1}@example.com`,
+            committerDate: new Date(Date.now() - i * 86400000),
+            treeSha: `tree-${i + 1}`,
+            treeUrl: `https://api.github.com/repos/mateonunez/test-repo/git/trees/tree-${i + 1}`,
+            parentShas: i > 0 ? [`commit-${i}`] : [],
+            additions: (i + 1) * 10,
+            deletions: (i + 1) * 2,
+            total: (i + 1) * 12,
+            repositoryId: "repo-123",
+            repositoryName: "test-repo",
+            repositoryFullName: "mateonunez/test-repo",
+            authorData: null,
+            committerData: null,
+            filesData: null,
+            verification: null,
+            metadata: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_commit",
+          }),
+        );
 
         await commitRepository.saveCommits(commits);
 
@@ -872,37 +887,39 @@ describe("ConnectorGitHubRepository", () => {
       });
 
       it("should return correct page for second page", async () => {
-        const commits: GitHubCommitEntity[] = Array.from({ length: 10 }, (_, i) => ({
-          sha: `commit-${i + 1}`,
-          message: `Commit ${i + 1}`,
-          messageBody: null,
-          htmlUrl: `https://github.com/mateonunez/test-repo/commit/commit-${i + 1}`,
-          commentsUrl: `https://api.github.com/repos/mateonunez/test-repo/commits/commit-${i + 1}/comments`,
-          nodeId: `MDY6Q29tbWl0Y29tbWl0LTE=${i + 1}`,
-          authorName: "Test Author",
-          authorEmail: "test@example.com",
-          authorDate: new Date(Date.now() - i * 86400000),
-          committerName: "Test Committer",
-          committerEmail: "test@example.com",
-          committerDate: new Date(Date.now() - i * 86400000),
-          treeSha: `tree${i + 1}`,
-          treeUrl: `https://api.github.com/repos/mateonunez/test-repo/git/trees/tree${i + 1}`,
-          parentShas: [],
-          additions: 10,
-          deletions: 5,
-          total: 15,
-          repositoryId: "repo-123",
-          repositoryName: "test-repo",
-          repositoryFullName: "mateonunez/test-repo",
-          authorData: null,
-          committerData: null,
-          filesData: null,
-          verification: null,
-          metadata: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          __type: "commit",
-        })) as unknown as GitHubCommitEntity[];
+        const commits = Array.from({ length: 10 }, (_, i) =>
+          GitHubCommitEntityClass.fromPlain({
+            sha: `commit-${i + 1}`,
+            message: `Commit message ${i + 1}`,
+            messageBody: null,
+            htmlUrl: `https://github.com/mateonunez/test-repo/commit/commit-${i + 1}`,
+            commentsUrl: `https://api.github.com/repos/mateonunez/test-repo/commits/commit-${i + 1}/comments`,
+            nodeId: `MDY6Q29tbWl0Y29tbWl0LTE=${i + 1}`,
+            authorName: `Author ${i + 1}`,
+            authorEmail: `author${i + 1}@example.com`,
+            authorDate: new Date(Date.now() - i * 86400000),
+            committerName: `Committer ${i + 1}`,
+            committerEmail: `committer${i + 1}@example.com`,
+            committerDate: new Date(Date.now() - i * 86400000),
+            treeSha: `tree-${i + 1}`,
+            treeUrl: `https://api.github.com/repos/mateonunez/test-repo/git/trees/tree-${i + 1}`,
+            parentShas: [],
+            additions: 10,
+            deletions: 5,
+            total: 15,
+            repositoryId: "repo-123",
+            repositoryName: "test-repo",
+            repositoryFullName: "mateonunez/test-repo",
+            authorData: null,
+            committerData: null,
+            filesData: null,
+            verification: null,
+            metadata: null,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            __type: "github_commit",
+          }),
+        );
 
         await commitRepository.saveCommits(commits);
 
@@ -922,8 +939,8 @@ describe("ConnectorGitHubRepository", () => {
       });
 
       it("should order commits by committerDate descending", async () => {
-        const commits: GitHubCommitEntity[] = [
-          {
+        const commits = [
+          GitHubCommitEntityClass.fromPlain({
             sha: "old-commit",
             message: "Old commit",
             messageBody: null,
@@ -952,9 +969,9 @@ describe("ConnectorGitHubRepository", () => {
             metadata: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "commit",
-          },
-          {
+            __type: "github_commit",
+          }),
+          GitHubCommitEntityClass.fromPlain({
             sha: "new-commit",
             message: "New commit",
             messageBody: null,
@@ -983,9 +1000,9 @@ describe("ConnectorGitHubRepository", () => {
             metadata: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-            __type: "commit",
-          },
-        ] as GitHubCommitEntity[];
+            __type: "github_commit",
+          }),
+        ];
 
         await commitRepository.saveCommits(commits);
 

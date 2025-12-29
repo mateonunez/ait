@@ -1,7 +1,6 @@
 import "reflect-metadata";
-import type { SpotifyAlbumExternal } from "@ait/core";
-import type { SpotifyAlbumDataTarget } from "@ait/postgres";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { SpotifyAlbumExternal } from "../../types/integrations";
 
 /**
  * Spotify Album entity with class-transformer decorators.
@@ -14,75 +13,83 @@ export class SpotifyAlbumEntity {
   name!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? "album")
+  @Transform(({ value }: any) => value ?? "spotify_album")
   albumType!: string;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   artists!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   tracks!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? 0)
+  @Transform(({ value }: any) => value ?? 0)
   totalTracks!: number;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   releaseDate!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   releaseDatePrecision!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? false)
+  @Transform(({ value }: any) => value ?? false)
   isPlayable!: boolean;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   uri!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   href!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   popularity!: number | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   label!: string | null;
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   copyrights!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   externalIds!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? [])
+  @Transform(({ value }: any) => value ?? [])
   genres!: string[];
 
   @Expose()
-  @Transform(({ value }) => value ?? null)
+  @Transform(({ value }: any) => value ?? null)
   images!: { url: string; height: number; width: number }[] | null;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
-  readonly __type = "album" as const;
+  readonly __type = "spotify_album" as const;
+
+  toPlain<T = Record<string, unknown>>(): T {
+    return instanceToPlain(this) as T;
+  }
+
+  static fromPlain<T extends Record<string, unknown>>(data: T): SpotifyAlbumEntity {
+    return plainToInstance(SpotifyAlbumEntity, data, { excludeExtraneousValues: false });
+  }
 }
 
 /**
@@ -91,9 +98,9 @@ export class SpotifyAlbumEntity {
 export function mapSpotifyAlbum(external: SpotifyAlbumExternal): SpotifyAlbumEntity {
   const mapped = {
     ...external,
-    albumType: external.album_type ?? "album",
+    albumType: external.album_type ?? "spotify_album",
     artists: Array.isArray(external.artists)
-      ? external.artists.map((artist) => (typeof artist === "string" ? artist : artist.name || String(artist)))
+      ? external.artists.map((artist: any) => (typeof artist === "string" ? artist : artist.name || String(artist)))
       : [],
     tracks: external.tracks?.items
       ? external.tracks.items.map((track: any) => track.id || track.uri || String(track))
@@ -113,6 +120,7 @@ export function mapSpotifyAlbum(external: SpotifyAlbumExternal): SpotifyAlbumEnt
 
   return plainToInstance(SpotifyAlbumEntity, mapped, {
     excludeExtraneousValues: true,
+    exposeDefaultValues: true,
   });
 }
 
@@ -121,16 +129,4 @@ export function mapSpotifyAlbum(external: SpotifyAlbumExternal): SpotifyAlbumEnt
  */
 export function mapSpotifyAlbums(externals: SpotifyAlbumExternal[]): SpotifyAlbumEntity[] {
   return externals.map(mapSpotifyAlbum);
-}
-
-// --- Domain ↔ DataTarget (DB) using class-transformer ---
-
-export function spotifyAlbumDomainToDataTarget(domain: SpotifyAlbumEntity): SpotifyAlbumDataTarget {
-  return instanceToPlain(domain) as SpotifyAlbumDataTarget;
-}
-
-export function spotifyAlbumDataTargetToDomain(dataTarget: SpotifyAlbumDataTarget): SpotifyAlbumEntity {
-  return plainToInstance(SpotifyAlbumEntity, dataTarget, {
-    excludeExtraneousValues: false,
-  });
 }

@@ -17,43 +17,42 @@ import type {
   SpotifyTrackExternal,
   XTweetExternal,
 } from "@ait/core";
-import { type GitHubCommitEntity, mapGitHubCommit } from "../../domain/entities/github/github-commit.entity";
 import {
+  type GitHubCommitEntity,
   type GitHubPullRequestEntity,
-  mapGitHubPullRequest,
-} from "../../domain/entities/github/github-pull-request.entity";
-import {
   type GitHubRepositoryEntity,
-  mapGitHubRepository,
-} from "../../domain/entities/github/github-repository.entity";
-import {
   type GoogleCalendarCalendarEntity,
   type GoogleCalendarEventEntity,
-  mapGoogleCalendarCalendar,
-  mapGoogleCalendarEvent,
-} from "../../domain/entities/google/google-calendar.entity";
-import { type GoogleContactEntity, mapGoogleContact } from "../../domain/entities/google/google-contact.entity";
-import { type GooglePhotoEntity, mapGooglePhoto } from "../../domain/entities/google/google-photo.entity";
-import {
+  type GoogleContactEntity,
+  type GooglePhotoEntity,
   type GoogleYouTubeSubscriptionEntity,
-  mapGoogleYouTubeSubscription,
-} from "../../domain/entities/google/google-youtube.entity";
-import { type LinearIssueEntity, mapLinearIssue } from "../../domain/entities/linear/linear-issue.entity";
-import { type NotionPageEntity, mapNotionPage } from "../../domain/entities/notion/notion-page.entity";
-import { type SlackMessageEntity, mapSlackMessage } from "../../domain/entities/slack/slack-message.entity";
-import {
+  type LinearIssueEntity,
+  type NotionPageEntity,
+  type SlackMessageEntity,
   type SpotifyAlbumEntity,
   type SpotifyArtistEntity,
   type SpotifyPlaylistEntity,
   type SpotifyRecentlyPlayedEntity,
   type SpotifyTrackEntity,
+  type XTweetEntity,
+  mapGitHubCommit,
+  mapGitHubPullRequest,
+  mapGitHubRepository,
+  mapGoogleCalendarCalendar,
+  mapGoogleCalendarEvent,
+  mapGoogleContact,
+  mapGooglePhoto,
+  mapGoogleYouTubeSubscription,
+  mapLinearIssue,
+  mapNotionPage,
+  mapSlackMessage,
   mapSpotifyAlbum,
   mapSpotifyArtist,
   mapSpotifyPlaylist,
   mapSpotifyRecentlyPlayed,
   mapSpotifyTrack,
-} from "../../domain/entities/spotify";
-import { type XTweetEntity, mapXTweet } from "../../domain/entities/x/x-tweet.entity";
+  mapXTweet,
+} from "@ait/core";
 import type { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
 import type { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
 import type { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
@@ -77,9 +76,9 @@ export interface EntityConfig<TConnector, TExternal, TDomain> {
 }
 
 export enum GITHUB_ENTITY_TYPES_ENUM {
-  REPOSITORY = "repository",
-  PULL_REQUEST = "pull_request",
-  COMMIT = "commit",
+  REPOSITORY = "github_repository",
+  PULL_REQUEST = "github_pull_request",
+  COMMIT = "github_commit",
 }
 
 export interface GitHubServiceEntityMap {
@@ -89,11 +88,11 @@ export interface GitHubServiceEntityMap {
 }
 
 export enum SPOTIFY_ENTITY_TYPES_ENUM {
-  TRACK = "track",
-  ARTIST = "artist",
-  PLAYLIST = "playlist",
-  ALBUM = "album",
-  RECENTLY_PLAYED = "recently_played",
+  TRACK = "spotify_track",
+  ARTIST = "spotify_artist",
+  PLAYLIST = "spotify_playlist",
+  ALBUM = "spotify_album",
+  RECENTLY_PLAYED = "spotify_recently_played",
 }
 
 export interface SpotifyServiceEntityMap {
@@ -105,7 +104,7 @@ export interface SpotifyServiceEntityMap {
 }
 
 export enum X_ENTITY_TYPES_ENUM {
-  TWEET = "tweet",
+  TWEET = "x_tweet",
 }
 
 export interface XServiceEntityMap {
@@ -113,7 +112,7 @@ export interface XServiceEntityMap {
 }
 
 export enum LINEAR_ENTITY_TYPES_ENUM {
-  ISSUE = "issue",
+  ISSUE = "linear_issue",
 }
 
 export interface LinearServiceEntityMap {
@@ -121,7 +120,7 @@ export interface LinearServiceEntityMap {
 }
 
 export enum NOTION_ENTITY_TYPES_ENUM {
-  PAGE = "page",
+  PAGE = "notion_page",
 }
 
 export interface NotionServiceEntityMap {
@@ -129,7 +128,7 @@ export interface NotionServiceEntityMap {
 }
 
 export enum SLACK_ENTITY_TYPES_ENUM {
-  MESSAGE = "message",
+  MESSAGE = "slack_message",
 }
 
 export interface SlackServiceEntityMap {
@@ -137,9 +136,9 @@ export interface SlackServiceEntityMap {
 }
 
 export enum GOOGLE_ENTITY_TYPES_ENUM {
-  EVENT = "event",
-  CALENDAR = "calendar",
-  SUBSCRIPTION = "subscription",
+  EVENT = "google_calendar_event",
+  CALENDAR = "google_calendar_calendar",
+  SUBSCRIPTION = "google_youtube_subscription",
   CONTACT = "google_contact",
   PHOTO = "google_photo",
 }

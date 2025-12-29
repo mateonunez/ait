@@ -55,15 +55,15 @@ export default function GooglePage() {
       setIsLoading(true);
       try {
         if (tab === "events") {
-          const response = await fetchEntityData("google", "event", { page, limit: pageSize });
+          const response = await fetchEntityData("google", "google_calendar_event", { page, limit: pageSize });
           setEvents(response.data as GoogleCalendarEventEntity[]);
           setTotalPages(response.pagination.totalPages);
         } else if (tab === "calendars") {
-          const response = await fetchEntityData("google", "calendar", { page, limit: pageSize });
+          const response = await fetchEntityData("google", "google_calendar_calendar", { page, limit: pageSize });
           setCalendars(response.data as GoogleCalendarCalendarEntity[]);
           setTotalPages(response.pagination.totalPages);
         } else if (tab === "subscriptions") {
-          const response = await fetchEntityData("google", "subscription", { page, limit: pageSize });
+          const response = await fetchEntityData("google", "google_youtube_subscription", { page, limit: pageSize });
           setSubscriptions(response.data as GoogleYouTubeSubscriptionEntity[]);
           setTotalPages(response.pagination.totalPages);
         } else if (tab === "contacts") {
@@ -102,9 +102,9 @@ export default function GooglePage() {
 
       // Clear cache to ensure fresh data is fetched
       const entityTypeMap: Record<string, string> = {
-        events: "event",
-        calendars: "calendar",
-        subscriptions: "subscription",
+        events: "google_calendar_event",
+        calendars: "google_calendar_calendar",
+        subscriptions: "google_youtube_subscription",
         contacts: "google_contact",
         photos: "google_photo",
       };

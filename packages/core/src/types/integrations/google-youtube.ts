@@ -3,7 +3,7 @@ import { z } from "zod";
 // --- External Types (from YouTube Data API) ---
 
 export interface GoogleYouTubeSubscriptionExternal {
-  __type: "subscription";
+  __type: "google_youtube_subscription";
   kind: "youtube#subscription";
   etag: string;
   id: string;
@@ -63,7 +63,7 @@ export const GoogleYouTubeSubscriptionSchema = z
 
 // --- Domain Types (normalized for app use) ---
 
-export const GoogleYouTubeSubscriptionEntitySchema = z.object({
+export const GoogleYouTubeSubscriptionEntityTypeSchema = z.object({
   id: z.string(),
   title: z.string(),
   description: z.string().nullable(),
@@ -74,9 +74,9 @@ export const GoogleYouTubeSubscriptionEntitySchema = z.object({
   totalItemCount: z.number(),
   newItemCount: z.number(),
   activityType: z.string().nullable(),
-  __type: z.literal("subscription"),
+  __type: z.literal("google_youtube_subscription"),
   createdAt: z.date().nullable(),
   updatedAt: z.date().nullable(),
 });
 
-export type GoogleYouTubeSubscriptionEntity = z.infer<typeof GoogleYouTubeSubscriptionEntitySchema>;
+export type GoogleYouTubeSubscriptionEntityType = z.infer<typeof GoogleYouTubeSubscriptionEntityTypeSchema>;

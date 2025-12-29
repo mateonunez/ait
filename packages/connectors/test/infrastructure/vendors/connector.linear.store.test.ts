@@ -81,7 +81,7 @@ describe("ConnectorLinearStore", () => {
           labels: [],
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "issue",
+          __type: "linear_issue",
         },
         {
           id: "issue-2",
@@ -99,7 +99,7 @@ describe("ConnectorLinearStore", () => {
           labels: ["feature"],
           createdAt: new Date(),
           updatedAt: new Date(),
-          __type: "issue",
+          __type: "linear_issue",
         },
       ];
 

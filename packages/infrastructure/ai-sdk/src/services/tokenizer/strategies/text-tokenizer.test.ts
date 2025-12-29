@@ -80,9 +80,9 @@ describe("Text Tokenization Strategies", () => {
       assert.strictEqual(result.has("component"), true);
     });
 
-    it("should return 'repository_file' as name", () => {
+    it("should return 'github_file' as name", () => {
       const tokenizer = new RepositoryFileTextTokenizer();
-      assert.strictEqual(tokenizer.getName(), "repository_file");
+      assert.strictEqual(tokenizer.getName(), "github_file");
     });
   });
 
@@ -93,41 +93,41 @@ describe("Text Tokenization Strategies", () => {
     });
 
     it("should return RepositoryFileTextTokenizer for repository_file entity", () => {
-      const tokenizer = getTextTokenizer("repository_file");
-      assert.strictEqual(tokenizer.getName(), "repository_file");
+      const tokenizer = getTextTokenizer("github_file");
+      assert.strictEqual(tokenizer.getName(), "github_file");
     });
 
     it("should return RepositoryFileTextTokenizer for commit entity", () => {
-      const tokenizer = getTextTokenizer("commit");
-      assert.strictEqual(tokenizer.getName(), "repository_file");
+      const tokenizer = getTextTokenizer("github_commit");
+      assert.strictEqual(tokenizer.getName(), "github_file");
     });
 
     it("should return RepositoryFileTextTokenizer for pull_request entity", () => {
-      const tokenizer = getTextTokenizer("pull_request");
-      assert.strictEqual(tokenizer.getName(), "repository_file");
+      const tokenizer = getTextTokenizer("github_pull_request");
+      assert.strictEqual(tokenizer.getName(), "github_file");
     });
 
     it("should return DefaultTextTokenizer for non-code entities", () => {
-      assert.strictEqual(getTextTokenizer("track").getName(), "default");
-      assert.strictEqual(getTextTokenizer("playlist").getName(), "default");
-      assert.strictEqual(getTextTokenizer("page").getName(), "default");
-      assert.strictEqual(getTextTokenizer("message").getName(), "default");
+      assert.strictEqual(getTextTokenizer("spotify_track").getName(), "default");
+      assert.strictEqual(getTextTokenizer("spotify_playlist").getName(), "default");
+      assert.strictEqual(getTextTokenizer("notion_page").getName(), "default");
+      assert.strictEqual(getTextTokenizer("slack_message").getName(), "default");
     });
   });
 
   describe("isCodeEntityType", () => {
     it("should return true for code entity types", () => {
-      assert.strictEqual(isCodeEntityType("repository_file"), true);
-      assert.strictEqual(isCodeEntityType("commit"), true);
-      assert.strictEqual(isCodeEntityType("pull_request"), true);
-      assert.strictEqual(isCodeEntityType("repository"), true);
+      assert.strictEqual(isCodeEntityType("github_file"), true);
+      assert.strictEqual(isCodeEntityType("github_commit"), true);
+      assert.strictEqual(isCodeEntityType("github_pull_request"), true);
+      assert.strictEqual(isCodeEntityType("github_repository"), true);
     });
 
     it("should return false for non-code entity types", () => {
-      assert.strictEqual(isCodeEntityType("track"), false);
-      assert.strictEqual(isCodeEntityType("playlist"), false);
-      assert.strictEqual(isCodeEntityType("page"), false);
-      assert.strictEqual(isCodeEntityType("message"), false);
+      assert.strictEqual(isCodeEntityType("spotify_track"), false);
+      assert.strictEqual(isCodeEntityType("spotify_playlist"), false);
+      assert.strictEqual(isCodeEntityType("notion_page"), false);
+      assert.strictEqual(isCodeEntityType("slack_message"), false);
     });
   });
 });
