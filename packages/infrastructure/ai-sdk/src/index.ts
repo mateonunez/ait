@@ -107,7 +107,11 @@ export {
 
 export { getTokenizer } from "./services/tokenizer/tokenizer.service";
 
-export { type IEmbeddingsService, EmbeddingsService } from "./services/embeddings/embeddings.service";
+export {
+  type IEmbeddingsService,
+  type EmbeddingsServiceOptions,
+  EmbeddingsService,
+} from "./services/embeddings/embeddings.service";
 
 export {
   OPTIMAL_CHUNK_SIZE,

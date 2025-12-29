@@ -13,6 +13,7 @@ import type { Tool } from "../../types/tools";
 import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
+import { ragContextPrompt } from "../prompts/rag-context.prompt";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
@@ -254,7 +255,7 @@ export class TextGenerationService implements ITextGenerationService {
         ragDocuments = ranked.documents;
 
         ragContext = await this._contextManager.assembleContext({
-          systemInstructions: "",
+          systemInstructions: ragContextPrompt,
           messages: options.messages || [],
           retrievedDocs: ragDocuments.map((d) => ({
             pageContent: d.content,

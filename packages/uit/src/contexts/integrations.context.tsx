@@ -150,6 +150,9 @@ export function IntegrationsProvider({ children }: { children: ReactNode }) {
               case "google_contact":
                 response = await googleService.fetchContacts(params);
                 break;
+              case "google_photo":
+                response = await googleService.fetchPhotos(params);
+                break;
               default:
                 throw new Error(`Unknown Google entity type: ${entityType}`);
             }

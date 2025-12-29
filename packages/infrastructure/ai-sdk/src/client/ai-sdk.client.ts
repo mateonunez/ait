@@ -120,7 +120,7 @@ let _config: Required<AItClientConfig> | null = null;
 
 // Default configs inlined (simplified)
 const DEFAULT_TEXT_GENERATION_CONFIG = {
-  retrievalConfig: { limit: 33, scoreThreshold: 0.4 },
+  retrievalConfig: { limit: 100, scoreThreshold: 0.4 },
   contextConfig: { maxContextChars: 128000 },
   toolConfig: { maxRounds: 2 },
   retryConfig: { maxRetries: 3, delayMs: 1000 },

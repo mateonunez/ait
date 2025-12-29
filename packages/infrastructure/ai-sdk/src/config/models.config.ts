@@ -13,6 +13,7 @@ export enum GenerationModels {
   GEMMA_3 = "gemma3:latest",
   GRANITE_4 = "granite4:latest",
   KIMI_K2_THINKING_CLOUD = "kimi-k2-thinking:cloud",
+  LLAVA = "llava:latest",
 }
 
 export enum EmbeddingModels {
@@ -84,6 +85,11 @@ export const GENERATION_MODELS: Record<GenerationModelName, Omit<ModelSpec, "nam
     ...DEFAULT_CONFIG,
     contextWindow: 128000,
     description: "Kimi K2 Thinking model for advanced reasoning and complex problem-solving",
+  },
+  [GenerationModels.LLAVA]: {
+    ...DEFAULT_CONFIG,
+    contextWindow: 4096,
+    description: "LLaVA model for vision-language tasks",
   },
 };
 

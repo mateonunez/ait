@@ -5,6 +5,7 @@ import type {
   GoogleCalendarCalendarExternal,
   GoogleCalendarEventExternal,
   GoogleContactExternal,
+  GooglePhotoExternal,
   GoogleYouTubeSubscriptionExternal,
   LinearIssueExternal,
   NotionPageExternal,
@@ -32,6 +33,7 @@ import {
   mapGoogleCalendarEvent,
 } from "../../domain/entities/google/google-calendar.entity";
 import { type GoogleContactEntity, mapGoogleContact } from "../../domain/entities/google/google-contact.entity";
+import { type GooglePhotoEntity, mapGooglePhoto } from "../../domain/entities/google/google-photo.entity";
 import {
   type GoogleYouTubeSubscriptionEntity,
   mapGoogleYouTubeSubscription,
@@ -139,6 +141,7 @@ export enum GOOGLE_ENTITY_TYPES_ENUM {
   CALENDAR = "calendar",
   SUBSCRIPTION = "subscription",
   CONTACT = "google_contact",
+  PHOTO = "google_photo",
 }
 
 export interface GoogleServiceEntityMap {
@@ -146,6 +149,7 @@ export interface GoogleServiceEntityMap {
   [GOOGLE_ENTITY_TYPES_ENUM.CALENDAR]: GoogleCalendarCalendarEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION]: GoogleYouTubeSubscriptionEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.CONTACT]: GoogleContactEntity;
+  [GOOGLE_ENTITY_TYPES_ENUM.PHOTO]: GooglePhotoEntity;
 }
 
 const githubEntityConfigs = {
@@ -426,6 +430,32 @@ const googleEntityConfigs = {
     checksumEnabled: true,
     batchSize: 100,
   } satisfies EntityConfig<ConnectorGoogle, GoogleContactExternal, GoogleContactEntity>,
+
+  [GOOGLE_ENTITY_TYPES_ENUM.PHOTO]: {
+    fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchPhotos().then((res) => res.mediaItems),
+    paginatedFetcher: async (connector: ConnectorGoogle, cursor?: ConnectorCursor) => {
+      const response = await connector.dataSource.fetchPhotos(cursor?.id);
+
+      console.log("[PAPAYA LOG]", response);
+
+      const nextToken = response.nextPageToken;
+      const currentToken = cursor?.id;
+
+      if (nextToken && nextToken === currentToken) {
+        console.warn("[GooglePhotos] Infinite loop detected: nextPageToken equals currentToken. Breaking.");
+        return { data: response.mediaItems ?? [], nextCursor: undefined };
+      }
+
+      return {
+        data: response.mediaItems ?? [], // Ensure array if undefined
+        nextCursor: response.nextPageToken ? { id: response.nextPageToken, timestamp: new Date() } : undefined,
+      };
+    },
+    mapper: (photo: GooglePhotoExternal) => mapGooglePhoto(photo),
+    cacheTtl: 3600,
+    batchSize: 100,
+    checksumEnabled: true,
+  } satisfies EntityConfig<ConnectorGoogle, GooglePhotoExternal, GooglePhotoEntity>,
 } as const;
 
 export const connectorEntityConfigs = {

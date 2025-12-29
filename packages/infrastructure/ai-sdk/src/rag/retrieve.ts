@@ -3,6 +3,7 @@ import { getQdrantClient } from "@ait/qdrant";
 import { getAItClient } from "../client/ai-sdk.client";
 import { getAllCollections } from "../config/collections.config";
 import { getCacheProvider } from "../providers";
+import { getSparseVectorService } from "../services/embeddings/sparse-vector.service";
 import type { TraceContext } from "../types/telemetry";
 
 const logger = getLogger();
@@ -47,6 +48,8 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
     ? allCollections.filter((c) => options.collections!.includes(c.name))
     : allCollections;
 
+  const targetTypes = (options.types || []).slice().sort().join(",");
+
   const existingCollections = await filterExistingCollections(qdrantClient, targetCollections);
   const collectionContext = existingCollections
     .map((c) => c.name)
@@ -57,9 +60,10 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
   if (enableCache) {
     const cacheProvider = getCacheProvider();
     if (cacheProvider) {
-      const cached = await cacheProvider.get<RetrieveResult>(`${query}:${collectionContext}`);
+      const cacheKey = `retrieve:${query}:${collectionContext}:${targetTypes}:${scoreThreshold}`;
+      const cached = await cacheProvider.get<RetrieveResult>(cacheKey);
       if (cached) {
-        logger.info("Cache hit for retrieval", { query: query.slice(0, 50) });
+        logger.info("Cache hit for retrieval", { query: query.slice(0, 50), types: options.types });
         return cached;
       }
     }
@@ -71,6 +75,14 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
     query: query.slice(0, 50),
     collections: existingCollections.map((c) => c.name),
     limit,
+    hasTemporalFilter: !!(options.filter?.fromDate || options.filter?.toDate),
+    temporalRange:
+      options.filter?.fromDate || options.filter?.toDate
+        ? {
+            from: options.filter.fromDate,
+            to: options.filter.toDate,
+          }
+        : undefined,
   });
 
   // Build Qdrant filter if dates are provided
@@ -96,6 +108,12 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
       "metadata.startTime",
       "metadata.mergedAt",
       "metadata.pushedAt",
+      "metadata.pushed_at",
+      "metadata.merged_at",
+      "metadata.created_at",
+      "metadata.updated_at",
+      "metadata.played_at",
+      "metadata.timestamp_ms",
     ];
 
     must.push({
@@ -122,23 +140,47 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
 
   const qdrantFilter = must.length > 0 ? { must } : undefined;
 
+  if (qdrantFilter) {
+    logger.info("Applying Qdrant filter", {
+      filterType: "temporal",
+      mustConditions: must.length,
+      filter: JSON.stringify(qdrantFilter).slice(0, 500),
+    });
+  }
+
+  const sparseVectorService = getSparseVectorService();
+  const sparseVector = sparseVectorService.generateSparseVector(query);
+
   const searchPromises = existingCollections.map(async (collection) => {
     try {
+      // Try simple vector search first (most collections don't have named vectors set up yet)
       const results = await qdrantClient.search(collection.name, {
         vector: queryEmbedding,
         limit,
         score_threshold: scoreThreshold,
         filter: qdrantFilter,
       });
+      logger.debug(`Collection ${collection.name} returned ${results.length} results`);
       return results.map((r: any) => ({ ...r, collection: collection.name }));
     } catch (error) {
-      logger.warn(`Failed to search collection ${collection.name}`, { error });
+      logger.warn(`Failed to search collection ${collection.name}`, {
+        error: error instanceof Error ? error.message : String(error),
+        hasFilter: !!qdrantFilter,
+      });
       return [];
     }
   });
 
   const allResults = await Promise.all(searchPromises);
   const flatResults = allResults.flat();
+
+  logger.info("Retrieval results", {
+    totalResults: flatResults.length,
+    byCollection: existingCollections.map((c) => ({
+      name: c.name,
+      count: allResults[existingCollections.indexOf(c)]?.length || 0,
+    })),
+  });
 
   const sortedResults = flatResults.sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0)).slice(0, limit);
 
@@ -160,7 +202,8 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
   if (enableCache && documents.length > 0) {
     const cacheProvider = getCacheProvider();
     if (cacheProvider) {
-      await cacheProvider.set(`${query}:${collectionContext}`, result);
+      const cacheKey = `retrieve:${query}:${collectionContext}:${targetTypes}:${scoreThreshold}`;
+      await cacheProvider.set(cacheKey, result);
     }
   }
 

@@ -6,6 +6,7 @@ import type {
   GoogleCalendarEventEntity,
 } from "../../../domain/entities/google/google-calendar.entity";
 import type { GoogleContactEntity } from "../../../domain/entities/google/google-contact.entity";
+import type { GooglePhotoEntity } from "../../../domain/entities/google/google-photo.entity";
 import type { GoogleYouTubeSubscriptionEntity } from "../../../domain/entities/google/google-youtube.entity";
 import { GOOGLE_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -44,6 +45,11 @@ export class ConnectorGoogleStore implements IConnectorStore {
           break;
         case GOOGLE_ENTITY_TYPES_ENUM.CONTACT:
           await this._ConnectorGoogleRepository.contact.saveContact(item as unknown as GoogleContactEntity, {
+            incremental: false,
+          });
+          break;
+        case GOOGLE_ENTITY_TYPES_ENUM.PHOTO:
+          await this._ConnectorGoogleRepository.photo.savePhoto(item as unknown as GooglePhotoEntity, {
             incremental: false,
           });
           break;

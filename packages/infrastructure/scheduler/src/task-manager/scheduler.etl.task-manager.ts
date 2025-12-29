@@ -24,6 +24,8 @@ import {
   runGoogleYouTubeSubscriptionETL,
   GooglePeopleETLs,
   runGoogleContactETL,
+  GooglePhotosETLs,
+  runGooglePhotoETL,
 } from "@ait/retove";
 import { getLogger, RateLimitError } from "@ait/core";
 import type { Scheduler } from "../scheduler.service";
@@ -630,6 +632,48 @@ export class SchedulerETLTaskManager implements ISchedulerETLTaskManager {
         logETL(GooglePeopleETLs.contact);
         await runGoogleContactETL(qdrant, postgres);
         logComplete(GooglePeopleETLs.contact);
+      });
+    });
+
+    // Register Google Photo ETL
+    schedulerRegistry.register(GooglePhotosETLs.photo, async (data) => {
+      logStart(GooglePhotosETLs.photo);
+
+      await this._withConnections(async ({ qdrant, postgres }) => {
+        logFetch(GooglePhotosETLs.photo, "photos from Google Photos API");
+        let totalFetched = 0;
+
+        try {
+          for await (const batch of this._googleService.fetchEntitiesPaginated(
+            GOOGLE_ENTITY_TYPES_ENUM.PHOTO,
+            true, // shouldConnect
+          )) {
+            totalFetched += batch.length;
+            logBatch(
+              GooglePhotosETLs.photo,
+              batch.length,
+              "photos",
+              `First: ${batch[0].filename || "untitled"}`,
+            );
+            await this._googleService.connector.store.save(batch);
+          }
+          logFetched(GooglePhotosETLs.photo, totalFetched, "photos");
+        } catch (error: any) {
+          if (error instanceof RateLimitError && this._scheduler) {
+            const delay = Math.max(0, error.resetTime - Date.now());
+            logRateLimit(GooglePhotosETLs.photo, delay);
+            await this._scheduler.addJob(GooglePhotosETLs.photo, data as Record<string, unknown>, {
+              delay,
+              priority: 2,
+            });
+            return;
+          }
+          logError(GooglePhotosETLs.photo, "Error fetching photos", error);
+        }
+
+        logETL(GooglePhotosETLs.photo);
+        await runGooglePhotoETL(qdrant, postgres);
+        logComplete(GooglePhotosETLs.photo);
       });
     });
   }

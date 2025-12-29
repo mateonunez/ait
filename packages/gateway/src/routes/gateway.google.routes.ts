@@ -18,6 +18,22 @@ interface PaginationQuery {
 
 const connectorType = "google";
 
+const GOOGLE_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/calendar.readonly",
+  "https://www.googleapis.com/auth/youtube.readonly",
+  "https://www.googleapis.com/auth/contacts.readonly",
+  "https://www.googleapis.com/auth/photoslibrary",
+  "https://www.googleapis.com/auth/photoslibrary.readonly",
+  "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata",
+  "https://www.googleapis.com/auth/photoslibrary.sharing",
+  "https://www.googleapis.com/auth/photoslibrary.appendonly",
+  "https://www.googleapis.com/auth/photoslibrary.edit.appcreateddata",
+  "https://www.googleapis.com/auth/photospicker.mediaitems.readonly",
+];
+
 export default async function googleRoutes(fastify: FastifyInstance) {
   if (!fastify.googleService) {
     fastify.decorate("googleService", connectorServiceFactory.getService<ConnectorGoogleService>(connectorType));
@@ -32,13 +48,13 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         client_id: process.env.GOOGLE_CLIENT_ID!,
         redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
         response_type: "code",
-        scope:
-          "openid email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/youtube.readonly https://www.googleapis.com/auth/contacts.readonly",
-        access_type: "online",
+        scope: GOOGLE_SCOPES.join(" "),
+        access_type: "offline",
         prompt: "consent",
       });
 
       const authUrl = `${process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth"}?${params}`;
+      fastify.log.info({ authUrl, route: "/auth" }, "Generated Google Auth URL");
       reply.redirect(authUrl);
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Google authentication.");
@@ -193,6 +209,22 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.get(
+    "/data/photos",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+      try {
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+
+        const result = await googleService.getPhotosPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/photos" }, "Failed to fetch photos from DB.");
+        reply.status(500).send({ error: "Failed to fetch photos from database." });
+      }
+    },
+  );
+
   // Refresh endpoint with optional entity filter
   // Usage: POST /refresh?entities=events,calendars or POST /refresh (all entities)
   fastify.post(
@@ -202,7 +234,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const { entities: entitiesParam } = request.query;
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
-          : ["events", "calendars", "subscriptions", "contacts"];
+          : ["events", "calendars", "subscriptions", "contacts", "photos"];
 
         const counts: Record<string, number> = {};
 
@@ -230,6 +262,12 @@ export default async function googleRoutes(fastify: FastifyInstance) {
           counts.contacts = contacts.length;
         }
 
+        if (entitiesToRefresh.includes("photos")) {
+          const photos = await googleService.fetchPhotos();
+          await googleService.connector.store.save(photos);
+          counts.photos = photos.length;
+        }
+
         reply.send({
           success: true,
           message: "Google data refreshed successfully",
@@ -238,6 +276,50 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/refresh" }, "Failed to refresh Google data.");
         reply.status(500).send({ error: "Failed to refresh Google data." });
+      }
+    },
+  );
+
+  // Picker API Routes
+  fastify.post("/photos/picker/session", async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const session = await googleService.createPickerSession();
+      reply.send(session);
+    } catch (err: any) {
+      fastify.log.error({ err, route: "/photos/picker/session" }, "Failed to create picker session.");
+      reply.status(500).send({ error: "Failed to create picker session." });
+    }
+  });
+
+  fastify.get(
+    "/photos/picker/session/:id",
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const { id } = request.params;
+        const session = await googleService.getPickerSession(id);
+        reply.send(session);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/photos/picker/session/:id" }, "Failed to get picker session.");
+        reply.status(500).send({ error: "Failed to get picker session." });
+      }
+    },
+  );
+
+  fastify.post(
+    "/photos/picker/import/:id",
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        const { id } = request.params;
+        const mediaItems = await googleService.listPickerMediaItems(id);
+
+        if (mediaItems.length > 0) {
+          await googleService.importPickerMediaItems(id);
+        }
+
+        reply.send({ success: true, count: mediaItems.length });
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/photos/picker/import/:id" }, "Failed to import picker media items.");
+        reply.status(500).send({ error: "Failed to import picker media items." });
       }
     },
   );

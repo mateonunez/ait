@@ -34,21 +34,14 @@ export class TypeFilterService implements ITypeFilterService {
     const startTime = Date.now();
 
     const keywordSet = this._buildKeywordSet(tags, userQuery);
-
-    if (keywordSet.size === 0) {
-      logger.debug(`Service [${this.name}] no filter inferred`, {
-        reason: "no-keywords",
-        query: userQuery?.slice(0, 50),
-      });
-      return undefined;
-    }
-
     const keywords = Array.from(keywordSet);
     const matchingTypes = findEntityTypesByKeywords(keywords);
 
     const normalizedQuery = userQuery ? this._textNormalizer.normalizeForMatching(userQuery) : "";
     const additionalMatchingTypes = this._findTypesByPhraseMatching(normalizedQuery);
     const allMatchingTypes = Array.from(new Set([...matchingTypes, ...additionalMatchingTypes]));
+
+    const timeRange = this._parseTimeRange(userQuery);
 
     if (allMatchingTypes.length > 0) {
       const vendorTypes = new Set<EntityType>(allMatchingTypes);
@@ -67,7 +60,6 @@ export class TypeFilterService implements ITypeFilterService {
         return indexA - indexB;
       });
 
-      const timeRange = this._parseTimeRange(userQuery);
       const result = { types: sortedTypes, timeRange };
 
       this._logCompletion(startTime, {
@@ -81,8 +73,19 @@ export class TypeFilterService implements ITypeFilterService {
       return result;
     }
 
+    if (timeRange) {
+      this._logCompletion(startTime, {
+        source: "temporal-only",
+        types: [],
+        hasTimeRange: true,
+        keywordCount: keywords.length,
+        query: userQuery?.slice(0, 50),
+      });
+      return { types: [], timeRange };
+    }
+
     logger.debug(`Service [${this.name}] no filter inferred`, {
-      reason: "no-matching-types",
+      reason: "no-matching-types-or-dates",
       keywordCount: keywords.length,
       query: userQuery?.slice(0, 50),
     });

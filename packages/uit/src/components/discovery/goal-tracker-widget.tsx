@@ -22,6 +22,7 @@ const GOAL_TYPE_OPTIONS: Array<{ value: GoalType; label: string; icon: string; c
   { value: "meetings", label: "Meetings", icon: "📅", color: "#4285F4" },
   { value: "subscription", label: "Subscriptions", icon: "📺", color: "#FF0000" },
   { value: "google_contact", label: "Contacts", icon: "👤", color: "#4285F4" },
+  { value: "google_photo", label: "Photos", icon: "📸", color: "#FE2C25" },
 ];
 
 const PERIOD_OPTIONS: Array<{ value: GoalPeriod; label: string; icon: typeof Calendar }> = [

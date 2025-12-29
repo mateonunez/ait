@@ -70,6 +70,11 @@ const DEFAULT_COSTS: Record<GenerationModelName | EmbeddingModelName, ModelCosts
     embeddingCostPer1KTokens: 0.00001, // ~$0.01 per 1M tokens
     currency: "USD",
   },
+  "llava:latest": {
+    generationCostPer1KTokens: 0.0,
+    embeddingCostPer1KTokens: 0.00001, // ~$0.01 per 1M tokens
+    currency: "USD",
+  },
 };
 
 export class CostTrackingService {

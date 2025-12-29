@@ -21,6 +21,7 @@
   "dependencies": {
     "@ait/ai-sdk": "workspace:*",
     "@ait/core": "workspace:*",
+    "@ait/storage": "workspace:*",
     "@ait/postgres": "workspace:*",
     "@ait/qdrant": "workspace:*",
     "@ait/redis": "workspace:*",

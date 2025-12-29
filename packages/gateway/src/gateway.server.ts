@@ -1,6 +1,7 @@
 import "dotenv/config";
 import type { FastifyInstance } from "fastify";
 import { buildServer } from "./config/gateway.config";
+import { assetsRoutes } from "./routes/gateway.assets.routes";
 import chatRoutes from "./routes/gateway.chat.routes";
 import connectorsRoutes from "./routes/gateway.connectors.routes";
 import conversationsRoutes from "./routes/gateway.conversations.routes";
@@ -44,6 +45,7 @@ export async function startServer(port = 3000): Promise<FastifyInstance> {
   server.register(suggestionsRoutes, { prefix: "/api/suggestions" });
   server.register(connectorsRoutes, { prefix: "/api/connectors" });
   server.register(conversationsRoutes, { prefix: "/api/conversations" });
+  server.register(assetsRoutes, { prefix: "/api/assets" });
 
   try {
     await server.listen({ port, host: "0.0.0.0" });
