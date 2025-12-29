@@ -134,6 +134,7 @@ export {
   type ISparseVectorService,
   type SparseVector,
 } from "./services/embeddings/sparse-vector.service";
+export * from "./constants/embeddings.constants";
 
 export type { ChatMessage } from "./types/chat";
 export { formatConversationHistory } from "./utils/chat.utils";

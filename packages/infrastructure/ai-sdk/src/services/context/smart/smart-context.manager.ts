@@ -84,7 +84,14 @@ export class SmartContextManager implements IContextManager {
     // Tier 4: Retrieved Docs
     if (request.retrievedDocs && request.retrievedDocs.length > 0) {
       request.retrievedDocs.forEach((doc, index) => {
-        const content = `Source: ${doc.metadata.title || doc.metadata.source || "Unknown"}\n${doc.pageContent}`;
+        const title = (doc.metadata?.title as string) || (doc.metadata?.name as string) || null;
+        const source =
+          (doc.metadata?.source as string) ||
+          (doc.metadata?.url as string) ||
+          (doc.metadata?.collection as string) ||
+          null;
+        const header = title ? `[${title}]` : source ? `Source: ${source}` : null;
+        const content = header ? `${header}\n${doc.pageContent}` : doc.pageContent;
         this.tierManager.addItem({
           id: `doc-${doc.metadata.id || index}`,
           tier: ContextTier.LONG_TERM_MEMORY,
@@ -151,6 +158,16 @@ export class SmartContextManager implements IContextManager {
     const tier4 = this.tierManager.getItems(ContextTier.LONG_TERM_MEMORY);
     const tier3 = this.tierManager.getItems(ContextTier.CONDENSED_HISTORY).sort((a, b) => a.timestamp - b.timestamp);
     const tier2 = this.tierManager.getItems(ContextTier.WORKING_SET).sort((a, b) => a.timestamp - b.timestamp);
+
+    logger.info("[SmartContextManager] Tiers populated", {
+      tier0Count: tier0.length,
+      tier0Chars: tier0.reduce((sum, i) => sum + i.content.length, 0),
+      tier2Count: tier2.length,
+      tier3Count: tier3.length,
+      tier4Count: tier4.length,
+      tier4Chars: tier4.reduce((sum, i) => sum + i.content.length, 0),
+      tier4Previews: tier4.slice(0, 3).map((d) => d.content.slice(0, 100)),
+    });
 
     const sections = [...tier0, ...tier3, ...tier4, ...tier2];
 

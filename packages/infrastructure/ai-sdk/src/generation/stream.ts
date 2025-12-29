@@ -60,6 +60,13 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
     options.system ??
     (options.ragContext ? buildSystemPromptWithContext(options.ragContext) : buildSystemPromptWithoutContext());
 
+  logger.info("[Stream] System message constructed", {
+    hasRAGContext: !!options.ragContext,
+    ragContextLength: options.ragContext?.length,
+    systemMessageLength: systemMessage.length,
+    systemMessageEndsWithContext: systemMessage.slice(-200),
+  });
+
   // Create telemetry span for LLM generation if enabled
   const endSpan =
     enableTelemetry && options.traceContext

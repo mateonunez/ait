@@ -187,9 +187,7 @@ function DocumentCard({ document, expanded, onToggle }: DocumentCardProps) {
               <p className="text-xs text-foreground whitespace-pre-wrap">{document.content}</p>
 
               {document.source?.identifier && (
-                <p className="text-xs text-muted-foreground font-mono truncate">
-                  ID: {document.source.identifier}
-                </p>
+                <p className="text-xs text-muted-foreground font-mono truncate">ID: {document.source.identifier}</p>
               )}
 
               {document.source.url && (
