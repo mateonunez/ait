@@ -109,12 +109,8 @@
           "name": "messages_conversation_id_conversations_id_fk",
           "tableFrom": "messages",
           "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2809,12 +2805,8 @@
           "name": "feedback_message_id_messages_id_fk",
           "tableFrom": "feedback",
           "tableTo": "messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2926,11 +2918,7 @@
     "public.feedback_rating": {
       "name": "feedback_rating",
       "schema": "public",
-      "values": [
-        "thumbs_up",
-        "thumbs_down",
-        "neutral"
-      ]
+      "values": ["thumbs_up", "thumbs_down", "neutral"]
     }
   },
   "schemas": {},
