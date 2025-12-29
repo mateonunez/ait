@@ -8,7 +8,8 @@
     "dev": "tsc -b -w",
     "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "biome format && biome lint && biome check",
-    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write"
+    "lint:fix": "biome format --write && biome lint --write --unsafe && biome check --write",
+    "prepare": "pnpm build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.500.0",
