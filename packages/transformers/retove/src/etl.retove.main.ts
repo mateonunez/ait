@@ -1,47 +1,47 @@
-import { getLogger } from "@ait/core";
+import { type EntityType, getLogger } from "@ait/core";
 import { closePostgresConnection, getPostgresClient } from "@ait/postgres";
 import { getQdrantClient } from "@ait/qdrant";
 import {
-  // runGitHubCommitETL,
-  // runGitHubFileETL,
-  // runGitHubPullRequestETL,
-  // runGitHubRepositoryETL,
-  // runGoogleCalendarEventETL,
-  // runGoogleContactETL,
+  runGitHubCommitETL,
+  runGitHubFileETL,
+  runGitHubPullRequestETL,
+  runGitHubRepositoryETL,
+  runGoogleCalendarEventETL,
+  runGoogleContactETL,
   runGooglePhotoETL,
-  // runGoogleYouTubeSubscriptionETL,
+  runGoogleYouTubeSubscriptionETL,
   runLinearETL,
   runNotionETL,
   runSlackETL,
-  // runSpotifyAlbumETL,
-  // runSpotifyArtistETL,
-  // runSpotifyPlaylistETL,
-  // runSpotifyRecentlyPlayedETL,
-  // runSpotifyTrackETL,
+  runSpotifyAlbumETL,
+  runSpotifyArtistETL,
+  runSpotifyPlaylistETL,
+  runSpotifyRecentlyPlayedETL,
+  runSpotifyTrackETL,
   runXETL,
 } from "./infrastructure/runners/etl.runners";
 
 const logger = getLogger();
 
-const etlRunners: Record<any, any> = {
-  // track: runSpotifyTrackETL,
-  // artist: runSpotifyArtistETL,
-  // playlist: runSpotifyPlaylistETL,
-  // album: runSpotifyAlbumETL,
-  // recently_played: runSpotifyRecentlyPlayedETL,
-  // repository: runGitHubRepositoryETL,
-  // pull_request: runGitHubPullRequestETL,
-  // commit: runGitHubCommitETL,
-  // repository_file: runGitHubFileETL,
+const etlRunners: Record<EntityType, any> = {
+  track: runSpotifyTrackETL,
+  artist: runSpotifyArtistETL,
+  playlist: runSpotifyPlaylistETL,
+  album: runSpotifyAlbumETL,
+  recently_played: runSpotifyRecentlyPlayedETL,
+  repository: runGitHubRepositoryETL,
+  pull_request: runGitHubPullRequestETL,
+  commit: runGitHubCommitETL,
+  repository_file: runGitHubFileETL,
   tweet: runXETL,
   issue: runLinearETL,
   page: runNotionETL,
   message: runSlackETL,
-  // subscription: runGoogleYouTubeSubscriptionETL,
-  // event: runGoogleCalendarEventETL,
-  // google_contact: runGoogleContactETL,
+  subscription: runGoogleYouTubeSubscriptionETL,
+  event: runGoogleCalendarEventETL,
+  google_contact: runGoogleContactETL,
   google_photo: runGooglePhotoETL,
-  // calendar: undefined,
+  calendar: runGoogleCalendarEventETL,
 };
 
 async function main() {
