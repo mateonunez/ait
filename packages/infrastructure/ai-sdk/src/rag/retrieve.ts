@@ -2,11 +2,13 @@ import { getLogger } from "@ait/core";
 import { getQdrantClient } from "@ait/qdrant";
 import { getAItClient } from "../client/ai-sdk.client";
 import { getAllCollections } from "../config/collections.config";
+import { SPARSE_VECTOR_NAME } from "../constants/embeddings.constants";
 import { getCacheProvider } from "../providers";
 import { getSparseVectorService } from "../services/embeddings/sparse-vector.service";
 import type { TraceContext } from "../types/telemetry";
 
 const logger = getLogger();
+const cacheProvider = getCacheProvider();
 
 export interface RetrieveOptions {
   query: string;
@@ -58,7 +60,6 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
 
   // 1. Semantic Cache Lookup
   if (enableCache) {
-    const cacheProvider = getCacheProvider();
     if (cacheProvider) {
       const cacheKey = `retrieve:${query}:${collectionContext}:${targetTypes}:${scoreThreshold}`;
       const cached = await cacheProvider.get<RetrieveResult>(cacheKey);
@@ -153,22 +154,32 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
 
   const searchPromises = existingCollections.map(async (collection) => {
     try {
-      // Hybrid search: Vector + Sparse Vector
-      const results = await qdrantClient.search(collection.name, {
-        vector: {
-          name: "content", // Standard vector name for content
-          vector: queryEmbedding,
+      // Hybrid search: Vector + Sparse Vector using Reciprocal Rank Fusion (RRF)
+      const results = await qdrantClient.query(collection.name, {
+        prefetch: [
+          {
+            query: queryEmbedding,
+            // using: DENSE_VECTOR_NAME, // Omitted for default vector
+            limit,
+          },
+          {
+            query: {
+              indices: sparseVector.indices,
+              values: sparseVector.values,
+            },
+            using: SPARSE_VECTOR_NAME,
+            limit,
+          },
+        ],
+        query: {
+          fusion: "rrf",
         },
-        sparse_vector: {
-          name: "sparse-content", // Standard sparse vector name
-          vector: sparseVector,
-        },
+        with_payload: true,
         limit,
-        score_threshold: scoreThreshold,
         filter: qdrantFilter,
       });
-      logger.debug(`Collection ${collection.name} returned ${results.length} results via hybrid search`);
-      return results.map((r: any) => ({ ...r, collection: collection.name }));
+      logger.debug(`Collection ${collection.name} returned ${results.points.length} results via hybrid search`);
+      return results.points.map((r: any) => ({ ...r, collection: collection.name }));
     } catch (error) {
       // Fallback for collections that don't support hybrid search yet or named vectors
       logger.warn(`Hybrid search failed for ${collection.name}, falling back to simple vector search`, {
@@ -210,8 +221,8 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
     content: (r.payload?.content as string) || "",
     score: r.score ?? 0,
     collection: r.collection,
-    source: r.payload?.source as string,
-    metadata: r.payload as Record<string, unknown>,
+    source: (r.payload?.metadata?.url as string) || (r.payload?.source as string),
+    metadata: (r.payload?.metadata as Record<string, unknown>) || {},
   }));
 
   const result = {
@@ -221,7 +232,6 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
 
   // 4. Update Cache
   if (enableCache && documents.length > 0) {
-    const cacheProvider = getCacheProvider();
     if (cacheProvider) {
       const cacheKey = `retrieve:${query}:${collectionContext}:${targetTypes}:${scoreThreshold}`;
       await cacheProvider.set(cacheKey, result);

@@ -5,6 +5,7 @@ import {
   type ISparseVectorService,
   OPTIMAL_CHUNK_OVERLAP,
   OPTIMAL_CHUNK_SIZE,
+  SPARSE_VECTOR_NAME,
   type SparseVector,
   getCollectionsNames,
   getEmbeddingModelConfig,
@@ -357,7 +358,7 @@ export abstract class RetoveBaseETLAbstract<T> {
           },
         },
         sparse_vectors: {
-          text_embedding: {
+          [SPARSE_VECTOR_NAME]: {
             index: {
               on_disk: true,
               full_scan_threshold: 5000,
@@ -558,7 +559,7 @@ export abstract class RetoveBaseETLAbstract<T> {
           if (point.sparseVector && point.sparseVector.indices.length > 0) {
             basePoint.vector = {
               "": point.vector, // Default dense vector
-              text_embedding: {
+              [SPARSE_VECTOR_NAME]: {
                 indices: point.sparseVector.indices,
                 values: point.sparseVector.values,
               },

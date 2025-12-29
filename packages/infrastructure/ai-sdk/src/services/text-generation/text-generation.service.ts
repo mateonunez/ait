@@ -268,6 +268,12 @@ export class TextGenerationService implements ITextGenerationService {
             },
           })),
         });
+
+        logger.info("[RAG] Context assembled", {
+          ragContextLength: ragContext?.length,
+          ragContextPreview: ragContext?.slice(0, 300),
+          documentCount: ragDocuments?.length,
+        });
       }
     }
 
