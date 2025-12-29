@@ -253,6 +253,20 @@
       "when": 1766932360719,
       "tag": "0035_great_redwing",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1767043857321,
+      "tag": "0036_square_talkback",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1767043873232,
+      "tag": "0037_powerful_molten_man",
+      "breakpoints": true
     }
   ]
 }
