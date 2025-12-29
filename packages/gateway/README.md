@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Gateway module provides a unified API for external platforms via OAuth 2.0. It integrates with the [Connectors](../connectors/README.md) package to handle authentication and data access for GitHub, Linear, Spotify, and X.
+The Gateway module provides a unified API for external platforms via OAuth 2.0. It integrates with the [Connectors](../connectors/README.md) package to handle authentication and data access for GitHub, Linear, Spotify, X, Notion, Slack, and Google (Calendar, YouTube, Contacts, Photos).
 
 ## Quick Start
 
@@ -41,6 +41,9 @@ USE_HTTPS=false  # Set to true for HTTPS (see HTTPS_SETUP.md)
 # Database
 POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
 
+# Redis (used by caching/queues depending on enabled services)
+REDIS_URL=redis://:myredissecret@localhost:6379
+
 # OAuth Credentials
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_secret
@@ -53,6 +56,21 @@ LINEAR_CLIENT_SECRET=your_linear_secret
 
 X_CLIENT_ID=your_x_client_id
 X_CLIENT_SECRET=your_x_secret
+
+NOTION_CLIENT_ID=your_notion_client_id
+NOTION_CLIENT_SECRET=your_notion_secret
+
+SLACK_CLIENT_ID=your_slack_client_id
+SLACK_CLIENT_SECRET=your_slack_secret
+
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_secret
+
+# S3 / MinIO (required for Google Photos binary storage)
+MINIO_REGION=us-east-1
+MINIO_ENDPOINT=http://localhost:9090
+MINIO_ROOT_USER=minio
+MINIO_ROOT_PASSWORD=miniosecret
 ```
 
 See the [Connectors README](../connectors/README.md) for detailed connector configuration.

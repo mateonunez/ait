@@ -4,6 +4,22 @@
 
 The Connectors module provides a reusable framework for integrating platforms into AIt with modular design, shared utilities, and OAuth 2.0 support. Supports GitHub, Linear, Spotify, X (Twitter), Notion, Slack, and Google.
 
+## Canonical Entity Types
+
+AIt normalizes every ingested object with a stable `__type` string (see `@ait/core` `EntityType`). These values are used consistently across:
+- Gateway data APIs (filtering/routing)
+- ETL + Qdrant collection routing
+- UI “entity pages” (e.g. X tweets, Linear issues)
+
+**Current `EntityType` values:**
+- **Spotify**: `spotify_track`, `spotify_artist`, `spotify_playlist`, `spotify_album`, `spotify_recently_played`
+- **GitHub**: `github_repository`, `github_pull_request`, `github_commit`, `github_file`
+- **Linear**: `linear_issue`
+- **X**: `x_tweet`
+- **Notion**: `notion_page`
+- **Slack**: `slack_message`
+- **Google**: `google_calendar_event`, `google_calendar_calendar`, `google_youtube_subscription`, `google_contact`, `google_photo`
+
 ## Quick Start
 
 ### Generate OpenAPI Types
@@ -109,6 +125,7 @@ Connectors are integrated into AIt through:
 - **[Gateway](../gateway/README.md)** - API endpoints and OAuth handling
 - **[Scheduler](../../infrastructure/scheduler/README.md)** - Automated data synchronization
 - **[ETL Pipeline](../../transformers/retove/README.md)** - Data transformation and embedding
+- **[Storage](../../infrastructure/storage/README.md)** - Object storage for binary assets (e.g. Google Photos)
 
 ## License
 

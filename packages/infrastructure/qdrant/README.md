@@ -2,7 +2,7 @@
 
 ## Overview
 
-Qdrant is the vector database used by AIt for semantic search and similarity operations. It stores embeddings generated from your data sources (GitHub, Spotify, Linear, X) for RAG (Retrieval-Augmented Generation) queries.
+Qdrant is the vector database used by AIt for semantic search and similarity operations. It stores embeddings generated from your connected sources (GitHub, Spotify, Linear, X, Notion, Slack, Google) for RAG (Retrieval-Augmented Generation) queries.
 
 ## Quick Start
 

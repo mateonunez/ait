@@ -207,6 +207,8 @@ import type {
   SlackMessage,
   GoogleCalendarEvent,
   GoogleContact,
+  GoogleYouTubeSubscription,
+  GooglePhoto,
 } from '@ait/core';
 ```
 

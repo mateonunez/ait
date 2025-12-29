@@ -19,7 +19,7 @@ cd ait
 corepack enable
 pnpm install
 
-# 2. Start services (PostgreSQL, Qdrant, Ollama, Redis)
+# 2. Start services (PostgreSQL, Qdrant, Ollama, Redis, Langfuse + MinIO)
 pnpm start:services
 
 # 3. Configure environment variables
@@ -83,6 +83,7 @@ OAuth Auth → Connector → PostgreSQL → ETL/Scheduler → Embeddings → Qdr
 | **Connectors** | `packages/connectors` | OAuth 2.0 integrations (GitHub, Linear, Spotify, X, Notion, Slack, Google Calendar, Google People) |
 | **Gateway** | `packages/gateway` | Unified API gateway for all connectors |
 | **AI SDK** | `packages/infrastructure/ai-sdk` | RAG, text generation, embeddings with Ollama |
+| **Storage** | `packages/infrastructure/storage` | S3/MinIO object storage (Google Photos, assets) |
 | **Store** | `packages/infrastructure/store` | Application data store (conversations, feedback, goals) |
 | **Scheduler** | `packages/infrastructure/scheduler` | Automated ETL job scheduling with BullMQ |
 | **RetoVe** | `packages/transformers/retove` | ETL pipeline for vector embeddings |
@@ -123,6 +124,12 @@ OLLAMA_BASE_URL=http://localhost:11434
 # Qdrant (for vector search)
 QDRANT_URL=http://localhost:6333
 
+# S3 / MinIO (required for Google Photos binary storage; uses docker-compose MinIO by default)
+MINIO_REGION=us-east-1
+MINIO_ENDPOINT=http://localhost:9090
+MINIO_ROOT_USER=minio
+MINIO_ROOT_PASSWORD=miniosecret
+
 # OAuth Credentials (at least one connector)
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_secret
@@ -144,7 +151,7 @@ SLACK_CLIENT_SECRET=your_slack_secret
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_secret
-```
+****```
 
 See individual package READMEs and [.env.example](.env.example) for all available options.
 
@@ -197,6 +204,7 @@ pnpm clean:all            # Full cleanup (node_modules, dist, services)
 | [Gateway](packages/gateway/README.md) | API gateway and OAuth authentication |
 | [Connectors](packages/connectors/README.md) | Platform integrations framework |
 | [AI SDK](packages/infrastructure/ai-sdk/README.md) | RAG and text generation |
+| [Storage](packages/infrastructure/storage/README.md) | Object storage (S3/MinIO) |
 | [Store](packages/infrastructure/store/README.md) | Data persistence for conversations, feedback, goals |
 | [Scheduler](packages/infrastructure/scheduler/README.md) | ETL job scheduling |
 | [ETL Pipeline](packages/transformers/retove/README.md) | Data transformation |
