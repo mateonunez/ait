@@ -1,3 +1,5 @@
+import type { IntegrationVendor } from "./entities.config";
+
 export type EntityType =
   | "track"
   | "artist"
@@ -38,3 +40,14 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "google_contact",
   "google_photo",
 ] as const;
+
+export type IntegrationEntity = Record<string, any> & {
+  id: string | number;
+  __type: EntityType;
+};
+
+export interface FeedRequirement {
+  vendor: IntegrationVendor;
+  entityType: EntityType;
+  limit: number;
+}

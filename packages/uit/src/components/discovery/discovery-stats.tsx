@@ -6,7 +6,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { InsightsProvider, useInsights } from "@/contexts/insights.context";
+import { useInsights } from "@/contexts/insights.context";
 import { fetchDiscoveryStats } from "@/services/observability.service";
 import { cn } from "@/styles/utils";
 import { getLogger } from "@ait/core";
@@ -101,6 +101,15 @@ const getChartConfig = (integrationKeys: string[]): ChartConfig => {
 };
 
 // Integration metadata with brand colors and icons
+const DEFAULT_META = {
+  icon: Activity,
+  label: "Integration",
+  color: "hsl(var(--chart-1))",
+  bgGradient: "from-primary/20 via-primary/5 to-transparent",
+  borderColor: "border-primary/30",
+  glowColor: "shadow-primary/20",
+};
+
 const INTEGRATIONS_META: Record<
   string,
   {
@@ -162,7 +171,7 @@ const INTEGRATIONS_META: Record<
   },
   google: {
     icon: Activity,
-    label: "Google",
+    label: "Google Calendar",
     color: "#4285F4",
     bgGradient: "from-[#4285F4]/20 via-[#4285F4]/5 to-transparent",
     borderColor: "border-[#4285F4]/30",
@@ -178,17 +187,15 @@ const INTEGRATIONS_META: Record<
   },
 };
 
+function getIntegrationMeta(key: string) {
+  return INTEGRATIONS_META[key] || { ...DEFAULT_META, label: key.charAt(0).toUpperCase() + key.slice(1) };
+}
+
 function DiscoveryStatsContent() {
   const [stats, setStats] = useState<DiscoveryStatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<"week" | "month" | "year">("week");
   const [showReview, setShowReview] = useState(false);
-  const { insights, isLoading: insightsLoading, setTimeRange: setContextTimeRange } = useInsights();
-
-  // Sync local timeRange to context
-  useEffect(() => {
-    setContextTimeRange(timeRange);
-  }, [timeRange, setContextTimeRange]);
+  const { insights, isLoading: insightsLoading, timeRange, setTimeRange } = useInsights();
 
   useEffect(() => {
     async function loadStats() {
@@ -258,14 +265,7 @@ function DiscoveryStatsContent() {
 
     return Object.keys(stats.totals)
       .map((key) => {
-        const meta = INTEGRATIONS_META[key] || {
-          icon: Activity,
-          label: key.charAt(0).toUpperCase() + key.slice(1),
-          color: "#6B7280",
-          bgGradient: "from-gray-500/20 via-gray-500/5 to-transparent",
-          borderColor: "border-gray-500/30",
-          glowColor: "shadow-gray-500/20",
-        };
+        const meta = getIntegrationMeta(key);
 
         const trend = calculateTrend(stats.data, key);
         const peakDay = getPeakDay(stats.data, key);
@@ -501,6 +501,12 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
         ? "text-red-500"
         : "text-muted-foreground";
 
+  const handleClick = () => {
+    if (item.total > 0) {
+      window.location.href = `/integrations/${item.id}`;
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -508,8 +514,9 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
       transition={{ delay: index * 0.05, duration: 0.4 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
       className={cn(
-        "group relative overflow-hidden rounded-2xl border transition-all duration-500 h-full",
+        "group relative overflow-hidden rounded-2xl border transition-all duration-500 h-full cursor-pointer",
         "bg-gradient-to-br",
         item.bgGradient,
         item.borderColor,
@@ -677,11 +684,5 @@ function StatCard({ item, index, chartConfig, timeRange }: StatCardProps) {
 }
 
 export function DiscoveryStats() {
-  const [timeRange] = useState<"week" | "month" | "year">("week");
-
-  return (
-    <InsightsProvider initialTimeRange={timeRange}>
-      <DiscoveryStatsContent />
-    </InsightsProvider>
-  );
+  return <DiscoveryStatsContent />;
 }

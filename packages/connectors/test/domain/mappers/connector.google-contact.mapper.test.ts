@@ -82,7 +82,7 @@ describe("Google Contact Mappers", () => {
         };
 
         const domainContact = mapGoogleContact(externalContact);
-        const dataTarget = googleContactDomainToDataTarget(domainContact);
+        const dataTarget = googleContactDomainToDataTarget(domainContact) as any;
 
         assert.equal(dataTarget.id, "people/c789");
         assert.equal(dataTarget.displayName, "Target Contact");
