@@ -180,6 +180,14 @@ export const ENTITY_METADATA: Record<EntityType, EntityMetadata> = {
     description: "Google contacts (timestamps: updatedAt)",
     timestampFields: ["updatedAt"],
   },
+  google_photo: {
+    label: "Photo",
+    labelPlural: "Photos",
+    keywords: ["photo", "image", "picture", "google photos", "video", "media", "camera", "shot", "memory"],
+    vendor: "google",
+    description: "Google Photos media items (timestamps: creationTime, updatedAt)",
+    timestampFields: ["creationTime", "updatedAt"],
+  },
 } as const;
 
 export function getEntityMetadata(entityType: EntityType): EntityMetadata {

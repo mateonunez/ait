@@ -36,6 +36,7 @@ export const GoalTypeSchema = z.enum([
   "documents",
   "messages",
   "meetings",
+  "google_photo",
 ]);
 
 export type GoalPeriod = "daily" | "weekly" | "monthly";

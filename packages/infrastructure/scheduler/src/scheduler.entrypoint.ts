@@ -12,6 +12,7 @@ import {
   GoogleCalendarETLs,
   GoogleYouTubeETLs,
   GooglePeopleETLs,
+  GooglePhotosETLs,
 } from "@ait/retove";
 import { schedulerETLTaskManager } from "./task-manager/scheduler.etl.task-manager";
 import { closePostgresConnection } from "@ait/postgres";
@@ -148,6 +149,13 @@ const SCHEDULED_JOBS: JobConfig[] = [
     options: { limit: scheduleConfig.batchSize },
     cronExpression: scheduleConfig.mediumPriorityCron,
     priority: 2,
+    enabled: true,
+  },
+  {
+    name: GooglePhotosETLs.photo,
+    options: { limit: scheduleConfig.batchSize },
+    cronExpression: scheduleConfig.mediumPriorityCron,
+    priority: 0,
     enabled: true,
   },
 ].filter((job) => job.enabled !== false);

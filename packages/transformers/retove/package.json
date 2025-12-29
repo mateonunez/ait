@@ -23,6 +23,7 @@
     "@ait/connectors": "workspace:*",
     "@ait/postgres": "workspace:*",
     "@ait/qdrant": "workspace:*",
+    "@ait/storage": "workspace:*",
     "dotenv": "^17.2.3"
   },
   "devDependencies": {

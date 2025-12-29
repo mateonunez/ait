@@ -68,8 +68,8 @@ const SLACK_COLLECTION: CollectionConfig = {
 const GOOGLE_COLLECTION: CollectionConfig = {
   vendor: "google",
   name: "ait_google_collection",
-  description: "Google Suite (Calendar, Drive, YouTube, Contacts)",
-  entityTypes: ["event", "calendar", "subscription", "google_contact"],
+  description: "Google Suite (Calendar, Drive, YouTube, Photos, Contacts)",
+  entityTypes: ["event", "calendar", "subscription", "google_contact", "google_photo"],
   defaultWeight: 1.0,
   enabled: true,
 };

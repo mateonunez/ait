@@ -1,14 +1,26 @@
 import { AItError } from "@ait/core";
 import { getLogger } from "@ait/core";
-import { getAItClient } from "../../client/ai-sdk.client";
+import { generateText } from "ai";
+import { createModel, getAItClient } from "../../client/ai-sdk.client";
+import { GenerationModels } from "../../config/models.config";
 import { createSpanWithTiming, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
 import { type TokenizerService, getTokenizer } from "../tokenizer/tokenizer.service";
 import { type EmbeddingsConfig, createEmbeddingsConfig } from "./embeddings.config";
 import { type TextChunk, TextPreprocessor } from "./text-preprocessor";
 
+const client = getAItClient();
+
 export interface IEmbeddingsService {
   generateEmbeddings(text: string, options?: EmbeddingsServiceOptions): Promise<number[]>;
+  generateImageEmbeddings(
+    image: Buffer,
+    options?: EmbeddingsServiceOptions,
+  ): Promise<{ vector: number[]; description: string }>;
+  generateImageEmbeddingsFromUrl(
+    url: string,
+    options?: EmbeddingsServiceOptions,
+  ): Promise<{ vector: number[]; description: string }>;
 }
 
 export interface EmbeddingsServiceOptions {
@@ -19,6 +31,7 @@ export interface EmbeddingsServiceOptions {
   correlationId?: string;
   enableTelemetry?: boolean;
   traceContext?: any;
+  visionModel?: string;
 }
 
 const logger = getLogger();
@@ -111,6 +124,85 @@ export class EmbeddingsService implements IEmbeddingsService {
     }
   }
 
+  public async generateImageEmbeddings(
+    image: Buffer,
+    options?: EmbeddingsServiceOptions,
+  ): Promise<{ vector: number[]; description: string }> {
+    const correlationId = options?.correlationId;
+
+    try {
+      const visionModelName = options?.visionModel || GenerationModels.LLAVA;
+      const visionModel = createModel(visionModelName);
+
+      logger.debug("Generating image description using vision model", {
+        correlationId,
+        model: visionModelName,
+      });
+
+      const { text: description } = await generateText({
+        model: visionModel,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: "Describe this image in detailed textual detail, capturing all visual elements, context, and mood.",
+              },
+              { type: "image", image },
+            ],
+          },
+        ],
+      });
+
+      if (!description) {
+        throw new Error("Failed to generate image description.");
+      }
+
+      logger.debug("Generated image description for embedding", {
+        correlationId,
+        descriptionLength: description.length,
+      });
+
+      const vector = await this.generateEmbeddings(description, options);
+
+      return { vector, description };
+    } catch (err) {
+      logger.error("Failed to generate image embeddings", {
+        correlationId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+  }
+
+  public async generateImageEmbeddingsFromUrl(
+    url: string,
+    options?: EmbeddingsServiceOptions,
+  ): Promise<{ vector: number[]; description: string }> {
+    const correlationId = options?.correlationId;
+
+    try {
+      logger.debug("Fetching image from URL for vision embedding", { url, correlationId });
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image from URL: ${response.statusText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      return await this.generateImageEmbeddings(buffer, options);
+    } catch (err) {
+      logger.error("Failed to generate image embeddings from URL", {
+        correlationId,
+        url,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+  }
+
   private async _processChunks(chunks: TextChunk[], correlationId?: string): Promise<number[][]> {
     if (this._config.concurrencyLimit === 1) {
       return this._processChunksSequentially(chunks, correlationId);
@@ -160,8 +252,6 @@ export class EmbeddingsService implements IEmbeddingsService {
 
     for (let attempt = 1; attempt <= this._config.maxRetries; attempt++) {
       try {
-        const client = getAItClient();
-
         const vec = await client.embed(chunk.content);
 
         if (vec.length !== this._config.expectedVectorSize) {

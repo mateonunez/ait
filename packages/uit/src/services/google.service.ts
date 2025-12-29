@@ -3,6 +3,7 @@ import type {
   GoogleCalendarEntity as GoogleCalendar,
   GoogleCalendarEventEntity as GoogleCalendarEvent,
   GoogleContactEntity as GoogleContact,
+  GooglePhotoEntity as GooglePhoto,
   GoogleYouTubeSubscriptionEntity as GoogleYouTubeSubscription,
   PaginatedResponse,
   PaginationParams,
@@ -41,6 +42,13 @@ export class GoogleService {
   async fetchContacts(params?: PaginationParams) {
     const url = `${this.baseUrl}/data/contacts${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<GoogleContact>>(url);
+    if (!result.ok) throw result.error;
+    return result.value.data;
+  }
+
+  async fetchPhotos(params?: PaginationParams) {
+    const url = `${this.baseUrl}/data/photos${buildQueryString(params)}`;
+    const result = await requestJson<PaginatedResponse<GooglePhoto>>(url);
     if (!result.ok) throw result.error;
     return result.value.data;
   }

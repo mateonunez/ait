@@ -9,6 +9,8 @@ import { getGatewayUrl, getHttpsOptions, ngrokPlugin, normalizeDomain } from "./
 dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
 dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
+process.env.VITE_GOOGLE_TAG_MANAGER_ID = process.env.VITE_GOOGLE_TAG_MANAGER_ID || "";
+
 const useNgrok = Boolean(process.env.NGROK_AUTH_TOKEN);
 const ngrokDomain = process.env.NGROK_DOMAIN;
 const gatewayPort = Number(process.env.APP_PORT) || 3000;
