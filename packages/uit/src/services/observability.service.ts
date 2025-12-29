@@ -131,8 +131,4 @@ export async function fetchAllMetrics(windowMinutes = 60) {
   }
 }
 
-export async function fetchDiscoveryStats(range: "week" | "month" | "year" = "week"): Promise<any> {
-  const res = await apiGet<any>(`${apiConfig.apiBaseUrl}/discovery/stats?range=${range}`);
-  if (!res.ok) throw new Error(res.error || "Failed to fetch discovery stats");
-  return res.data;
-}
+export { fetchDiscoveryStats } from "./discovery.service";

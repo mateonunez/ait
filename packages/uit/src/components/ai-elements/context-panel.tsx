@@ -145,6 +145,7 @@ interface DocumentCardProps {
 }
 
 function DocumentCard({ document, expanded, onToggle }: DocumentCardProps) {
+  console.log({ document });
   // Ensure score is a number and within 0-1 range
   const score = typeof document.score === "number" ? document.score : 0;
   const relevancePercent = (Math.min(Math.max(score, 0), 1) * 100).toFixed(0);
@@ -161,14 +162,11 @@ function DocumentCard({ document, expanded, onToggle }: DocumentCardProps) {
             <Badge variant="outline" className="text-xs">
               {document.source?.type || "document"}
             </Badge>
-            {document.source?.identifier && (
-              <span className="text-xs text-muted-foreground truncate max-w-[200px]">{document.source.identifier}</span>
-            )}
+            <span className="text-xs font-medium text-primary">{relevancePercent}% relevant</span>
           </div>
-          <p className="text-xs text-muted-foreground line-clamp-2">{document.content}</p>
+          <p className="text-sm text-foreground line-clamp-2">{document.content || "No content available"}</p>
         </div>
         <div className="flex items-center gap-2 ml-3 shrink-0">
-          <span className="text-xs font-medium text-primary">{relevancePercent}%</span>
           {expanded ? (
             <ChevronUp className="h-4 w-4 text-muted-foreground" />
           ) : (
@@ -187,6 +185,12 @@ function DocumentCard({ document, expanded, onToggle }: DocumentCardProps) {
           >
             <div className="p-3 space-y-2 bg-muted/30">
               <p className="text-xs text-foreground whitespace-pre-wrap">{document.content}</p>
+
+              {document.source?.identifier && (
+                <p className="text-xs text-muted-foreground font-mono truncate">
+                  ID: {document.source.identifier}
+                </p>
+              )}
 
               {document.source.url && (
                 <a

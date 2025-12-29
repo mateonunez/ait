@@ -8,6 +8,11 @@ import {
 } from "../services/insights/activity-aggregator.service";
 import { getInsightsService } from "../services/insights/insights.service";
 
+const activityAggregator = createActivityAggregatorService(
+  connectorServiceFactory as unknown as IConnectorServiceFactory,
+);
+const insightsService = getInsightsService();
+const goalService = getGoalService();
 interface InsightsQuery {
   range?: "week" | "month" | "year";
 }
@@ -27,9 +32,6 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
       try {
         const range = request.query.range || "week";
 
-        const activityAggregator = createActivityAggregatorService(
-          connectorServiceFactory as unknown as IConnectorServiceFactory,
-        );
         const activityData = await activityAggregator.fetchActivityData(range);
         const insightsService = getInsightsService();
 
@@ -52,13 +54,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     async (request: FastifyRequest<{ Querystring: InsightsQuery }>, reply: FastifyReply) => {
       try {
         const range = request.query.range || "week";
-
-        const activityAggregator = createActivityAggregatorService(
-          connectorServiceFactory as unknown as IConnectorServiceFactory,
-        );
         const activityData = await activityAggregator.fetchActivityData(range);
-        const insightsService = getInsightsService();
-
         const insights = await insightsService.generateInsights(activityData, range);
 
         reply.send({ correlations: insights.correlations });
@@ -79,15 +75,11 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
       try {
         const range = request.query.range || "week";
 
-        const activityAggregator = createActivityAggregatorService(
-          connectorServiceFactory as unknown as IConnectorServiceFactory,
-        );
-        const activityData = await activityAggregator.fetchActivityData(range);
-        const insightsService = getInsightsService();
-
-        // For anomaly detection, we need historical data
-        // For now, we'll pass empty array - in production you'd fetch historical periods
-        const insights = await insightsService.generateInsights(activityData, range, []);
+        const [activityData, historicalData] = await Promise.all([
+          activityAggregator.fetchActivityData(range),
+          activityAggregator.fetchHistoricalData(range, "default", 4),
+        ]);
+        const insights = await insightsService.generateInsights(activityData, range, historicalData);
 
         reply.send({ anomalies: insights.anomalies });
       } catch (err: any) {
@@ -107,12 +99,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
       try {
         const range = request.query.range || "week";
 
-        const activityAggregator = createActivityAggregatorService(
-          connectorServiceFactory as unknown as IConnectorServiceFactory,
-        );
         const activityData = await activityAggregator.fetchActivityData(range);
-        const insightsService = getInsightsService();
-
         const insights = await insightsService.generateInsights(activityData, range);
 
         reply.send({ recommendations: insights.recommendations });
@@ -131,7 +118,6 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     "/goals",
     async (request: FastifyRequest<{ Body: CreateGoalRequest }>, reply: FastifyReply) => {
       try {
-        const goalService = getGoalService();
         const goal = await goalService.createGoal("default", request.body);
         reply.status(201).send(goal);
       } catch (err: any) {
@@ -147,17 +133,9 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
    */
   fastify.get("/goals", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const goalService = getGoalService();
       const userId = "default";
-
-      // Update progress based on current activity
-      const activityAggregator = createActivityAggregatorService(
-        connectorServiceFactory as unknown as IConnectorServiceFactory,
-      );
       const activityData = await activityAggregator.fetchActivityData("week");
       await goalService.updateAllProgress(activityData, userId);
-
-      // Fetch updated goals
       const updatedGoals = await goalService.getGoals(userId);
 
       reply.send(updatedGoals);
@@ -175,9 +153,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     "/goals/:id",
     async (request: FastifyRequest<{ Params: GoalParams; Body: UpdateGoalRequest }>, reply: FastifyReply) => {
       try {
-        const goalService = getGoalService();
         const goal = await goalService.updateGoal(request.params.id, "default", request.body);
-
         if (!goal) {
           reply.status(404).send({ error: "Goal not found." });
           return;
@@ -199,7 +175,6 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
     "/goals/:id",
     async (request: FastifyRequest<{ Params: GoalParams }>, reply: FastifyReply) => {
       try {
-        const goalService = getGoalService();
         await goalService.deleteGoal(request.params.id, "default");
         reply.status(204).send();
       } catch (err: any) {

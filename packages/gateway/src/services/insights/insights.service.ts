@@ -44,27 +44,36 @@ export class InsightsService {
     activityData: ActivityData,
     range: "week" | "month" | "year",
     historicalData: ActivityData[] = [],
+    userId = "default",
   ): Promise<InsightsData> {
     const startTime = Date.now();
-    const cacheKey = this._getCacheKey(activityData, range);
+    const cacheKey = this._getCacheKey(activityData, range, userId);
 
     if (this.config.cacheEnabled) {
       const cached = await this._getCached(cacheKey);
-      if (cached) return { ...cached, meta: { ...cached.meta, cacheHit: true } };
+      if (cached) {
+        logger.debug("[InsightsService] Cache hit", { cacheKey, range, userId });
+        return { ...cached, meta: { ...cached.meta, cacheHit: true } };
+      }
 
       const existing = this.inFlight.get(cacheKey);
-      if (existing) return existing;
+      if (existing) {
+        logger.debug("[InsightsService] Reusing in-flight request", { cacheKey });
+        return existing;
+      }
     }
 
     const promise = (async () => {
       try {
         const [summary, correlations, anomalies] = await Promise.all([
-          this._generateSummary(activityData, range),
-          this._findCorrelations(activityData),
-          this._detectAnomalies(activityData, historicalData),
+          this._withRetry(() => this._generateSummary(activityData, range)),
+          this._withRetry(() => this._findCorrelations(activityData)),
+          this._withRetry(() => this._detectAnomalies(activityData, historicalData)),
         ]);
 
-        const recommendations = await this._generateRecommendations(activityData, anomalies, correlations);
+        const recommendations = await this._withRetry(() =>
+          this._generateRecommendations(activityData, anomalies, correlations),
+        );
 
         const insights: InsightsData = {
           timestamp: new Date().toISOString(),
@@ -91,52 +100,57 @@ export class InsightsService {
     return promise;
   }
 
+  /**
+   * Helper for retrying AI calls with exponential backoff
+   */
+  private async _withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+    let lastError: any;
+    for (let i = 0; i <= retries; i++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error;
+        if (i < retries) {
+          const delay = 1000 * 2 ** i;
+          logger.warn(`[InsightsService] AI call failed, retrying in ${delay}ms`, { attempt: i + 1, error });
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw lastError;
+  }
+
   private async _generateSummary(data: ActivityData, range: any): Promise<InsightSummary | null> {
     if (!this.config.enableSummary) return null;
-    try {
-      const prompt = getSummaryPrompt(data, range);
-      return await getAItClient().generateStructured<InsightSummary>({
-        prompt,
-        schema: InsightSummarySchema as any,
-        temperature: 0.7,
-      });
-    } catch (error) {
-      logger.error("Summary generation failed", { error });
-      return null;
-    }
+    const prompt = getSummaryPrompt(data, range);
+    return await getAItClient().generateStructured<InsightSummary>({
+      prompt,
+      schema: InsightSummarySchema as any,
+      temperature: 0.7,
+    });
   }
 
   private async _findCorrelations(data: ActivityData): Promise<InsightCorrelation[]> {
     if (!this.config.enableCorrelations) return [];
-    try {
-      const statistical = await this.correlationEngine.findCorrelations(data);
-      if (statistical.length === 0) return [];
+    const statistical = await this.correlationEngine.findCorrelations(data);
+    if (statistical.length === 0) return [];
 
-      const prompt = getCorrelationPrompt(data);
-      const ai = await getAItClient().generateStructured<InsightCorrelation[]>({
-        prompt,
-        schema: InsightCorrelationSchema.array() as any,
-        temperature: 0.6,
-      });
+    const prompt = getCorrelationPrompt(data);
+    const ai = await getAItClient().generateStructured<InsightCorrelation[]>({
+      prompt,
+      schema: InsightCorrelationSchema.array() as any,
+      temperature: 0.6,
+    });
 
-      return statistical.map((stat) => {
-        const match = ai.find((a) => a.integrations.every((i) => stat.integrations.includes(i)));
-        return match ? { ...stat, description: match.description, pattern: match.pattern } : stat;
-      });
-    } catch (error) {
-      logger.error("Correlation analysis failed", { error });
-      return [];
-    }
+    return statistical.map((stat) => {
+      const match = ai.find((a) => a.integrations.every((i) => stat.integrations.includes(i)));
+      return match ? { ...stat, description: match.description, pattern: match.pattern } : stat;
+    });
   }
 
   private async _detectAnomalies(data: ActivityData, historical: ActivityData[]): Promise<InsightAnomaly[]> {
     if (!this.config.enableAnomalies || historical.length === 0) return [];
-    try {
-      return await this.anomalyDetector.detectAnomalies(data, historical);
-    } catch (error) {
-      logger.error("Anomaly detection failed", { error });
-      return [];
-    }
+    return await this.anomalyDetector.detectAnomalies(data, historical);
   }
 
   private async _generateRecommendations(
@@ -145,27 +159,24 @@ export class InsightsService {
     correlations: InsightCorrelation[],
   ): Promise<InsightRecommendation[]> {
     if (!this.config.enableRecommendations) return [];
-    try {
-      const prompt = getRecommendationPrompt(data, anomalies, correlations);
-      return await getAItClient().generateStructured<InsightRecommendation[]>({
-        prompt,
-        schema: InsightRecommendationSchema.array() as any,
-        temperature: 0.8,
-      });
-    } catch (error) {
-      logger.error("Recommendation generation failed", { error });
-      return [];
-    }
+    const prompt = getRecommendationPrompt(data, anomalies, correlations);
+    return await getAItClient().generateStructured<InsightRecommendation[]>({
+      prompt,
+      schema: InsightRecommendationSchema.array() as any,
+      temperature: 0.8,
+    });
   }
 
-  private _getCacheKey(data: ActivityData, range: string): string {
-    const ts = new Date().getHours();
-    const hash = crypto
-      .createHash("md5")
-      .update(JSON.stringify(Object.keys(data).sort()))
-      .digest("hex")
-      .slice(0, 8);
-    return `insights:${range}:${ts}:${hash}`;
+  private _getCacheKey(data: ActivityData, range: string, userId: string): string {
+    // Stable sort of keys to ensure consistent hashing
+    const sortedVendors = Object.keys(data).sort();
+    // Use totals as proxy for data freshness instead of hashing entire data
+    const activityMap = data as any;
+    const summary = sortedVendors.map((v) => `${v}:${activityMap[v]?.total || 0}`).join(",");
+
+    const hash = crypto.createHash("md5").update(summary).digest("hex").slice(0, 8);
+
+    return `insights:${userId}:${range}:${hash}`;
   }
 
   private async _getCached(key: string): Promise<InsightsData | null> {

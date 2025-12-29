@@ -1,5 +1,6 @@
 import { connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import { type FeedRequirement, getLogger } from "@ait/core";
+import { getFeedService } from "@ait/store";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import {
   type IConnectorServiceFactory,
@@ -93,6 +94,32 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
       } catch (err: any) {
         fastify.log.error({ err, route: "/stats" }, "Failed to fetch discovery stats.");
         reply.status(500).send({ error: "Failed to fetch discovery stats." });
+      }
+    },
+  );
+
+  fastify.post<{ Body: { requirements: FeedRequirement[] } }>(
+    "/feed",
+    async (request: FastifyRequest<{ Body: { requirements: FeedRequirement[] } }>, reply: FastifyReply) => {
+      try {
+        const { requirements } = request.body;
+        if (!requirements || !Array.isArray(requirements)) {
+          return reply.status(400).send({ error: "Requirements must be an array" });
+        }
+
+        const feedService = getFeedService();
+        const results = await feedService.getBulkFeed(requirements);
+
+        // Convert Map to record for JSON response
+        const response: Record<string, any[]> = {};
+        for (const [key, value] of results.entries()) {
+          response[key] = value;
+        }
+
+        reply.send(response);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/feed" }, "Failed to fetch discovery feed.");
+        reply.status(500).send({ error: "Failed to fetch discovery feed." });
       }
     },
   );
