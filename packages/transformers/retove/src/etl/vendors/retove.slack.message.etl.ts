@@ -3,7 +3,10 @@ import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type SlackMessageDataTarget, drizzleOrm, type getPostgresClient, slackMessages } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSlackMessageDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.slack.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,8 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<SlackMessageDataTarget> = new ETLSlackMessageDescriptor();
+export class RetoveSlackMessageETL extends RetoveBaseETLAbstract<SlackMessageDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<SlackMessageDataTarget> = new ETLSlackMessageDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -52,19 +55,18 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract {
     return { table: slackMessages, updatedAtField: slackMessages.updatedAt, idField: slackMessages.id };
   }
 
-  protected getTextForEmbedding(message: SlackMessageDataTarget): string {
-    return this._descriptor.getEmbeddingText(message);
+  protected getTextForEmbedding(enriched: EnrichedEntity<SlackMessageDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(message: SlackMessageDataTarget): RetoveSlackMessageVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(message);
+  protected getPayload(enriched: EnrichedEntity<SlackMessageDataTarget>): RetoveSlackMessageVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const message = item as SlackMessageDataTarget;
+  protected getCursorFromItem(item: SlackMessageDataTarget): ETLCursor {
     return {
-      timestamp: message.updatedAt ? new Date(message.updatedAt) : new Date(0),
-      id: message.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 

@@ -3,7 +3,10 @@ import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type GitHubCommitDataTarget, drizzleOrm, type getPostgresClient, githubCommits } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubCommitDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,8 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<GitHubCommitDataTarget> = new ETLGitHubCommitDescriptor();
+export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract<GitHubCommitDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubCommitDataTarget> = new ETLGitHubCommitDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -59,15 +62,15 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected getTextForEmbedding(commit: GitHubCommitDataTarget): string {
-    return this._descriptor.getEmbeddingText(commit);
+  protected getTextForEmbedding(enriched: EnrichedEntity<GitHubCommitDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(commit: GitHubCommitDataTarget): RetoveGitHubCommitVectorPoint["payload"] {
-    const payload = this._descriptor.getEmbeddingPayload(commit);
+  protected getPayload(enriched: EnrichedEntity<GitHubCommitDataTarget>): RetoveGitHubCommitVectorPoint["payload"] {
+    const payload = this._descriptor.getEmbeddingPayload(enriched);
     // Ensure we have an 'id' for the base ETL to use (polyfill sha as id if missing)
-    if (!("id" in commit)) {
-      payload.id = commit.sha;
+    if (!("id" in enriched.target)) {
+      payload.id = (enriched.target as any).sha;
     }
     return { ...payload, __type: "commit" } as RetoveGitHubCommitVectorPoint["payload"];
   }

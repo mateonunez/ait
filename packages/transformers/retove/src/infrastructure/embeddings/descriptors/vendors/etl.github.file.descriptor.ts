@@ -1,6 +1,8 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { GitHubFileDataTarget } from "@ait/postgres";
 import { CodeSanitizer } from "../../../../utils/code-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 /**
  * ETL Descriptor for GitHub repository files.
@@ -8,7 +10,19 @@ import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interf
  * and key metadata for semantic code search.
  */
 export class ETLGitHubFileDescriptor implements IETLEmbeddingDescriptor<GitHubFileDataTarget> {
-  public getEmbeddingText(file: GitHubFileDataTarget): string {
+  public async enrich(file: GitHubFileDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const aiDescriptor = getAIDescriptorService();
+    const context = `GitHub File: ${file.path} in ${file.repositoryFullName || "unknown repo"}`;
+
+    const previewLength = 2000;
+    const contentPreview = file.content ? file.content.substring(0, previewLength) : "No content";
+    const content = `File Path: ${file.path}\nLanguage: ${file.language || "unknown"}\n\nContent Preview:\n${contentPreview}`;
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GitHubFileDataTarget>): string {
+    const { target: file, enrichment } = enriched;
     const parts: string[] = [];
 
     parts.push(`File: \`${file.path}\``);
@@ -43,10 +57,12 @@ export class ETLGitHubFileDescriptor implements IETLEmbeddingDescriptor<GitHubFi
       parts.push(CodeSanitizer.sanitizeForEmbedding(content));
     }
 
-    return parts.join("\n");
+    const baseText = parts.join("\n");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubFileDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<GitHubFileDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutUpdatedAt } = entity;
     const sanitizedContent = entity.content ? CodeSanitizer.sanitize(entity.content) : null;
 

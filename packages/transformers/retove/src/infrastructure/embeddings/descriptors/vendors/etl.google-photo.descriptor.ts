@@ -1,9 +1,46 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { GooglePhotoDataTarget } from "@ait/postgres";
+import { storageService } from "@ait/storage";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLGooglePhotoDescriptor implements IETLEmbeddingDescriptor<GooglePhotoDataTarget> {
-  public getEmbeddingText(photo: GooglePhotoDataTarget): string {
+  public async enrich(photo: GooglePhotoDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const storagePath = this._parseStoragePath(photo.localPath);
+    if (storagePath) {
+      try {
+        const result = await storageService.get(storagePath.bucket, storagePath.key);
+        if (result?.body) {
+          return await aiDescriptor.describeImage(result.body, { correlationId: options?.correlationId });
+        }
+      } catch (error) {
+        // Fallback to text enrichment if vision fails
+      }
+    }
+
+    if (photo.description) {
+      return await aiDescriptor.describeText(photo.description, "Google Photo Description", {
+        correlationId: options?.correlationId,
+      });
+    }
+
+    return null;
+  }
+
+  private _parseStoragePath(localPath: string | null | undefined): { bucket: string; key: string } | null {
+    if (!localPath?.includes("/")) return null;
+
+    const [bucket, ...keyParts] = localPath.split("/");
+    const key = keyParts.join("/");
+
+    return bucket && key ? { bucket, key } : null;
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GooglePhotoDataTarget>): string {
+    const { target: photo, enrichment } = enriched;
     const parts: string[] = [];
 
     parts.push("Google Photo");
@@ -21,10 +58,12 @@ export class ETLGooglePhotoDescriptor implements IETLEmbeddingDescriptor<GoogleP
       parts.push(`Created: ${date.toISOString()}`);
     }
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GooglePhotoDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<GooglePhotoDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

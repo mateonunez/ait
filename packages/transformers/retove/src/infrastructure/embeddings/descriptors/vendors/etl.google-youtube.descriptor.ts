@@ -1,9 +1,21 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { GoogleSubscriptionDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLGoogleYouTubeSubscriptionDescriptor implements IETLEmbeddingDescriptor<GoogleSubscriptionDataTarget> {
-  public getEmbeddingText(subscription: GoogleSubscriptionDataTarget): string {
+  public async enrich(subscription: GoogleSubscriptionDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const context = `YouTube Subscription: ${subscription.title}`;
+    const content = subscription.description || `A subscription to ${subscription.title} channel.`;
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GoogleSubscriptionDataTarget>): string {
+    const { target: subscription, enrichment } = enriched;
     const parts: string[] = [];
 
     parts.push("YouTube Subscription");
@@ -28,10 +40,14 @@ export class ETLGoogleYouTubeSubscriptionDescriptor implements IETLEmbeddingDesc
       parts.push(`Subscribed on ${date.toLocaleDateString("en-US")}`);
     }
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GoogleSubscriptionDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(
+    enriched: EnrichedEntity<GoogleSubscriptionDataTarget>,
+  ): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

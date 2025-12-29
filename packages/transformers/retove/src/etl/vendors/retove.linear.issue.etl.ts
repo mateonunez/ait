@@ -3,7 +3,10 @@ import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type LinearIssueDataTarget, drizzleOrm, type getPostgresClient, linearIssues } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLLinearIssueDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.linear.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,8 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<LinearIssueDataTarget> = new ETLLinearIssueDescriptor();
+export class RetoveLinearIssueETL extends RetoveBaseETLAbstract<LinearIssueDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<LinearIssueDataTarget> = new ETLLinearIssueDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -63,19 +66,18 @@ export class RetoveLinearIssueETL extends RetoveBaseETLAbstract {
     return { table: linearIssues, updatedAtField: linearIssues.updatedAt, idField: linearIssues.id };
   }
 
-  protected getTextForEmbedding(issue: LinearIssueDataTarget): string {
-    return this._descriptor.getEmbeddingText(issue);
+  protected getTextForEmbedding(enriched: EnrichedEntity<LinearIssueDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(issue: LinearIssueDataTarget): RetoveLinearIssueVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(issue);
+  protected getPayload(enriched: EnrichedEntity<LinearIssueDataTarget>): RetoveLinearIssueVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const issue = item as LinearIssueDataTarget;
+  protected getCursorFromItem(item: LinearIssueDataTarget): ETLCursor {
     return {
-      timestamp: issue.updatedAt ? new Date(issue.updatedAt) : new Date(0),
-      id: issue.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 }

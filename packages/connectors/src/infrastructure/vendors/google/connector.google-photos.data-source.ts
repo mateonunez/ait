@@ -30,9 +30,6 @@ export class ConnectorGooglePhotosDataSource {
           "GET",
         );
 
-        this._logger.info("[PAPAYA LOG 2]");
-        this._logger.info(JSON.stringify(response, null, 2));
-
         const itemCount = response.mediaItems?.length || 0;
 
         this._logger.info("Fetched Google Photos page", {

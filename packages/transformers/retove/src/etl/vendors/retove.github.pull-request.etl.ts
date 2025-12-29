@@ -8,7 +8,10 @@ import {
   githubPullRequests,
 } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubPullRequestDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.descriptor";
 import {
   type BaseVectorPoint,
@@ -18,8 +21,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> =
+export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract<GitHubPullRequestDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> =
     new ETLGitHubPullRequestDescriptor();
 
   constructor(
@@ -68,12 +71,14 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract {
     return { table: githubPullRequests, updatedAtField: githubPullRequests.updatedAt, idField: githubPullRequests.id };
   }
 
-  protected getTextForEmbedding(pullRequest: GitHubPullRequestDataTarget): string {
-    return this._descriptor.getEmbeddingText(pullRequest);
+  protected getTextForEmbedding(enriched: EnrichedEntity<GitHubPullRequestDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(pullRequest: GitHubPullRequestDataTarget): RetoveGitHubPullRequestVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(pullRequest);
+  protected getPayload(
+    enriched: EnrichedEntity<GitHubPullRequestDataTarget>,
+  ): RetoveGitHubPullRequestVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
   protected getCursorFromItem(item: unknown): ETLCursor {

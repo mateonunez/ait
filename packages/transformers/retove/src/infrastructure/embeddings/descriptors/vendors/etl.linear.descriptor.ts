@@ -1,9 +1,28 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { LinearIssueDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLLinearIssueDescriptor implements IETLEmbeddingDescriptor<LinearIssueDataTarget> {
-  public getEmbeddingText(issue: LinearIssueDataTarget): string {
+  public async enrich(issue: LinearIssueDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const context = `Linear Issue: ${issue.title}`;
+    const content = [
+      `Status: ${issue.state}`,
+      `Priority: ${issue.priority}`,
+      issue.description ? `Description: ${issue.description}` : null,
+      issue.labels?.length ? `Labels: ${issue.labels.join(", ")}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<LinearIssueDataTarget>): string {
+    const { target: issue, enrichment } = enriched;
     const priorityLabels: Record<number, string> = {
       0: "urgent",
       1: "high",
@@ -34,10 +53,12 @@ export class ETLLinearIssueDescriptor implements IETLEmbeddingDescriptor<LinearI
         : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: LinearIssueDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<LinearIssueDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

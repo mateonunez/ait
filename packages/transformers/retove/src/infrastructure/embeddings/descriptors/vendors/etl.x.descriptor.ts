@@ -1,9 +1,21 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { XTweetDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTarget> {
-  public getEmbeddingText(tweet: XTweetDataTarget): string {
+  public async enrich(tweet: XTweetDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const context = `Tweet by @${tweet.authorUsername || "unknown"}`;
+    const content = tweet.text || "Empty tweet";
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<XTweetDataTarget>): string {
+    const { target: tweet, enrichment } = enriched;
     const parts: string[] = [];
 
     // Tweet identity - factual, third-person description
@@ -64,10 +76,12 @@ export class ETLXTweetDescriptor implements IETLEmbeddingDescriptor<XTweetDataTa
       parts.push(`posted ${date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`);
     }
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: XTweetDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<XTweetDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

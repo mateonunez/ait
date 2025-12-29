@@ -1,9 +1,21 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { NotionPageDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLNotionPageDescriptor implements IETLEmbeddingDescriptor<NotionPageDataTarget> {
-  public getEmbeddingText(page: NotionPageDataTarget): string {
+  public async enrich(page: NotionPageDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const context = `Notion Page: ${page.title}`;
+    const content = page.content || "Empty page";
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<NotionPageDataTarget>): string {
+    const { target: page, enrichment } = enriched;
     const parts: string[] = [];
 
     // Page identity - factual description
@@ -27,10 +39,12 @@ export class ETLNotionPageDescriptor implements IETLEmbeddingDescriptor<NotionPa
       parts.push("(archived)");
     }
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: NotionPageDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<NotionPageDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

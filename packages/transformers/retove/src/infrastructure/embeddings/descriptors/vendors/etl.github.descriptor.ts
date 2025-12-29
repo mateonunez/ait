@@ -1,10 +1,29 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { GitHubCommitDataTarget, GitHubPullRequestDataTarget, GitHubRepositoryDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 import { ETLGitHubFileDescriptor } from "./etl.github.file.descriptor";
 
+const aiDescriptor = getAIDescriptorService();
+
 export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> {
-  public getEmbeddingText(repository: GitHubRepositoryDataTarget): string {
+  public async enrich(repository: GitHubRepositoryDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `${repository.fullName}: ${repository.description}`,
+        "GitHub Repository Functional Analysis",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GitHubRepositoryDataTarget>): string {
+    const { target: repository, enrichment } = enriched;
     const parts: string[] = [];
 
     // Repository identity - factual, third-person description
@@ -64,7 +83,8 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
       parts.push(maturityInfo);
     }
 
-    return `${parts.join(", ")}.`;
+    const baseText = `${parts.join(", ")}.`;
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
   private _getActivityStatus(repository: GitHubRepositoryDataTarget): string | null {
@@ -197,7 +217,10 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
     });
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubRepositoryDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(
+    enriched: EnrichedEntity<GitHubRepositoryDataTarget>,
+  ): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     // CRITICAL: Sanitize all text fields in the payload to prevent JSON encoding errors
@@ -220,7 +243,21 @@ export class ETLGitHubRepositoryDescriptor implements IETLEmbeddingDescriptor<Gi
 }
 
 export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> {
-  public getEmbeddingText(pullRequest: GitHubPullRequestDataTarget): string {
+  public async enrich(pullRequest: GitHubPullRequestDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `Title: ${pullRequest.title}\nBody: ${pullRequest.body}`,
+        "GitHub Pull Request Intent & Impact",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+  public getEmbeddingText(enriched: EnrichedEntity<GitHubPullRequestDataTarget>): string {
+    const { target: pullRequest, enrichment } = enriched;
     const parts: string[] = [];
 
     // PR identity - factual, third-person description
@@ -299,7 +336,8 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
       parts.push(timelineInfo);
     }
 
-    return `${parts.join(", ")}.`;
+    const baseText = `${parts.join(", ")}.`;
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
   private _getAuthorInfo(pullRequest: GitHubPullRequestDataTarget): string | null {
@@ -416,7 +454,10 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
     });
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubPullRequestDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(
+    enriched: EnrichedEntity<GitHubPullRequestDataTarget>,
+  ): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {
@@ -435,7 +476,22 @@ export class ETLGitHubPullRequestDescriptor implements IETLEmbeddingDescriptor<G
 }
 
 export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHubCommitDataTarget> {
-  public getEmbeddingText(commit: GitHubCommitDataTarget): string {
+  public async enrich(commit: GitHubCommitDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `Message: ${commit.message}\n${commit.messageBody || ""}`,
+        "GitHub Commit Intent Analysis",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GitHubCommitDataTarget>): string {
+    const { target: commit, enrichment } = enriched;
     const parts: string[] = [];
 
     // Commit identity - factual, third-person description
@@ -498,7 +554,8 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
       parts.push(timelineInfo);
     }
 
-    return `${parts.join(", ")}.`;
+    const baseText = `${parts.join(", ")}.`;
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
   private _getAuthorInfo(commit: GitHubCommitDataTarget): string | null {
@@ -577,7 +634,8 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
     });
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GitHubCommitDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<GitHubCommitDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, createdAt: _createdAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {
@@ -592,6 +650,7 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
       repositoryFullName: entityWithoutInternalTimestamps.repositoryFullName
         ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.repositoryFullName, 512)
         : null,
+      committedAt: entityWithoutInternalTimestamps.authorDate || entityWithoutInternalTimestamps.committerDate,
     };
 
     return {

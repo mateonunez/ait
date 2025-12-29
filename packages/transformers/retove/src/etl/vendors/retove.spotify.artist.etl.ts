@@ -1,21 +1,22 @@
-import type { IEmbeddingsService } from "@ait/ai-sdk";
-import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { type IEmbeddingsService, getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import type { SpotifyArtistDataTarget, getPostgresClient } from "@ait/postgres";
 import { drizzleOrm, spotifyArtists } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyArtistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
 import {
   type BaseVectorPoint,
   type ETLCursor,
-  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyArtistDataTarget> = new ETLSpotifyArtistDescriptor();
+export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract<SpotifyArtistDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<SpotifyArtistDataTarget> = new ETLSpotifyArtistDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -47,23 +48,18 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig(): ETLTableConfig | null {
-    return { table: spotifyArtists, updatedAtField: spotifyArtists.updatedAt, idField: spotifyArtists.id };
+  protected getTextForEmbedding(enriched: EnrichedEntity<SpotifyArtistDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getTextForEmbedding(track: SpotifyArtistDataTarget): string {
-    return this._descriptor.getEmbeddingText(track);
+  protected getPayload(enriched: EnrichedEntity<SpotifyArtistDataTarget>): RetoveSpotifyTrackVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getPayload(track: SpotifyArtistDataTarget): RetoveSpotifyTrackVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(track);
-  }
-
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const artist = item as SpotifyArtistDataTarget;
+  protected getCursorFromItem(item: SpotifyArtistDataTarget): ETLCursor {
     return {
-      timestamp: artist.updatedAt ? new Date(artist.updatedAt) : new Date(0),
-      id: artist.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 
@@ -71,6 +67,7 @@ export class RetoveSpotifyArtistETL extends RetoveBaseETLAbstract {
     return [
       { field_name: "metadata.name", field_schema: "keyword" as const },
       { field_name: "metadata.genres", field_schema: "keyword" as const },
+      { field_name: "metadata.description", field_schema: "text" as const },
     ];
   }
 

@@ -114,6 +114,14 @@ export {
 } from "./services/embeddings/embeddings.service";
 
 export {
+  AIDescriptorService,
+  getAIDescriptorService,
+  type AIDescriptorOptions,
+  type VisualDescriptorResult,
+  type TextDescriptorResult,
+} from "./services/ai-descriptor/ai-descriptor.service";
+
+export {
   OPTIMAL_CHUNK_SIZE,
   OPTIMAL_CHUNK_OVERLAP,
   type EmbeddingsConfig,

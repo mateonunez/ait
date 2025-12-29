@@ -4,7 +4,10 @@ import type { EntityType } from "@ait/core";
 import type { SpotifyTrackDataTarget, getPostgresClient } from "@ait/postgres";
 import { drizzleOrm, spotifyTracks } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyTrackDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
 import {
   type BaseVectorPoint,
@@ -14,8 +17,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
+export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract<SpotifyTrackDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<SpotifyTrackDataTarget> = new ETLSpotifyTrackDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -64,19 +67,18 @@ export class RetoveSpotifyTrackETL extends RetoveBaseETLAbstract {
     return { table: spotifyTracks, updatedAtField: spotifyTracks.updatedAt, idField: spotifyTracks.id };
   }
 
-  protected getTextForEmbedding(track: SpotifyTrackDataTarget): string {
-    return this._descriptor.getEmbeddingText(track);
+  protected getTextForEmbedding(enriched: EnrichedEntity<SpotifyTrackDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(track: SpotifyTrackDataTarget): RetoveSpotifyTrackVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(track);
+  protected getPayload(enriched: EnrichedEntity<SpotifyTrackDataTarget>): RetoveSpotifyTrackVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const track = item as SpotifyTrackDataTarget;
+  protected getCursorFromItem(item: SpotifyTrackDataTarget): ETLCursor {
     return {
-      timestamp: track.updatedAt ? new Date(track.updatedAt) : new Date(0),
-      id: track.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 }

@@ -1,10 +1,9 @@
 import { AItError } from "@ait/core";
 import { getLogger } from "@ait/core";
-import { generateText } from "ai";
-import { createModel, getAItClient } from "../../client/ai-sdk.client";
-import { GenerationModels } from "../../config/models.config";
+import { getAItClient } from "../../client/ai-sdk.client";
 import { createSpanWithTiming, shouldEnableTelemetry } from "../../telemetry/telemetry.middleware";
 import type { TraceContext } from "../../types/telemetry";
+import { getAIDescriptorService } from "../ai-descriptor/ai-descriptor.service";
 import { type TokenizerService, getTokenizer } from "../tokenizer/tokenizer.service";
 import { type EmbeddingsConfig, createEmbeddingsConfig } from "./embeddings.config";
 import { type TextChunk, TextPreprocessor } from "./text-preprocessor";
@@ -131,42 +130,32 @@ export class EmbeddingsService implements IEmbeddingsService {
     const correlationId = options?.correlationId;
 
     try {
-      const visionModelName = options?.visionModel || GenerationModels.LLAVA;
-      const visionModel = createModel(visionModelName);
-
-      logger.debug("Generating image description using vision model", {
+      const aiDescriptor = getAIDescriptorService();
+      const visionResult = await aiDescriptor.describeImage(image, {
+        model: options?.visionModel,
         correlationId,
-        model: visionModelName,
       });
 
-      const { text: description } = await generateText({
-        model: visionModel,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "Describe this image in detailed textual detail, capturing all visual elements, context, and mood.",
-              },
-              { type: "image", image },
-            ],
-          },
-        ],
-      });
-
-      if (!description) {
-        throw new Error("Failed to generate image description.");
-      }
-
-      logger.debug("Generated image description for embedding", {
+      logger.debug("Generated multi-faceted image description for embedding", {
         correlationId,
-        descriptionLength: description.length,
+        hasOcr: !!visionResult.ocr,
+        objectCount: visionResult.objects?.length,
       });
 
-      const vector = await this.generateEmbeddings(description, options);
+      // Combine facets for the embedding text
+      const embeddingText = [
+        `Description: ${visionResult.description}`,
+        visionResult.ocr ? `Text found: ${visionResult.ocr}` : null,
+        visionResult.objects?.length ? `Objects: ${visionResult.objects.join(", ")}` : null,
+        visionResult.style ? `Style: ${visionResult.style}` : null,
+        visionResult.mood ? `Mood: ${visionResult.mood}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n");
 
-      return { vector, description };
+      const vector = await this.generateEmbeddings(embeddingText, options);
+
+      return { vector, description: visionResult.summary };
     } catch (err) {
       logger.error("Failed to generate image embeddings", {
         correlationId,
