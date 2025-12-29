@@ -11,5 +11,6 @@ export * from "./schemas/connector.google-calendar.schema";
 export * from "./schemas/connector.google-youtube.schema";
 export * from "./schemas/connector.google-contact.schema";
 export * from "./schemas/chat.schema";
+export * from "./schemas/connector.google-photos.schema";
 export * from "./schemas/feedback.schema";
 export * from "./schemas/goal.schema";
