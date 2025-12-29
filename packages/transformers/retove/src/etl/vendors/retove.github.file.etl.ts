@@ -3,7 +3,10 @@ import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type GitHubFileDataTarget, drizzleOrm, type getPostgresClient, githubRepositoryFiles } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGitHubFileDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.github.file.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,12 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-/**
- * ETL job for GitHub repository files.
- * Extracts files from the database, generates embeddings, and loads them into Qdrant.
- */
-export class RetoveGitHubFileETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<GitHubFileDataTarget> = new ETLGitHubFileDescriptor();
+export class RetoveGitHubFileETL extends RetoveBaseETLAbstract<GitHubFileDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubFileDataTarget> = new ETLGitHubFileDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -74,12 +73,12 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract {
     };
   }
 
-  protected getTextForEmbedding(file: GitHubFileDataTarget): string {
-    return this._descriptor.getEmbeddingText(file);
+  protected getTextForEmbedding(enriched: EnrichedEntity<GitHubFileDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(file: GitHubFileDataTarget): RetoveGitHubFileVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(file);
+  protected getPayload(enriched: EnrichedEntity<GitHubFileDataTarget>): RetoveGitHubFileVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
   protected getCursorFromItem(item: unknown): ETLCursor {

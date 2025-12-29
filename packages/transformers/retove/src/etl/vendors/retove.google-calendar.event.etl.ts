@@ -8,7 +8,10 @@ import {
   googleCalendarEvents,
 } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleCalendarEventDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-calendar.descriptor";
 import {
   type BaseVectorPoint,
@@ -18,8 +21,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<GoogleCalendarEventDataTarget> =
+export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract<GoogleCalendarEventDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<GoogleCalendarEventDataTarget> =
     new ETLGoogleCalendarEventDescriptor();
 
   constructor(
@@ -60,19 +63,20 @@ export class RetoveGoogleCalendarEventETL extends RetoveBaseETLAbstract {
     };
   }
 
-  protected getTextForEmbedding(event: GoogleCalendarEventDataTarget): string {
-    return this._descriptor.getEmbeddingText(event);
+  protected getTextForEmbedding(enriched: EnrichedEntity<GoogleCalendarEventDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(event: GoogleCalendarEventDataTarget): RetoveGoogleCalendarEventVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(event);
+  protected getPayload(
+    enriched: EnrichedEntity<GoogleCalendarEventDataTarget>,
+  ): RetoveGoogleCalendarEventVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const event = item as GoogleCalendarEventDataTarget;
+  protected getCursorFromItem(item: GoogleCalendarEventDataTarget): ETLCursor {
     return {
-      timestamp: event.updatedAt ? new Date(event.updatedAt) : new Date(0),
-      id: event.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 

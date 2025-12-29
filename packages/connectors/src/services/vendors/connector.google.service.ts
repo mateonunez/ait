@@ -191,7 +191,6 @@ export class ConnectorGoogleService
   async importPickerMediaItems(id: string): Promise<void> {
     const logger = getLogger();
     const items = await this.listPickerMediaItems(id);
-    console.log("[PAPAYA LOG 3] Items", items);
     if (!items.length) return;
 
     const oauthData = await getOAuthData("google");

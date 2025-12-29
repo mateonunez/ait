@@ -435,9 +435,6 @@ const googleEntityConfigs = {
     fetcher: (connector: ConnectorGoogle) => connector.dataSource.fetchPhotos().then((res) => res.mediaItems),
     paginatedFetcher: async (connector: ConnectorGoogle, cursor?: ConnectorCursor) => {
       const response = await connector.dataSource.fetchPhotos(cursor?.id);
-
-      console.log("[PAPAYA LOG]", response);
-
       const nextToken = response.nextPageToken;
       const currentToken = cursor?.id;
 

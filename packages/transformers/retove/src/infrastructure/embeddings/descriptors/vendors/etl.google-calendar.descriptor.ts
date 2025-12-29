@@ -1,9 +1,29 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { GoogleCalendarEventDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLGoogleCalendarEventDescriptor implements IETLEmbeddingDescriptor<GoogleCalendarEventDataTarget> {
-  public getEmbeddingText(event: GoogleCalendarEventDataTarget): string {
+  public async enrich(event: GoogleCalendarEventDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const context = `Google Calendar Event: ${event.title}`;
+    const content = [
+      event.description ? `Description: ${event.description}` : null,
+      event.location ? `Location: ${event.location}` : null,
+      event.startTime ? `Time: ${event.startTime}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    if (!content) return null;
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GoogleCalendarEventDataTarget>): string {
+    const { target: event, enrichment } = enriched;
     const parts: string[] = [];
 
     // Event identity
@@ -79,10 +99,14 @@ export class ETLGoogleCalendarEventDescriptor implements IETLEmbeddingDescriptor
       parts.push("(recurring)");
     }
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: GoogleCalendarEventDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(
+    enriched: EnrichedEntity<GoogleCalendarEventDataTarget>,
+  ): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

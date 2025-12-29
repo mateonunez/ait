@@ -4,7 +4,10 @@ import type { EntityType } from "@ait/core";
 import type { SpotifyRecentlyPlayedDataTarget, getPostgresClient } from "@ait/postgres";
 import { drizzleOrm, spotifyRecentlyPlayed } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyRecentlyPlayedDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
 import {
   type BaseVectorPoint,
@@ -14,8 +17,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyRecentlyPlayedDataTarget> =
+export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract<SpotifyRecentlyPlayedDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<SpotifyRecentlyPlayedDataTarget> =
     new ETLSpotifyRecentlyPlayedDescriptor();
 
   constructor(
@@ -67,19 +70,20 @@ export class RetoveSpotifyRecentlyPlayedETL extends RetoveBaseETLAbstract {
     };
   }
 
-  protected getTextForEmbedding(item: SpotifyRecentlyPlayedDataTarget): string {
-    return this._descriptor.getEmbeddingText(item);
+  protected getTextForEmbedding(enriched: EnrichedEntity<SpotifyRecentlyPlayedDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(item: SpotifyRecentlyPlayedDataTarget): RetoveSpotifyRecentlyPlayedVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(item);
+  protected getPayload(
+    enriched: EnrichedEntity<SpotifyRecentlyPlayedDataTarget>,
+  ): RetoveSpotifyRecentlyPlayedVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const record = item as SpotifyRecentlyPlayedDataTarget;
+  protected getCursorFromItem(item: SpotifyRecentlyPlayedDataTarget): ETLCursor {
     return {
-      timestamp: record.updatedAt ? new Date(record.updatedAt) : new Date(0),
-      id: record.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 }

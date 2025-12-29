@@ -1,21 +1,23 @@
-import type { IEmbeddingsService } from "@ait/ai-sdk";
-import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { type IEmbeddingsService, getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { drizzleOrm, type getPostgresClient, spotifyPlaylists } from "@ait/postgres";
 import type { SpotifyPlaylistDataTarget } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLSpotifyPlaylistDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.spotify.descriptor";
 import {
   type BaseVectorPoint,
   type ETLCursor,
-  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> = new ETLSpotifyPlaylistDescriptor();
+export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract<SpotifyPlaylistDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> =
+    new ETLSpotifyPlaylistDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -47,23 +49,20 @@ export class RetoveSpotifyPlaylistETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig(): ETLTableConfig | null {
-    return { table: spotifyPlaylists, updatedAtField: spotifyPlaylists.updatedAt, idField: spotifyPlaylists.id };
+  protected getTextForEmbedding(enriched: EnrichedEntity<SpotifyPlaylistDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getTextForEmbedding(playlist: SpotifyPlaylistDataTarget): string {
-    return this._descriptor.getEmbeddingText(playlist);
+  protected getPayload(
+    enriched: EnrichedEntity<SpotifyPlaylistDataTarget>,
+  ): RetoveSpotifyPlaylistVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getPayload(playlist: SpotifyPlaylistDataTarget): RetoveSpotifyPlaylistVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(playlist);
-  }
-
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const playlist = item as SpotifyPlaylistDataTarget;
+  protected getCursorFromItem(item: SpotifyPlaylistDataTarget): ETLCursor {
     return {
-      timestamp: playlist.updatedAt ? new Date(playlist.updatedAt) : new Date(0),
-      id: playlist.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 

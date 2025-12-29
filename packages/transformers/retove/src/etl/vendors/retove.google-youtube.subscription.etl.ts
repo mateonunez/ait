@@ -1,5 +1,4 @@
-import type { IEmbeddingsService } from "@ait/ai-sdk";
-import { getCollectionNameByVendor } from "@ait/ai-sdk";
+import { type IEmbeddingsService, getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import {
   type GoogleSubscriptionDataTarget,
@@ -8,18 +7,20 @@ import {
   googleSubscriptions,
 } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleYouTubeSubscriptionDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-youtube.descriptor";
 import {
   type BaseVectorPoint,
   type ETLCursor,
-  type ETLTableConfig,
   RetoveBaseETLAbstract,
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<GoogleSubscriptionDataTarget> =
+export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract<GoogleSubscriptionDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<GoogleSubscriptionDataTarget> =
     new ETLGoogleYouTubeSubscriptionDescriptor();
 
   constructor(
@@ -52,29 +53,20 @@ export class RetoveGoogleYouTubeSubscriptionETL extends RetoveBaseETLAbstract {
     });
   }
 
-  protected override _getTableConfig(): ETLTableConfig | null {
-    return {
-      table: googleSubscriptions,
-      updatedAtField: googleSubscriptions.updatedAt,
-      idField: googleSubscriptions.id,
-    };
-  }
-
-  protected getTextForEmbedding(subscription: GoogleSubscriptionDataTarget): string {
-    return this._descriptor.getEmbeddingText(subscription);
+  protected getTextForEmbedding(enriched: EnrichedEntity<GoogleSubscriptionDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
   protected getPayload(
-    subscription: GoogleSubscriptionDataTarget,
+    enriched: EnrichedEntity<GoogleSubscriptionDataTarget>,
   ): RetoveGoogleYouTubeSubscriptionVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(subscription);
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const sub = item as GoogleSubscriptionDataTarget;
+  protected getCursorFromItem(item: GoogleSubscriptionDataTarget): ETLCursor {
     return {
-      timestamp: sub.updatedAt ? new Date(sub.updatedAt) : new Date(0),
-      id: sub.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 

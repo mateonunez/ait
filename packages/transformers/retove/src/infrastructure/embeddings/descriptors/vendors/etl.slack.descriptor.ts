@@ -1,9 +1,21 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type { SlackMessageDataTarget } from "@ait/postgres";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLSlackMessageDescriptor implements IETLEmbeddingDescriptor<SlackMessageDataTarget> {
-  public getEmbeddingText(message: SlackMessageDataTarget): string {
+  public async enrich(message: SlackMessageDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    const context = `Slack Message from ${message.userName || "unknown"} in #${message.channelName || "unknown"}`;
+    const content = message.text || "Empty message";
+
+    return aiDescriptor.describeText(content, context, { correlationId: options?.correlationId });
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<SlackMessageDataTarget>): string {
+    const { target: message, enrichment } = enriched;
     const parts: string[] = [];
 
     // Message identity
@@ -39,10 +51,12 @@ export class ETLSlackMessageDescriptor implements IETLEmbeddingDescriptor<SlackM
       parts.push(`posted ${date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`);
     }
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SlackMessageDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<SlackMessageDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
 
     const sanitizedPayload = {

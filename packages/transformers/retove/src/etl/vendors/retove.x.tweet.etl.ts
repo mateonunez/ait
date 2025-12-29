@@ -3,7 +3,10 @@ import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type XTweetDataTarget, drizzleOrm, type getPostgresClient, xTweets } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLXTweetDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.x.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,8 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveXTweetETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<XTweetDataTarget> = new ETLXTweetDescriptor();
+export class RetoveXTweetETL extends RetoveBaseETLAbstract<XTweetDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<XTweetDataTarget> = new ETLXTweetDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -55,19 +58,18 @@ export class RetoveXTweetETL extends RetoveBaseETLAbstract {
     return { table: xTweets, updatedAtField: xTweets.updatedAt, idField: xTweets.id };
   }
 
-  protected getTextForEmbedding(tweet: XTweetDataTarget): string {
-    return this._descriptor.getEmbeddingText(tweet);
+  protected getTextForEmbedding(enriched: EnrichedEntity<XTweetDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(tweet: XTweetDataTarget): RetoveXTweetVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(tweet);
+  protected getPayload(enriched: EnrichedEntity<XTweetDataTarget>): RetoveXTweetVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const tweet = item as XTweetDataTarget;
+  protected getCursorFromItem(item: XTweetDataTarget): ETLCursor {
     return {
-      timestamp: tweet.updatedAt ? new Date(tweet.updatedAt) : new Date(0),
-      id: tweet.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 }

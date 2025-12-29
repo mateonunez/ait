@@ -153,21 +153,42 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
 
   const searchPromises = existingCollections.map(async (collection) => {
     try {
-      // Try simple vector search first (most collections don't have named vectors set up yet)
+      // Hybrid search: Vector + Sparse Vector
       const results = await qdrantClient.search(collection.name, {
-        vector: queryEmbedding,
+        vector: {
+          name: "content", // Standard vector name for content
+          vector: queryEmbedding,
+        },
+        sparse_vector: {
+          name: "sparse-content", // Standard sparse vector name
+          vector: sparseVector,
+        },
         limit,
         score_threshold: scoreThreshold,
         filter: qdrantFilter,
       });
-      logger.debug(`Collection ${collection.name} returned ${results.length} results`);
+      logger.debug(`Collection ${collection.name} returned ${results.length} results via hybrid search`);
       return results.map((r: any) => ({ ...r, collection: collection.name }));
     } catch (error) {
-      logger.warn(`Failed to search collection ${collection.name}`, {
+      // Fallback for collections that don't support hybrid search yet or named vectors
+      logger.warn(`Hybrid search failed for ${collection.name}, falling back to simple vector search`, {
         error: error instanceof Error ? error.message : String(error),
-        hasFilter: !!qdrantFilter,
       });
-      return [];
+
+      try {
+        const results = await qdrantClient.search(collection.name, {
+          vector: queryEmbedding,
+          limit,
+          score_threshold: scoreThreshold,
+          filter: qdrantFilter,
+        });
+        return results.map((r: any) => ({ ...r, collection: collection.name }));
+      } catch (fallbackError) {
+        logger.error(`Fallack search also failed for ${collection.name}`, {
+          error: fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+        });
+        return [];
+      }
     }
   });
 

@@ -3,7 +3,10 @@ import type { IEmbeddingsService } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type GoogleContactDataTarget, drizzleOrm, type getPostgresClient, googleContacts } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLGoogleContactDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.google-contact.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,8 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveGoogleContactETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<GoogleContactDataTarget> = new ETLGoogleContactDescriptor();
+export class RetoveGoogleContactETL extends RetoveBaseETLAbstract<GoogleContactDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<GoogleContactDataTarget> = new ETLGoogleContactDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -53,19 +56,18 @@ export class RetoveGoogleContactETL extends RetoveBaseETLAbstract {
     };
   }
 
-  protected getTextForEmbedding(contact: GoogleContactDataTarget): string {
-    return this._descriptor.getEmbeddingText(contact);
+  protected getTextForEmbedding(enriched: EnrichedEntity<GoogleContactDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(contact: GoogleContactDataTarget): RetoveGoogleContactVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(contact);
+  protected getPayload(enriched: EnrichedEntity<GoogleContactDataTarget>): RetoveGoogleContactVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const contact = item as GoogleContactDataTarget;
+  protected getCursorFromItem(item: GoogleContactDataTarget): ETLCursor {
     return {
-      timestamp: contact.updatedAt ? new Date(contact.updatedAt) : new Date(0),
-      id: contact.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 

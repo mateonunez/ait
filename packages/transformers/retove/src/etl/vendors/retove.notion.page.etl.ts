@@ -3,7 +3,10 @@ import { getCollectionNameByVendor } from "@ait/ai-sdk";
 import type { EntityType } from "@ait/core";
 import { type NotionPageDataTarget, drizzleOrm, type getPostgresClient, notionPages } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
-import type { IETLEmbeddingDescriptor } from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import type {
+  EnrichedEntity,
+  IETLEmbeddingDescriptor,
+} from "../../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
 import { ETLNotionPageDescriptor } from "../../infrastructure/embeddings/descriptors/vendors/etl.notion.descriptor";
 import {
   type BaseVectorPoint,
@@ -13,8 +16,8 @@ import {
   type RetryOptions,
 } from "../retove.base-etl.abstract";
 
-export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
-  private readonly _descriptor: IETLEmbeddingDescriptor<NotionPageDataTarget> = new ETLNotionPageDescriptor();
+export class RetoveNotionPageETL extends RetoveBaseETLAbstract<NotionPageDataTarget> {
+  protected readonly _descriptor: IETLEmbeddingDescriptor<NotionPageDataTarget> = new ETLNotionPageDescriptor();
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -50,19 +53,18 @@ export class RetoveNotionPageETL extends RetoveBaseETLAbstract {
     return { table: notionPages, updatedAtField: notionPages.updatedAt, idField: notionPages.id };
   }
 
-  protected getTextForEmbedding(page: NotionPageDataTarget): string {
-    return this._descriptor.getEmbeddingText(page);
+  protected getTextForEmbedding(enriched: EnrichedEntity<NotionPageDataTarget>): string {
+    return this._descriptor.getEmbeddingText(enriched);
   }
 
-  protected getPayload(page: NotionPageDataTarget): RetoveNotionPageVectorPoint["payload"] {
-    return this._descriptor.getEmbeddingPayload(page);
+  protected getPayload(enriched: EnrichedEntity<NotionPageDataTarget>): RetoveNotionPageVectorPoint["payload"] {
+    return this._descriptor.getEmbeddingPayload(enriched);
   }
 
-  protected getCursorFromItem(item: unknown): ETLCursor {
-    const page = item as NotionPageDataTarget;
+  protected getCursorFromItem(item: NotionPageDataTarget): ETLCursor {
     return {
-      timestamp: page.updatedAt ? new Date(page.updatedAt) : new Date(0),
-      id: page.id,
+      timestamp: item.updatedAt ? new Date(item.updatedAt) : new Date(0),
+      id: item.id,
     };
   }
 

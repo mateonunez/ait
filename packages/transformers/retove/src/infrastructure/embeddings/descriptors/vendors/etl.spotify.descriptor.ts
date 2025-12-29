@@ -1,3 +1,4 @@
+import { getAIDescriptorService } from "@ait/ai-sdk";
 import type {
   SpotifyAlbumDataTarget,
   SpotifyArtistDataTarget,
@@ -5,10 +6,29 @@ import type {
   SpotifyRecentlyPlayedDataTarget,
   SpotifyTrackDataTarget,
 } from "@ait/postgres";
-import type { IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
+import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
+import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
+
+const aiDescriptor = getAIDescriptorService();
 
 export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<SpotifyTrackDataTarget> {
-  public getEmbeddingText(track: SpotifyTrackDataTarget): string {
+  public async enrich(track: SpotifyTrackDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `${track.name} by ${track.artist}`,
+        "Spotify Track Metadata Analysis",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<SpotifyTrackDataTarget>): string {
+    const { target: track, enrichment } = enriched;
     const albumData = track.albumData as Record<string, unknown>;
     const artistsData = track.artistsData as Array<Record<string, unknown>>;
     const primaryArtist = artistsData?.[0]?.name || track.artist;
@@ -34,20 +54,50 @@ export class ETLSpotifyTrackDescriptor implements IETLEmbeddingDescriptor<Spotif
         : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyTrackDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<SpotifyTrackDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
+
+    const sanitizedPayload = {
+      ...entityWithoutInternalTimestamps,
+      name: entityWithoutInternalTimestamps.name
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.name, 500)
+        : null,
+      artist: entityWithoutInternalTimestamps.artist
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.artist, 255)
+        : null,
+      album: entityWithoutInternalTimestamps.album
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.album, 255)
+        : null,
+    };
+
     return {
       __type: "track",
-      ...entityWithoutInternalTimestamps,
+      ...sanitizedPayload,
     } as unknown as U;
   }
 }
 
 export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<SpotifyArtistDataTarget> {
-  public getEmbeddingText(artist: SpotifyArtistDataTarget): string {
+  public async enrich(artist: SpotifyArtistDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `${artist.name} (Genres: ${artist.genres?.join(", ")})`,
+        "Spotify Artist Semantic Context",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+  public getEmbeddingText(enriched: EnrichedEntity<SpotifyArtistDataTarget>): string {
+    const { target: artist, enrichment } = enriched;
     const popularity = artist.popularity ?? 0;
     let popularityLabel = "";
     if (popularity > 80) {
@@ -66,10 +116,12 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
       artist.genres && artist.genres.length > 0 ? `genres: ${artist.genres.slice(0, 3).join(", ")}` : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyArtistDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<SpotifyArtistDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "artist",
@@ -79,7 +131,29 @@ export class ETLSpotifyArtistDescriptor implements IETLEmbeddingDescriptor<Spoti
 }
 
 export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<SpotifyPlaylistDataTarget> {
-  public getEmbeddingText(playlist: SpotifyPlaylistDataTarget): string {
+  public async enrich(playlist: SpotifyPlaylistDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const tracks = playlist.tracks as Array<any>;
+      const trackListing = tracks
+        ?.slice(0, 5)
+        .map((t) => (t?.track ? `${t.track.name} by ${t.track.artist}` : null))
+        .filter(Boolean)
+        .join(", ");
+
+      const result = await aiDescriptor.describeText(
+        `Playlist: ${playlist.name}\nDescription: ${playlist.description}\nSample Tracks: ${trackListing}`,
+        "Spotify Playlist Vibe & Genre Analysis",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<SpotifyPlaylistDataTarget>): string {
+    const { target: playlist, enrichment } = enriched;
     // tracks is stored as JSONB - cast to expected structure
     const tracks = playlist.tracks as Array<{
       added_at?: string;
@@ -117,10 +191,14 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
         : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyPlaylistDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(
+    enriched: EnrichedEntity<SpotifyPlaylistDataTarget>,
+  ): U {
+    const { target: entity } = enriched;
     // Exclude large arrays that would bloat the Qdrant payload
     const { updatedAt: _updatedAt, tracks: rawTracks, ...entityWithoutLargeFields } = entity;
 
@@ -158,7 +236,22 @@ export class ETLSpotifyPlaylistDescriptor implements IETLEmbeddingDescriptor<Spo
 }
 
 export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<SpotifyAlbumDataTarget> {
-  public getEmbeddingText(album: SpotifyAlbumDataTarget): string {
+  public async enrich(album: SpotifyAlbumDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `${album.name} by ${album.artists?.join(" & ")} (Label: ${album.label})`,
+        "Spotify Album Artistic Concept",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<SpotifyAlbumDataTarget>): string {
+    const { target: album, enrichment } = enriched;
     const albumType = album.albumType || "album";
 
     const parts = [
@@ -171,10 +264,12 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
       album.popularity && album.popularity > 70 ? "popular" : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyAlbumDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<SpotifyAlbumDataTarget>): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "album",
@@ -184,7 +279,22 @@ export class ETLSpotifyAlbumDescriptor implements IETLEmbeddingDescriptor<Spotif
 }
 
 export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescriptor<SpotifyRecentlyPlayedDataTarget> {
-  public getEmbeddingText(item: SpotifyRecentlyPlayedDataTarget): string {
+  public async enrich(item: SpotifyRecentlyPlayedDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `Played ${item.trackName} by ${item.artist} at ${item.playedAt}`,
+        "Spotify Listening Context Analysis",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<SpotifyRecentlyPlayedDataTarget>): string {
+    const { target: item, enrichment } = enriched;
     const playedDate = new Date(item.playedAt);
     const dateStr = playedDate.toLocaleDateString("en-US", {
       year: "numeric",
@@ -216,10 +326,14 @@ export class ETLSpotifyRecentlyPlayedDescriptor implements IETLEmbeddingDescript
       item.explicit ? "explicit" : null,
     ].filter(Boolean);
 
-    return parts.join(", ");
+    const baseText = parts.join(", ");
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
   }
 
-  public getEmbeddingPayload<U extends Record<string, unknown>>(entity: SpotifyRecentlyPlayedDataTarget): U {
+  public getEmbeddingPayload<U extends Record<string, unknown>>(
+    enriched: EnrichedEntity<SpotifyRecentlyPlayedDataTarget>,
+  ): U {
+    const { target: entity } = enriched;
     const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
     return {
       __type: "recently_played",
