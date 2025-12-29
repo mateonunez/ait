@@ -1,6 +1,6 @@
 CREATE TABLE "github_commits" (
 	"sha" varchar(255) PRIMARY KEY NOT NULL,
-	"slack_message" text NOT NULL,
+	"message" text NOT NULL,
 	"message_body" text,
 	"html_url" varchar(512) NOT NULL,
 	"comments_url" varchar(512) NOT NULL,

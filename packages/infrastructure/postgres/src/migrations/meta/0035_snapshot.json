@@ -131,8 +131,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "slack_message": {
-          "name": "slack_message",
+        "message": {
+          "name": "message",
           "type": "text",
           "primaryKey": false,
           "notNull": true
