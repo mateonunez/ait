@@ -76,6 +76,7 @@ export class XTweetEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "tweet" as const;
 }
 

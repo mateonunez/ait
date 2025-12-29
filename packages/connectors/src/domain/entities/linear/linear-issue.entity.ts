@@ -62,6 +62,7 @@ export class LinearIssueEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "issue" as const;
 }
 

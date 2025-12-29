@@ -107,6 +107,7 @@ export class GitHubCommitEntity {
   @Transform(({ value }) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
+  @Expose()
   readonly __type = "commit" as const;
 }
 

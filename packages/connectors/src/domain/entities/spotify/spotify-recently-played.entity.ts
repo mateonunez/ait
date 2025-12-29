@@ -54,6 +54,7 @@ export class SpotifyRecentlyPlayedEntity {
   @Transform(({ value }) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
+  @Expose()
   readonly __type = "recently_played" as const;
 }
 

@@ -1,0 +1,100 @@
+import { AItError, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import { type GooglePhotoDataTarget, drizzleOrm, getPostgresClient, googlePhotos } from "@ait/postgres";
+import { instanceToPlain, plainToInstance } from "class-transformer";
+import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
+import type { IConnectorGooglePhotoRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
+import { GooglePhotoEntity } from "../../google/google-photo.entity";
+
+const logger = getLogger();
+
+export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepository {
+  private _pgClient = getPostgresClient();
+
+  async savePhoto(
+    photo: GooglePhotoEntity,
+    _options: IConnectorRepositorySaveOptions = { incremental: false },
+  ): Promise<void> {
+    try {
+      const dataTarget = instanceToPlain(photo) as GooglePhotoDataTarget;
+
+      // Fix: id/primary key conflict
+      await this._pgClient.db
+        .insert(googlePhotos)
+        .values(dataTarget)
+        .onConflictDoUpdate({
+          target: googlePhotos.id,
+          set: dataTarget,
+        })
+        .execute();
+    } catch (error: any) {
+      logger.error("Failed to save Google Photo:", { photoId: photo.id, error });
+      throw new AItError(
+        "GOOGLE_PHOTO_SAVE",
+        `Failed to save photo ${photo.id}: ${error.message}`,
+        { id: photo.id },
+        error,
+      );
+    }
+  }
+
+  async savePhotos(photos: GooglePhotoEntity[]): Promise<void> {
+    if (!photos.length) return;
+    try {
+      for (const photo of photos) {
+        await this.savePhoto(photo);
+      }
+    } catch (error) {
+      logger.error("Error saving photos:", { error });
+      throw new AItError("GOOGLE_PHOTO_SAVE_BULK", "Failed to save photos to repository");
+    }
+  }
+
+  async getPhoto(id: string): Promise<GooglePhotoEntity | null> {
+    const result = await this._pgClient.db
+      .select()
+      .from(googlePhotos)
+      .where(drizzleOrm.eq(googlePhotos.id, id))
+      .limit(1);
+
+    if (result.length === 0) return null;
+    return plainToInstance(GooglePhotoEntity, result[0], { excludeExtraneousValues: false });
+  }
+
+  async fetchPhotos(): Promise<GooglePhotoEntity[]> {
+    const photos = await this._pgClient.db
+      .select()
+      .from(googlePhotos)
+      .orderBy(drizzleOrm.desc(googlePhotos.creationTime));
+
+    return photos.map((p) => plainToInstance(GooglePhotoEntity, p, { excludeExtraneousValues: false }));
+  }
+
+  async getPhotosPaginated(params: PaginationParams): Promise<PaginatedResponse<GooglePhotoEntity>> {
+    const page = params.page || 1;
+    const limit = params.limit || 50;
+    const offset = (page - 1) * limit;
+
+    const [photos, totalResult] = await Promise.all([
+      this._pgClient.db
+        .select()
+        .from(googlePhotos)
+        .orderBy(drizzleOrm.desc(googlePhotos.creationTime))
+        .limit(limit)
+        .offset(offset),
+      this._pgClient.db.select({ count: drizzleOrm.count() }).from(googlePhotos),
+    ]);
+
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data: photos.map((p) => plainToInstance(GooglePhotoEntity, p, { excludeExtraneousValues: false })),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    };
+  }
+}
