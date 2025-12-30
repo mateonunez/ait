@@ -87,8 +87,8 @@ OAuth Auth → Connector → PostgreSQL → ETL/Scheduler → Embeddings → Qdr
 | **Store** | `packages/infrastructure/store` | Application data store (conversations, feedback, goals) |
 | **Scheduler** | `packages/infrastructure/scheduler` | Automated ETL job scheduling with BullMQ |
 | **RetoVe** | `packages/transformers/retove` | ETL pipeline for vector embeddings |
-| **UIt** | `packages/uit` | Web interface (React + Vite) |
-| **Rocks** | `packages/rocks` | Landing page (React + Vite + Tailwind) |
+| **UIt** | `packages/app/uit` | Web interface (React + Vite) |
+| **Chat** | `packages/app/chat` | Landing page (React + Vite + Tailwind) |
 
 ## Key Features
 
@@ -212,8 +212,8 @@ pnpm clean:all            # Full cleanup (node_modules, dist, services)
 | [Qdrant](packages/infrastructure/qdrant/README.md) | Vector database |
 | [Ollama](packages/infrastructure/ollama/README.md) | LLM service setup |
 | [Redis](packages/infrastructure/redis/README.md) | Job queue and caching |
-| [UIt](packages/uit/README.md) | Web interface |
-| [Rocks](packages/rocks/README.md) | Landing page |
+| [UIt](packages/app/uit/README.md) | Web interface |
+| [Chat](packages/app/chat/README.md) | Landing page |
 
 ## Troubleshooting
 

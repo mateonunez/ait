@@ -33,6 +33,227 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/apps/chat:
+    dependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.1.14
+        version: 4.1.18(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      '@vercel/analytics':
+        specifier: ^1.6.1
+        version: 1.6.1(react@19.2.3)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      framer-motion:
+        specifier: ^12.23.24
+        version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: ^0.546.0
+        version: 0.546.0(react@19.2.3)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.4.0
+    devDependencies:
+      '@types/dotenv':
+        specifier: ^8.2.3
+        version: 8.2.3
+      '@types/node':
+        specifier: ^24.8.0
+        version: 24.10.4
+      '@types/react':
+        specifier: ^19.2.2
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.3(@types/react@19.2.7)
+      '@vitejs/plugin-react':
+        specifier: ^5.0.4
+        version: 5.1.2(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      autoprefixer:
+        specifier: ^10.4.21
+        version: 10.4.23(postcss@8.5.6)
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
+      postcss:
+        specifier: ^8.5.6
+        version: 8.5.6
+      tailwindcss:
+        specifier: ^4.1.14
+        version: 4.1.18
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.4.0
+        version: 6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+
+  packages/apps/uit:
+    dependencies:
+      '@ai-sdk/react':
+        specifier: ^1.2.12
+        version: 1.2.12(react@19.2.3)(zod@4.2.1)
+      '@ait/ai-sdk':
+        specifier: workspace:*
+        version: link:../../infrastructure/ai-sdk
+      '@ait/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@ngrok/ngrok':
+        specifier: ^1.4.1
+        version: 1.7.0
+      '@radix-ui/react-avatar':
+        specifier: ^1.1.11
+        version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-collapsible':
+        specifier: ^1.1.12
+        version: 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.15
+        version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-dropdown-menu':
+        specifier: ^2.1.16
+        version: 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-hover-card':
+        specifier: ^1.1.15
+        version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-label':
+        specifier: ^2.1.8
+        version: 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-progress':
+        specifier: ^1.1.8
+        version: 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-scroll-area':
+        specifier: ^1.2.10
+        version: 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-select':
+        specifier: ^2.2.6
+        version: 2.2.6(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-separator':
+        specifier: ^1.1.8
+        version: 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-slot':
+        specifier: ^1.2.4
+        version: 1.2.4(@types/react@19.2.7)(react@19.2.3)
+      '@radix-ui/react-toggle':
+        specifier: ^1.1.10
+        version: 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-toggle-group':
+        specifier: ^1.1.11
+        version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-tooltip':
+        specifier: ^1.2.8
+        version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      '@radix-ui/react-use-controllable-state':
+        specifier: ^1.2.2
+        version: 1.2.2(@types/react@19.2.7)(react@19.2.3)
+      '@tailwindcss/vite':
+        specifier: ^4.1.14
+        version: 4.1.18(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      '@xyflow/react':
+        specifier: ^12.9.2
+        version: 12.10.0(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      ai:
+        specifier: ^5.0.82
+        version: 5.0.116(zod@4.2.1)
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      cmdk:
+        specifier: ^1.1.1
+        version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
+      dotenv:
+        specifier: ^17.2.3
+        version: 17.2.3
+      embla-carousel-react:
+        specifier: ^8.6.0
+        version: 8.6.0(react@19.2.3)
+      framer-motion:
+        specifier: ^12.23.24
+        version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      lucide-react:
+        specifier: ^0.546.0
+        version: 0.546.0(react@19.2.3)
+      motion:
+        specifier: ^12.23.24
+        version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      nanoid:
+        specifier: ^5.1.6
+        version: 5.1.6
+      react:
+        specifier: ^19.2.0
+        version: 19.2.3
+      react-dom:
+        specifier: ^19.2.0
+        version: 19.2.3(react@19.2.3)
+      recharts:
+        specifier: ^2.15.4
+        version: 2.15.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      shiki:
+        specifier: ^3.15.0
+        version: 3.20.0
+      streamdown:
+        specifier: ^1.4.0
+        version: 1.6.10(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.3)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.4.0
+      tailwindcss-animate:
+        specifier: ^1.0.7
+        version: 1.0.7(tailwindcss@4.1.18)
+      tokenlens:
+        specifier: ^1.3.1
+        version: 1.3.1
+      use-stick-to-bottom:
+        specifier: ^1.1.1
+        version: 1.1.1(react@19.2.3)
+      wouter:
+        specifier: ^3.7.1
+        version: 3.9.0(react@19.2.3)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.8.0
+        version: 24.10.4
+      '@types/react':
+        specifier: ^19.2.2
+        version: 19.2.7
+      '@types/react-dom':
+        specifier: ^19.2.2
+        version: 19.2.3(@types/react@19.2.7)
+      '@vitejs/plugin-react':
+        specifier: ^5.0.4
+        version: 5.1.2(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+      autoprefixer:
+        specifier: ^10.4.21
+        version: 10.4.23(postcss@8.5.6)
+      postcss:
+        specifier: ^8.5.6
+        version: 8.5.6
+      tailwindcss:
+        specifier: ^4.1.14
+        version: 4.1.18
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.4.0
+        version: 6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
+      vite-plugin-node-polyfills:
+        specifier: ^0.24.0
+        version: 0.24.0(rollup@4.54.0)(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
+
   packages/connectors:
     dependencies:
       '@ait/ai-sdk':
@@ -211,13 +432,13 @@ importers:
         version: link:../store
       '@modelcontextprotocol/sdk':
         specifier: ^1.25.1
-        version: 1.25.1(hono@4.11.2)(zod@4.2.1)
+        version: 1.25.1(hono@4.11.3)(zod@4.2.1)
       ai:
         specifier: ^6.0.3
         version: 6.0.3(zod@4.2.1)
       ai-sdk-ollama:
         specifier: ^3.0.0
-        version: 3.0.0(ai@6.0.3(zod@4.2.1))(zod@4.2.1)
+        version: 3.0.1(ai@6.0.3(zod@4.2.1))(zod@4.2.1)
       chrono-node:
         specifier: ^2.9.0
         version: 2.9.0
@@ -384,67 +605,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/rocks:
-    dependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.1.14
-        version: 4.1.18(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-      '@vercel/analytics':
-        specifier: ^1.6.1
-        version: 1.6.1(react@19.2.3)
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      framer-motion:
-        specifier: ^12.23.24
-        version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      lucide-react:
-        specifier: ^0.546.0
-        version: 0.546.0(react@19.2.3)
-      react:
-        specifier: ^19.2.0
-        version: 19.2.3
-      react-dom:
-        specifier: ^19.2.0
-        version: 19.2.3(react@19.2.3)
-      tailwind-merge:
-        specifier: ^3.3.1
-        version: 3.4.0
-    devDependencies:
-      '@types/dotenv':
-        specifier: ^8.2.3
-        version: 8.2.3
-      '@types/node':
-        specifier: ^24.8.0
-        version: 24.10.4
-      '@types/react':
-        specifier: ^19.2.2
-        version: 19.2.7
-      '@types/react-dom':
-        specifier: ^19.2.2
-        version: 19.2.3(@types/react@19.2.7)
-      '@vitejs/plugin-react':
-        specifier: ^5.0.4
-        version: 5.1.2(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-      autoprefixer:
-        specifier: ^10.4.21
-        version: 10.4.23(postcss@8.5.6)
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
-      postcss:
-        specifier: ^8.5.6
-        version: 8.5.6
-      tailwindcss:
-        specifier: ^4.1.14
-        version: 4.1.18
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      vite:
-        specifier: ^6.4.0
-        version: 6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
-
   packages/transformers/retove:
     dependencies:
       '@ait/ai-sdk':
@@ -478,166 +638,6 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
-
-  packages/uit:
-    dependencies:
-      '@ai-sdk/react':
-        specifier: ^1.2.12
-        version: 1.2.12(react@19.2.3)(zod@4.2.1)
-      '@ait/ai-sdk':
-        specifier: workspace:*
-        version: link:../infrastructure/ai-sdk
-      '@ait/core':
-        specifier: workspace:*
-        version: link:../core
-      '@ngrok/ngrok':
-        specifier: ^1.4.1
-        version: 1.7.0
-      '@radix-ui/react-avatar':
-        specifier: ^1.1.11
-        version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-collapsible':
-        specifier: ^1.1.12
-        version: 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-dialog':
-        specifier: ^1.1.15
-        version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-dropdown-menu':
-        specifier: ^2.1.16
-        version: 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-hover-card':
-        specifier: ^1.1.15
-        version: 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-label':
-        specifier: ^2.1.8
-        version: 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-progress':
-        specifier: ^1.1.8
-        version: 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-scroll-area':
-        specifier: ^1.2.10
-        version: 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-select':
-        specifier: ^2.2.6
-        version: 2.2.6(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-separator':
-        specifier: ^1.1.8
-        version: 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-slot':
-        specifier: ^1.2.4
-        version: 1.2.4(@types/react@19.2.7)(react@19.2.3)
-      '@radix-ui/react-toggle':
-        specifier: ^1.1.10
-        version: 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-toggle-group':
-        specifier: ^1.1.11
-        version: 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-tooltip':
-        specifier: ^1.2.8
-        version: 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      '@radix-ui/react-use-controllable-state':
-        specifier: ^1.2.2
-        version: 1.2.2(@types/react@19.2.7)(react@19.2.3)
-      '@tailwindcss/vite':
-        specifier: ^4.1.14
-        version: 4.1.18(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-      '@xyflow/react':
-        specifier: ^12.9.2
-        version: 12.10.0(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      ai:
-        specifier: ^5.0.82
-        version: 5.0.116(zod@4.2.1)
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
-      clsx:
-        specifier: ^2.1.1
-        version: 2.1.1
-      cmdk:
-        specifier: ^1.1.1
-        version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.7))(@types/react@19.2.7)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      date-fns:
-        specifier: ^4.1.0
-        version: 4.1.0
-      dotenv:
-        specifier: ^17.2.3
-        version: 17.2.3
-      embla-carousel-react:
-        specifier: ^8.6.0
-        version: 8.6.0(react@19.2.3)
-      framer-motion:
-        specifier: ^12.23.24
-        version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      lucide-react:
-        specifier: ^0.546.0
-        version: 0.546.0(react@19.2.3)
-      motion:
-        specifier: ^12.23.24
-        version: 12.23.26(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      nanoid:
-        specifier: ^5.1.6
-        version: 5.1.6
-      react:
-        specifier: ^19.2.0
-        version: 19.2.3
-      react-dom:
-        specifier: ^19.2.0
-        version: 19.2.3(react@19.2.3)
-      recharts:
-        specifier: ^2.15.4
-        version: 2.15.4(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
-      shiki:
-        specifier: ^3.15.0
-        version: 3.20.0
-      streamdown:
-        specifier: ^1.4.0
-        version: 1.6.10(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.3)
-      tailwind-merge:
-        specifier: ^3.3.1
-        version: 3.4.0
-      tailwindcss-animate:
-        specifier: ^1.0.7
-        version: 1.0.7(tailwindcss@4.1.18)
-      tokenlens:
-        specifier: ^1.3.1
-        version: 1.3.1
-      use-stick-to-bottom:
-        specifier: ^1.1.1
-        version: 1.1.1(react@19.2.3)
-      wouter:
-        specifier: ^3.7.1
-        version: 3.9.0(react@19.2.3)
-    devDependencies:
-      '@types/node':
-        specifier: ^24.8.0
-        version: 24.10.4
-      '@types/react':
-        specifier: ^19.2.2
-        version: 19.2.7
-      '@types/react-dom':
-        specifier: ^19.2.2
-        version: 19.2.3(@types/react@19.2.7)
-      '@vitejs/plugin-react':
-        specifier: ^5.0.4
-        version: 5.1.2(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
-      autoprefixer:
-        specifier: ^10.4.21
-        version: 10.4.23(postcss@8.5.6)
-      postcss:
-        specifier: ^8.5.6
-        version: 8.5.6
-      tailwindcss:
-        specifier: ^4.1.14
-        version: 4.1.18
-      typescript:
-        specifier: ~5.9.3
-        version: 5.9.3
-      vite:
-        specifier: ^6.4.0
-        version: 6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)
-      vite-plugin-node-polyfills:
-        specifier: ^0.24.0
-        version: 0.24.0(rollup@4.54.0)(vite@6.4.1(@types/node@24.10.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0))
 
 packages:
 
@@ -2978,11 +2978,11 @@ packages:
     resolution: {integrity: sha512-MnA+YT8fwfJPgBx3m60MNqakm30XOkyIoH1y6huTQvC0PwZG7ki8NacLBcrPbNoo8vEZy7Jpuk7+jMO+CUovTQ==}
     engines: {node: '>= 14'}
 
-  ai-sdk-ollama@3.0.0:
-    resolution: {integrity: sha512-ik0BkfaB0jxR62s+kx64UTmZVVP/qsy/tCU2K5L341rF4L0f9ofE/lA34q0DIX4c293wvIMsQFRuuZy86CAwjQ==}
+  ai-sdk-ollama@3.0.1:
+    resolution: {integrity: sha512-mQIzn10Ex8XbEQ8DmWUC6Z/iKf8dCmfc8bYQdudZXsksQowGDbB5pidTUKLoDtfHTjO7FsOX2FovrCnLxkieow==}
     engines: {node: '>=22'}
     peerDependencies:
-      ai: ^6.0.0
+      ai: ^6.0.3
 
   ai@5.0.116:
     resolution: {integrity: sha512-+2hYJ80/NcDWuv9K2/MLP3cTCFgwWHmHlS1tOpFUKKcmLbErAAlE/S2knsKboc3PNAu8pQkDr2N3K/Vle7ENgQ==}
@@ -3182,8 +3182,8 @@ packages:
     resolution: {integrity: sha512-+ys997U96po4Kx/ABpBCqhA9EuxJaQWDQg7295H4hBphv3IZg0boBKuwYpt4YXp6MZ5AmZQnU/tyMTlRpaSejg==}
     engines: {node: '>= 0.4'}
 
-  caniuse-lite@1.0.30001761:
-    resolution: {integrity: sha512-JF9ptu1vP2coz98+5051jZ4PwQgd2ni8A+gYSN7EA7dPKIMf0pDlSUxhdmVOaV3/fYK5uWBkgSXJaRLr4+3A6g==}
+  caniuse-lite@1.0.30001762:
+    resolution: {integrity: sha512-PxZwGNvH7Ak8WX5iXzoK1KPZttBXNPuaOvI2ZYU7NrlM+d9Ov+TUvlLOBNGzVXAntMSMMlJPd+jY6ovrVjSmUw==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -4072,8 +4072,8 @@ packages:
   hmac-drbg@1.0.1:
     resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
-  hono@4.11.2:
-    resolution: {integrity: sha512-o+avdUAD1v94oHkjGBhiMhBV4WBHxhbu0+CUVH78hhphKy/OKQLxtKjkmmNcrMlbYAhAbsM/9F+l3KnYxyD3Lg==}
+  hono@4.11.3:
+    resolution: {integrity: sha512-PmQi306+M/ct/m5s66Hrg+adPnkD5jiO6IjA7WhWw0gSBSo1EcRegwuI1deZ+wd5pzCGynCcn2DprnE4/yEV4w==}
     engines: {node: '>=16.9.0'}
 
   html-escaper@2.0.2:
@@ -4935,8 +4935,8 @@ packages:
   punycode@1.4.1:
     resolution: {integrity: sha512-jmYNElW7yvO7TV33CjSmvSiE2yco3bV2czu/OzDKdMNVZQWfxCblURLhf+47syQRBntjfLdd/H0egrzIG+oaFQ==}
 
-  qs@6.14.0:
-    resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
+  qs@6.14.1:
+    resolution: {integrity: sha512-4EK3+xJl8Ts67nLYNwqw/dsFVnCf+qR7RgXSK9jEEm9unao3njwMDdmsdvoKBKHzxd7tCYz5e5M+SnMjdtXGQQ==}
     engines: {node: '>=0.6'}
 
   querystring-es3@0.2.1:
@@ -5731,8 +5731,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod-to-json-schema@3.25.0:
-    resolution: {integrity: sha512-HvWtU2UG41LALjajJrML6uQejQhNJx+JBO9IflpSja4R03iNWfKXrj6W2h7ljuLyc1nKS+9yDyL/9tD1U/yBnQ==}
+  zod-to-json-schema@3.25.1:
+    resolution: {integrity: sha512-pM/SU9d3YAggzi6MtR4h7ruuQlqKtad8e9S0fmxcMi+ueAK5Korys/aWcV9LIIHTVbj01NdzxcnXSN+O74ZIVA==}
     peerDependencies:
       zod: ^3.25 || ^4
 
@@ -5824,7 +5824,7 @@ snapshots:
       '@ai-sdk/provider': 1.1.3
       '@ai-sdk/provider-utils': 2.2.8(zod@4.2.1)
       zod: 4.2.1
-      zod-to-json-schema: 3.25.0(zod@4.2.1)
+      zod-to-json-schema: 3.25.1(zod@4.2.1)
 
   '@antfu/install-pkg@1.1.0':
     dependencies:
@@ -6778,9 +6778,9 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@hono/node-server@1.19.7(hono@4.11.2)':
+  '@hono/node-server@1.19.7(hono@4.11.3)':
     dependencies:
-      hono: 4.11.2
+      hono: 4.11.3
 
   '@iconify/types@2.0.0': {}
 
@@ -6832,9 +6832,9 @@ snapshots:
     dependencies:
       langium: 3.3.1
 
-  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.2)(zod@4.2.1)':
+  '@modelcontextprotocol/sdk@1.25.1(hono@4.11.3)(zod@4.2.1)':
     dependencies:
-      '@hono/node-server': 1.19.7(hono@4.11.2)
+      '@hono/node-server': 1.19.7(hono@4.11.3)
       ajv: 8.17.1
       ajv-formats: 3.0.1(ajv@8.17.1)
       content-type: 1.0.5
@@ -6849,7 +6849,7 @@ snapshots:
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
       zod: 4.2.1
-      zod-to-json-schema: 3.25.0(zod@4.2.1)
+      zod-to-json-schema: 3.25.1(zod@4.2.1)
     transitivePeerDependencies:
       - hono
       - supports-color
@@ -8325,7 +8325,7 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai-sdk-ollama@3.0.0(ai@6.0.3(zod@4.2.1))(zod@4.2.1):
+  ai-sdk-ollama@3.0.1(ai@6.0.3(zod@4.2.1))(zod@4.2.1):
     dependencies:
       '@ai-sdk/provider': 3.0.0
       '@ai-sdk/provider-utils': 4.0.1(zod@4.2.1)
@@ -8398,7 +8398,7 @@ snapshots:
   autoprefixer@10.4.23(postcss@8.5.6):
     dependencies:
       browserslist: 4.28.1
-      caniuse-lite: 1.0.30001761
+      caniuse-lite: 1.0.30001762
       fraction.js: 5.3.4
       picocolors: 1.1.1
       postcss: 8.5.6
@@ -8450,7 +8450,7 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.1
       on-finished: 2.4.1
-      qs: 6.14.0
+      qs: 6.14.1
       raw-body: 3.0.2
       type-is: 2.0.1
     transitivePeerDependencies:
@@ -8515,7 +8515,7 @@ snapshots:
   browserslist@4.28.1:
     dependencies:
       baseline-browser-mapping: 2.9.11
-      caniuse-lite: 1.0.30001761
+      caniuse-lite: 1.0.30001762
       electron-to-chromium: 1.5.267
       node-releases: 2.0.27
       update-browserslist-db: 1.2.3(browserslist@4.28.1)
@@ -8564,7 +8564,7 @@ snapshots:
       call-bind-apply-helpers: 1.0.2
       get-intrinsic: 1.3.0
 
-  caniuse-lite@1.0.30001761: {}
+  caniuse-lite@1.0.30001762: {}
 
   ccount@2.0.1: {}
 
@@ -9216,7 +9216,7 @@ snapshots:
       once: 1.4.0
       parseurl: 1.3.3
       proxy-addr: 2.0.7
-      qs: 6.14.0
+      qs: 6.14.1
       range-parser: 1.2.1
       router: 2.2.0
       send: 1.2.1
@@ -9580,7 +9580,7 @@ snapshots:
       minimalistic-assert: 1.0.1
       minimalistic-crypto-utils: 1.0.1
 
-  hono@4.11.2: {}
+  hono@4.11.3: {}
 
   html-escaper@2.0.2: {}
 
@@ -10685,7 +10685,7 @@ snapshots:
 
   punycode@1.4.1: {}
 
-  qs@6.14.0:
+  qs@6.14.1:
     dependencies:
       side-channel: 1.1.0
 
@@ -11412,7 +11412,7 @@ snapshots:
   url@0.11.4:
     dependencies:
       punycode: 1.4.1
-      qs: 6.14.0
+      qs: 6.14.1
 
   use-callback-ref@1.3.3(@types/react@19.2.7)(react@19.2.3):
     dependencies:
@@ -11596,7 +11596,7 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod-to-json-schema@3.25.0(zod@4.2.1):
+  zod-to-json-schema@3.25.1(zod@4.2.1):
     dependencies:
       zod: 4.2.1
 

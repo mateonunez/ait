@@ -6,7 +6,7 @@ import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 import { getGatewayUrl, getHttpsOptions, ngrokPlugin, normalizeDomain } from "./plugins";
 
-dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
+dotenvConfig({ path: path.resolve(__dirname, "../../../.env") });
 dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
 process.env.VITE_GOOGLE_TAG_MANAGER_ID = process.env.VITE_GOOGLE_TAG_MANAGER_ID || "";
@@ -27,7 +27,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@ait/ai-sdk": path.resolve(__dirname, "../infrastructure/ai-sdk/src/index.ts"),
+      "@ait/ai-sdk": path.resolve(__dirname, "../../infrastructure/ai-sdk/src/index.ts"),
     },
   },
   build: {

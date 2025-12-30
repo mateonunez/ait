@@ -6,7 +6,7 @@ export function normalizeDomain(domain: string): string {
 }
 
 export function getHttpsOptions(dirname: string): { key: Buffer; cert: Buffer } | null {
-  const gatewayCertDir = path.resolve(dirname, "../gateway/certs");
+  const gatewayCertDir = path.resolve(dirname, "../../gateway/certs");
   const keyPath = path.join(gatewayCertDir, "server.key");
   const certPath = path.join(gatewayCertDir, "server.crt");
 

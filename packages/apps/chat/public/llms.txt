@@ -23,7 +23,7 @@ AIt is currently in development. We're crafting something extraordinary.
 
 ## Connect
 
-- **Website**: https://ait.rocks
+- **Website**: https://ait.chat
 - **GitHub**: https://github.com/mateonunez/ait
 - **Creator**: Mateo Nunez (https://mateonunez.co)
 - **Twitter/X**: https://x.com/mmateonunez
