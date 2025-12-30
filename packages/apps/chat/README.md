@@ -1,8 +1,8 @@
-# Rocks
+# Chat
 
 ## Overview
 
-The Rocks package (`@ait/rocks`) is the landing page for AIt. It's a standalone React application built with Vite and Tailwind CSS, providing a modern, animated introduction to the platform.
+The Chat package (`@ait/chat`) is the landing page for AIt. It's a standalone React application built with Vite and Tailwind CSS, providing a modern, animated introduction to the platform.
 
 ## Quick Start
 
@@ -46,4 +46,4 @@ The landing page is configured for deployment on Vercel. See `vercel.json` for r
 
 ## License
 
-[MIT](../../LICENSE)
+[MIT](../../../LICENSE)

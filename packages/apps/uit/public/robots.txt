@@ -1,11 +1,11 @@
 # AIt Landing Page
-# https://ait.rocks
+# https://ait.chat
 
 User-agent: *
 Allow: /
 
 # Sitemaps
-Sitemap: https://ait.rocks/sitemap.xml
+Sitemap: https://ait.chat/sitemap.xml
 
 # AI Crawlers
 User-agent: GPTBot
@@ -24,4 +24,4 @@ User-agent: ClaudeBot
 Allow: /
 
 # LLMs.txt location
-# https://ait.rocks/llms.txt
+# https://ait.chat/llms.txt

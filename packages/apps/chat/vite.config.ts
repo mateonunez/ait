@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 import { config as dotenvConfig } from "dotenv";
 import { defineConfig } from "vite";
 
-dotenvConfig({ path: path.resolve(__dirname, "../../.env") });
+dotenvConfig({ path: path.resolve(__dirname, "../../../.env") });
 dotenvConfig({ path: path.resolve(__dirname, ".env") });
 
 export default defineConfig({
