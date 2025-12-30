@@ -151,7 +151,7 @@ SLACK_CLIENT_SECRET=your_slack_secret
 
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_secret
-****```
+```
 
 See individual package READMEs and [.env.example](.env.example) for all available options.
 
