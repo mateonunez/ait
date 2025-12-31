@@ -31,6 +31,10 @@ export class ContextBudgetManager {
     this.budget = { ...this.budget, ...newBudget };
   }
 
+  public getGenericBudget(): ContextBudget {
+    return this.budget;
+  }
+
   public getTotalTokenLimit(): number {
     return this.budget.totalTokenLimit;
   }

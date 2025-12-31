@@ -64,6 +64,7 @@ export abstract class RetoveBaseETLAbstract<T> {
   protected readonly _syncStateService: ISyncStateService = new SyncStateService();
   protected readonly _sparseVectorService: ISparseVectorService = getSparseVectorService();
   protected readonly _enableHybridSearch: boolean = true;
+  protected readonly _enableAIEnrichment: boolean = true;
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -434,7 +435,7 @@ export abstract class RetoveBaseETLAbstract<T> {
           try {
             let enrichment: EnrichmentResult | null = null;
 
-            if (this._descriptor.enrich) {
+            if (this._enableAIEnrichment && this._descriptor.enrich) {
               enrichment = await this._descriptor.enrich(item, {
                 correlationId: `retove-${this._collectionName}-${(item as any).id}`,
               });
@@ -670,10 +671,13 @@ export abstract class RetoveBaseETLAbstract<T> {
     const result = await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select({ count: drizzleOrm.count() }).from(table) as any;
       if (cursor) {
-        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
-        // This must match the extract() query logic in each vendor ETL
+        // Correct cursor pagination: (timestamp > cursor) OR (timestamp = cursor AND id > cursor_id)
+        // Must match the extract() query logic in each vendor ETL
         query = query.where(
-          drizzleOrm.and(drizzleOrm.gte(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
+          drizzleOrm.or(
+            drizzleOrm.gt(updatedAtField, cursor.timestamp),
+            drizzleOrm.and(drizzleOrm.eq(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
+          ),
         );
       }
       return query.execute();

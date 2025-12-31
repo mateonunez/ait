@@ -18,6 +18,7 @@ import {
 
 export class RetoveGitHubFileETL extends RetoveBaseETLAbstract<GitHubFileDataTarget> {
   protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubFileDataTarget> = new ETLGitHubFileDescriptor();
+  protected readonly _enableAIEnrichment = false;
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -47,15 +48,12 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract<GitHubFileDataTar
       let query = tx.select().from(githubRepositoryFiles) as any;
 
       if (cursor) {
-        query = query.where(
-          drizzleOrm.or(
-            drizzleOrm.gt(githubRepositoryFiles.updatedAt, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(githubRepositoryFiles.updatedAt, cursor.timestamp),
-              drizzleOrm.gt(githubRepositoryFiles.id, cursor.id),
-            ),
-          ),
-        );
+        // PostgreSQL has microsecond precision but JS Date only has millisecond.
+        // Since we order by (updatedAt, id) and IDs are unique, we can simply
+        // require id > cursor_id to advance past the previously processed record.
+        // For records with newer timestamps: they will have different IDs, and as long as
+        // they come after in the ordering, they'll be included.
+        query = query.where(drizzleOrm.gt(githubRepositoryFiles.id, cursor.id));
       }
 
       return query
@@ -85,7 +83,7 @@ export class RetoveGitHubFileETL extends RetoveBaseETLAbstract<GitHubFileDataTar
     const file = item as GitHubFileDataTarget;
     return {
       timestamp: file.updatedAt ? new Date(file.updatedAt) : new Date(0),
-      id: file.id,
+      id: file.id ?? "",
     };
   }
 }

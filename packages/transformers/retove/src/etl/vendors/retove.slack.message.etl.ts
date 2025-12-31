@@ -33,13 +33,13 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract<SlackMessageDat
       let query = tx.select().from(slackMessages) as any;
 
       if (cursor) {
-        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
-        // When JS Date truncates microseconds, we might see the same timestamp again
-        // The ID comparison ensures we skip all records up to and including the cursor ID
         query = query.where(
-          drizzleOrm.and(
-            drizzleOrm.gte(slackMessages.updatedAt, cursor.timestamp),
-            drizzleOrm.gt(slackMessages.id, cursor.id),
+          drizzleOrm.or(
+            drizzleOrm.gt(slackMessages.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(slackMessages.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(slackMessages.id, cursor.id),
+            ),
           ),
         );
       }

@@ -94,6 +94,9 @@ export class TextGenerationService implements ITextGenerationService {
       totalTokenLimit: config.contextConfig?.maxContextChars
         ? Math.floor(config.contextConfig.maxContextChars / 4)
         : undefined,
+      ragTokenLimit: config.contextConfig?.maxContextChars
+        ? Math.floor((config.contextConfig.maxContextChars / 4) * 0.4) // 40% of max context
+        : 20000,
     });
     this._typeFilterService = new TypeFilterService();
   }
@@ -256,7 +259,6 @@ export class TextGenerationService implements ITextGenerationService {
 
         ragContext = await this._contextManager.assembleContext({
           systemInstructions: ragContextPrompt,
-          messages: options.messages || [],
           retrievedDocs: ragDocuments.map((d) => ({
             pageContent: d.content,
             metadata: {

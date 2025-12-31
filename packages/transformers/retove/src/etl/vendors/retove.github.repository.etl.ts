@@ -19,6 +19,7 @@ import {
 export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract<GitHubRepositoryDataTarget> {
   protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubRepositoryDataTarget> =
     new ETLGitHubRepositoryDescriptor();
+  protected readonly _enableAIEnrichment = false;
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -48,11 +49,13 @@ export class RetoveGitHubRepositoryETL extends RetoveBaseETLAbstract<GitHubRepos
       let query = tx.select().from(githubRepositories) as any;
 
       if (cursor) {
-        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.and(
-            drizzleOrm.gte(githubRepositories.updatedAt, cursor.timestamp),
-            drizzleOrm.gt(githubRepositories.id, cursor.id),
+          drizzleOrm.or(
+            drizzleOrm.gt(githubRepositories.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(githubRepositories.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(githubRepositories.id, cursor.id),
+            ),
           ),
         );
       }

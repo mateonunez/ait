@@ -34,9 +34,12 @@ export class RetoveGoogleContactETL extends RetoveBaseETLAbstract<GoogleContactD
 
       if (cursor) {
         query = query.where(
-          drizzleOrm.and(
-            drizzleOrm.gte(googleContacts.updatedAt, cursor.timestamp),
-            drizzleOrm.gt(googleContacts.id, cursor.id),
+          drizzleOrm.or(
+            drizzleOrm.gt(googleContacts.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(googleContacts.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(googleContacts.id, cursor.id),
+            ),
           ),
         );
       }

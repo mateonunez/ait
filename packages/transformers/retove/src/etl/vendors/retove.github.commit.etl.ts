@@ -18,6 +18,7 @@ import {
 
 export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract<GitHubCommitDataTarget> {
   protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubCommitDataTarget> = new ETLGitHubCommitDescriptor();
+  protected readonly _enableAIEnrichment = false;
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -47,11 +48,13 @@ export class RetoveGitHubCommitETL extends RetoveBaseETLAbstract<GitHubCommitDat
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubCommits) as any;
       if (cursor) {
-        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.and(
-            drizzleOrm.gte(githubCommits.updatedAt, cursor.timestamp),
-            drizzleOrm.gt(githubCommits.sha, cursor.id),
+          drizzleOrm.or(
+            drizzleOrm.gt(githubCommits.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(githubCommits.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(githubCommits.sha, cursor.id),
+            ),
           ),
         );
       }

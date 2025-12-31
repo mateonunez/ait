@@ -55,6 +55,15 @@ export class ContextTierManager {
     return (this.items.get(tier) || []).reduce((sum, item) => sum + item.tokens, 0);
   }
 
+  public getTotalTokens(): number {
+    let total = 0;
+    // biome-ignore lint/complexity/noForEach: it's ok
+    this.items.forEach((list) => {
+      total += list.reduce((sum, item) => sum + item.tokens, 0);
+    });
+    return total;
+  }
+
   public removeOldest(tier: ContextTier): ContextItem | undefined {
     const list = this.items.get(tier);
     if (!list || list.length === 0) return undefined;
