@@ -77,7 +77,7 @@ export default function ChatPage() {
     }
   };
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [availableModels, setAvailableModels] = useState<ModelMetadata[]>([]);
 
   useEffect(() => {

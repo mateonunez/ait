@@ -116,7 +116,7 @@ const SidebarContent = ({
   </>
 );
 
-export const ChatSidebarPanel = ({ isOpen = true, onClose, ...props }: ChatSidebarPanelProps) => {
+export const ChatSidebarPanel = ({ isOpen = false, onClose, ...props }: ChatSidebarPanelProps) => {
   const isMobile = useIsMobile();
 
   // Mobile: Use Sheet overlay

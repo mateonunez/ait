@@ -178,22 +178,19 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
     [messages, isLoading, selectedModel, enableMetadata, onError, sessionId, conversationId, onConversationCreated],
   );
 
-  // Calculate cumulative token usage across conversation INCLUDING RAG context
+  // Calculate token usage - RAG context from LATEST message only (what's actually sent to LLM)
   const tokenUsage = useMemo(() => {
-    // Get cumulative RAG context length from all messages
-    let totalRagContextLength = 0;
-    for (const message of messages) {
-      if (message.metadata?.context?.contextLength) {
-        totalRagContextLength += message.metadata.context.contextLength;
-      }
-    }
+    // Get RAG context length from the latest assistant message only
+    // Previous messages' RAG context is NOT sent again - only the current turn's context matters
+    const latestAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const ragContextLength = latestAssistant?.metadata?.context?.contextLength ?? 0;
 
     return calculateConversationTokens(
       messages.map((m) => ({
         role: m.role,
         content: m.content,
       })),
-      totalRagContextLength,
+      ragContextLength,
     );
   }, [messages]);
 

@@ -97,7 +97,7 @@ export function PromptInput({
             placeholder={placeholder}
             rows={1}
             className={cn(
-              "resize-none bg-transparent text-sm sm:text-base leading-relaxed overflow-hidden",
+              "resize-none bg-transparent text-base sm:text-base leading-relaxed overflow-hidden",
               "flex-1 py-2 focus:outline-none placeholder:text-muted-foreground/50 transition-all font-normal",
               "disabled:cursor-not-allowed min-h-[40px] max-h-[240px]",
             )}

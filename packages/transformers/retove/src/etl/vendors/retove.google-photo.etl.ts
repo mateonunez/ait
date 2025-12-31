@@ -33,9 +33,12 @@ export class RetoveGooglePhotoETL extends RetoveBaseETLAbstract<GooglePhotoDataT
 
       if (cursor) {
         query = query.where(
-          drizzleOrm.and(
-            drizzleOrm.gte(googlePhotos.updatedAt, cursor.timestamp),
-            drizzleOrm.gt(googlePhotos.id, cursor.id),
+          drizzleOrm.or(
+            drizzleOrm.gt(googlePhotos.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(googlePhotos.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(googlePhotos.id, cursor.id),
+            ),
           ),
         );
       }

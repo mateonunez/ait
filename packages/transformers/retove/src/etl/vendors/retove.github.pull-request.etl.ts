@@ -24,6 +24,7 @@ import {
 export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract<GitHubPullRequestDataTarget> {
   protected readonly _descriptor: IETLEmbeddingDescriptor<GitHubPullRequestDataTarget> =
     new ETLGitHubPullRequestDescriptor();
+  protected readonly _enableAIEnrichment = false;
 
   constructor(
     pgClient: ReturnType<typeof getPostgresClient>,
@@ -52,11 +53,13 @@ export class RetoveGitHubPullRequestETL extends RetoveBaseETLAbstract<GitHubPull
     return await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select().from(githubPullRequests) as any;
       if (cursor) {
-        // Use >= for timestamp combined with > for ID to handle microsecond precision loss
         query = query.where(
-          drizzleOrm.and(
-            drizzleOrm.gte(githubPullRequests.updatedAt, cursor.timestamp),
-            drizzleOrm.gt(githubPullRequests.id, cursor.id),
+          drizzleOrm.or(
+            drizzleOrm.gt(githubPullRequests.updatedAt, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(githubPullRequests.updatedAt, cursor.timestamp),
+              drizzleOrm.gt(githubPullRequests.id, cursor.id),
+            ),
           ),
         );
       }

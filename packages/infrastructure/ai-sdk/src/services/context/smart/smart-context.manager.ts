@@ -1,5 +1,6 @@
 import { getLogger } from "@ait/core";
 import type { Document } from "../../../types/documents";
+import { computeHash } from "../../../utils/crypto.utils";
 import { type TokenizerService, getTokenizer } from "../../tokenizer/tokenizer.service";
 import { ContextBudgetManager } from "./budget.manager";
 import { type ContextBudget, type ContextItem, ContextTier, type IContextManager } from "./context.types";
@@ -16,45 +17,44 @@ export class SmartContextManager implements IContextManager {
   private tokenizer: TokenizerService;
   private summarizer: RollingSummarizer;
 
-  constructor(customBudget?: Partial<ContextBudget>) {
-    this.budgetManager = new ContextBudgetManager();
+  constructor(
+    customBudget?: Partial<ContextBudget>,
+    dependencies?: {
+      tokenizer?: TokenizerService;
+      summarizer?: RollingSummarizer;
+      budgetManager?: ContextBudgetManager;
+      tierManager?: ContextTierManager;
+      driftMonitor?: ContextDriftMonitor;
+    },
+  ) {
+    this.budgetManager = dependencies?.budgetManager ?? new ContextBudgetManager();
     if (customBudget) {
       this.budgetManager.updateBudget(customBudget);
     }
-    this.tierManager = new ContextTierManager();
-    this.driftMonitor = new ContextDriftMonitor();
-    this.tokenizer = getTokenizer();
-    this.summarizer = new RollingSummarizer();
+    this.tierManager = dependencies?.tierManager ?? new ContextTierManager();
+    this.driftMonitor = dependencies?.driftMonitor ?? new ContextDriftMonitor();
+    this.tokenizer = dependencies?.tokenizer ?? getTokenizer();
+    this.summarizer = dependencies?.summarizer ?? new RollingSummarizer();
   }
 
   public async assembleContext(request: {
     systemInstructions: string;
-    messages: any[]; // Using any for now to avoid coupling with specific message types yet
     retrievedDocs?: Document[];
   }): Promise<string> {
     logger.info("[SmartContextManager] Assembling context...");
 
-    // 1. Reset and Populate Tiers
     this.tierManager.reset();
     this._populateTiers(request);
 
-    // 2. Budget Allocation
-    // In reality, we'd query the model's limit or use config
-
-    // 3. Selection & Pruning
     await this._pruneToBudget();
 
-    // 4. Summarization (Handled inside _pruneToBudget now)
-
-    // 5. Build Final String
     const finalContext = this._buildFinalContextString();
 
     logger.info(`[SmartContextManager] Context assembled. Length: ${finalContext.length} chars.`);
     return finalContext;
   }
 
-  private _populateTiers(request: { systemInstructions: string; messages: any[]; retrievedDocs?: Document[] }): void {
-    // Tier 0: System Instructions
+  private _populateTiers(request: { systemInstructions: string; retrievedDocs?: Document[] }): void {
     this.tierManager.addItem({
       id: "system-instructions",
       tier: ContextTier.IMMUTABLE,
@@ -64,26 +64,24 @@ export class SmartContextManager implements IContextManager {
       timestamp: Date.now(),
     });
 
-    // Tier 1: Active Task (Placeholder - assume last message is active task for now or specific markers)
-    // Future: Extract active task from last message or specialized field
-
-    // Tier 2: Working Set - Use recent messages
-    // We'll reverse iterate messages
-    request.messages.forEach((msg, index) => {
-      const content = typeof msg === "string" ? msg : JSON.stringify(msg);
-      this.tierManager.addItem({
-        id: `msg-${index}`,
-        tier: ContextTier.WORKING_SET,
-        content: content,
-        type: "slack_message",
-        tokens: this.tokenizer.countTokens(content),
-        timestamp: Date.now() - (request.messages.length - index) * 1000,
-      });
-    });
-
-    // Tier 4: Retrieved Docs
     if (request.retrievedDocs && request.retrievedDocs.length > 0) {
+      const seenDocs = new Set<string>();
+
       request.retrievedDocs.forEach((doc, index) => {
+        const id = doc.metadata.id ? String(doc.metadata.id) : null;
+        let uniqueKey = id;
+
+        if (!uniqueKey) {
+          // If no ID, hash the content to deduplicate identical content chunks
+          const hash = computeHash(doc.pageContent);
+          uniqueKey = `hash-${hash}`;
+        }
+
+        if (seenDocs.has(uniqueKey)) {
+          return; // Skip duplicate
+        }
+        seenDocs.add(uniqueKey);
+
         const title = (doc.metadata?.title as string) || (doc.metadata?.name as string) || null;
         const source =
           (doc.metadata?.source as string) ||
@@ -93,58 +91,96 @@ export class SmartContextManager implements IContextManager {
         const header = title ? `[${title}]` : source ? `Source: ${source}` : null;
         const content = header ? `${header}\n${doc.pageContent}` : doc.pageContent;
         this.tierManager.addItem({
-          id: `doc-${doc.metadata.id || index}`,
+          id: `doc-${uniqueKey}`,
           tier: ContextTier.LONG_TERM_MEMORY,
           content: content,
           type: "document",
           tokens: this.tokenizer.countTokens(content),
           timestamp: Date.now(),
+          score: (doc.metadata?.score as number) || 0,
         });
       });
     }
   }
 
   private async _pruneToBudget(): Promise<void> {
-    // Very simple top-down pruning for now
-    // 1. Check Tier 2 usage
-    const tier2Limit = this.budgetManager.getTierLimit(ContextTier.WORKING_SET);
+    const totalLimit = this.budgetManager.getTotalTokenLimit();
+    let currentUsage = this.tierManager.getTotalTokens();
 
-    const tier2Items = this.tierManager.getItems(ContextTier.WORKING_SET);
-    // Sort: Newest first (we want to keep newest)
-    tier2Items.sort((a, b) => b.timestamp - a.timestamp);
+    const budget = this.budgetManager.getGenericBudget();
+    const tier4Items = this.tierManager.getItems(ContextTier.LONG_TERM_MEMORY);
+    const ragUsageCurrent = this.tierManager.getTierUsage(ContextTier.LONG_TERM_MEMORY);
+    const ragBudget = budget.ragTokenLimit ?? Math.floor(totalLimit * 0.6);
 
-    const keptTier2: ContextItem[] = [];
-    const droppedTier2: ContextItem[] = [];
-    let currentAndNextUsage = 0;
+    if (currentUsage > totalLimit || ragUsageCurrent > ragBudget) {
+      if (tier4Items.length > 0) {
+        tier4Items.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-    for (const item of tier2Items) {
-      if (currentAndNextUsage + item.tokens < tier2Limit) {
-        keptTier2.push(item);
-        currentAndNextUsage += item.tokens;
-      } else {
-        droppedTier2.push(item);
+        const keptTier4: ContextItem[] = [];
+        const droppedTier4: ContextItem[] = [];
+
+        let ragUsage = 0;
+
+        for (const item of tier4Items) {
+          if (ragUsage + item.tokens <= ragBudget) {
+            keptTier4.push(item);
+            ragUsage += item.tokens;
+          } else {
+            droppedTier4.push(item);
+          }
+        }
+
+        if (droppedTier4.length > 0) {
+          this.driftMonitor.logDrop(ContextTier.LONG_TERM_MEMORY, droppedTier4);
+          logger.debug(`Pruned ${droppedTier4.length} RAG documents to fit budget.`);
+        }
+        this.tierManager.setItems(ContextTier.LONG_TERM_MEMORY, keptTier4);
+
+        currentUsage = this.tierManager.getTotalTokens();
       }
     }
 
-    if (droppedTier2.length > 0) {
-      this.driftMonitor.logDrop(ContextTier.WORKING_SET, droppedTier2);
+    if (currentUsage > totalLimit) {
+      const tier2Items = this.tierManager.getItems(ContextTier.WORKING_SET);
+      // Sort: Newest first (we want to keep newest)
+      tier2Items.sort((a, b) => b.timestamp - a.timestamp);
 
-      // Summarize dropped items into Tier 3
-      const summary = await this.summarizer.summarize(droppedTier2);
-      if (summary) {
-        this.tierManager.addItem({
-          id: `summary-${Date.now()}`,
-          tier: ContextTier.CONDENSED_HISTORY,
-          content: `[Previous Context Summary]: ${summary}`,
-          type: "summary",
-          tokens: this.tokenizer.countTokens(summary),
-          timestamp: Date.now(), // Treat as fresh info
-        });
-        logger.debug("Added summary of dropped context items to Tier 3");
+      const keptTier2: ContextItem[] = [];
+      const droppedTier2: ContextItem[] = [];
+
+      const otherTiersUsage = currentUsage - tier2Items.reduce((sum, i) => sum + i.tokens, 0);
+      const historyBudget = totalLimit - otherTiersUsage;
+
+      let historyUsage = 0;
+
+      for (const item of tier2Items) {
+        if (historyBudget > 0 && historyUsage + item.tokens <= historyBudget) {
+          keptTier2.push(item);
+          historyUsage += item.tokens;
+        } else {
+          droppedTier2.push(item);
+        }
       }
-    }
 
-    this.tierManager.setItems(ContextTier.WORKING_SET, keptTier2);
+      if (droppedTier2.length > 0) {
+        this.driftMonitor.logDrop(ContextTier.WORKING_SET, droppedTier2);
+
+        // Summarize dropped items into Tier 3
+        const summary = await this.summarizer.summarize(droppedTier2);
+        if (summary) {
+          this.tierManager.addItem({
+            id: `summary-${Date.now()}`,
+            tier: ContextTier.CONDENSED_HISTORY,
+            content: `[Previous Context Summary]: ${summary}`,
+            type: "summary",
+            tokens: this.tokenizer.countTokens(summary),
+            timestamp: Date.now(), // Treat as fresh info
+          });
+          logger.debug("Added summary of dropped context items to Tier 3");
+        }
+      }
+      this.tierManager.setItems(ContextTier.WORKING_SET, keptTier2);
+    }
   }
 
   private _buildFinalContextString(): string {
