@@ -158,10 +158,6 @@ export class TextGenerationService implements ITextGenerationService {
         } else if (part.type === "error") {
           const errorMsg = typeof part.error === "string" ? part.error : ((part.error as any)?.message ?? "");
           if (errorMsg.includes("reasoning part") && errorMsg.includes("not found")) {
-            logger.warn("[TextGenerationService] Suppressing SDK reasoning ID mismatch error", {
-              error: part.error,
-              traceId: telemetry.traceContext?.traceId,
-            });
             continue;
           }
 

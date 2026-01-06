@@ -124,8 +124,6 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
     maxSteps,
   };
 
-  logger.debug("[Stream] Common options", commonOptions);
-
   const requestOptions = prepareRequestOptions(options.prompt, commonOptions, options.messages);
 
   let finishSnapshot: FinishSnapshot = { textLength: 0, totalToolResults: 0 };
@@ -153,8 +151,6 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
         textLength: event.text.length,
         totalToolResults: event.toolResults?.length ?? 0,
       };
-
-      logger.debug("Stream finished, event", event);
 
       if (endSpan) {
         endSpan({
