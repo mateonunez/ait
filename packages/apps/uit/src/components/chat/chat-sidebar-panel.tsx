@@ -3,6 +3,7 @@
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { Conversation as ConversationType } from "@ait/core";
 import { Brain, Database, ListChecks, Wrench, Zap } from "lucide-react";
+import { useMemo } from "react";
 import { ModelSelector } from "../ai-elements";
 import { ContextWindowTracker } from "../context-window-tracker";
 import { ConversationsHistory } from "../conversations-history";
@@ -118,6 +119,9 @@ const SidebarContent = ({
 
 export const ChatSidebarPanel = ({ isOpen = false, onClose, ...props }: ChatSidebarPanelProps) => {
   const isMobile = useIsMobile();
+  const currentConversation = useMemo(() => {
+    return props.conversations.find((c) => c.id === props.currentConversationId);
+  }, [props.conversations, props.currentConversationId]);
 
   // Mobile: Use Sheet overlay
   if (isMobile) {
@@ -125,7 +129,9 @@ export const ChatSidebarPanel = ({ isOpen = false, onClose, ...props }: ChatSide
       <Sheet open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
         <SheetContent side="right" className="w-80 p-0 flex flex-col">
           <SheetHeader className="p-3 shrink-0">
-            <SheetTitle className="font-semibold text-foreground text-sm">Chat Sidebar</SheetTitle>
+            <SheetTitle className="font-semibold text-foreground text-sm">
+              {currentConversation?.title ?? "Sidebar"}
+            </SheetTitle>
           </SheetHeader>
           <Separator />
           <SidebarContent {...props} />
@@ -138,7 +144,7 @@ export const ChatSidebarPanel = ({ isOpen = false, onClose, ...props }: ChatSide
   return (
     <aside className="w-80 shrink-0 border-l border-border bg-sidebar flex flex-col h-full overflow-hidden">
       <div className="p-3 shrink-0">
-        <h3 className="font-semibold text-foreground text-sm">Chat Sidebar</h3>
+        <h3 className="font-semibold text-foreground text-sm">{currentConversation?.title ?? "Sidebar"}</h3>
       </div>
       <Separator />
       <SidebarContent {...props} />

@@ -3,21 +3,11 @@ import { cn } from "@/styles/utils";
 import type { ChatMessageWithMetadata } from "@ait/core";
 import { getLogger } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Brain,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  Database,
-  ListChecks,
-  ThumbsDown,
-  ThumbsUp,
-  Wrench,
-} from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Copy, Database, ListChecks, ThumbsDown, ThumbsUp, Wrench } from "lucide-react";
 import { useState } from "react";
 import { Streamdown } from "streamdown";
 import { Badge } from "../ui/badge";
+import { Reasoning, ReasoningContent, ReasoningTrigger } from "./reasoning";
 
 const logger = getLogger();
 
@@ -31,7 +21,6 @@ export function Message({ message, isStreaming = false }: MessageProps) {
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackRating | null>(null);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
-  const [showReasoning, setShowReasoning] = useState(false);
   const [showContext, setShowContext] = useState(false);
   const [showTasks, setShowTasks] = useState(false);
 
@@ -92,117 +81,118 @@ export function Message({ message, isStreaming = false }: MessageProps) {
           "items-end": isUser,
         })}
       >
+        {/* Reasoning panel */}
+        {hasReasoning && (
+          <Reasoning isStreaming={isStreaming}>
+            <ReasoningTrigger />
+            <ReasoningContent>
+              {message.metadata?.reasoning?.map((r: any) => r.content).join("\n\n") || ""}
+            </ReasoningContent>
+          </Reasoning>
+        )}
+
         {/* Main message content */}
-        <div
-          className={cn("relative rounded-2xl px-4 py-3 transition-all", {
-            "bg-foreground text-background": isUser,
-            "bg-muted/50 text-foreground": !isUser,
-          })}
-        >
-          {/* Action buttons for assistant messages */}
-          {!isUser && !isStreaming && (
-            <div className="absolute -top-2 -right-2 flex gap-1">
-              <button
-                type="button"
-                onClick={() => handleFeedback("thumbs_down")}
-                disabled={!!feedback}
-                className={cn(
-                  "p-1.5 rounded-lg bg-background border border-border shadow-sm",
-                  "opacity-0 group-hover:opacity-100 transition-all duration-200",
-                  "hover:bg-muted disabled:cursor-not-allowed",
-                  feedback === "thumbs_down" &&
-                    "opacity-100 bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800",
-                )}
-                title="Thumbs down"
-              >
-                <ThumbsDown
+        {(isUser || message.content) && (
+          <div
+            className={cn("relative rounded-2xl px-4 py-3 transition-all", {
+              "bg-foreground text-background": isUser,
+              "bg-muted/50 text-foreground": !isUser,
+            })}
+          >
+            {/* Action buttons for assistant messages */}
+            {!isUser && !isStreaming && message.content && (
+              <div className="absolute -top-2 -right-2 flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => handleFeedback("thumbs_down")}
+                  disabled={!!feedback}
                   className={cn(
-                    "h-3 w-3",
-                    feedback === "thumbs_down"
-                      ? "text-red-600 dark:text-red-400 fill-current"
-                      : "text-muted-foreground",
+                    "p-1.5 rounded-lg bg-background border border-border shadow-sm",
+                    "opacity-0 group-hover:opacity-100 transition-all duration-200",
+                    "hover:bg-muted disabled:cursor-not-allowed",
+                    feedback === "thumbs_down" &&
+                      "opacity-100 bg-red-50 border-red-200 dark:bg-red-950 dark:border-red-800",
                   )}
-                />
-              </button>
+                  title="Thumbs down"
+                >
+                  <ThumbsDown
+                    className={cn(
+                      "h-3 w-3",
+                      feedback === "thumbs_down"
+                        ? "text-red-600 dark:text-red-400 fill-current"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleFeedback("thumbs_up")}
-                disabled={!!feedback}
-                className={cn(
-                  "p-1.5 rounded-lg bg-background border border-border shadow-sm",
-                  "opacity-0 group-hover:opacity-100 transition-all duration-200",
-                  "hover:bg-muted disabled:cursor-not-allowed",
-                  feedback === "thumbs_up" &&
-                    "opacity-100 bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
-                )}
-                title="Thumbs up"
-              >
-                <ThumbsUp
+                <button
+                  type="button"
+                  onClick={() => handleFeedback("thumbs_up")}
+                  disabled={!!feedback}
                   className={cn(
-                    "h-3 w-3",
-                    feedback === "thumbs_up"
-                      ? "text-green-600 dark:text-green-400 fill-current"
-                      : "text-muted-foreground",
+                    "p-1.5 rounded-lg bg-background border border-border shadow-sm",
+                    "opacity-0 group-hover:opacity-100 transition-all duration-200",
+                    "hover:bg-muted disabled:cursor-not-allowed",
+                    feedback === "thumbs_up" &&
+                      "opacity-100 bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800",
                   )}
-                />
-              </button>
+                  title="Thumbs up"
+                >
+                  <ThumbsUp
+                    className={cn(
+                      "h-3 w-3",
+                      feedback === "thumbs_up"
+                        ? "text-green-600 dark:text-green-400 fill-current"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                </button>
 
-              <button
-                type="button"
-                onClick={handleCopy}
-                className={cn(
-                  "p-1.5 rounded-lg bg-background border border-border shadow-sm",
-                  "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-                  "hover:bg-muted",
-                )}
-                title="Copy"
-              >
-                {copied ? (
-                  <Check className="h-3 w-3 text-green-600" />
-                ) : (
-                  <Copy className="h-3 w-3 text-muted-foreground" />
-                )}
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className={cn(
+                    "p-1.5 rounded-lg bg-background border border-border shadow-sm",
+                    "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
+                    "hover:bg-muted",
+                  )}
+                  title="Copy"
+                >
+                  {copied ? (
+                    <Check className="h-3 w-3 text-green-600" />
+                  ) : (
+                    <Copy className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+            )}
 
-          {/* Message content */}
-          {isUser ? (
-            <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
-          ) : (
-            <div className="streamdown-wrapper">
-              <Streamdown
-                className="prose prose-sm dark:prose-invert max-w-none"
-                shikiTheme={["github-light", "github-dark"]}
-              >
-                {message.content}
-              </Streamdown>
-              {isStreaming && (
-                <motion.span
-                  animate={{ opacity: [1, 0.3, 1] }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-                  className="inline-block w-0.5 h-4 ml-1 bg-foreground rounded-full align-middle"
-                />
-              )}
-            </div>
-          )}
-        </div>
+            {/* Message content */}
+            {isUser ? (
+              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{message.content}</p>
+            ) : (
+              <div className="streamdown-wrapper">
+                <Streamdown
+                  className="prose prose-sm dark:prose-invert max-w-none"
+                  shikiTheme={["github-light", "github-dark"]}
+                >
+                  {message.content}
+                </Streamdown>
+                {isStreaming && (
+                  <motion.span
+                    animate={{ opacity: [1, 0.3, 1] }}
+                    transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                    className="inline-block w-0.5 h-4 ml-1 bg-foreground rounded-full align-middle"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Metadata badges */}
-        {!isUser && !isStreaming && (hasReasoning || hasContext || hasToolCalls || hasTasks) && (
-          <div className="flex flex-wrap gap-2">
-            {hasReasoning && message.metadata?.reasoning && (
-              <button
-                type="button"
-                onClick={() => setShowReasoning(!showReasoning)}
-                className="flex items-center gap-1.5 px-2 py-1 text-xs rounded-lg bg-background border border-border hover:bg-muted transition-colors"
-              >
-                <Brain className="h-3 w-3" />
-                <span>Reasoning ({message.metadata.reasoning.length})</span>
-                {showReasoning ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-              </button>
-            )}
+        {!isUser && !isStreaming && (hasContext || hasToolCalls || hasTasks) && (
+          <div className="flex flex-wrap gap-2 mt-2">
             {hasContext && message.metadata?.context && (
               <button
                 type="button"
@@ -235,33 +225,6 @@ export function Message({ message, isStreaming = false }: MessageProps) {
             )}
           </div>
         )}
-
-        {/* Reasoning panel */}
-        <AnimatePresence>
-          {showReasoning && hasReasoning && message.metadata?.reasoning && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="w-full rounded-lg bg-background border border-border p-3 space-y-2"
-            >
-              <div className="text-xs font-medium text-muted-foreground mb-2">Chain of Thought</div>
-              {message.metadata.reasoning.map((step, index) => (
-                <div key={step.id} className="flex gap-2">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-medium">
-                    {index + 1}
-                  </div>
-                  <div className="flex-1 text-sm">
-                    <Badge variant="outline" className="mb-1 text-xs">
-                      {step.type}
-                    </Badge>
-                    <p className="text-muted-foreground">{step.content}</p>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Context panel */}
         <AnimatePresence>

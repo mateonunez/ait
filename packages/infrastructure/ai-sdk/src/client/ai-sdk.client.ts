@@ -1,11 +1,12 @@
 import { getLogger } from "@ait/core";
-import { type EmbeddingModel, embed } from "ai";
+import { type EmbeddingModel, embed, extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import dotenv from "dotenv";
 import type { ZodType } from "zod";
 import {
   type EmbeddingModelName,
   type GenerationModelName,
+  type ModelName,
   type ModelSpec,
   getEmbeddingModel,
   getGenerationModel,
@@ -120,7 +121,7 @@ let _config: Required<AItClientConfig> | null = null;
 
 // Default configs inlined (simplified)
 const DEFAULT_TEXT_GENERATION_CONFIG = {
-  retrievalConfig: { limit: 33, scoreThreshold: 0.4 },
+  retrievalConfig: { limit: 20, scoreThreshold: 0.4 },
   contextConfig: { maxContextChars: 128000 },
   toolConfig: { maxRounds: 2 },
   retryConfig: { maxRetries: 3, delayMs: 1000 },
@@ -260,9 +261,9 @@ export function getModelCapabilities(): {
 } {
   const config = getGenerationModelConfig();
   return {
-    supportsTools: config.supportsTools ?? true,
+    supportsTools: config.supportsTools,
     contextWindow: config.contextWindow,
-    vectorSize: config.vectorSize,
+    vectorSize: config.vectorSize ?? 4096,
   };
 }
 
@@ -271,5 +272,20 @@ export function createModel(modelName: string, baseURL: string = DEFAULT_OLLAMA_
     baseURL,
   });
 
-  return ollama(modelName) as unknown as CompatibleLanguageModel;
+  const spec = getModelSpec(modelName as ModelName, "generation");
+  const enableThinking = spec?.enableThinking ?? false;
+
+  const model = ollama(modelName, {
+    think: enableThinking,
+  });
+
+  // If native thinking is enabled, don't wrap with middleware to avoid "reasoning part not found" errors
+  if (enableThinking) {
+    return model as unknown as CompatibleLanguageModel;
+  }
+
+  return wrapLanguageModel({
+    model,
+    middleware: extractReasoningMiddleware({ tagName: "think" }),
+  }) as unknown as CompatibleLanguageModel;
 }

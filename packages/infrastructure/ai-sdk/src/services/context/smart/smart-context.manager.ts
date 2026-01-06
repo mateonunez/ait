@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
+import { computeHash } from "@ait/core";
 import type { Document } from "../../../types/documents";
-import { computeHash } from "../../../utils/crypto.utils";
 import { type TokenizerService, getTokenizer } from "../../tokenizer/tokenizer.service";
 import { ContextBudgetManager } from "./budget.manager";
 import { type ContextBudget, type ContextItem, ContextTier, type IContextManager } from "./context.types";

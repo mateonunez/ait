@@ -20,7 +20,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     nodePolyfills({
-      include: ["path", "url", "process"],
+      include: ["path", "url", "process", "crypto", "buffer"],
+      protocolImports: true,
     }),
     ngrokPlugin(),
   ],

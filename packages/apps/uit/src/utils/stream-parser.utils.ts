@@ -48,6 +48,13 @@ export function parseStreamLine(line: string): StreamEvent | null {
         };
       }
 
+      case STREAM_EVENT.REASONING: {
+        return {
+          type: STREAM_EVENT.METADATA,
+          data: JSON.parse(payload),
+        };
+      }
+
       default:
         logger.warn(`[StreamParser] Unknown event type: ${eventType}`);
         return null;
@@ -78,8 +85,18 @@ export function aggregateMetadata(metadata: AggregatedMetadata, payload: Metadat
       };
     }
 
-    case METADATA_TYPE.REASONING:
+    case METADATA_TYPE.REASONING: {
+      const existingStepIndex = metadata.reasoning.findIndex((r) => r.id === payload.data.id);
+      if (existingStepIndex >= 0) {
+        const updatedReasoning = [...metadata.reasoning];
+        updatedReasoning[existingStepIndex] = {
+          ...updatedReasoning[existingStepIndex],
+          content: updatedReasoning[existingStepIndex].content + payload.data.content,
+        };
+        return { ...metadata, reasoning: updatedReasoning };
+      }
       return { ...metadata, reasoning: [...metadata.reasoning, payload.data] };
+    }
 
     case METADATA_TYPE.TASK: {
       const existingTaskIndex = metadata.tasks.findIndex((t) => t.id === payload.data.id);
@@ -156,6 +173,7 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
 
           try {
             const data = JSON.parse(dataString);
+            console.log("[StreamParser] Event received", { type, data });
             switch (type) {
               case STREAM_EVENT.TEXT:
                 yield { type: STREAM_EVENT.TEXT, content: data };
@@ -169,6 +187,24 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
               case STREAM_EVENT.ERROR:
                 yield { type: STREAM_EVENT.ERROR, message: data };
                 break;
+              case STREAM_EVENT.REASONING: {
+                const isObject = typeof data === "object" && data !== null;
+                const content = isObject ? data.content : data;
+                const id = isObject ? data.id : "streaming-reasoning";
+
+                yield {
+                  type: STREAM_EVENT.METADATA,
+                  metadataType: METADATA_TYPE.REASONING,
+                  data: {
+                    id,
+                    type: METADATA_TYPE.ANALYSIS,
+                    content,
+                    timestamp: Date.now(),
+                    order: 0,
+                  },
+                };
+                break;
+              }
               default:
                 logger.warn(`Unknown stream event type received: ${type}`);
             }
@@ -198,6 +234,24 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
             case STREAM_EVENT.ERROR:
               yield { type: STREAM_EVENT.ERROR, message: data };
               break;
+            case STREAM_EVENT.REASONING: {
+              const isObject = typeof data === "object" && data !== null;
+              const content = isObject ? data.content : data;
+              const id = isObject ? data.id : "streaming-reasoning";
+
+              yield {
+                type: STREAM_EVENT.METADATA,
+                metadataType: METADATA_TYPE.REASONING,
+                data: {
+                  id,
+                  type: METADATA_TYPE.ANALYSIS,
+                  content,
+                  timestamp: Date.now(),
+                  order: 0,
+                },
+              };
+              break;
+            }
           }
         } catch (e) {
           logger.error("Failed to parse remaining buffer:", { error: e });

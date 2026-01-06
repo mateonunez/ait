@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
+import type { StreamEvent } from "@ait/core";
 import type { RetrievedDocument as RagRetrievedDocument } from "../../rag/retrieve";
-import type { MetadataPayload, StreamEvent } from "../../types";
-import { METADATA_TYPE, STREAM_EVENT } from "../../types";
+import { type EventData, METADATA_TYPE, STREAM_EVENT } from "../../types";
 import type {
   DocumentSource,
   RAGContextMetadata as UIRAGContextMetadata,
@@ -71,10 +71,10 @@ export class MetadataEmitterService implements IMetadataEmitterService {
     return this._createMetadataEvent(METADATA_TYPE.MODEL, modelInfo);
   }
 
-  private _createMetadataEvent(type: MetadataPayload["type"], data: unknown): StreamEvent {
+  private _createMetadataEvent(type: EventData, data: unknown): StreamEvent {
     return {
       type: STREAM_EVENT.METADATA,
-      data: { type, data } as MetadataPayload,
+      data: { type, data },
     };
   }
 

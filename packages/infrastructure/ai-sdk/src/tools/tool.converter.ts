@@ -1,7 +1,7 @@
 import { AItError, getLogger } from "@ait/core";
+import { safeJsonSize } from "@ait/core";
 import { tool } from "ai";
 import type { Tool as AiInternalTool } from "../types/tools";
-import { safeJsonSize } from "../utils/json.utils";
 
 const logger = getLogger();
 

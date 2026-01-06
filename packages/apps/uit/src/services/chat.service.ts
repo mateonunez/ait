@@ -41,9 +41,20 @@ function updateMetadata(metadata: AggregatedMetadata, event: any): void {
     case METADATA_TYPE.CONTEXT:
       metadata.context = event.data;
       break;
-    case METADATA_TYPE.REASONING:
-      metadata.reasoning = [...metadata.reasoning, event.data];
+    case METADATA_TYPE.REASONING: {
+      const existingStepIndex = metadata.reasoning.findIndex((r: any) => r.id === event.data.id);
+      if (existingStepIndex >= 0) {
+        const updatedReasoning = [...metadata.reasoning];
+        updatedReasoning[existingStepIndex] = {
+          ...updatedReasoning[existingStepIndex],
+          content: updatedReasoning[existingStepIndex].content + event.data.content,
+        };
+        metadata.reasoning = updatedReasoning;
+      } else {
+        metadata.reasoning = [...metadata.reasoning, event.data];
+      }
       break;
+    }
     case METADATA_TYPE.TASK: {
       const taskIndex = metadata.tasks.findIndex((t: any) => t.id === event.data.id);
       if (taskIndex >= 0) {
@@ -79,13 +90,14 @@ async function processStreamEvents(
   const { onText, onMetadata, onComplete, onError } = callbacks;
 
   for await (const event of parseGatewayStream(response)) {
+    console.log("[ChatService] Stream event", { event });
     switch (event.type) {
       case STREAM_EVENT.TEXT:
         onText?.(event.content);
         break;
       case STREAM_EVENT.METADATA:
         updateMetadata(aggregatedMetadata, event);
-        onMetadata?.(aggregatedMetadata);
+        onMetadata?.({ ...aggregatedMetadata });
         break;
       case STREAM_EVENT.DATA:
         onComplete?.({

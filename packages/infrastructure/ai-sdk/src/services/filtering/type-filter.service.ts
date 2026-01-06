@@ -3,7 +3,6 @@ import {
   VALID_ENTITY_TYPES,
   findEntityTypesByKeywords,
   getEntityMetadata,
-  getEntityTypesByVendor,
   getLogger,
 } from "@ait/core";
 import type { TypeFilter } from "../../types/rag";
@@ -14,6 +13,7 @@ import {
 import { type ITemporalDateParser, TemporalDateParser } from "./temporal-date-parser.service";
 
 const logger = getLogger();
+const PUNCTUATION_REGEX = /[.,;:!?(){}\[\]\\/+*_#@%^&=<>|~]/;
 
 export interface ITypeFilterService {
   inferTypes(tags?: string[], userQuery?: string, options?: { usedFallback?: boolean }): TypeFilter | undefined;
@@ -39,22 +39,14 @@ export class TypeFilterService implements ITypeFilterService {
 
     const normalizedQuery = userQuery ? this._textNormalizer.normalizeForMatching(userQuery) : "";
     const additionalMatchingTypes = this._findTypesByPhraseMatching(normalizedQuery);
-    const allMatchingTypes = Array.from(new Set([...matchingTypes, ...additionalMatchingTypes]));
+    const allMatchingTypes = [...matchingTypes, ...additionalMatchingTypes];
 
     const timeRange = this._parseTimeRange(userQuery);
 
     if (allMatchingTypes.length > 0) {
-      const vendorTypes = new Set<EntityType>(allMatchingTypes);
+      const uniqueTypes = Array.from(new Set(allMatchingTypes));
 
-      for (const matchedType of allMatchingTypes) {
-        const vendor = getEntityMetadata(matchedType).vendor;
-        const vendorEntityTypes = getEntityTypesByVendor(vendor);
-        for (const vendorType of vendorEntityTypes) {
-          vendorTypes.add(vendorType);
-        }
-      }
-
-      const sortedTypes = Array.from(vendorTypes).sort((a, b) => {
+      const sortedTypes = uniqueTypes.sort((a, b) => {
         const indexA = VALID_ENTITY_TYPES.indexOf(a);
         const indexB = VALID_ENTITY_TYPES.indexOf(b);
         return indexA - indexB;
@@ -135,7 +127,7 @@ export class TypeFilterService implements ITypeFilterService {
     for (const type of VALID_ENTITY_TYPES) {
       const metadata = getEntityMetadata(type);
       const hasMatch = metadata.keywords.some((kw) => {
-        const hasPunctuation = /[.,;:!?(){}\[\]\\/+*_#@%^&=<>|~]/.test(kw);
+        const hasPunctuation = PUNCTUATION_REGEX.test(kw);
         const isMultiWord = kw.includes(" ");
 
         if (!hasPunctuation && !isMultiWord) {

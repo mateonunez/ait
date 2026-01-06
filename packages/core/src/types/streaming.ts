@@ -3,9 +3,11 @@ export const STREAM_EVENT = {
   METADATA: "m",
   DATA: "d",
   ERROR: "3",
+  REASONING: "reasoning",
 } as const;
 
 export type StreamEventType = (typeof STREAM_EVENT)[keyof typeof STREAM_EVENT];
+export type EventData = string | Record<string, unknown>;
 
 export const METADATA_TYPE = {
   CONTEXT: "context",
@@ -14,6 +16,7 @@ export const METADATA_TYPE = {
   SUGGESTION: "suggestion",
   TOOL_CALL: "tool_call",
   MODEL: "model",
+  ANALYSIS: "analysis",
 } as const;
 
 export type MetadataType = (typeof METADATA_TYPE)[keyof typeof METADATA_TYPE];
@@ -54,7 +57,7 @@ export interface RAGContextMetadata {
 
 export interface ReasoningStep {
   id: string;
-  type: "analysis" | "planning" | "execution" | "reflection";
+  type: MetadataType;
   content: string;
   confidence?: number;
   timestamp: number;
@@ -73,15 +76,19 @@ export interface TaskStep {
   progress?: number;
 }
 
+export type SuggestionType = "question" | "action" | "tool" | "related";
+
+export interface SuggestionAction {
+  type: "prompt" | "tool_call" | "navigation";
+  payload: string | Record<string, unknown>;
+}
+
 export interface SuggestionItem {
   id: string;
   text: string;
-  type: "question" | "action" | "tool" | "related";
+  type: SuggestionType;
   icon?: string;
-  action?: {
-    type: "prompt" | "tool_call" | "navigation";
-    payload: string | Record<string, unknown>;
-  };
+  action?: SuggestionAction;
   score?: number;
 }
 
@@ -114,6 +121,15 @@ export interface ModelMetadata {
   maxOutputTokens?: number;
 }
 
+export interface AnalysisStep {
+  id: string;
+  type: MetadataType;
+  content: string;
+  confidence?: number;
+  timestamp: number;
+  order: number;
+}
+
 export interface ModelPreferences {
   showReasoning?: boolean;
   enableTasks?: boolean;
@@ -126,9 +142,9 @@ export interface BaseStreamEvent<T = unknown> {
   data?: T;
 }
 
-export interface TextChunkEvent extends BaseStreamEvent<string> {
+export interface TextChunkEvent extends BaseStreamEvent<EventData> {
   type: typeof STREAM_EVENT.TEXT;
-  data: string;
+  data: EventData;
 }
 
 export type MetadataPayload =
@@ -137,11 +153,12 @@ export type MetadataPayload =
   | { type: typeof METADATA_TYPE.TASK; data: TaskStep }
   | { type: typeof METADATA_TYPE.SUGGESTION; data: SuggestionItem[] }
   | { type: typeof METADATA_TYPE.TOOL_CALL; data: ToolCallMetadata }
-  | { type: typeof METADATA_TYPE.MODEL; data: ModelMetadata };
+  | { type: typeof METADATA_TYPE.MODEL; data: ModelMetadata }
+  | { type: typeof METADATA_TYPE.ANALYSIS; data: AnalysisStep };
 
-export interface MetadataChunkEvent extends BaseStreamEvent<MetadataPayload> {
+export interface MetadataChunkEvent extends BaseStreamEvent<EventData> {
   type: typeof STREAM_EVENT.METADATA;
-  data: MetadataPayload;
+  data: EventData;
 }
 
 export interface CompletionDataEvent extends BaseStreamEvent {
@@ -157,12 +174,17 @@ export interface CompletionDataEvent extends BaseStreamEvent {
   };
 }
 
-export interface ErrorEvent extends BaseStreamEvent<string> {
+export interface ErrorEvent extends BaseStreamEvent<EventData> {
   type: typeof STREAM_EVENT.ERROR;
-  data: string;
+  data: EventData;
 }
 
-export type StreamEvent = TextChunkEvent | MetadataChunkEvent | CompletionDataEvent | ErrorEvent;
+export interface ReasoningEvent extends BaseStreamEvent<EventData> {
+  type: typeof STREAM_EVENT.REASONING;
+  data: EventData;
+}
+
+export type StreamEvent = TextChunkEvent | MetadataChunkEvent | CompletionDataEvent | ErrorEvent | ReasoningEvent;
 
 export interface AggregatedMetadata {
   context?: RAGContextMetadata;

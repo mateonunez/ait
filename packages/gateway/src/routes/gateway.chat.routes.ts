@@ -328,6 +328,8 @@ export default async function chatRoutes(fastify: FastifyInstance) {
                 "Generation error event emitted.",
               );
               reply.raw.write(`${STREAM_EVENT.ERROR}:${JSON.stringify(event.data)}\n`);
+            } else if (event.type === STREAM_EVENT.REASONING) {
+              reply.raw.write(`${STREAM_EVENT.REASONING}:${JSON.stringify(event.data)}\n`);
             }
           }
 

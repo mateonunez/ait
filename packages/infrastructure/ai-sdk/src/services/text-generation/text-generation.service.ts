@@ -1,4 +1,4 @@
-import { getLogger } from "@ait/core";
+import { type StreamEvent, getLogger } from "@ait/core";
 import { stream as streamGeneration } from "../../generation/stream";
 import { generate as generateText } from "../../generation/text";
 import { getAnalyticsProvider } from "../../providers";
@@ -6,10 +6,11 @@ import { rerank } from "../../rag/rerank";
 import { type RetrievedDocument, retrieve } from "../../rag/retrieve";
 import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
 import { routeToolsAsync } from "../../tools/router/tool-router";
-import { STREAM_EVENT, type StreamEvent } from "../../types";
+import { REASONING_TYPE, STREAM_EVENT } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { Tool } from "../../types/tools";
+import { getContextPreprocessorService } from "../context/context-preprocessor.service";
 import { SmartContextManager } from "../context/smart/smart-context.manager";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
@@ -120,11 +121,13 @@ export class TextGenerationService implements ITextGenerationService {
 
       let fullResponse = "";
       let chunkCount = 0;
+      let reasoningContent = "";
+      const reasoningId = `reasoning-${telemetry.traceContext?.traceId || Date.now()}`;
 
-      const { textStream } = await streamGeneration({
+      const { fullStream } = await streamGeneration({
         prompt: finalPrompt,
         messages: options.messages,
-        tools: toolsForModel as any,
+        tools: toolsForModel,
         enableTelemetry: options.telemetryOptions?.enableTelemetry,
         traceContext: telemetry.optionalContext,
         ragContext,
@@ -132,13 +135,47 @@ export class TextGenerationService implements ITextGenerationService {
         model: options.model,
       });
 
-      for await (const chunk of textStream) {
-        chunkCount++;
-        fullResponse += chunk;
-        yield chunk;
+      for await (const part of fullStream) {
+        if (part.type === "text-delta") {
+          const chunk = (part as any).textDelta ?? (part as any).text ?? "";
+          chunkCount++;
+          fullResponse += chunk;
+          yield chunk;
+        } else if (part.type === "reasoning-delta" || part.type === "reasoning") {
+          const delta = (part as any).textDelta ?? (part as any).text ?? "";
+          reasoningContent += delta;
+          yield {
+            type: STREAM_EVENT.REASONING,
+            data: {
+              content: delta,
+              id: reasoningId,
+            },
+          } as any;
+        } else if (part.type === "reasoning-end") {
+          reasoningContent = "";
+        } else if (part.type === "finish") {
+          reasoningContent = "";
+        } else if (part.type === "error") {
+          const errorMsg = typeof part.error === "string" ? part.error : ((part.error as any)?.message ?? "");
+          if (errorMsg.includes("reasoning part") && errorMsg.includes("not found")) {
+            logger.warn("[TextGenerationService] Suppressing SDK reasoning ID mismatch error", {
+              error: part.error,
+              traceId: telemetry.traceContext?.traceId,
+            });
+            continue;
+          }
+
+          yield {
+            type: STREAM_EVENT.ERROR,
+            data: part.error,
+          };
+        }
       }
 
-      logger.debug("Stream completed", { chunkCount, responseLength: fullResponse.length });
+      if (reasoningContent) {
+        yield* this._emitReasoningEvent(reasoningContent, reasoningId);
+      }
+
       this._recordSuccess(telemetry, fullResponse, options.model, chunkCount);
     } catch (error: unknown) {
       yield* this._handleError(error, telemetry);
@@ -255,7 +292,23 @@ export class TextGenerationService implements ITextGenerationService {
           topK: this._config.retrievalConfig?.limit ?? 20,
         });
 
-        ragDocuments = ranked.documents;
+        // Pre-filter documents by temporal intent before sending to LLM
+        const contextPreprocessor = getContextPreprocessorService();
+        const preprocessed = contextPreprocessor.filter({
+          documents: ranked.documents,
+          query: finalPrompt,
+        });
+
+        ragDocuments = preprocessed.documents;
+
+        if (preprocessed.filtered > 0) {
+          logger.info("[RAG] Documents preprocessed by temporal intent", {
+            originalCount: ranked.documents.length,
+            filteredCount: preprocessed.filtered,
+            keptCount: preprocessed.kept,
+            temporalIntent: preprocessed.temporalIntent,
+          });
+        }
 
         ragContext = await this._contextManager.assembleContext({
           systemInstructions: ragContextPrompt,
@@ -304,6 +357,21 @@ export class TextGenerationService implements ITextGenerationService {
         responseLength: response.length,
         model,
       });
+    }
+  }
+
+  private *_emitReasoningEvent(content: string, id?: string): Generator<StreamEvent> {
+    const reasoningEvent = this._metadataEmitter.createReasoningMetadataEvents([
+      {
+        id: id || `reasoning-${Date.now()}`,
+        type: REASONING_TYPE.ANALYSIS,
+        content,
+        timestamp: Date.now(),
+        order: 0,
+      },
+    ])[0];
+    if (reasoningEvent) {
+      yield reasoningEvent;
     }
   }
 
