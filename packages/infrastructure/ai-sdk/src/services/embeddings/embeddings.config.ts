@@ -25,7 +25,7 @@ const embeddingModelConfig = getEmbeddingModel();
 
 export const defaultEmbeddingsConfig: EmbeddingsConfig = {
   model: embeddingModelConfig.name,
-  expectedVectorSize: embeddingModelConfig.vectorSize,
+  expectedVectorSize: embeddingModelConfig.vectorSize || 1024, // Fallback to a common vector size
   chunkSize: Number.parseInt(process.env.EMBEDDINGS_CHUNK_SIZE || String(OPTIMAL_CHUNK_SIZE), 10),
   chunkOverlap: Number.parseInt(process.env.EMBEDDINGS_CHUNK_OVERLAP || String(OPTIMAL_CHUNK_OVERLAP), 10),
   concurrencyLimit: Number.parseInt(process.env.EMBEDDINGS_CONCURRENCY_LIMIT || "1", 10),

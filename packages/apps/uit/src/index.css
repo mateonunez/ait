@@ -64,7 +64,7 @@
   --input: var(--neutral-200);
   --ring: var(--violet-500);
 
-  --radius: 0.6rem;
+  --radius: 0.5rem;
 
   /* Sidebar Variables (Preserved/Mapped) */
   --sidebar: var(--neutral-50);
@@ -246,7 +246,7 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    @apply w-2;
+    @apply w-1.5;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -372,7 +372,7 @@
   }
 
   .streamdown-wrapper p {
-    @apply my-2 first:mt-0 last:mb-0 text-foreground;
+    @apply my-1.5 first:mt-0 last:mb-0 text-foreground;
   }
 
   .streamdown-wrapper h1,
@@ -409,7 +409,7 @@
   }
 
   .streamdown-wrapper pre {
-    @apply my-3 p-4 rounded-lg border border-border/50 overflow-x-auto;
+    @apply my-2 p-3 rounded-lg border border-border/50 overflow-x-auto;
   }
 
   .streamdown-wrapper pre code {

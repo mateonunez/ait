@@ -13,179 +13,159 @@ const TOOL_WORKFLOW_HINTS: Record<MCPVendor, Record<string, string>> = {
     "API-post-search": `Search Notion pages by title.
 REQUIREMENTS:
 - Query must not be empty.
-- Prefer tight queries first, broaden only if needed.
 OUTPUT:
 - Use the returned "id" as a page identifier.
+
+TYPE RULES:
+- query: string
+
 COMMON PATTERN:
 - Find parent page -> use its "id" as "parent.page_id" in API-post-page
 - Find target page -> use its "id" as "page_id" in API-patch-page`,
-
     "API-post-page": `Create a new Notion page.
 PREREQ:
 - Always call API-post-search first to identify the parent page_id.
-- If multiple candidate parents exist, list them briefly and ask the user to pick one.
 
-FORMAT (with content):
-{
-  "parent": { "page_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
-  "properties": {
-    "title": [{ "text": { "content": "Page Title" } }]
-  },
-  "children": [
-    { "paragraph": { "rich_text": [{ "text": { "content": "First paragraph." } }] } },
-    { "heading_2": { "rich_text": [{ "text": { "content": "Section Title" } }] } },
-    { "bulleted_list_item": { "rich_text": [{ "text": { "content": "Bullet item" } }] } },
-    {
-      "code": {
-        "rich_text": [{ "text": { "content": "pnpm test" } }],
-        "language": "bash"
-      }
-    }
-  ]
-}
+TYPE RULES:
+- parent.page_id: string
+- properties.title[].text.content: string
+- children: array of blocks
 
 RULES:
-- Do NOT include a "type" field inside rich_text items
-- Prefer simple blocks over complex ones, unless the user explicitly asks
-- Keep children content concrete and scoped, do not dump entire context
-- Available block types: paragraph, heading_1, heading_2, heading_3, bulleted_list_item, numbered_list_item, to_do, quote, code, table
-- For tables: keep them small, 2 to 5 columns max, avoid wide tables`,
-
+- Do NOT include a "type" field inside rich_text items`,
     "API-patch-page": `Update an existing Notion page.
 PREREQ:
 - Requires "page_id".
 - First call API-post-search to find the page and get its id.
-NOTES:
-- Patch is for properties, not for adding blocks.
-- If the user wants to append content blocks, create a new child page instead, or use the dedicated append blocks tool if available.`,
 
+TYPE RULES:
+- page_id: string`,
     "API-post-comment": `Add a comment to a Notion page.
 PREREQ:
 - First call API-post-search to find the target page and get its id.
 
-FORMAT:
-{
-  "parent": { "page_id": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" },
-  "rich_text": [{ "text": { "content": "Your comment" } }]
-}
-
-RULES:
-- Keep comments short, actionable, and specific.
-- Do NOT include a "type" field inside rich_text items.`,
-
+TYPE RULES:
+- parent.page_id: string
+- rich_text[].text.content: string`,
     "API-post-database": `Create a Notion database.
 PREREQ:
 - Requires "parent.page_id".
 - First call API-post-search to find a parent page and get its id.
-WORKFLOW:
-- Define properties first, then add rows separately (do not overload database creation with content).`,
+
+TYPE RULES:
+- parent.page_id: string`,
   },
 
   github: {
-    list_repos: `List repositories the token can access.
-USE:
-- Always call before create_branch, create_issue, create_pull_request unless owner/repo is already known with certainty.
-OUTPUT:
-- Choose the repo explicitly as { owner, repo }.`,
-
+    list_repos: "List repositories the token can access.",
     create_issue: `Create a GitHub issue.
 PREREQ:
 - Requires "owner" and "repo".
-- First call list_repos to discover valid repositories.
-- If the repo is ambiguous, list top matches and ask the user to choose.
 
-RULES:
-- Title: short and concrete.
-- Body: include context, acceptance criteria, and a minimal repro or steps if relevant.
-- Add labels only if you know they exist, otherwise skip.`,
-
+TYPE RULES:
+- owner: string
+- repo: string
+- title: string
+- body: string (optional)
+- labels: array of strings (optional)`,
     create_pull_request: `Create a GitHub pull request.
-PREREQ:
-- Requires "owner" and "repo".
-- Ensure the branch names are correct, ideally by listing branches first if the tool exists.
-RULES:
-- PR title should describe outcome, not activity.
-- Body should include: what changed, why, risk, how to test.`,
-
+TYPE RULES:
+- owner: string
+- repo: string
+- title: string
+- head: string
+- base: string`,
     create_issue_comment: `Comment on an existing GitHub issue.
-PREREQ:
-- Requires "owner", "repo", "issue_number".
-- First locate the issue via search or list issues if the tool exists.
-RULES:
-- Keep it tight, propose next step, ask one question only if needed.`,
+TYPE RULES:
+- owner: string
+- repo: string
+- issue_number: number
+- body: string
 
+BAD:
+{ "issue_number": "123" }
+
+GOOD:
+{ "issue_number": 123 }`,
     create_branch: `Create a GitHub branch.
-PREREQ:
-- Requires "owner" and "repo".
-- First call list_repos to confirm.
-- If a base ref is required, retrieve it first (main/master or default branch).
-NAMING:
-- Use kebab case, include intent, example: feat/rag-router, fix/oauth-timeout.`,
+TYPE RULES:
+- owner: string
+- repo: string
+- branch: string
+- base: string (if required by tool)`,
   },
 
   slack: {
-    list_channels: `List Slack channels visible to the bot token.
-USE:
-- Always call before posting unless channel_id is already known.`,
-
+    list_channels: "List Slack channels visible to the bot token.",
     post_message: `Post a Slack message.
-PREREQ:
-- Requires "channel_id".
-- First call list_channels to get the correct channel_id.
-STYLE:
-- 1 to 5 lines, concrete.
-- If it's an announcement, include what changed, impact, and link if available.`,
-
-    // Slack MCP server tool names are prefixed (e.g. slack_post_message).
-    slack_list_channels: `List Slack channels visible to the bot token.
-USE:
-- Always call before posting unless channel_id is already known.`,
-
+TYPE RULES:
+- channel_id: string
+- text: string`,
+    slack_list_channels: "List Slack channels visible to the bot token.",
     slack_post_message: `Post a Slack message.
-PREREQ:
-- Requires "channel_id" and "text".
-- If you only know a channel name like "#mcp-tests", call slack_list_channels first and find its id.
-FORMAT:
-{ "channel_id": "C01234567", "text": "Hello!" }`,
-
+TYPE RULES:
+- channel_id: string
+- text: string`,
     post_thread_message: `Post a message in an existing Slack thread.
-PREREQ:
-- Requires "channel_id" and "thread_ts".
-- First confirm channel_id via list_channels.
-NOTES:
-- thread_ts must be the parent message ts, not a reply ts.`,
-
-    post_comment: `Alias for posting a message, same requirements as post_thread_message when used for threads.
-PREREQ:
-- Requires channel_id and potentially thread_ts, confirm tool signature before calling.`,
-
+TYPE RULES:
+- channel_id: string
+- thread_ts: string
+- text: string`,
+    post_comment: `Alias for posting a message.
+TYPE RULES:
+- channel_id: string
+- text: string
+- thread_ts: string (if posting in a thread)`,
     post_comment_thread: `Alias for posting in a thread.
-PREREQ:
-- Requires channel_id and thread_ts.
-- Confirm the correct thread_ts from the parent message.`,
+TYPE RULES:
+- channel_id: string
+- thread_ts: string
+- text: string`,
   },
 
   linear: {
     list_projects: `List Linear projects and teams.
-USE:
-- Call this before creating issues if team or project is ambiguous.
 OUTPUT:
-- Select a team_id or project_id explicitly.`,
+- Select a team_id or project_id explicitly.
+
+TYPE RULES:
+- limit: number (if supported)
+- includeArchived: boolean (if supported)`,
+
+    linear_search_issues: `Search Linear issues.
+TYPE RULES:
+- query: string
+- limit: number
+- priority: number
+
+BAD:
+{ "query": "oauth", "limit": "10", "priority": "2" }
+
+GOOD:
+{ "query": "oauth", "limit": 10, "priority": 2 }
+
+RECOVERY:
+- If tool returns ZodError invalid_type on limit/priority, retry with numbers.`,
 
     create_issue: `Create a Linear issue.
 PREREQ:
 - Requires a team identifier (and project if applicable).
 - First call list_projects or list_teams if available.
-RULES:
-- Title: outcome focused.
-- Description: problem, constraints, acceptance criteria, and links.
-- Priority only if the team uses it consistently.`,
+
+TYPE RULES:
+- team_id (or teamId): string (use the schema name)
+- title: string
+- description: string (optional)
+- priority: number (only if the schema uses numeric priority)
+
+BAD:
+{ "priority": "1" }
+
+GOOD:
+{ "priority": 1 }`,
   },
 };
 
-/**
- * Enrich a tool description with workflow hints if available
- */
 function enrichDescription(toolName: string, vendor: MCPVendor, originalDescription?: string): string {
   const vendorHints = TOOL_WORKFLOW_HINTS[vendor];
   const hint = vendorHints?.[toolName];
@@ -219,18 +199,9 @@ function convertMCPResultToToolResult(mcpResult: MCPToolResult): ToolResult {
   };
 }
 
-/**
- * Convert a single MCP tool to AIt Tool format
- *
- * Enriches the description with workflow hints to help the LLM
- * understand multi-step workflows (e.g., search before create).
- */
 export function convertMCPToolToAItTool(mcpTool: MCPTool, vendor: MCPVendor, manager: MCPClientManager): Tool {
-  // Convert JSON Schema to Zod Schema if available, otherwise use passthrough
-  // We cast to ZodSchema<any> because Tool expects a schema that produces Record<string, unknown>,
-  // but jsonSchemaToZod returns generic ZodTypeAny. MCP input schemas are top-level objects.
   const parametersSchema = (
-    mcpTool.inputSchema ? jsonSchemaToZod(mcpTool.inputSchema) : z.record(z.string(), z.any())
+    mcpTool.inputSchema ? jsonSchemaToZod(mcpTool.inputSchema) : z.record(z.string(), z.string())
   ) as z.ZodSchema<any>;
 
   return createTool({

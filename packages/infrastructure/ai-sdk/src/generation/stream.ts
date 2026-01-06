@@ -1,6 +1,7 @@
 import { getLogger } from "@ait/core";
 import { type LanguageModel, stepCountIs, streamText as vercelStreamText } from "ai";
-import { createModel, getAItClient } from "../client/ai-sdk.client";
+import { createModel, getAItClient, modelSupportsTools } from "../client/ai-sdk.client";
+import { type ModelName, getModelSpec } from "../config/models.config";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../services/prompts/system.prompt";
 import { createSpanWithTiming, shouldEnableTelemetry } from "../telemetry/telemetry.middleware";
 import { convertToCoreTools } from "../tools/tool.converter";
@@ -34,6 +35,7 @@ export interface StreamOptions {
 
 export interface StreamResult {
   textStream: AsyncIterable<string>;
+  fullStream: AsyncIterable<any>;
   text: Promise<string>;
 }
 
@@ -80,16 +82,44 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
         )
       : null;
 
-  const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
+  // Lookup model-specific config (supports per-model temperature, topP, topK)
+  const modelName = typeof options.model === "string" ? options.model : client.generationModelConfig.name;
+  const modelSpec = getModelSpec(modelName as ModelName, "generation");
+
+  logger.debug("[Stream] Model spec", {
+    modelName,
+    modelSpec,
+  });
+
+  // Only use tools if the model supports them (some cloud models like gemini-3-flash-preview don't)
+  // Check specific model spec first, fallback to client default
+  const supportsTools = modelSpec?.supportsTools ?? modelSupportsTools();
+  const shouldUseTools = options.tools && supportsTools;
+  const coreTools = shouldUseTools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
   const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolConfig?.maxRounds ?? 5;
   const maxSteps = computeMaxSteps({ maxToolRounds, hasTools: !!coreTools });
+
+  // Resolve final parameters with priority: options > model-specific config > client default
+  const finalTemperature = options.temperature ?? modelSpec?.temperature ?? client.config.generation.temperature;
+  const finalTopP = options.topP ?? modelSpec?.topP ?? client.config.generation.topP;
+  const finalTopK = options.topK ?? modelSpec?.topK ?? client.config.generation.topK;
+
+  logger.debug("[Stream] Using model-specific parameters", {
+    modelName,
+    temperature: finalTemperature,
+    topP: finalTopP,
+    topK: finalTopK,
+    enableThinking: modelSpec?.enableThinking,
+    fromModelSpec: !!modelSpec,
+    supportsTools,
+  });
 
   const commonOptions = {
     model,
     system: systemMessage,
-    temperature: options.temperature ?? client.config.generation.temperature,
-    topP: options.topP ?? client.config.generation.topP,
-    topK: options.topK ?? client.config.generation.topK,
+    temperature: finalTemperature,
+    topP: finalTopP,
+    topK: finalTopK,
     tools: coreTools,
     maxSteps,
   };
@@ -121,17 +151,21 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
         textLength: event.text.length,
         totalToolResults: event.toolResults?.length ?? 0,
       };
-      logger.debug("Stream finished", {
-        finishReason: event.finishReason,
-        textLength: event.text.length,
-        totalToolCalls: event.toolCalls?.length ?? 0,
-        totalToolResults: event.toolResults?.length ?? 0,
-        totalSteps: event.steps?.length ?? 0,
-      });
+
+      if (endSpan) {
+        endSpan({
+          response: event.text.slice(0, 500),
+          responseLength: event.text.length,
+          usage: event.usage,
+          finishReason: event.finishReason,
+        });
+      }
     },
   });
 
-  const baseStream = endSpan ? wrapStreamWithTelemetry(result.textStream, endSpan) : result.textStream;
+  /* */
+  const wrappedFullStream = result.fullStream;
+  const baseStream = result.textStream;
 
   const hasTools = !!coreTools;
   const fallbackMessage = defaultToolLoopFallbackMessage();
@@ -161,30 +195,9 @@ export async function stream(options: StreamOptions): Promise<StreamResult> {
 
   return {
     textStream: streamWithFallback(),
+    fullStream: wrappedFullStream,
     text: resolveTextWithFallback(),
   };
-}
-
-async function* wrapStreamWithTelemetry(
-  inputStream: AsyncIterable<string>,
-  endSpan: (output?: Record<string, unknown>) => void,
-): AsyncIterable<string> {
-  let fullResponse = "";
-  let chunkCount = 0;
-
-  try {
-    for await (const chunk of inputStream) {
-      fullResponse += chunk;
-      chunkCount++;
-      yield chunk;
-    }
-  } finally {
-    endSpan({
-      response: fullResponse.slice(0, 500),
-      responseLength: fullResponse.length,
-      chunkCount,
-    });
-  }
 }
 
 /**

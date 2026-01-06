@@ -3,6 +3,7 @@ export const STREAM_EVENT = {
   METADATA: "m",
   DATA: "d",
   ERROR: "3",
+  REASONING: "reasoning",
 } as const;
 
 export type StreamEventType = (typeof STREAM_EVENT)[keyof typeof STREAM_EVENT];

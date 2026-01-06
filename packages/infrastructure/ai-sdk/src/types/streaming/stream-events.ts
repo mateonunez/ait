@@ -1,4 +1,4 @@
-import type { METADATA_TYPE, STREAM_EVENT, StreamEventType } from "../../constants/stream.constants";
+import type { STREAM_EVENT, StreamEventType } from "../../constants/stream.constants";
 import type { RAGContextMetadata } from "../metadata/rag-context.metadata";
 import type { ReasoningStep } from "../metadata/reasoning-step.metadata";
 import type { SuggestionItem } from "../metadata/suggestion.metadata";
@@ -11,22 +11,14 @@ export interface BaseStreamEvent<T = unknown> {
   data?: T;
 }
 
-export interface TextChunkEvent extends BaseStreamEvent<string> {
+export interface TextChunkEvent extends BaseStreamEvent<EventData> {
   type: typeof STREAM_EVENT.TEXT;
-  data: string;
+  data: EventData;
 }
 
-export type MetadataPayload =
-  | { type: typeof METADATA_TYPE.CONTEXT; data: RAGContextMetadata }
-  | { type: typeof METADATA_TYPE.REASONING; data: ReasoningStep }
-  | { type: typeof METADATA_TYPE.TASK; data: TaskStep }
-  | { type: typeof METADATA_TYPE.SUGGESTION; data: SuggestionItem[] }
-  | { type: typeof METADATA_TYPE.TOOL_CALL; data: ToolCallMetadata }
-  | { type: typeof METADATA_TYPE.MODEL; data: ModelMetadata };
-
-export interface MetadataChunkEvent extends BaseStreamEvent<MetadataPayload> {
+export interface MetadataChunkEvent extends BaseStreamEvent<EventData> {
   type: typeof STREAM_EVENT.METADATA;
-  data: MetadataPayload;
+  data: EventData;
 }
 
 export interface CompletionDataEvent extends BaseStreamEvent {
@@ -42,12 +34,30 @@ export interface CompletionDataEvent extends BaseStreamEvent {
   };
 }
 
-export interface ErrorEvent extends BaseStreamEvent<string> {
+export type EventData = string | Record<string, unknown>;
+
+export interface ErrorEvent extends BaseStreamEvent<EventData> {
   type: typeof STREAM_EVENT.ERROR;
-  data: string;
+  data: EventData;
 }
 
-export type StreamEvent = TextChunkEvent | MetadataChunkEvent | CompletionDataEvent | ErrorEvent;
+export interface ReasoningEndEvent extends BaseStreamEvent<EventData> {
+  type: typeof STREAM_EVENT.REASONING;
+  data: EventData;
+}
+
+export interface ReasoningChunkEvent extends BaseStreamEvent<EventData> {
+  type: typeof STREAM_EVENT.REASONING;
+  data: EventData;
+}
+
+export type StreamEvent =
+  | TextChunkEvent
+  | MetadataChunkEvent
+  | CompletionDataEvent
+  | ErrorEvent
+  | ReasoningChunkEvent
+  | ReasoningEndEvent;
 
 export interface StreamMetadata {
   context?: RAGContextMetadata;

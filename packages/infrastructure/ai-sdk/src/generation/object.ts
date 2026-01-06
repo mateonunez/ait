@@ -2,6 +2,7 @@ import { AItError, getLogger } from "@ait/core";
 import { type LanguageModel, generateObject as vercelGenerateObject } from "ai";
 import type { ZodType } from "zod";
 import { getAItClient } from "../client/ai-sdk.client";
+import { getModelSpec } from "../config/models.config";
 import { attemptStructuredRepair, augmentPrompt, nextDelay, wait } from "../utils/generation.utils";
 
 const logger = getLogger();
@@ -18,27 +19,35 @@ export interface ObjectGenerateOptions<T> {
 }
 
 /**
- * Generate a structured object with retry and repair logic.
+ * Generate a structured object with native support and fallback repair logic.
  */
 export async function generateObject<T>(options: ObjectGenerateOptions<T>): Promise<T> {
   const client = getAItClient();
+  const modelName = client.generationModelConfig.name;
+  const modelSpec = getModelSpec(modelName as any, "generation");
   const model = client.model as LanguageModel;
 
-  const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
   const configuredRetries = client.config.textGeneration?.retryConfig?.maxRetries ?? DEFAULT_STRUCTURED_MAX_RETRIES;
   const maxRetries = options.maxRetries ?? configuredRetries;
   const baseTemperature = options.temperature ?? client.config.generation.temperature;
   const delayMs = options.delayMs ?? client.config.textGeneration?.retryConfig?.delayMs;
 
+  const supportsNativeStructured = modelSpec?.supportsStructuredOutputs ?? true;
+
   let lastError: unknown;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      // If the model supports native structured outputs, we don't augment the prompt
+      const prompt = supportsNativeStructured ? options.prompt : augmentPrompt(options.prompt, options.jsonInstruction);
+
       const { object } = await vercelGenerateObject({
         model,
         schema: options.schema,
         prompt,
         temperature: baseTemperature,
+        // Native JSON mode for Ollama/etc
+        mode: supportsNativeStructured ? "json" : undefined,
       });
 
       return object as T;
@@ -49,6 +58,8 @@ export async function generateObject<T>(options: ObjectGenerateOptions<T>): Prom
       logger.warn("Structured generation attempt failed", {
         attempt,
         maxRetries,
+        model: modelName,
+        supportsNativeStructured,
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -56,7 +67,9 @@ export async function generateObject<T>(options: ObjectGenerateOptions<T>): Prom
         break;
       }
 
+      // Fallback: search and repair logic if native failed or not supported
       try {
+        const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
         const repaired = await attemptStructuredRepair(model, prompt, options.schema, baseTemperature);
         if (repaired.success) {
           return repaired.data as T;

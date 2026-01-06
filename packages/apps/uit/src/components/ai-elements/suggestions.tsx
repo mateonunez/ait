@@ -16,10 +16,13 @@ export function Suggestions({ suggestions, onSuggestionClick, className, isLoadi
   if (isLoading) {
     return (
       <ScrollArea className={cn("w-full whitespace-nowrap", className)}>
-        <div className="flex w-max space-x-2 pb-2">
+        <div className="flex w-full justify-center space-x-2 pb-2 px-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: it's ok
-            <div key={i} className="h-8 w-32 rounded-full border border-border bg-muted/50 animate-pulse" />
+            <div
+              // biome-ignore lint/suspicious/noArrayIndexKey: it's ok
+              key={i}
+              className="h-8 w-32 rounded-full border border-border bg-muted/50 animate-pulse flex-shrink-0"
+            />
           ))}
         </div>
         <ScrollBar orientation="horizontal" className="invisible" />
@@ -33,7 +36,7 @@ export function Suggestions({ suggestions, onSuggestionClick, className, isLoadi
 
   return (
     <ScrollArea className={cn("w-full whitespace-nowrap", className)}>
-      <div className="flex w-max space-x-2 pb-2">
+      <div className="flex w-full justify-center space-x-2 pb-2 px-4">
         {suggestions.map((suggestion, index) => (
           <SuggestionButton
             key={suggestion.id}

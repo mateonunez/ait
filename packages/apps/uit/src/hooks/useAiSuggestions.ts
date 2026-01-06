@@ -1,7 +1,7 @@
 import { fetchSuggestions } from "@/services/suggestions.service";
 import type { Suggestion } from "@ait/ai-sdk";
 import { getLogger } from "@ait/core";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const logger = getLogger();
 
@@ -34,11 +34,17 @@ export function useAiSuggestions(options: UseAiSuggestionsOptions = {}): UseAiSu
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
 
-  // Memoize the last 4 messages to avoid unnecessary re-renders
-  // We stringify the dependency to ensure stable mapping even if parent passes new array instances
-  const last4Messages = useMemo(() => {
-    return recentMessages?.slice(-4);
-  }, [recentMessages]);
+  // Use a stable key for messages to prevent unnecessary re-fetches
+  // We compare stringified content rather than array references
+  const messagesKey = JSON.stringify(recentMessages?.slice(-4));
+  const prevMessagesKeyRef = useRef(messagesKey);
+  const last4MessagesRef = useRef(recentMessages?.slice(-4));
+
+  // Only update the stored messages when content actually changes
+  if (messagesKey !== prevMessagesKeyRef.current) {
+    prevMessagesKeyRef.current = messagesKey;
+    last4MessagesRef.current = recentMessages?.slice(-4);
+  }
 
   const fetchSuggestionsInternal = useCallback(async () => {
     if (!enabled) return;
@@ -49,7 +55,7 @@ export function useAiSuggestions(options: UseAiSuggestionsOptions = {}): UseAiSu
     try {
       const result = await fetchSuggestions({
         context,
-        recentMessages: last4Messages,
+        recentMessages: last4MessagesRef.current,
       });
       if (mountedRef.current) {
         setSuggestions(result);
@@ -64,12 +70,13 @@ export function useAiSuggestions(options: UseAiSuggestionsOptions = {}): UseAiSu
         setIsLoading(false);
       }
     }
-  }, [enabled, context, last4Messages]);
+  }, [enabled, context]);
 
   const refresh = useCallback(() => {
     fetchSuggestionsInternal();
   }, [fetchSuggestionsInternal]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: it's ok
   useEffect(() => {
     mountedRef.current = true;
 
@@ -92,7 +99,8 @@ export function useAiSuggestions(options: UseAiSuggestionsOptions = {}): UseAiSu
         clearTimeout(timeoutRef.current);
       }
     };
-  }, [enabled, debounceMs, fetchSuggestionsInternal]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, debounceMs, fetchSuggestionsInternal, messagesKey]);
 
   return { suggestions, isLoading, error, refresh };
 }

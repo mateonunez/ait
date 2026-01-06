@@ -2,6 +2,12 @@ import type { EntityType, IntegrationVendor } from "@ait/core";
 
 export type CollectionVendor = IntegrationVendor | "google-calendar" | "youtube" | "general";
 
+export interface CollectionPerformanceHint {
+  estimatedLatencyMs?: number;
+  supportsHybridSearch: boolean;
+  sparseVectorCoverage?: number;
+}
+
 export interface CollectionConfig {
   readonly vendor: CollectionVendor;
   readonly name: string;
@@ -9,6 +15,8 @@ export interface CollectionConfig {
   readonly entityTypes: readonly EntityType[];
   readonly defaultWeight: number;
   readonly enabled: boolean;
+  readonly performanceHint?: CollectionPerformanceHint;
+  readonly retrievalPriority?: "high" | "medium" | "low";
 }
 
 const SPOTIFY_COLLECTION: CollectionConfig = {

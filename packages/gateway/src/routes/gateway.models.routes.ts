@@ -1,16 +1,7 @@
 import { getAllModels, getModelMetadata } from "@ait/ai-sdk";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-/**
- * Model management routes
- * Provides endpoints for listing available models and their capabilities
- */
-
 export default async function modelsRoutes(fastify: FastifyInstance) {
-  /**
-   * GET /models
-   * List all available models with their capabilities
-   */
   fastify.get("/", async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const models = getAllModels();

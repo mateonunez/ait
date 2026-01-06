@@ -75,6 +75,11 @@ const DEFAULT_COSTS: Record<GenerationModelName | EmbeddingModelName, ModelCosts
     embeddingCostPer1KTokens: 0.00001, // ~$0.01 per 1M tokens
     currency: "USD",
   },
+  "nemotron-3-nano:30b-cloud": {
+    generationCostPer1KTokens: 0.0,
+    embeddingCostPer1KTokens: 0.0,
+    currency: "USD",
+  },
 };
 
 export class CostTrackingService {

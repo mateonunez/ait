@@ -162,8 +162,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
             setError(errorMessage);
             setIsLoading(false);
             onError?.(errorMessage);
-            // Remove the assistant message on error
-            setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
           },
         });
       } catch (err) {
@@ -171,8 +169,6 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
         setError(errorMessage);
         setIsLoading(false);
         onError?.(errorMessage);
-        // Remove the assistant message on error
-        setMessages((prev) => prev.filter((m) => m.id !== assistantMessageId));
       }
     },
     [messages, isLoading, selectedModel, enableMetadata, onError, sessionId, conversationId, onConversationCreated],

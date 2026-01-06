@@ -1,13 +1,10 @@
-/**
- * Formatting utilities for tool results and values.
- * Handles truncation, array previews, and object formatting.
- */
+import { truncate } from "./string.utils";
 
 const DEFAULT_MAX_LENGTH = 8000;
 const DEFAULT_PREVIEW_COUNT = 10;
 
 /**
- * Format a value for inclusion in tool results.
+ * Format a value for inclusion in tool results or logging.
  * Handles arrays, objects with `results` property, and primitives.
  */
 export function formatValue(
@@ -57,31 +54,4 @@ export function formatObject(obj: Record<string, unknown>, maxLength: number, pr
   // Generic object
   const json = JSON.stringify(obj, null, 2);
   return truncate(json, maxLength);
-}
-
-/**
- * Truncate a string to the specified maximum length.
- */
-export function truncate(str: string, maxLength: number): string {
-  return str.length > maxLength ? `${str.slice(0, maxLength)}…` : str;
-}
-
-/**
- * Format conversation messages into a string.
- */
-export function formatConversation(messages: Array<{ role: string; content: string }>, summary?: string): string {
-  const parts: string[] = [];
-
-  if (summary) {
-    parts.push(summary);
-  }
-
-  if (messages.length > 0) {
-    const formatted = messages
-      .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`)
-      .join("\n\n");
-    parts.push(formatted);
-  }
-
-  return parts.join("\n\n");
 }

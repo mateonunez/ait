@@ -1,6 +1,7 @@
 import { getLogger } from "@ait/core";
 import { type LanguageModel, stepCountIs, generateText as vercelGenerateText } from "ai";
-import { createModel, getAItClient } from "../client/ai-sdk.client";
+import { createModel, getAItClient, modelSupportsTools } from "../client/ai-sdk.client";
+import { getModelSpec } from "../config/models.config";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../services/prompts/system.prompt";
 import { createSpanWithTiming, shouldEnableTelemetry } from "../telemetry/telemetry.middleware";
 import { convertToCoreTools } from "../tools/tool.converter";
@@ -67,16 +68,25 @@ export async function generate(options: TextGenerateOptions): Promise<TextGenera
         )
       : null;
 
-  // Build request options
-  const coreTools = options.tools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
+  // Lookup model-specific config (supports per-model temperature, topP, topK)
+  const modelName = typeof options.model === "string" ? options.model : client.generationModelConfig.name;
+  const modelSpec = getModelSpec(modelName as any, "generation");
+
+  // Build request options - only use tools if the model supports them
+  const supportsTools = modelSpec?.supportsTools ?? modelSupportsTools();
+  const shouldUseTools = options.tools && supportsTools;
+
+  const coreTools = shouldUseTools ? convertToCoreTools(options.tools as unknown as Record<string, Tool>) : undefined;
   const maxToolRounds = options.maxToolRounds ?? client.config.textGeneration?.toolConfig?.maxRounds ?? 5;
   const maxSteps = computeMaxSteps({ maxToolRounds, hasTools: !!coreTools });
+
   const commonOptions = {
     model,
     system: systemMessage,
-    temperature: options.temperature ?? client.config.generation.temperature,
-    topP: options.topP ?? client.config.generation.topP,
-    topK: options.topK ?? client.config.generation.topK,
+    // Priority: options > model-specific config > client default config
+    temperature: options.temperature ?? modelSpec?.temperature ?? client.config.generation.temperature,
+    topP: options.topP ?? modelSpec?.topP ?? client.config.generation.topP,
+    topK: options.topK ?? modelSpec?.topK ?? client.config.generation.topK,
     tools: coreTools,
     maxSteps,
   };

@@ -57,7 +57,7 @@ export abstract class RetoveBaseETLAbstract<T> {
   protected abstract readonly _descriptor: IETLEmbeddingDescriptor<T>;
   protected readonly retryOptions: RetryOptions;
   private readonly _batchSize = 100;
-  private readonly _vectorSize = embeddingModelConfig.vectorSize;
+  private readonly _vectorSize = embeddingModelConfig.vectorSize ?? 4096;
   protected readonly _transformConcurrency: number = 2;
   protected readonly _batchUpsertConcurrency: number = 3;
   protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
@@ -77,7 +77,7 @@ export abstract class RetoveBaseETLAbstract<T> {
     },
     protected readonly _embeddingsService: IEmbeddingsService = new EmbeddingsService(
       embeddingModelConfig.name,
-      embeddingModelConfig.vectorSize,
+      embeddingModelConfig.vectorSize ?? 4096,
       {
         // Use optimal chunk size from central config (single source of truth)
         chunkSize: OPTIMAL_CHUNK_SIZE,

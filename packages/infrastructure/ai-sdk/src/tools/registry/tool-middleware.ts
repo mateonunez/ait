@@ -1,6 +1,6 @@
 import { getLogger } from "@ait/core";
+import { safeJsonSize } from "@ait/core";
 import type { MCPVendor } from "../../mcp";
-import { safeJsonSize } from "../../utils/json.utils";
 import type { ToolMetadata } from "./tool-metadata.store";
 
 const logger = getLogger();

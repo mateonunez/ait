@@ -52,9 +52,9 @@ export function ModelSelector({ selectedModelId, onModelSelect, className }: Mod
 
   if (loading) {
     return (
-      <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg border border-border", className)}>
-        <Cpu className="h-4 w-4 text-muted-foreground animate-pulse" />
-        <span className="text-sm text-muted-foreground">Loading models...</span>
+      <div className={cn("flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border", className)}>
+        <Cpu className="h-3.5 w-3.5 text-muted-foreground animate-pulse" />
+        <span className="text-xs text-muted-foreground">Loading models...</span>
       </div>
     );
   }
@@ -65,23 +65,23 @@ export function ModelSelector({ selectedModelId, onModelSelect, className }: Mod
         <button
           type="button"
           className={cn(
-            "flex items-center justify-between gap-2 px-3 py-2 rounded-lg",
+            "flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-lg",
             "border border-border bg-background hover:bg-muted",
             "transition-colors duration-200",
             "focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2",
             className,
           )}
         >
-          <div className="flex items-center gap-2 min-w-0">
-            <Cpu className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-sm font-medium truncate">{selectedModel?.name || "Select model"}</span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Cpu className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+            <span className="text-xs font-medium truncate">{selectedModel?.name || "Select model"}</span>
             {selectedModel && (
               <Badge variant="secondary" className="text-xs">
                 {selectedModel.provider}
               </Badge>
             )}
           </div>
-          <ChevronsUpDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+          <ChevronsUpDown className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
         </button>
       </DropdownMenuTrigger>
 
