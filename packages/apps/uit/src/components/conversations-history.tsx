@@ -1,9 +1,8 @@
 import { formatFriendlyDate } from "@/utils/date.utils";
 import type { Conversation } from "@ait/core";
-import { MessageCircle, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { ScrollArea } from "./ui/scroll-area";
-import { Separator } from "./ui/separator";
 
 export interface ConversationsHistoryProps {
   currentConversationId: string | null;
@@ -12,7 +11,6 @@ export interface ConversationsHistoryProps {
   error: string | null;
   onConversationSelect: (id: string) => void;
   onDelete: (id: string) => Promise<void>;
-  onNewChat: () => void;
 }
 
 export function ConversationsHistory({
@@ -22,7 +20,6 @@ export function ConversationsHistory({
   error,
   onConversationSelect,
   onDelete,
-  onNewChat,
 }: ConversationsHistoryProps) {
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -47,18 +44,9 @@ export function ConversationsHistory({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-x-hidden">
-      <div className="p-2">
-        <Button onClick={onNewChat} variant="outline" className="w-full" size="sm">
-          <MessageCircle className="h-4 w-4 mr-2" />
-          New Chat
-        </Button>
-      </div>
-
-      <Separator />
-
-      <p className="text-[10px] font-medium text-muted-foreground uppercase px-3 py-2">Recent Conversations</p>
+      <p className="text-[10px] font-medium text-muted-foreground uppercase px-2 py-1.5">Recent Conversations</p>
       <ScrollArea className="flex-1 min-h-0">
-        <div className="px-1 space-y-1">
+        <div className="px-1 space-y-0.5">
           {conversations.length === 0 ? (
             <div className="text-center p-4">
               <p className="text-xs text-muted-foreground">No conversations yet</p>
@@ -69,7 +57,7 @@ export function ConversationsHistory({
               <button
                 key={conversation.id}
                 onClick={() => onConversationSelect(conversation.id)}
-                className={`w-full flex items-center justify-between p-2 rounded-md text-left hover:bg-accent transition-colors group ${
+                className={`w-full flex items-center justify-between p-1.5 rounded-md text-left hover:bg-accent transition-colors group ${
                   conversation.id === currentConversationId ? "bg-accent" : ""
                 }`}
                 type="button"
@@ -83,10 +71,10 @@ export function ConversationsHistory({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-5 w-5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => handleDelete(conversation.id, e)}
                 >
-                  <Trash2 className="h-3 w-3 dark:text-white text-destructive" />
+                  <Trash2 className="h-2.5 w-2.5 dark:text-white text-destructive" />
                 </Button>
               </button>
             ))

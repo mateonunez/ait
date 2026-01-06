@@ -61,14 +61,14 @@ export function Message({ message, isStreaming = false }: MessageProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={cn("group flex gap-3 px-6 py-4", {
+      className={cn("group flex gap-2.5 px-4 py-2.5", {
         "flex-row-reverse": isUser,
       })}
     >
       <div className="flex shrink-0 pt-0.5">
         <div
           className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium",
+            "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-medium",
             isUser ? "bg-foreground text-background" : "bg-muted text-muted-foreground ring-1 ring-border/50",
           )}
         >
@@ -77,7 +77,7 @@ export function Message({ message, isStreaming = false }: MessageProps) {
       </div>
 
       <div
-        className={cn("flex flex-col gap-2 min-w-0 flex-1 max-w-[85%]", {
+        className={cn("flex flex-col gap-1.5 min-w-0 flex-1 max-w-[90%]", {
           "items-end": isUser,
         })}
       >
@@ -94,7 +94,7 @@ export function Message({ message, isStreaming = false }: MessageProps) {
         {/* Main message content */}
         {(isUser || message.content) && (
           <div
-            className={cn("relative rounded-2xl px-4 py-3 transition-all", {
+            className={cn("relative rounded-xl px-3 py-2 transition-all", {
               "bg-foreground text-background": isUser,
               "bg-muted/50 text-foreground": !isUser,
             })}
@@ -192,7 +192,7 @@ export function Message({ message, isStreaming = false }: MessageProps) {
 
         {/* Metadata badges */}
         {!isUser && !isStreaming && (hasContext || hasToolCalls || hasTasks) && (
-          <div className="flex flex-wrap gap-2 mt-2">
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
             {hasContext && message.metadata?.context && (
               <button
                 type="button"
@@ -234,7 +234,7 @@ export function Message({ message, isStreaming = false }: MessageProps) {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full rounded-lg bg-background border border-border p-3 space-y-2 max-h-[400px] overflow-y-auto"
+              className="w-full rounded-lg bg-background border border-border p-2.5 space-y-1.5 max-h-[400px] overflow-y-auto"
             >
               <div className="text-xs font-medium text-muted-foreground mb-2">
                 Retrieved Context (sorted by relevance)
@@ -278,7 +278,7 @@ export function Message({ message, isStreaming = false }: MessageProps) {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="w-full rounded-lg bg-background border border-border p-3 space-y-2"
+              className="w-full rounded-lg bg-background border border-border p-2.5 space-y-1.5"
             >
               <div className="text-xs font-medium text-muted-foreground mb-2">Task Breakdown</div>
               {message.metadata.tasks.map((task: any) => (

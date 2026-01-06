@@ -33,14 +33,14 @@ export function ContextWindowTracker({
 
   if (compact) {
     return (
-      <div className={cn("flex items-center gap-2 text-xs", className)}>
+      <div className={cn("flex items-center gap-2 text-xs w-full", className)}>
         <StatusIcon className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-muted-foreground">
           <span className="font-medium text-foreground">{formatTokenCount(tokenUsage.totalTokens)}</span>
           <span className="mx-1">/</span>
           <span>{formatTokenCount(maxContextWindow)}</span>
         </span>
-        <div className="relative h-1.5 w-20 bg-muted rounded-full overflow-hidden">
+        <div className="relative h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
           <motion.div
             className={cn(
               "absolute inset-y-0 left-0 rounded-full",
@@ -60,7 +60,7 @@ export function ContextWindowTracker({
   }
 
   return (
-    <div className={cn("rounded-lg border p-3", statusColors[usage.status], className)}>
+    <div className={cn("rounded-lg border p-3 w-full", statusColors[usage.status], className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-2">
           {/* Header */}

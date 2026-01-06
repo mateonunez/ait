@@ -108,13 +108,13 @@ export default function HomePage() {
         className="flex-1 flex flex-col overflow-y-auto custom-scrollbar min-w-0 min-h-0 relative"
       >
         <BackgroundEffects />
-        <div className="w-full min-w-0 px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 relative z-10">
-          <div className="container mx-auto max-w-7xl space-y-4 text-center sm:text-left">
+        <div className="w-full min-w-0 px-3 sm:px-5 lg:px-6 py-5 sm:py-8 space-y-5 relative z-10">
+          <div className="container mx-auto max-w-7xl space-y-3 text-center sm:text-left">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter mb-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tighter mb-2">
                 <span className="text-gradient-animated">AIt</span>
               </h1>
-              <p className="text-xl sm:text-2xl font-medium text-foreground/80">
+              <p className="text-lg sm:text-xl font-medium text-foreground/80">
                 Your data. Your AI. <span className="font-semibold text-gradient">One Platform.</span>
               </p>
             </motion.div>
@@ -133,15 +133,15 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="container mx-auto max-w-7xl my-8">
+          <div className="container mx-auto max-w-7xl my-5">
             <DiscoveryStats />
           </div>
 
-          <div className="container mx-auto max-w-7xl my-8">
+          <div className="container mx-auto max-w-7xl my-5">
             <IntegrationsList />
           </div>
 
-          <div className={cn("pb-24 sm:pb-28")}>
+          <div className={cn("pb-20 sm:pb-24")}>
             <HomeFeed
               isLoading={isLoading}
               sections={HOME_SECTIONS}
@@ -149,7 +149,7 @@ export default function HomePage() {
               totalItems={totalItems}
             />
 
-            <div className="container mx-auto max-w-7xl my-8">
+            <div className="container mx-auto max-w-7xl my-5">
               <GoalTrackerWidget />
             </div>
           </div>

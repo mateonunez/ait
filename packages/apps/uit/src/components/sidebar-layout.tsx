@@ -33,7 +33,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
     <SidebarProvider defaultOpen={false} className="h-svh overflow-hidden">
       <AppSidebar />
       <SidebarInset className="min-w-0">
-        <header className="sticky top-0 z-10 flex h-12 shrink-0 items-center justify-between border-b bg-background px-4">
+        <header className="sticky top-0 z-10 flex h-10 shrink-0 items-center justify-between border-b bg-background px-3">
           <div className="flex items-center gap-2">
             <SidebarTrigger className="-ml-1 hover:bg-accent" />
             <Separator orientation="vertical" className="mr-2 h-4" />
