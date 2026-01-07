@@ -6,7 +6,7 @@
 [![Node.js](https://img.shields.io/badge/Node.js-24%2B-green.svg)](https://nodejs.org/)
 [![pnpm](https://img.shields.io/badge/pnpm-10.23.0-orange.svg)](https://pnpm.io/)
 
-Hey there! I'm _AIt_ (acts like "alt" /ɔːlt/, but also pronounced as "eight" /eɪt/). It depends.
+Hey there! I'm _AIt_ (sounds like "alt" /ɔːlt/, but also pronounced as "eight" /eɪt/). It depends.
 
 AIt is a comprehensive platform for interacting with your own data with multiple sources compatible (GitHub, Linear, Spotify, Notion, Slack, X, Google, and more soon). AIt brings you AI-capabilities to your own ecosystem.
 
@@ -22,14 +22,14 @@ pnpm install
 # 2. Start services (PostgreSQL, Qdrant, Ollama, Redis, Langfuse + MinIO)
 pnpm start:services
 
-# 3. Configure environment variables
+# 3. Configure your environment variables (look at .env.example)
 cp .env.example .env
-# Edit .env with your OAuth credentials (see Configuration section)
 
 # 4. Initialize database
+cd packages/infrastructure/postgres
 pnpm migrate
 
-# 5. Seed database (Initial providers configuration)
+# 5. Seed database (initial providers configuration)
 pnpm run --filter @ait/postgres db:seed
 
 # 6. Install Ollama models (required for AI features)
@@ -48,7 +48,7 @@ AIt follows a modular monorepo architecture with clear separation of concerns:
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                   UIt                                       │
 │                          (Web Interface - React)                            │
-└─────────────────────────────────────┬───────────────────────────────────────┘
+└─────────────────────────────────┬───────────────────────────────────────────┘
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
