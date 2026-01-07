@@ -43,6 +43,7 @@ export interface GenerateOptions {
   telemetryOptions?: TelemetryOptions;
   model?: string;
   enableMetadata?: boolean;
+  allowedVendors?: Set<string>;
 }
 
 export type TelemetryOptions = {
@@ -63,6 +64,7 @@ export interface GenerateStreamOptions {
   telemetryOptions?: TelemetryOptions;
   enableMetadata?: boolean;
   model?: string;
+  allowedVendors?: Set<string>;
 }
 
 export interface GenerateTextOptions {
@@ -74,6 +76,7 @@ export interface GenerateTextOptions {
   telemetryOptions?: TelemetryOptions;
   enableMetadata?: boolean;
   model?: string;
+  allowedVendors?: Set<string>;
 }
 
 export interface ITextGenerationService {
@@ -137,12 +140,14 @@ export class TextGenerationService implements ITextGenerationService {
 
       for await (const part of fullStream) {
         if (part.type === "text-delta") {
-          const chunk = (part as any).textDelta ?? (part as any).text ?? "";
+          const chunk =
+            (part as { textDelta?: string; text?: string }).textDelta ?? (part as { text?: string }).text ?? "";
           chunkCount++;
           fullResponse += chunk;
           yield chunk;
         } else if (part.type === "reasoning-delta" || part.type === "reasoning") {
-          const delta = (part as any).textDelta ?? (part as any).text ?? "";
+          const delta =
+            (part as { textDelta?: string; text?: string }).textDelta ?? (part as { text?: string }).text ?? "";
           reasoningContent += delta;
           yield {
             type: STREAM_EVENT.REASONING,
@@ -150,20 +155,20 @@ export class TextGenerationService implements ITextGenerationService {
               content: delta,
               id: reasoningId,
             },
-          } as any;
+          } as StreamEvent;
         } else if (part.type === "reasoning-end") {
           reasoningContent = "";
         } else if (part.type === "finish") {
           reasoningContent = "";
         } else if (part.type === "error") {
-          const errorMsg = typeof part.error === "string" ? part.error : ((part.error as any)?.message ?? "");
+          const errorMsg = typeof part.error === "string" ? part.error : ((part.error as Error)?.message ?? "");
           if (errorMsg.includes("reasoning part") && errorMsg.includes("not found")) {
             continue;
           }
 
           yield {
             type: STREAM_EVENT.ERROR,
-            data: part.error,
+            data: part.error as string,
           };
         }
       }
@@ -185,7 +190,7 @@ export class TextGenerationService implements ITextGenerationService {
       const result = await generateText({
         prompt: finalPrompt,
         messages: options.messages,
-        tools: toolsForModel as any,
+        tools: toolsForModel as Record<string, Tool>,
         enableTelemetry: options.telemetryOptions?.enableTelemetry,
         traceContext: telemetry.optionalContext,
         ragContext,
@@ -215,7 +220,7 @@ export class TextGenerationService implements ITextGenerationService {
     const toolSelection = options.tools
       ? await routeToolsAsync({
           prompt: finalPrompt,
-          inferredTypes: typeFilter?.types as any,
+          inferredTypes: typeFilter?.types as string[],
           tools: options.tools,
         })
       : null;
@@ -279,6 +284,7 @@ export class TextGenerationService implements ITextGenerationService {
           : undefined,
         traceContext: telemetry.optionalContext,
         enableCache: true,
+        allowedVendors: options.allowedVendors,
       });
 
       if (retrieval.documents.length > 0) {
@@ -308,14 +314,14 @@ export class TextGenerationService implements ITextGenerationService {
 
         ragContext = await this._contextManager.assembleContext({
           systemInstructions: ragContextPrompt,
-          retrievedDocs: ragDocuments.map((d) => ({
-            pageContent: d.content,
+          retrievedDocs: ragDocuments.map((doc) => ({
+            pageContent: doc.content,
             metadata: {
-              id: d.id,
+              id: doc.id,
               __type: "document",
-              source: d.source || (d.metadata?.source as string),
-              collection: d.collection,
-              ...d.metadata,
+              source: doc.source || (doc.metadata?.source as string),
+              collection: doc.collection,
+              ...doc.metadata,
             },
           })),
         });

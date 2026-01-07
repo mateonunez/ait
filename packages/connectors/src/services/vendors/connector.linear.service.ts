@@ -1,6 +1,6 @@
 import type { LinearIssueEntity, LinearIssueExternal, PaginatedResponse, PaginationParams } from "@ait/core";
 import { ConnectorLinear } from "../../infrastructure/vendors/linear/connector.linear";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { ConnectorOAuth, IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
 import {
@@ -18,8 +18,8 @@ export class ConnectorLinearService
   extends ConnectorServiceBase<ConnectorLinear, LinearServiceEntityMap>
   implements IConnectorLinearService
 {
-  constructor() {
-    super(getConnectorConfig("linear"));
+  constructor(config?: IConnectorOAuthConfig) {
+    super(config ?? getConnectorConfig("linear"));
 
     this.registerPaginatedEntityConfig<LINEAR_ENTITY_TYPES_ENUM.ISSUE, LinearIssueExternal>(
       LINEAR_ENTITY_TYPES_ENUM.ISSUE,

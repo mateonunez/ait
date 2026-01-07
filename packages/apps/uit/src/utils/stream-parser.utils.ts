@@ -173,7 +173,6 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
 
           try {
             const data = JSON.parse(dataString);
-            console.log("[StreamParser] Event received", { type, data });
             switch (type) {
               case STREAM_EVENT.TEXT:
                 yield { type: STREAM_EVENT.TEXT, content: data };

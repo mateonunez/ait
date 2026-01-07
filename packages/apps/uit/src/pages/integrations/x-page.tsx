@@ -56,6 +56,7 @@ export default function XPage() {
 
   return (
     <IntegrationLayout
+      vendor="x"
       title="X (Twitter)"
       description="Latest tweets"
       color="#14171A"

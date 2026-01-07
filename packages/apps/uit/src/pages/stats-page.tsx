@@ -7,8 +7,8 @@ import { Link } from "wouter";
 export default function StatsPage() {
   return (
     <StatsProvider>
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-background p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar bg-background flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4 border-b">
           <div className="flex items-center gap-4">
             <Link href="/">
               <Button variant="ghost" size="icon">
@@ -22,7 +22,7 @@ export default function StatsPage() {
           </div>
         </div>
 
-        <div className="h-[600px]">
+        <div className="flex-1">
           <StatsContent />
         </div>
       </div>

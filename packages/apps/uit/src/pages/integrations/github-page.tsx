@@ -105,6 +105,7 @@ export default function GitHubPage() {
 
   return (
     <IntegrationLayout
+      vendor="github"
       title="GitHub"
       description="Recent activity and repositories"
       color="#1A1E22"

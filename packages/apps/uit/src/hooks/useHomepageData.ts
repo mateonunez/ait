@@ -1,3 +1,4 @@
+import { useConnectionStatus } from "@/hooks/useConnectionStatus";
 import { contentAlgorithmService } from "@/services/content-algorithm.service";
 import { fetchDiscoveryFeed } from "@/services/discovery.service";
 import type { HomeSection as HomeSectionType, IntegrationEntity } from "@/types/integrations.types";
@@ -81,6 +82,7 @@ export interface UseHomepageDataReturn {
 }
 
 export function useHomepageData({ sections, lazyLoad = false }: UseHomepageDataOptions): UseHomepageDataReturn {
+  const { isVendorGranted, isLoading: isStatusLoading } = useConnectionStatus();
   const [sectionsData, setSectionsData] = useState<Map<string, IntegrationEntity[]>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const hasLoadedRef = useRef(false);
@@ -104,11 +106,19 @@ export function useHomepageData({ sections, lazyLoad = false }: UseHomepageDataO
           }
         }
 
-        const requirements: FeedRequirement[] = Array.from(entityTypeLimits.entries()).map(([entityType, limit]) => ({
-          entityType: entityType as EntityType,
-          limit,
-          vendor: getEntityMetadata(entityType as EntityType).vendor,
-        }));
+        const requirements: FeedRequirement[] = Array.from(entityTypeLimits.entries())
+          .map(([entityType, limit]) => ({
+            entityType: entityType as EntityType,
+            limit,
+            vendor: getEntityMetadata(entityType as EntityType).vendor,
+          }))
+          .filter((req) => isVendorGranted(req.vendor as any));
+
+        if (requirements.length === 0) {
+          setSectionsData(new Map());
+          setIsLoading(false);
+          return;
+        }
 
         logger.info("[useHomepageData] Fetching bulk feed", {
           entityTypes: requirements.length,
@@ -185,16 +195,16 @@ export function useHomepageData({ sections, lazyLoad = false }: UseHomepageDataO
         setIsLoading(false);
       }
     },
-    [sections],
+    [sections, isVendorGranted],
   );
 
   useEffect(() => {
-    if (hasLoadedRef.current) return;
+    if (hasLoadedRef.current || isStatusLoading) return;
     if (lazyLoad) {
       logger.debug("[useHomepageData] Lazy loading enabled for initial fetch");
     }
     loadHomepageData();
-  }, [loadHomepageData, lazyLoad]);
+  }, [loadHomepageData, lazyLoad, isStatusLoading]);
 
   const totalItems = useMemo(() => {
     let count = 0;

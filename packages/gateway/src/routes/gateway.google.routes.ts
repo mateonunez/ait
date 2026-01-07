@@ -1,11 +1,8 @@
 import { type ConnectorGoogleService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-declare module "fastify" {
-  interface FastifyInstance {
-    googleService: ConnectorGoogleService;
-  }
-}
+const logger = getLogger();
 
 interface AuthCallbackQuery {
   code: string;
@@ -35,25 +32,46 @@ const GOOGLE_SCOPES = [
 ];
 
 export default async function googleRoutes(fastify: FastifyInstance) {
-  if (!fastify.googleService) {
-    fastify.decorate("googleService", connectorServiceFactory.getService<ConnectorGoogleService>(connectorType));
-  }
+  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorGoogleService> => {
+    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
 
-  const googleService = fastify.googleService;
+    // Support extracting userId from OAuth state if it's encoded there
+    const state = (request.query as any).state;
+    if (!userId && state && typeof state === "string" && state.includes(":")) {
+      userId = state.split(":")[1];
+    }
+
+    const currentUserId = userId || "anonymous";
+
+    if (configId) {
+      return await connectorServiceFactory.getServiceByConfig<ConnectorGoogleService>(configId, currentUserId);
+    }
+
+    // Fallback/Legacy
+    return connectorServiceFactory.getService<ConnectorGoogleService>(connectorType);
+  };
 
   // OAuth initiation
-  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
     try {
+      const { configId } = request.query;
+      if (!configId) return reply.status(400).send({ error: "Missing configId" });
+
+      const service = await getService(request, configId);
+      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
+      const config = service.connector.authenticator.getOAuthConfig();
+
       const params = new URLSearchParams({
-        client_id: process.env.GOOGLE_CLIENT_ID!,
-        redirect_uri: process.env.GOOGLE_REDIRECT_URI!,
+        client_id: config.clientId,
+        redirect_uri: config.redirectUri!,
         response_type: "code",
         scope: GOOGLE_SCOPES.join(" "),
         access_type: "offline",
         prompt: "consent",
+        state: `${configId}:${userId}`,
       });
 
-      const authUrl = `${process.env.GOOGLE_AUTH_URL || "https://accounts.google.com/o/oauth2/v2/auth"}?${params}`;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
       fastify.log.info({ authUrl, route: "/auth" }, "Generated Google Auth URL");
       reply.redirect(authUrl);
     } catch (err: any) {
@@ -65,8 +83,9 @@ export default async function googleRoutes(fastify: FastifyInstance) {
   // OAuth callback
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      const { code } = request.query;
+    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+      const { code, state } = request.query;
+      const [configId] = (state || "").split(":");
 
       if (!code) {
         fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
@@ -74,10 +93,8 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await googleService.connector.connect(code);
-
-        // Data fetching is now handled separately via the /refresh endpoint or background jobs
-        // to avoid timeout issues during the auth callback.
+        const service = await getService(request, configId);
+        await service.connector.connect(code);
 
         reply.send({
           success: true,
@@ -90,69 +107,95 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await clearOAuthData(connectorType);
-      reply.send({ success: true, message: "Google disconnected successfully." });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Google.");
-      reply.status(500).send({ error: "Failed to disconnect Google." });
-    }
-  });
+  fastify.post(
+    "/auth/disconnect",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const userId = request.headers["x-user-id"] as string;
+        await clearOAuthData(connectorType, userId);
+        reply.send({ success: true, message: "Google disconnected successfully." });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Google.");
+        reply.status(500).send({ error: "Failed to disconnect Google." });
+      }
+    },
+  );
 
   // Fetch events from API
-  fastify.get("/events", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const events = await googleService.fetchEvents();
-      reply.send(events);
-    } catch (err: any) {
-      fastify.log.error({ err, route: "/events" }, "Failed to fetch events.");
-      reply.status(500).send({ error: "Failed to fetch events." });
-    }
-  });
+  fastify.get(
+    "/events",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const events = await service.fetchEvents();
+        reply.send(events);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/events" }, "Failed to fetch events.");
+        reply.status(500).send({ error: "Failed to fetch events." });
+      }
+    },
+  );
 
   // Fetch calendars from API
-  fastify.get("/calendars", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const calendars = await googleService.fetchCalendars();
-      reply.send(calendars);
-    } catch (err: any) {
-      fastify.log.error({ err, route: "/calendars" }, "Failed to fetch calendars.");
-      reply.status(500).send({ error: "Failed to fetch calendars." });
-    }
-  });
+  fastify.get(
+    "/calendars",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const calendars = await service.fetchCalendars();
+        reply.send(calendars);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/calendars" }, "Failed to fetch calendars.");
+        reply.status(500).send({ error: "Failed to fetch calendars." });
+      }
+    },
+  );
 
   // Fetch subscriptions from API
-  fastify.get("/subscriptions", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const subscriptions = await googleService.fetchSubscriptions();
-      reply.send(subscriptions);
-    } catch (err: any) {
-      fastify.log.error({ err, route: "/subscriptions" }, "Failed to fetch subscriptions.");
-      reply.status(500).send({ error: "Failed to fetch subscriptions." });
-    }
-  });
+  fastify.get(
+    "/subscriptions",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const subscriptions = await service.fetchSubscriptions();
+        reply.send(subscriptions);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/subscriptions" }, "Failed to fetch subscriptions.");
+        reply.status(500).send({ error: "Failed to fetch subscriptions." });
+      }
+    },
+  );
 
   // Fetch contacts from API
-  fastify.get("/contacts", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const contacts = await googleService.fetchContacts();
-      reply.send(contacts);
-    } catch (err: any) {
-      fastify.log.error({ err, route: "/contacts" }, "Failed to fetch contacts.");
-      reply.status(500).send({ error: "Failed to fetch contacts." });
-    }
-  });
+  fastify.get(
+    "/contacts",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const contacts = await service.fetchContacts();
+        reply.send(contacts);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/contacts" }, "Failed to fetch contacts.");
+        reply.status(500).send({ error: "Failed to fetch contacts." });
+      }
+    },
+  );
 
   // Paginated data routes - fetch from database
   fastify.get(
     "/data/events",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await googleService.getEventsPaginated({ page, limit });
+        const result = await service.getEventsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/events" }, "Failed to fetch events from DB.");
@@ -163,12 +206,14 @@ export default async function googleRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/data/calendars",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await googleService.getCalendarsPaginated({ page, limit });
+        const result = await service.getCalendarsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/calendars" }, "Failed to fetch calendars from DB.");
@@ -179,12 +224,14 @@ export default async function googleRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/data/subscriptions",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await googleService.getSubscriptionsPaginated({ page, limit });
+        const result = await service.getSubscriptionsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/subscriptions" }, "Failed to fetch subscriptions from DB.");
@@ -195,12 +242,14 @@ export default async function googleRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/data/contacts",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await googleService.getContactsPaginated({ page, limit });
+        const result = await service.getContactsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/contacts" }, "Failed to fetch contacts from DB.");
@@ -211,12 +260,14 @@ export default async function googleRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/data/photos",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await googleService.getPhotosPaginated({ page, limit });
+        const result = await service.getPhotosPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/photos" }, "Failed to fetch photos from DB.");
@@ -226,12 +277,13 @@ export default async function googleRoutes(fastify: FastifyInstance) {
   );
 
   // Refresh endpoint with optional entity filter
-  // Usage: POST /refresh?entities=events,calendars or POST /refresh (all entities)
   fastify.post(
     "/refresh",
-    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: { entities?: string; configId?: string } }>, reply: FastifyReply) => {
       try {
-        const { entities: entitiesParam } = request.query;
+        const { entities: entitiesParam, configId } = request.query;
+        const service = await getService(request, configId);
+
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
           : ["events", "calendars", "subscriptions", "contacts", "photos"];
@@ -239,32 +291,32 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const counts: Record<string, number> = {};
 
         if (entitiesToRefresh.includes("events")) {
-          const events = await googleService.fetchEvents();
-          await googleService.connector.store.save(events);
+          const events = await service.fetchEvents();
+          await service.connector.store.save(events);
           counts.events = events.length;
         }
 
         if (entitiesToRefresh.includes("calendars")) {
-          const calendars = await googleService.fetchCalendars();
-          await googleService.connector.store.save(calendars);
+          const calendars = await service.fetchCalendars();
+          await service.connector.store.save(calendars);
           counts.calendars = calendars.length;
         }
 
         if (entitiesToRefresh.includes("subscriptions")) {
-          const subscriptions = await googleService.fetchSubscriptions();
-          await googleService.connector.store.save(subscriptions);
+          const subscriptions = await service.fetchSubscriptions();
+          await service.connector.store.save(subscriptions);
           counts.subscriptions = subscriptions.length;
         }
 
         if (entitiesToRefresh.includes("contacts")) {
-          const contacts = await googleService.fetchContacts();
-          await googleService.connector.store.save(contacts);
+          const contacts = await service.fetchContacts();
+          await service.connector.store.save(contacts);
           counts.contacts = contacts.length;
         }
 
         if (entitiesToRefresh.includes("photos")) {
-          const photos = await googleService.fetchPhotos();
-          await googleService.connector.store.save(photos);
+          const photos = await service.fetchPhotos();
+          await service.connector.store.save(photos);
           counts.photos = photos.length;
         }
 
@@ -281,22 +333,32 @@ export default async function googleRoutes(fastify: FastifyInstance) {
   );
 
   // Picker API Routes
-  fastify.post("/photos/picker/session", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const session = await googleService.createPickerSession();
-      reply.send(session);
-    } catch (err: any) {
-      fastify.log.error({ err, route: "/photos/picker/session" }, "Failed to create picker session.");
-      reply.status(500).send({ error: "Failed to create picker session." });
-    }
-  });
+  fastify.post(
+    "/photos/picker/session",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const session = await service.createPickerSession();
+        reply.send(session);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/photos/picker/session" }, "Failed to create picker session.");
+        reply.status(500).send({ error: "Failed to create picker session." });
+      }
+    },
+  );
 
   fastify.get(
     "/photos/picker/session/:id",
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Querystring: { configId?: string } }>,
+      reply: FastifyReply,
+    ) => {
       try {
         const { id } = request.params;
-        const session = await googleService.getPickerSession(id);
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const session = await service.getPickerSession(id);
         reply.send(session);
       } catch (err: any) {
         fastify.log.error({ err, route: "/photos/picker/session/:id" }, "Failed to get picker session.");
@@ -307,13 +369,18 @@ export default async function googleRoutes(fastify: FastifyInstance) {
 
   fastify.post(
     "/photos/picker/import/:id",
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Querystring: { configId?: string } }>,
+      reply: FastifyReply,
+    ) => {
       try {
         const { id } = request.params;
-        const mediaItems = await googleService.listPickerMediaItems(id);
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const mediaItems = await service.listPickerMediaItems(id);
 
         if (mediaItems.length > 0) {
-          await googleService.importPickerMediaItems(id);
+          await service.importPickerMediaItems(id);
         }
 
         reply.send({ success: true, count: mediaItems.length });

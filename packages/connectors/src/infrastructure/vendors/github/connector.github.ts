@@ -15,7 +15,7 @@ export class ConnectorGitHub extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorGitHubAuthenticator(oauth);
-    const repository = new ConnectorGitHubRepository();
+    const repository = new ConnectorGitHubRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorGitHubStore(repository);
     super(authenticator, repository, store);
   }

@@ -47,19 +47,21 @@ export function GoalTrackerWidget() {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-linear-to-br from-primary/5 via-background to-background backdrop-blur-sm">
         <div className="p-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row items-center gap-3">
               <Skeleton className="h-12 w-12 rounded-xl" />
-              <div className="space-y-2">
+              <div className="space-y-2 flex flex-col items-center sm:items-start">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-4 w-48" />
               </div>
             </div>
-            <Skeleton className="h-10 w-28" />
+            <div className="flex justify-center sm:justify-end">
+              <Skeleton className="h-10 w-28" />
+            </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 justify-items-center sm:justify-items-stretch">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-44 rounded-xl" />
+              <Skeleton key={i} className="h-44 w-full max-w-[200px] sm:max-w-none rounded-xl" />
             ))}
           </div>
         </div>

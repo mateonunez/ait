@@ -10,7 +10,7 @@ import type {
   PaginationParams,
 } from "@ait/core";
 import { ConnectorGitHub } from "../../infrastructure/vendors/github/connector.github";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { ConnectorOAuth, IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
 import {
@@ -33,8 +33,8 @@ export class ConnectorGitHubService
   extends ConnectorServiceBase<ConnectorGitHub, GitHubServiceEntityMap>
   implements IConnectorGitHubService
 {
-  constructor() {
-    super(getConnectorConfig("github"));
+  constructor(config?: IConnectorOAuthConfig) {
+    super(config ?? getConnectorConfig("github"));
 
     const repoConfig = connectorEntityConfigs.github[GITHUB_ENTITY_TYPES_ENUM.REPOSITORY];
     if (!repoConfig.paginatedFetcher) {

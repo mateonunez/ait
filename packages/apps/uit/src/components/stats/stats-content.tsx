@@ -65,7 +65,7 @@ export function StatsContent() {
   };
 
   return (
-    <div className="flex flex-col h-full border rounded-lg bg-background/95 backdrop-blur-lg overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2 min-w-0">

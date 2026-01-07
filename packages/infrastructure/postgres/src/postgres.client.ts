@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import * as drizzleOrm from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import * as schema from "./schemas/index";
 
 const logger = getLogger();
 
@@ -39,6 +40,7 @@ function buildPostgresClient(config: IPostgresConfig) {
   });
 
   const db = drizzle(queryClient, {
+    schema,
     logger: config.logger ?? false,
   });
 

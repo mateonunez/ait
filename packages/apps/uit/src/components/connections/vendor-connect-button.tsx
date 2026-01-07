@@ -1,6 +1,6 @@
 import { cn } from "@/styles/utils";
 import type { IntegrationVendor } from "@ait/core";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Box, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "../ui/button";
 import { VENDOR_COLORS, VENDOR_ICONS, VENDOR_NAMES } from "./vendor-icons";
 
@@ -25,9 +25,9 @@ export function VendorConnectButton({
   className,
   reconnectMode = false,
 }: VendorConnectButtonProps) {
-  const Icon = VENDOR_ICONS[vendor];
-  const colors = VENDOR_COLORS[vendor];
-  const name = VENDOR_NAMES[vendor];
+  const Icon = VENDOR_ICONS[vendor] || Box;
+  const colors = VENDOR_COLORS[vendor] || { bg: "#6B7280", text: "#FFFFFF", hover: "#4B5563" };
+  const name = VENDOR_NAMES[vendor] || vendor;
 
   const handleClick = () => {
     if (isLoading) return;

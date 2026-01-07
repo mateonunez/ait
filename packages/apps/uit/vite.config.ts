@@ -21,14 +21,32 @@ export default defineConfig({
     tailwindcss(),
     nodePolyfills({
       include: ["path", "url", "process", "crypto", "buffer"],
-      protocolImports: true,
+      protocolImports: false,
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true,
+      },
     }),
     ngrokPlugin(),
   ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "vite-plugin-node-polyfills/shims/buffer": path.resolve(
+        __dirname,
+        "node_modules/vite-plugin-node-polyfills/shims/buffer/dist/index.js",
+      ),
+      "vite-plugin-node-polyfills/shims/global": path.resolve(
+        __dirname,
+        "node_modules/vite-plugin-node-polyfills/shims/global/dist/index.js",
+      ),
+      "vite-plugin-node-polyfills/shims/process": path.resolve(
+        __dirname,
+        "node_modules/vite-plugin-node-polyfills/shims/process/dist/index.js",
+      ),
       "@ait/ai-sdk": path.resolve(__dirname, "../../infrastructure/ai-sdk/src/index.ts"),
+      "@ait/core": path.resolve(__dirname, "../../core/src/index.ts"),
     },
   },
   build: {

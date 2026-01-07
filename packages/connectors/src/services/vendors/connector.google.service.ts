@@ -19,7 +19,7 @@ import {
 } from "@ait/core";
 import { photoStorageService } from "@ait/storage";
 import { ConnectorGoogle } from "../../infrastructure/vendors/google/connector.google";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { ConnectorOAuth, IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 import { getOAuthData } from "../../shared/auth/lib/oauth/connector.oauth.utils";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
@@ -46,8 +46,8 @@ export class ConnectorGoogleService
   extends ConnectorServiceBase<ConnectorGoogle, GoogleServiceEntityMap>
   implements IConnectorGoogleService
 {
-  constructor() {
-    super(getConnectorConfig("google"));
+  constructor(config?: IConnectorOAuthConfig) {
+    super(config ?? getConnectorConfig("google"));
 
     const eventConfig = connectorEntityConfigs.google[GOOGLE_ENTITY_TYPES_ENUM.EVENT];
     if (!eventConfig.paginatedFetcher) {
@@ -132,7 +132,6 @@ export class ConnectorGoogleService
     return this.fetchEntities(GOOGLE_ENTITY_TYPES_ENUM.EVENT, true);
   }
 
-  async fetchCalendars(): Promise<GoogleCalendarCalendarEntity[]>;
   async fetchCalendars(): Promise<GoogleCalendarCalendarEntity[]> {
     return this.fetchEntities(GOOGLE_ENTITY_TYPES_ENUM.CALENDAR, true);
   }
@@ -191,7 +190,7 @@ export class ConnectorGoogleService
     const items = await this.listPickerMediaItems(id);
     if (!items.length) return;
 
-    const oauthData = await getOAuthData("google");
+    const oauthData = await getOAuthData("google", this.userId!);
     const accessToken = oauthData?.accessToken || undefined;
 
     if (!accessToken) {

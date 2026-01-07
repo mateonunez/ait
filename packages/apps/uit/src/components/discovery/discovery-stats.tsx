@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useInsights } from "@/contexts/insights.context";
+import { useConnectionStatus } from "@/hooks/useConnectionStatus";
 import { fetchDiscoveryStats } from "@/services/observability.service";
 import { cn } from "@/styles/utils";
 import { getLogger } from "@ait/core";
@@ -196,6 +197,7 @@ function DiscoveryStatsContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showReview, setShowReview] = useState(false);
   const { insights, isLoading: insightsLoading, timeRange, setTimeRange } = useInsights();
+  const { isVendorGranted, isLoading: isStatusLoading } = useConnectionStatus();
 
   useEffect(() => {
     async function loadStats() {
@@ -286,24 +288,27 @@ function DiscoveryStatsContent() {
           dataKey: key,
         };
       })
+      .filter((item) => isVendorGranted(item.id as any))
       .sort((a, b) => b.total - a.total);
-  }, [stats]);
+  }, [stats, isVendorGranted]);
 
   const chartConfig = useMemo(() => getChartConfig(Object.keys(stats?.totals || {})), [stats]);
 
-  if (isLoading) {
+  if (isLoading || isStatusLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-center sm:text-left">
+          <div className="space-y-1 flex flex-col items-center sm:items-start">
             <Skeleton className="h-8 w-48" />
             <Skeleton className="h-4 w-64" />
           </div>
-          <Skeleton className="h-10 w-32" />
+          <div className="flex justify-center sm:justify-end">
+            <Skeleton className="h-10 w-32" />
+          </div>
         </div>
         <Skeleton className="h-24 w-full rounded-2xl" />
         <ScrollArea className="w-full whitespace-nowrap">
-          <div className="flex gap-4 py-2">
+          <div className="flex gap-4 py-2 justify-center sm:justify-start">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <Skeleton key={i} className="h-[220px] w-[280px] sm:w-[300px] shrink-0 rounded-2xl" />
             ))}

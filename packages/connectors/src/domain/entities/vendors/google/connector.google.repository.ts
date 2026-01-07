@@ -15,7 +15,10 @@ export class ConnectorGoogleRepository implements IConnectorGoogleRepository {
   public contact: ConnectorGoogleContactRepository;
   public photo: ConnectorGooglePhotoRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     this.event = new ConnectorGoogleCalendarEventRepository();
     this.calendar = new ConnectorGoogleCalendarCalendarRepository();
     this.subscription = new ConnectorGoogleYouTubeSubscriptionRepository();
@@ -24,14 +27,14 @@ export class ConnectorGoogleRepository implements IConnectorGoogleRepository {
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "google");
+    await saveOAuthData(data, "google", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("google");
+    return getOAuthData("google", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("google");
+    await clearOAuthData("google", this.userId);
   }
 }

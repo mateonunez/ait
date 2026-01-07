@@ -7,21 +7,24 @@ import { ConnectorLinearIssueRepository } from "./connector.linear-issue.reposit
 export class ConnectorLinearRepository extends ConnectorLinearIssueRepository implements IConnectorLinearRepository {
   private _linearIssueRepository: ConnectorLinearIssueRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     super();
     this._linearIssueRepository = new ConnectorLinearIssueRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "linear");
+    await saveOAuthData(data, "linear", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("linear");
+    return getOAuthData("linear", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("linear");
+    await clearOAuthData("linear", this.userId);
   }
 
   get issue(): ConnectorLinearIssueRepository {

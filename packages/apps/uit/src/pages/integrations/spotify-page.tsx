@@ -143,6 +143,7 @@ export default function SpotifyPage() {
 
   return (
     <IntegrationLayout
+      vendor="spotify"
       title="Spotify"
       description="Now playing"
       color="#1DB954"

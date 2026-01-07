@@ -163,6 +163,8 @@ export interface IConnectorOAuthConfig {
   codeVerifier?: string;
   codeChallenge?: string;
   codeChallengeMethod?: string;
+  userId?: string;
+  connectorConfigId?: string;
 }
 
 export interface IConnectorOAuthTokenResponse {

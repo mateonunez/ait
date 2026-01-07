@@ -1,11 +1,8 @@
 import { type ConnectorNotionService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-declare module "fastify" {
-  interface FastifyInstance {
-    notionService: ConnectorNotionService;
-  }
-}
+const logger = getLogger();
 
 interface AuthCallbackQuery {
   code: string;
@@ -19,34 +16,46 @@ interface PaginationQuery {
 const connectorType = "notion";
 
 export default async function notionRoutes(fastify: FastifyInstance) {
-  if (!fastify.notionService) {
-    fastify.decorate("notionService", connectorServiceFactory.getService<ConnectorNotionService>(connectorType));
-  }
+  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorNotionService> => {
+    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
 
-  const notionService = fastify.notionService;
+    // Support extracting userId from OAuth state if it's encoded there
+    const state = (request.query as any).state;
+    if (!userId && state && typeof state === "string" && state.includes(":")) {
+      userId = state.split(":")[1];
+    }
 
-  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+    const currentUserId = userId || "anonymous";
+
+    if (configId) {
+      return await connectorServiceFactory.getServiceByConfig<ConnectorNotionService>(configId, currentUserId);
+    }
+
+    // Fallback/Legacy
+    return connectorServiceFactory.getService<ConnectorNotionService>(connectorType);
+  };
+
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
     try {
-      const clientId = process.env.NOTION_CLIENT_ID;
-      const redirectUri = process.env.NOTION_REDIRECT_URI;
+      const { configId } = request.query;
+      if (!configId) return reply.status(400).send({ error: "Missing configId" });
 
-      if (!clientId || !redirectUri) {
-        fastify.log.error({ route: "/auth" }, "Missing NOTION_CLIENT_ID or NOTION_REDIRECT_URI environment variables.");
-        return reply.status(500).send({ error: "Missing required Notion configuration." });
-      }
+      const service = await getService(request, configId);
+      const config = service.connector.authenticator.getOAuthConfig();
 
-      const baseUrl = process.env.NOTION_AUTH_URL || "https://www.notion.so/install-integration";
-      const cleanBaseUrl = baseUrl.split("?")[0];
+      const baseUrl = "https://www.notion.so/install-integration";
 
+      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
       const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
+        client_id: config.clientId,
+        redirect_uri: config.redirectUri!,
         response_type: "code",
         owner: "user",
+        state: `${configId}:${userId}`,
       });
 
-      const authUrl = `${cleanBaseUrl}?${params.toString()}`;
-      fastify.log.info({ authUrl, redirectUri, clientId }, "Redirecting to Notion OAuth");
+      const authUrl = `${baseUrl}?${params.toString()}`;
+      fastify.log.info({ authUrl, configId }, "Redirecting to Notion OAuth");
       reply.redirect(authUrl);
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Notion authentication.");
@@ -56,8 +65,9 @@ export default async function notionRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      const { code } = request.query;
+    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+      const { code, state } = request.query;
+      const [configId] = (state || "").split(":");
 
       if (!code) {
         fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
@@ -65,7 +75,8 @@ export default async function notionRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await notionService.connector.connect(code);
+        const service = await getService(request, configId);
+        await service.connector.connect(code);
 
         reply.send({
           success: true,
@@ -78,44 +89,60 @@ export default async function notionRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await clearOAuthData(connectorType);
-      reply.send({ success: true, message: "Notion disconnected successfully." });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Notion.");
-      reply.status(500).send({ error: "Failed to disconnect Notion." });
-    }
-  });
+  fastify.post(
+    "/auth/disconnect",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const userId = request.headers["x-user-id"] as string;
+        await clearOAuthData(connectorType, userId);
+        reply.send({ success: true, message: "Notion disconnected successfully." });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Notion.");
+        reply.status(500).send({ error: "Failed to disconnect Notion." });
+      }
+    },
+  );
 
-  fastify.get("/pages", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const pages = await notionService.fetchPages();
-      reply.send(pages);
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/pages" }, "Failed to fetch pages.");
-      reply.status(500).send({ error: "Failed to fetch pages." });
-    }
-  });
+  fastify.get(
+    "/pages",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const pages = await service.fetchPages();
+        reply.send(pages);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/pages" }, "Failed to fetch pages.");
+        reply.status(500).send({ error: "Failed to fetch pages." });
+      }
+    },
+  );
 
-  fastify.get("/data/pages", async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
-    try {
-      const page = Number.parseInt(request.query.page || "1", 10);
-      const limit = Number.parseInt(request.query.limit || "50", 10);
+  fastify.get(
+    "/data/pages",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
 
-      const result = await notionService.getPagesPaginated({ page, limit });
-      reply.send(result);
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/data/pages" }, "Failed to fetch pages from DB.");
-      reply.status(500).send({ error: "Failed to fetch pages from database." });
-    }
-  });
+        const result = await service.getPagesPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/pages" }, "Failed to fetch pages from DB.");
+        reply.status(500).send({ error: "Failed to fetch pages from database." });
+      }
+    },
+  );
 
   fastify.post(
     "/refresh",
-    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: { entities?: string; configId?: string } }>, reply: FastifyReply) => {
       try {
-        const { entities: entitiesParam } = request.query;
+        const { entities: entitiesParam, configId } = request.query;
+        const service = await getService(request, configId);
+
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
           : ["pages"];
@@ -123,8 +150,8 @@ export default async function notionRoutes(fastify: FastifyInstance) {
         const counts: Record<string, number> = {};
 
         if (entitiesToRefresh.includes("pages")) {
-          const pages = await notionService.fetchPages();
-          await notionService.connector.store.save(pages);
+          const pages = await service.fetchPages();
+          await service.connector.store.save(pages);
           counts.pages = pages.length;
         }
 

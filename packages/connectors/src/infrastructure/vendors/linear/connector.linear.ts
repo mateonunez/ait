@@ -15,7 +15,7 @@ export class ConnectorLinear extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorLinearAuthenticator(oauth);
-    const repository = new ConnectorLinearRepository();
+    const repository = new ConnectorLinearRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorLinearStore(repository);
     super(authenticator, repository, store);
   }

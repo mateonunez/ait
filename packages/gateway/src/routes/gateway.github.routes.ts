@@ -5,7 +5,10 @@ import {
   connectorServiceFactory,
   mapGitHubFile,
 } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+
+const logger = getLogger();
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -25,21 +28,42 @@ interface PaginationQuery {
 const connectorType = "github";
 
 export default async function githubRoutes(fastify: FastifyInstance) {
-  if (!fastify.githubService) {
-    fastify.decorate("githubService", connectorServiceFactory.getService<ConnectorGitHubService>(connectorType));
-  }
+  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorGitHubService> => {
+    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
 
-  const githubService = fastify.githubService;
+    // Support extracting userId from OAuth state if it's encoded there
+    const state = (request.query as any).state;
+    if (!userId && state && typeof state === "string" && state.includes(":")) {
+      userId = state.split(":")[1];
+    }
 
-  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+    const currentUserId = userId || "anonymous";
+
+    if (configId) {
+      return await connectorServiceFactory.getServiceByConfig<ConnectorGitHubService>(configId, currentUserId);
+    }
+
+    // Fallback/Legacy
+    return connectorServiceFactory.getService<ConnectorGitHubService>(connectorType);
+  };
+
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
     try {
+      const { configId } = request.query;
+      if (!configId) return reply.status(400).send({ error: "Missing configId" });
+
+      const service = await getService(request, configId);
+      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
+      const config = service.connector.authenticator.getOAuthConfig();
+
       const params = new URLSearchParams({
-        client_id: process.env.GITHUB_CLIENT_ID!,
-        redirect_uri: process.env.GITHUB_REDIRECT_URI!,
+        client_id: config.clientId,
+        redirect_uri: config.redirectUri!,
         scope: "repo read:user user:email repo:status public_repo",
+        state: `${configId}:${userId}`,
       });
 
-      const authUrl = `${process.env.GITHUB_AUTH_URL}?${params}`;
+      const authUrl = `https://github.com/login/oauth/authorize?${params}`;
       reply.redirect(authUrl);
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate GitHub authentication.");
@@ -49,8 +73,9 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      const { code } = request.query;
+    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+      const { code, state } = request.query;
+      const [configId] = (state || "").split(":");
 
       if (!code) {
         fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
@@ -58,7 +83,8 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await githubService.connector.connect(code);
+        const service = await getService(request, configId);
+        await service.connector.connect(code);
 
         reply.send({
           success: true,
@@ -71,35 +97,47 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await clearOAuthData(connectorType);
-      reply.send({ success: true, message: "GitHub disconnected successfully." });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect GitHub.");
-      reply.status(500).send({ error: "Failed to disconnect GitHub." });
-    }
-  });
+  fastify.post(
+    "/auth/disconnect",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const userId = request.headers["x-user-id"] as string;
+        await clearOAuthData(connectorType, userId);
+        reply.send({ success: true, message: "GitHub disconnected successfully." });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect GitHub.");
+        reply.status(500).send({ error: "Failed to disconnect GitHub." });
+      }
+    },
+  );
 
-  fastify.get("/repositories", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const repositories = await githubService.fetchRepositories();
-      reply.send(repositories);
-    } catch (err: any) {
-      fastify.log.error({ err, route: "/repositories" }, "Failed to fetch repositories.");
-      reply.status(500).send({ error: "Failed to fetch repositories." });
-    }
-  });
+  fastify.get(
+    "/repositories",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const repositories = await service.fetchRepositories();
+        reply.send(repositories);
+      } catch (err: any) {
+        fastify.log.error({ err, route: "/repositories" }, "Failed to fetch repositories.");
+        reply.status(500).send({ error: "Failed to fetch repositories." });
+      }
+    },
+  );
 
   // Paginated data routes
   fastify.get(
     "/data/repositories",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await githubService.getRepositoriesPaginated({ page, limit });
+        const result = await service.getRepositoriesPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/repositories" }, "Failed to fetch repositories from DB.");
@@ -110,12 +148,14 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/data/pull-requests",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await githubService.getPullRequestsPaginated({ page, limit });
+        const result = await service.getPullRequestsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/pull-requests" }, "Failed to fetch pull requests from DB.");
@@ -126,12 +166,14 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/data/commits",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await githubService.getCommitsPaginated({ page, limit });
+        const result = await service.getCommitsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/commits" }, "Failed to fetch commits from DB.");
@@ -140,29 +182,37 @@ export default async function githubRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.get("/data/files", async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
-    try {
-      const page = Number.parseInt(request.query.page || "1", 10);
-      const limit = Number.parseInt(request.query.limit || "50", 10);
+  fastify.get(
+    "/data/files",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
 
-      const result = await githubService.getFilesPaginated({ page, limit });
-      reply.send(result);
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/data/files" }, "Failed to fetch files from DB.");
-      reply.status(500).send({ error: "Failed to fetch files from database." });
-    }
-  });
+        const result = await service.getFilesPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/files" }, "Failed to fetch files from DB.");
+        reply.status(500).send({ error: "Failed to fetch files from database." });
+      }
+    },
+  );
 
   // Refresh endpoint with optional entity filter
-  // Usage: POST /refresh?entities=repositories,files or POST /refresh (all entities)
   fastify.post(
     "/refresh",
     async (
-      request: FastifyRequest<{ Querystring: { entities?: string; repo?: string; branch?: string } }>,
+      request: FastifyRequest<{
+        Querystring: { entities?: string; repo?: string; branch?: string; configId?: string };
+      }>,
       reply: FastifyReply,
     ) => {
       try {
-        const { entities: entitiesParam, repo, branch = "main" } = request.query;
+        const { entities: entitiesParam, repo, branch = "main", configId } = request.query;
+        const service = await getService(request, configId);
+
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
           : ["repositories", "pull-requests", "commits", "files"];
@@ -171,30 +221,30 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
         // Repositories
         if (entitiesToRefresh.includes("repositories")) {
-          const repositories = await githubService.fetchRepositories();
-          await githubService.connector.store.save(repositories);
+          const repositories = await service.fetchRepositories();
+          await service.connector.store.save(repositories);
           counts.repositories = repositories.length;
         }
 
         // Pull Requests
         if (entitiesToRefresh.includes("pull-requests") || entitiesToRefresh.includes("pullrequests")) {
-          const pullRequests = await githubService.fetchPullRequests();
-          await githubService.connector.store.save(pullRequests);
+          const pullRequests = await service.fetchPullRequests();
+          await service.connector.store.save(pullRequests);
           counts.pullRequests = pullRequests.length;
         }
 
         // Commits
         if (entitiesToRefresh.includes("commits")) {
-          const commits = await githubService.fetchCommits();
-          await githubService.connector.store.save(commits);
+          const commits = await service.fetchCommits();
+          await service.connector.store.save(commits);
           counts.commits = commits.length;
         }
 
         // Files - uses syncFiles to handle deletions
         if (entitiesToRefresh.includes("files")) {
           const repos = repo ? [repo] : CODE_INGESTION_REPOS;
-          const dataSource = githubService.connector.dataSource;
-          const fileRepository = githubService.connector.repository.file;
+          const dataSource = service.connector.dataSource;
+          const fileRepository = service.connector.repository.file;
 
           let totalAdded = 0;
           let totalUpdated = 0;
@@ -205,11 +255,9 @@ export default async function githubRoutes(fastify: FastifyInstance) {
             if (!owner || !repoName) continue;
 
             try {
-              // Fetch current file tree from GitHub
               const tree = await dataSource.fetchRepositoryTree(owner, repoName, branch);
               const files: ReturnType<typeof mapGitHubFile>[] = [];
 
-              // Fetch content for each text file
               for (const item of tree) {
                 try {
                   const content = await dataSource.fetchFileContent(owner, repoName, item.path, branch);
@@ -228,7 +276,6 @@ export default async function githubRoutes(fastify: FastifyInstance) {
                 }
               }
 
-              // Sync: add new, update changed, delete removed
               const result = await fileRepository.syncFiles(repoFullName, branch, files);
               totalAdded += result.added;
               totalUpdated += result.updated;

@@ -15,7 +15,7 @@ export class ConnectorNotion extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorNotionAuthenticator(oauth);
-    const repository = new ConnectorNotionRepository();
+    const repository = new ConnectorNotionRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorNotionStore(repository);
     super(authenticator, repository, store);
   }

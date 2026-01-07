@@ -1,10 +1,17 @@
-import { createHash } from "node:crypto";
+import CryptoJS from "crypto-js";
 
 /**
  * Compute hash of content using specified algorithm (default: md5).
  */
 export function computeHash(content: string, algorithm = "md5"): string {
-  return createHash(algorithm).update(content).digest("hex");
+  if (algorithm.toLowerCase() === "md5") {
+    return CryptoJS.MD5(content).toString(CryptoJS.enc.Hex);
+  }
+  if (algorithm.toLowerCase() === "sha256") {
+    return CryptoJS.SHA256(content).toString(CryptoJS.enc.Hex);
+  }
+  // Fallback or throw if algorithm not supported by CryptoJS as easily
+  throw new Error(`Algorithm ${algorithm} not supported in browser-compatible hash utils`);
 }
 
 /**
@@ -14,5 +21,5 @@ export function computeHash(content: string, algorithm = "md5"): string {
  */
 export function createContentHash(content: string, length = 500): string {
   const normalizedContent = content.slice(0, length).toLowerCase().trim();
-  return createHash("md5").update(normalizedContent).digest("hex");
+  return CryptoJS.MD5(normalizedContent).toString(CryptoJS.enc.Hex);
 }

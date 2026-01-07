@@ -1,21 +1,5 @@
 "use client";
 
-import {
-  BarChart3,
-  Calendar,
-  ChevronDown,
-  FileText,
-  Github,
-  Home,
-  Link2,
-  MessageSquare,
-  Music,
-  Table,
-  Twitter,
-  Zap,
-} from "lucide-react";
-import { Link, useLocation } from "wouter";
-
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -35,16 +19,32 @@ import {
   SidebarRail,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { useConnectionStatus } from "@/hooks/useConnectionStatus";
+import {
+  BarChart3,
+  Calendar,
+  ChevronDown,
+  FileText,
+  Github,
+  Home,
+  Link2,
+  MessageSquare,
+  Music,
+  Table,
+  Twitter,
+  Zap,
+} from "lucide-react";
+import { Link, useLocation } from "wouter";
 
 // Navigation structure - colors are for light mode accent, icons use currentColor for dark mode compatibility
 const INTEGRATIONS = [
-  { title: "GitHub", url: "/integrations/github", icon: Github },
-  { title: "Spotify", url: "/integrations/spotify", icon: Music, color: "#1DB954" },
-  { title: "X (Twitter)", url: "/integrations/x", icon: Twitter },
-  { title: "Linear", url: "/integrations/linear", icon: Zap, color: "#5E6AD2" },
-  { title: "Notion", url: "/integrations/notion", icon: FileText },
-  { title: "Slack", url: "/integrations/slack", icon: MessageSquare, color: "#E01E5A" },
-  { title: "Google", url: "/integrations/google", icon: Calendar, color: "#4285F4" },
+  { title: "GitHub", url: "/integrations/github", icon: Github, slug: "github" },
+  { title: "Spotify", url: "/integrations/spotify", icon: Music, color: "#1DB954", slug: "spotify" },
+  { title: "X (Twitter)", url: "/integrations/x", icon: Twitter, slug: "x" },
+  { title: "Linear", url: "/integrations/linear", icon: Zap, color: "#5E6AD2", slug: "linear" },
+  { title: "Notion", url: "/integrations/notion", icon: FileText, slug: "notion" },
+  { title: "Slack", url: "/integrations/slack", icon: MessageSquare, color: "#E01E5A", slug: "slack" },
+  { title: "Google", url: "/integrations/google", icon: Calendar, color: "#4285F4", slug: "google" },
 ];
 
 const SETTINGS = [
@@ -54,8 +54,11 @@ const SETTINGS = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { isVendorGranted } = useConnectionStatus();
 
   const isActive = (url: string) => location === url;
+
+  const grantedIntegrations = INTEGRATIONS.filter((item) => isVendorGranted(item.slug as any));
 
   return (
     <Sidebar collapsible="icon">
@@ -117,7 +120,7 @@ export function AppSidebar() {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <SidebarMenuSub>
-                    {INTEGRATIONS.map((item) => (
+                    {grantedIntegrations.map((item) => (
                       <SidebarMenuSubItem key={item.title}>
                         <SidebarMenuSubButton asChild isActive={isActive(item.url)}>
                           <Link href={item.url}>

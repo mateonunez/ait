@@ -19,6 +19,7 @@ import {
   type ConnectorNotionService,
   type ConnectorSlackService,
   type ConnectorSpotifyService,
+  connectorGrantService,
   connectorServiceFactory,
 } from "@ait/connectors";
 import { getLogger } from "@ait/core";
@@ -31,6 +32,10 @@ const packageJson = JSON.parse(readFileSync(join(__dirname, "../../package.json"
 const APP_VERSION = packageJson.version;
 const APP_ENVIRONMENT = process.env.NODE_ENV || "development";
 const DEPLOYMENT_TIMESTAMP = new Date().toISOString();
+
+declare global {
+  var __messageToTraceMap: Record<string, string>;
+}
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -81,8 +86,8 @@ function isErrorEvent(event: StreamEvent): event is StreamEvent & { type: typeof
   return event.type === STREAM_EVENT.ERROR;
 }
 
-if (!(global as any).__messageToTraceMap) {
-  (global as any).__messageToTraceMap = {};
+if (!globalThis.__messageToTraceMap) {
+  globalThis.__messageToTraceMap = {};
 }
 
 /**
@@ -233,8 +238,15 @@ export default async function chatRoutes(fastify: FastifyInstance) {
       try {
         // Generate custom traceId for telemetry
         const traceId = `trace-${Date.now()}-${randomUUID().slice(0, 8)}`;
+        const userId = request.headers["x-user-id"] as string | undefined;
 
-        const tools = await createAllConnectorToolsWithMCP(fastify.spotifyService, mcpManager);
+        // Fetch granted vendors (enabled providers + enabled user config)
+        let allowedVendors: Set<string> | undefined;
+        if (userId) {
+          allowedVendors = await connectorGrantService.getGrantedVendors(userId);
+        }
+
+        const tools = await createAllConnectorToolsWithMCP(fastify.spotifyService, mcpManager, allowedVendors);
         const hasMCPConnected = mcpManager.getConnectedVendors().length > 0;
         // Tool loops often need a couple extra rounds for parameter correction / discovery steps.
         const maxToolRounds = hasMCPConnected ? 6 : 1;
@@ -246,7 +258,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         const telemetryOptions = {
           enableTelemetry: process.env.LANGFUSE_ENABLED === "true",
           traceId,
-          userId: request.headers["x-user-id"] as string | undefined,
+          userId,
           sessionId: request.headers["x-session-id"] as string | undefined,
           tags: ["gateway", "chat", "mcp"],
           metadata: {
@@ -255,6 +267,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
             deploymentTimestamp: DEPLOYMENT_TIMESTAMP,
             model: model || "default",
             mcpVendors: mcpManager.getConnectedVendors().join(","),
+            allowedVendors: allowedVendors ? Array.from(allowedVendors).join(",") : "none",
           },
         };
 
@@ -267,6 +280,7 @@ export default async function chatRoutes(fastify: FastifyInstance) {
           telemetryOptions,
           enableMetadata,
           model,
+          allowedVendors,
         });
 
         const conversationService = getConversationService();
@@ -335,11 +349,11 @@ export default async function chatRoutes(fastify: FastifyInstance) {
 
           if (firstChunk) {
             const timestamp = Date.now();
-            (global as any).__messageToTraceMap[timestamp] = traceId;
+            globalThis.__messageToTraceMap[timestamp] = traceId;
             const fiveMinutesAgo = timestamp - 5 * 60 * 1000;
-            for (const key of Object.keys((global as any).__messageToTraceMap)) {
+            for (const key of Object.keys(globalThis.__messageToTraceMap)) {
               if (Number.parseInt(key) < fiveMinutesAgo) {
-                delete (global as any).__messageToTraceMap[key];
+                delete globalThis.__messageToTraceMap[key];
               }
             }
             firstChunk = false;

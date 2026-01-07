@@ -2,7 +2,7 @@ import type { ConnectionStatus } from "@/services/connections.service";
 import { cn } from "@/styles/utils";
 import { formatRelativeTime } from "@/utils/date.utils";
 import type { IntegrationVendor } from "@ait/core";
-import { AlertTriangle, Box, CheckCircle, XCircle } from "lucide-react";
+import { AlertTriangle, Ban, Box, CheckCircle, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
@@ -12,17 +12,22 @@ import { VENDOR_COLORS, VENDOR_ICONS, VENDOR_NAMES } from "./vendor-icons";
 
 interface ConnectionCardProps {
   vendor: IntegrationVendor;
+  name?: string; // Custom name override
+  configId?: string; // Specific configuration ID
   status: ConnectionStatus | null;
   isLoading?: boolean;
   isExpiringSoon?: boolean;
-  onConnect: () => void;
-  onDisconnect: () => void;
+  onConnect?: () => void;
+  onDisconnect: (configId?: string) => void;
   error?: string | null;
   className?: string;
+  isProvider?: boolean; // If true, it's a provider to connect
 }
 
 export function ConnectionCard({
   vendor,
+  name: customName,
+  configId,
   status,
   isLoading = false,
   isExpiringSoon = false,
@@ -30,12 +35,14 @@ export function ConnectionCard({
   onDisconnect,
   error,
   className,
+  isProvider = false,
 }: ConnectionCardProps) {
   const Icon = VENDOR_ICONS[vendor] ?? Box;
   const colors = VENDOR_COLORS[vendor] ?? { bg: "#6B7280", text: "#FFFFFF", hover: "#4B5563" };
-  const name = VENDOR_NAMES[vendor] ?? vendor;
+  const displayName = customName || VENDOR_NAMES[vendor] || vendor;
 
   const isConnected = status?.connected ?? false;
+  const isGranted = status?.granted ?? true;
 
   // Loading skeleton
   if (isLoading && status === null) {
@@ -70,19 +77,32 @@ export function ConnectionCard({
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <CardTitle className="text-base">{name}</CardTitle>
-            {isConnected ? (
-              <Badge
-                variant="default"
-                className="gap-1 bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30"
-              >
-                <CheckCircle className="h-3 w-3" />
-                Connected
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="gap-1">
-                <XCircle className="h-3 w-3" />
-                Not connected
+            <CardTitle className="text-base truncate">{displayName}</CardTitle>
+            {!isProvider &&
+              (isConnected ? (
+                isGranted ? (
+                  <Badge
+                    variant="default"
+                    className="gap-1 bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/30 whitespace-nowrap"
+                  >
+                    <CheckCircle className="h-3 w-3" />
+                    Connected
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive" className="gap-1 whitespace-nowrap">
+                    <Ban className="h-3 w-3" />
+                    Disabled
+                  </Badge>
+                )
+              ) : (
+                <Badge variant="secondary" className="gap-1 whitespace-nowrap">
+                  <XCircle className="h-3 w-3" />
+                  Not connected
+                </Badge>
+              ))}
+            {isProvider && (
+              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-wider opacity-60">
+                Provider
               </Badge>
             )}
           </div>
@@ -94,8 +114,18 @@ export function ConnectionCard({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Disabled warning */}
+        {!isGranted && isConnected && (
+          <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive p-3">
+            <Ban className="h-4 w-4" />
+            <AlertDescription className="text-xs ml-2">
+              This connection is disabled. It will not be used for AI context or tools.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Expiry warning */}
-        {isExpiringSoon && isConnected && (
+        {isExpiringSoon && isConnected && isGranted && (
           <Alert variant="default" className="bg-amber-500/10 border-amber-500/50">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-amber-600 dark:text-amber-400">
@@ -119,18 +149,18 @@ export function ConnectionCard({
               vendor={vendor}
               isConnected={false}
               isLoading={isLoading}
-              onConnect={onConnect}
-              onDisconnect={onDisconnect}
+              onConnect={onConnect || (() => {})}
+              onDisconnect={() => onDisconnect(configId)}
               className="w-full"
               reconnectMode
             />
           )}
           <VendorConnectButton
             vendor={vendor}
-            isConnected={isConnected}
+            isConnected={isProvider ? false : isConnected}
             isLoading={isLoading}
-            onConnect={onConnect}
-            onDisconnect={onDisconnect}
+            onConnect={onConnect || (() => {})}
+            onDisconnect={() => onDisconnect(configId)}
             className="w-full"
           />
         </div>

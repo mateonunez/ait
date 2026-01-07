@@ -1,10 +1,13 @@
+import { useConnectionStatus } from "@/hooks/useConnectionStatus";
 import { cn } from "@/styles/utils";
+import type { IntegrationVendor } from "@ait/core";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
 import { Button } from "./ui/button";
 
 interface IntegrationLayoutProps {
+  vendor: IntegrationVendor;
   title: string;
   description?: string;
   color?: string;
@@ -15,6 +18,7 @@ interface IntegrationLayoutProps {
 }
 
 export function IntegrationLayout({
+  vendor,
   title,
   description,
   color,
@@ -24,6 +28,9 @@ export function IntegrationLayout({
   className,
 }: IntegrationLayoutProps) {
   const [, setLocation] = useLocation();
+  const { isVendorGranted, isLoading: isStatusLoading } = useConnectionStatus();
+
+  const isGranted = isVendorGranted(vendor);
 
   return (
     <div className="min-h-dvh bg-background">
@@ -48,7 +55,7 @@ export function IntegrationLayout({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {onRefresh && (
+            {onRefresh && isGranted && (
               <Button
                 variant="outline"
                 size="sm"
@@ -64,7 +71,37 @@ export function IntegrationLayout({
         </div>
       </header>
 
-      <main className={cn("container mx-auto py-4 sm:py-6 px-3 sm:px-4 md:px-6", className)}>{children}</main>
+      <main className={cn("container mx-auto py-4 sm:py-6 px-3 sm:px-4 md:px-6", className)}>
+        {isStatusLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+            <div className="h-10 w-10 border-4 border-violet-500/30 border-t-violet-500 rounded-full animate-spin mb-4" />
+            <p className="text-muted-foreground">Checking authorization...</p>
+          </div>
+        ) : !isGranted ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center max-w-md mx-auto">
+            <div
+              className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-xl"
+              style={{ backgroundColor: color || "#6366f1" }}
+            >
+              <RefreshCw className="h-8 w-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">Connection Required</h2>
+            <p className="text-muted-foreground mb-8 text-balance">
+              Authorize <strong>{title}</strong> to view your data and integrate it with your AI.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 w-full">
+              <Button onClick={() => setLocation("/connections")} className="flex-1 bg-violet-600 hover:bg-violet-700">
+                Connect {title}
+              </Button>
+              <Button variant="outline" onClick={() => setLocation("/")} className="flex-1">
+                Go Dashboard
+              </Button>
+            </div>
+          </div>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }
