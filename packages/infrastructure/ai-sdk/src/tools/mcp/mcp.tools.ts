@@ -202,7 +202,7 @@ function convertMCPResultToToolResult(mcpResult: MCPToolResult): ToolResult {
 export function convertMCPToolToAItTool(mcpTool: MCPTool, vendor: MCPVendor, manager: MCPClientManager): Tool {
   const parametersSchema = (
     mcpTool.inputSchema ? jsonSchemaToZod(mcpTool.inputSchema) : z.record(z.string(), z.string())
-  ) as z.ZodSchema<any>;
+  ) as z.ZodSchema<Record<string, unknown>>;
 
   return createTool({
     description: enrichDescription(mcpTool.name, vendor, mcpTool.description),
@@ -210,13 +210,13 @@ export function convertMCPToolToAItTool(mcpTool: MCPTool, vendor: MCPVendor, man
     execute: async (params: Record<string, unknown>): Promise<ToolResult> => {
       const cleanParams = cleanToolParams(params);
 
-      const result = await manager.executeTool(vendor, mcpTool.name, cleanParams);
+      const result = await manager.executeTool(vendor, mcpTool.name, cleanParams as Record<string, unknown>);
       return convertMCPResultToToolResult(result);
     },
   });
 }
 
-function cleanToolParams(obj: any): any {
+function cleanToolParams(obj: unknown): unknown {
   if (obj === null || obj === "") {
     return undefined;
   }
@@ -226,7 +226,7 @@ function cleanToolParams(obj: any): any {
   }
 
   if (typeof obj === "object" && obj !== null) {
-    const result: Record<string, any> = {};
+    const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       const cleanValue = cleanToolParams(value);
       if (cleanValue !== undefined) {

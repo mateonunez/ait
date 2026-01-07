@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import type { NotionEntity, NotionPageEntity } from "@ait/core";
+import type { NotionPageEntity } from "@ait/core";
 import { ConnectorNotionStore } from "../../../src/infrastructure/vendors/notion/connector.notion.store";
 import type { IConnectorNotionRepository } from "../../../src/types/domain/entities/vendors/connector.notion.types";
 
@@ -106,7 +106,7 @@ describe("ConnectorNotionStore", () => {
         id: "unsupported-1",
         name: "Some Entity",
         __type: "unsupported" as "notion_page", // this generates a type error
-      } as unknown as NotionEntity;
+      } as unknown as any;
 
       await assert.rejects(async () => {
         await store.save(unsupportedItem);

@@ -35,18 +35,18 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
 
         await tx
           .insert(slackMessages)
-          .values(messageDataTarget as any)
+          .values(messageDataTarget as SlackMessageDataTarget)
           .onConflictDoUpdate({
             target: slackMessages.id,
             set: updateValues,
           })
           .execute();
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to save message:", { messageId, error });
       throw new AItError(
         "SLACK_SAVE_MESSAGE",
-        `Failed to save message ${messageId}: ${error.message}`,
+        `Failed to save message ${messageId}: ${(error as Error).message}`,
         { id: messageId },
         error,
       );

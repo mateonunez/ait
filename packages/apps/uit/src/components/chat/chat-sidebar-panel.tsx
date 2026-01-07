@@ -2,7 +2,7 @@
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
-import type { Conversation as ConversationType } from "@ait/core";
+import type { ChatMessageWithMetadata, Conversation as ConversationType, TokenUsage } from "@ait/core";
 import { AnimatePresence, motion } from "framer-motion";
 import { Brain, Database, ListChecks, MessageCircle, Wrench, Zap } from "lucide-react";
 import { useMemo } from "react";
@@ -20,11 +20,11 @@ interface ChatSidebarPanelProps {
   handleConversationSelect: (id: string) => void;
   handleDeleteConversation: (id: string) => Promise<void>;
   handleNewChat: () => void;
-  tokenUsage: any;
+  tokenUsage: TokenUsage;
   maxContextWindow: number;
   selectedModel: string;
   setSelectedModel: (id: string) => void;
-  latestAssistantMessage: any;
+  latestAssistantMessage: ChatMessageWithMetadata | null;
   isOpen?: boolean;
   onClose?: () => void;
 }

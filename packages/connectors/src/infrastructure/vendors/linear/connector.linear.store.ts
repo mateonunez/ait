@@ -1,5 +1,6 @@
 import type { LinearEntityType, LinearIssueEntity } from "@ait/core";
 import { AItError } from "@ait/core";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { LINEAR_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorLinearRepository } from "../../../types/domain/entities/vendors/connector.linear.types";
@@ -33,7 +34,7 @@ export class ConnectorLinearStore implements IConnectorStore {
     await this._connectorLinearRepository.saveAuthenticationData(data);
   }
 
-  async getAuthenticationData(): Promise<any> {
+  async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
     return this._connectorLinearRepository.getAuthenticationData();
   }
 

@@ -33,10 +33,10 @@ const GOOGLE_SCOPES = [
 
 export default async function googleRoutes(fastify: FastifyInstance) {
   const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorGoogleService> => {
-    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
+    let userId = (request.headers["x-user-id"] || (request.query as { userId?: string }).userId) as string | undefined;
 
     // Support extracting userId from OAuth state if it's encoded there
-    const state = (request.query as any).state;
+    const state = (request.query as { state?: string }).state;
     if (!userId && state && typeof state === "string" && state.includes(":")) {
       userId = state.split(":")[1];
     }
@@ -58,7 +58,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       if (!configId) return reply.status(400).send({ error: "Missing configId" });
 
       const service = await getService(request, configId);
-      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
+      const userId = (request.headers["x-user-id"] || (request.query as { userId?: string }).userId) as string;
       const config = service.connector.authenticator.getOAuthConfig();
 
       const params = new URLSearchParams({
@@ -74,7 +74,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?${params}`;
       fastify.log.info({ authUrl, route: "/auth" }, "Generated Google Auth URL");
       reply.redirect(authUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Google authentication.");
       reply.status(500).send({ error: "Failed to initiate Google authentication." });
     }
@@ -100,7 +100,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
           success: true,
           message: "Authentication successful. You can close this window.",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
         reply.status(500).send({ error: "Authentication failed." });
       }
@@ -130,7 +130,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const events = await service.fetchEvents();
         reply.send(events);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/events" }, "Failed to fetch events.");
         reply.status(500).send({ error: "Failed to fetch events." });
       }
@@ -146,7 +146,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const calendars = await service.fetchCalendars();
         reply.send(calendars);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/calendars" }, "Failed to fetch calendars.");
         reply.status(500).send({ error: "Failed to fetch calendars." });
       }
@@ -162,7 +162,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const subscriptions = await service.fetchSubscriptions();
         reply.send(subscriptions);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/subscriptions" }, "Failed to fetch subscriptions.");
         reply.status(500).send({ error: "Failed to fetch subscriptions." });
       }
@@ -178,7 +178,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const contacts = await service.fetchContacts();
         reply.send(contacts);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/contacts" }, "Failed to fetch contacts.");
         reply.status(500).send({ error: "Failed to fetch contacts." });
       }
@@ -341,7 +341,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const session = await service.createPickerSession();
         reply.send(session);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/photos/picker/session" }, "Failed to create picker session.");
         reply.status(500).send({ error: "Failed to create picker session." });
       }
@@ -360,7 +360,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const session = await service.getPickerSession(id);
         reply.send(session);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/photos/picker/session/:id" }, "Failed to get picker session.");
         reply.status(500).send({ error: "Failed to get picker session." });
       }
@@ -384,7 +384,7 @@ export default async function googleRoutes(fastify: FastifyInstance) {
         }
 
         reply.send({ success: true, count: mediaItems.length });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/photos/picker/import/:id" }, "Failed to import picker media items.");
         reply.status(500).send({ error: "Failed to import picker media items." });
       }

@@ -52,15 +52,15 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
           locked: eventDataTarget.locked,
           attendeesOmitted: eventDataTarget.attendeesOmitted,
           attendeesCount: eventDataTarget.attendeesCount,
-          creatorData: eventDataTarget.creatorData as any,
-          organizerData: eventDataTarget.organizerData as any,
-          attendeesData: eventDataTarget.attendeesData as any,
-          recurrenceData: eventDataTarget.recurrenceData as any,
-          remindersData: eventDataTarget.remindersData as any,
-          conferenceData: eventDataTarget.conferenceData as any,
-          attachmentsData: eventDataTarget.attachmentsData as any,
-          extendedPropertiesData: eventDataTarget.extendedPropertiesData as any,
-          metadata: eventDataTarget.metadata as any,
+          creatorData: eventDataTarget.creatorData as Record<string, unknown>,
+          organizerData: eventDataTarget.organizerData as Record<string, unknown>,
+          attendeesData: eventDataTarget.attendeesData as unknown[],
+          recurrenceData: eventDataTarget.recurrenceData as unknown[],
+          remindersData: eventDataTarget.remindersData as Record<string, unknown>,
+          conferenceData: eventDataTarget.conferenceData as Record<string, unknown>,
+          attachmentsData: eventDataTarget.attachmentsData as unknown[],
+          extendedPropertiesData: eventDataTarget.extendedPropertiesData as Record<string, unknown>,
+          metadata: eventDataTarget.metadata as Record<string, unknown>,
           eventCreatedAt: eventDataTarget.eventCreatedAt,
           eventUpdatedAt: eventDataTarget.eventUpdatedAt,
           updatedAt: new Date(),
@@ -68,18 +68,18 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
 
         await tx
           .insert(googleCalendarEvents)
-          .values(eventDataTarget as any)
+          .values(eventDataTarget as GoogleCalendarEventDataTarget)
           .onConflictDoUpdate({
             target: googleCalendarEvents.id,
             set: updateValues,
           })
           .execute();
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to save Google Calendar event:", { eventId: event.id, error });
       throw new AItError(
         "GOOGLE_CALENDAR_SAVE_EVENT",
-        `Failed to save event ${event.id}: ${error.message}`,
+        `Failed to save event ${event.id}: ${(error as Error).message}`,
         { id: event.id },
         error,
       );

@@ -145,7 +145,7 @@ export class TextGenerationService implements ITextGenerationService {
           chunkCount++;
           fullResponse += chunk;
           yield chunk;
-        } else if (part.type === "reasoning-delta" || part.type === "reasoning") {
+        } else if (part.type === "reasoning-delta") {
           const delta =
             (part as { textDelta?: string; text?: string }).textDelta ?? (part as { text?: string }).text ?? "";
           reasoningContent += delta;

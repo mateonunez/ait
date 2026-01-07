@@ -63,7 +63,7 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
 
       const authUrl = `https://accounts.spotify.com/authorize?${params}`;
       reply.redirect(authUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Spotify authentication.");
       reply.status(500).send({ error: "Failed to initiate Spotify authentication." });
     }
@@ -88,7 +88,7 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
           success: true,
           message: "Authentication successful. You can close this window.",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
         reply.status(500).send({ error: "Authentication failed." });
       }

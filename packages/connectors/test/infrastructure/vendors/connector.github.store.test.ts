@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import type { GitHubEntity } from "@ait/core";
 import { ConnectorGitHubStore } from "../../../src/infrastructure/vendors/github/connector.github.store";
 import type {
   GitHubRepositoryEntity,
@@ -94,7 +93,7 @@ describe("ConnectorGitHubStore", () => {
         id: "unsupported-1",
         name: "Some Entity",
         __type: "unsupported" as "github_repository", // this generates a type error
-      } as unknown as GitHubEntity;
+      } as unknown as any;
 
       await assert.rejects(async () => {
         await store.save(unsupportedItem);

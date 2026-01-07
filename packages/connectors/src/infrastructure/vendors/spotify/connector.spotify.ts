@@ -1,3 +1,4 @@
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { ConnectorSpotifyRepository } from "../../../domain/entities/vendors/spotify/connector.spotify.repository";
 import { BaseConnectorAbstract } from "../../../infrastructure/connector.base.abstract";
 import type { IConnectorOAuth } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -19,7 +20,7 @@ export class ConnectorSpotify extends BaseConnectorAbstract<
     super(authenticator, repository, store);
   }
 
-  protected async getAuthenticatedData(): Promise<any> {
+  protected async getAuthenticatedData(): Promise<OAuthTokenDataTarget | null> {
     return this._store.getAuthenticationData();
   }
 

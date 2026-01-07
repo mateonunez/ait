@@ -35,9 +35,9 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract<SlackMessageDat
       if (cursor) {
         query = query.where(
           drizzleOrm.or(
-            drizzleOrm.gt(slackMessages.updatedAt, cursor.timestamp),
+            drizzleOrm.gt(drizzleOrm.sql`${slackMessages.updatedAt}::timestamp(3)`, cursor.timestamp),
             drizzleOrm.and(
-              drizzleOrm.eq(slackMessages.updatedAt, cursor.timestamp),
+              drizzleOrm.eq(drizzleOrm.sql`${slackMessages.updatedAt}::timestamp(3)`, cursor.timestamp),
               drizzleOrm.gt(slackMessages.id, cursor.id),
             ),
           ),

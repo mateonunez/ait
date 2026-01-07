@@ -1,5 +1,6 @@
 import type { NotionEntityType, NotionPageEntity } from "@ait/core";
 import { AItError } from "@ait/core";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { NOTION_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorNotionRepository } from "../../../types/domain/entities/vendors/connector.notion.types";
@@ -33,7 +34,7 @@ export class ConnectorNotionStore implements IConnectorStore {
     await this._connectorNotionRepository.saveAuthenticationData(data);
   }
 
-  async getAuthenticationData(): Promise<any> {
+  async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
     return this._connectorNotionRepository.getAuthenticationData();
   }
 

@@ -1,14 +1,11 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import type { LinearEntity } from "@ait/core";
+import type { LinearIssueEntity } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { ConnectorLinearStore } from "../../../src/infrastructure/vendors/linear/connector.linear.store";
 import { LINEAR_ENTITY_TYPES_ENUM } from "../../../src/services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
-import type {
-  IConnectorLinearRepository,
-  LinearIssueEntity,
-} from "../../../src/types/domain/entities/vendors/connector.linear.types";
+import type { IConnectorLinearRepository } from "../../../src/types/domain/entities/vendors/connector.linear.types";
 
 describe("ConnectorLinearStore", () => {
   let mockRepository: IConnectorLinearRepository;
@@ -50,7 +47,7 @@ describe("ConnectorLinearStore", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         __type: LINEAR_ENTITY_TYPES_ENUM.ISSUE,
-      };
+      } as unknown as any;
 
       await store.save(issue);
 
@@ -64,7 +61,7 @@ describe("ConnectorLinearStore", () => {
         savedIssues.push(issue);
       };
 
-      const issues: LinearIssueEntity[] = [
+      const issues: any[] = [
         {
           id: "issue-1",
           title: "Issue 1",
@@ -115,7 +112,7 @@ describe("ConnectorLinearStore", () => {
         id: "unsupported-1",
         title: "Some Entity",
         __type: "unsupported",
-      } as unknown as LinearEntity;
+      } as unknown as any;
 
       await assert.rejects(
         async () => {
@@ -158,6 +155,11 @@ describe("ConnectorLinearStore", () => {
         expiresIn: "3600",
         refreshToken: "linear-refresh-token",
         scope: "read,write",
+        id: "test-id",
+        userId: "test-user-id",
+        provider: "linear",
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       mockRepository.getAuthenticationData = async () => expectedAuthData;

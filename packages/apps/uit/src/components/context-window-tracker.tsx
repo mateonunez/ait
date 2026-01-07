@@ -1,6 +1,6 @@
-import type { TokenUsage } from "@/hooks/useAItChat";
 import { cn } from "@/styles/utils";
 import { calculateContextWindowUsage, formatTokenCount } from "@/utils/token-counter.utils";
+import type { TokenUsage } from "@ait/core";
 import { motion } from "framer-motion";
 import { AlertTriangle, Database, TrendingUp } from "lucide-react";
 import { useMemo } from "react";

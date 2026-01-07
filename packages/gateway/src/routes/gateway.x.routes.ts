@@ -49,7 +49,7 @@ export default async function xRoutes(fastify: FastifyInstance) {
       url.searchParams.set("state", `${configId}:${userId}`);
 
       reply.redirect(url.toString());
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate X authentication.");
       reply.status(500).send({ error: "Failed to initiate X authentication." });
     }
@@ -74,7 +74,7 @@ export default async function xRoutes(fastify: FastifyInstance) {
           success: true,
           message: "Authentication successful. You can close this window.",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/auth/callback" }, "X authentication failed.");
         reply.status(500).send({ error: "X authentication failed." });
       }

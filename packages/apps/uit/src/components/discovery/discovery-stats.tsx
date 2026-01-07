@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useInsights } from "@/contexts/insights.context";
 import { useConnectionStatus } from "@/hooks/useConnectionStatus";
+import type { DailyActivity, DiscoveryStatsData } from "@/services/discovery.service";
 import { fetchDiscoveryStats } from "@/services/observability.service";
 import { cn } from "@/styles/utils";
 import { getLogger } from "@ait/core";
@@ -32,17 +33,6 @@ import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { AiInsightsPanel } from "./ai-insights-panel";
 
 const logger = getLogger();
-
-interface DailyActivity {
-  date: string;
-  [integrationKey: string]: number | string;
-}
-
-interface DiscoveryStatsData {
-  timeRange: "week" | "month" | "year";
-  data: DailyActivity[];
-  totals: Record<string, number>;
-}
 
 interface StatCardProps {
   item: {

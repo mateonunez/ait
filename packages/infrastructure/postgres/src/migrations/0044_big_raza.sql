@@ -1,0 +1,1 @@
+CREATE INDEX "slack_messages_updated_at_id_idx" ON "slack_messages" USING btree ("updated_at","id");

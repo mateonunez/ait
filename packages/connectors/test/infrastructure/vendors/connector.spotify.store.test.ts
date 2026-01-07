@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
-import type { SpotifyTrackEntity } from "../../../src/domain/entities/spotify/spotify-track.entity";
+import type { SpotifyTrackEntity } from "@ait/core";
 import { ConnectorSpotifyStore } from "../../../src/infrastructure/vendors/spotify/connector.spotify.store";
 import type { IConnectorSpotifyRepository } from "../../../src/types/domain/entities/vendors/connector.spotify.types";
 
@@ -88,7 +88,7 @@ describe("ConnectorSpotifyStore", () => {
         id: "unsupported-1",
         name: "Some Entity",
         __type: "unsupported",
-      } as unknown as SpotifyTrackEntity;
+      } as unknown as any;
 
       await assert.rejects(() => store.save(unsupportedItem), {
         message: "Type unsupported is not supported",

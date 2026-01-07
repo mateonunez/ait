@@ -170,12 +170,12 @@ export class ConnectorGoogleService
     return this.connector.repository.photo.getPhotosPaginated(params);
   }
 
-  async createPickerSession(): Promise<any> {
+  async createPickerSession(): Promise<Record<string, unknown>> {
     await this.connector.connect();
     return this.connector.dataSource.createPickerSession();
   }
 
-  async getPickerSession(id: string): Promise<any> {
+  async getPickerSession(id: string): Promise<Record<string, unknown>> {
     await this.connector.connect();
     return this.connector.dataSource.getPickerSession(id);
   }

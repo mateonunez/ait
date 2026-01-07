@@ -1,5 +1,6 @@
 import type { SlackEntityType, SlackMessageEntity } from "@ait/core";
 import { AItError } from "@ait/core";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { SLACK_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorSlackRepository } from "../../../types/domain/entities/vendors/connector.slack.types";
@@ -33,7 +34,7 @@ export class ConnectorSlackStore implements IConnectorStore {
     await this._connectorSlackRepository.saveAuthenticationData(data);
   }
 
-  async getAuthenticationData(): Promise<any> {
+  async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
     return this._connectorSlackRepository.getAuthenticationData();
   }
 

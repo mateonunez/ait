@@ -29,10 +29,10 @@ const connectorType = "github";
 
 export default async function githubRoutes(fastify: FastifyInstance) {
   const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorGitHubService> => {
-    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
+    let userId = (request.headers["x-user-id"] || (request.query as { userId?: string }).userId) as string | undefined;
 
     // Support extracting userId from OAuth state if it's encoded there
-    const state = (request.query as any).state;
+    const state = (request.query as { state?: string }).state;
     if (!userId && state && typeof state === "string" && state.includes(":")) {
       userId = state.split(":")[1];
     }
@@ -53,7 +53,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
       if (!configId) return reply.status(400).send({ error: "Missing configId" });
 
       const service = await getService(request, configId);
-      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
+      const userId = (request.headers["x-user-id"] || (request.query as { userId?: string }).userId) as string;
       const config = service.connector.authenticator.getOAuthConfig();
 
       const params = new URLSearchParams({
@@ -65,7 +65,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
       const authUrl = `https://github.com/login/oauth/authorize?${params}`;
       reply.redirect(authUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate GitHub authentication.");
       reply.status(500).send({ error: "Failed to initiate GitHub authentication." });
     }
@@ -90,7 +90,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
           success: true,
           message: "GitHub authentication successful.",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
         reply.status(500).send({ error: "Authentication failed." });
       }
@@ -120,7 +120,7 @@ export default async function githubRoutes(fastify: FastifyInstance) {
         const service = await getService(request, configId);
         const repositories = await service.fetchRepositories();
         reply.send(repositories);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/repositories" }, "Failed to fetch repositories.");
         reply.status(500).send({ error: "Failed to fetch repositories." });
       }
@@ -280,8 +280,8 @@ export default async function githubRoutes(fastify: FastifyInstance) {
               totalAdded += result.added;
               totalUpdated += result.updated;
               totalDeleted += result.deleted;
-            } catch (repoError: any) {
-              fastify.log.warn(`Failed to process ${repoFullName}: ${repoError.message}`);
+            } catch (repoError: unknown) {
+              fastify.log.warn(`Failed to process ${repoFullName}: ${(repoError as Error).message}`);
             }
           }
 

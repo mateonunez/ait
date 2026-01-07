@@ -1,5 +1,5 @@
 import { getLogger } from "@ait/core";
-import { type LanguageModel, stepCountIs, streamText as vercelStreamText } from "ai";
+import { type LanguageModel, type TextStreamPart, stepCountIs, streamText as vercelStreamText } from "ai";
 import { createModel, getAItClient, modelSupportsTools } from "../client/ai-sdk.client";
 import { type ModelName, getModelSpec } from "../config/models.config";
 import { buildSystemPromptWithContext, buildSystemPromptWithoutContext } from "../services/prompts/system.prompt";
@@ -35,7 +35,7 @@ export interface StreamOptions {
 
 export interface StreamResult {
   textStream: AsyncIterable<string>;
-  fullStream: AsyncIterable<any>;
+  fullStream: AsyncIterable<TextStreamPart<any>>;
   text: Promise<string>;
 }
 

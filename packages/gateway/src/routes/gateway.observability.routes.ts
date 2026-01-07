@@ -39,11 +39,11 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
 
       const httpStatus = health.healthy ? 200 : 503;
       return reply.status(httpStatus).send(status);
-    } catch (error: any) {
+    } catch (error: unknown) {
       fastify.log.error({ err: error }, "Health check failed");
       return reply.status(500).send({
         status: "error",
-        message: error.message || "Health check failed",
+        message: error instanceof Error ? error.message : "Health check failed",
       });
     }
   });
@@ -203,13 +203,13 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               retrievalsSaved: costSavings.retrievalsSaved,
               estimatedSavingsPerDay: `$${costSavings.estimatedSavingsPerDay.toFixed(2)}`,
             },
-            topQueries: queryPatterns.map((pattern: any) => ({
+            topQueries: queryPatterns.map((pattern) => ({
               query: pattern.query,
               hits: pattern.hits,
               avgDocuments: pattern.avgDocumentCount.toFixed(1),
               lastHit: new Date(pattern.lastHit).toISOString(),
             })),
-            timeline: cacheTimeline.map((t: any) => ({
+            timeline: cacheTimeline.map((t) => ({
               timestamp: new Date(t.timestamp).toISOString(),
               hits: t.hits,
               misses: t.misses,
@@ -256,7 +256,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               errorSpike: errorSpike,
             },
             byCategory: errorsByCategory,
-            topErrors: topErrorsRaw.map((err: any) => ({
+            topErrors: topErrorsRaw.map((err) => ({
               fingerprint: err.fingerprint,
               count: err.count,
               category: err.example.category,
@@ -265,7 +265,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               isRetryable: err.example.isRetryable,
               suggestedAction: err.example.suggestedAction,
             })),
-            timeline: errorTimeline.map((t: any) => ({
+            timeline: errorTimeline.map((t) => ({
               timestamp: new Date(t.timestamp).toISOString(),
               count: t.count,
             })),
@@ -285,14 +285,14 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
               isDegrading,
               status: getQualityHealthStatus(feedbackStats.qualityScore),
             },
-            trend: qualityTrend.map((point: any) => ({
+            trend: qualityTrend.map((point) => ({
               timestamp: new Date(point.timestamp).toISOString(),
               score: point.score,
               totalFeedback: point.totalFeedback,
               thumbsUp: point.thumbsUpCount,
               thumbsDown: point.thumbsDownCount,
             })),
-            problematicTraces: problematicTraces.map((trace: any) => ({
+            problematicTraces: problematicTraces.map((trace) => ({
               traceId: trace.traceId,
               messageId: trace.messageId,
               rating: trace.rating,
@@ -319,10 +319,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             },
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         fastify.log.error({ err: error }, "Failed to get unified stats");
         return reply.status(500).send({
-          error: error.message || "Failed to get unified stats",
+          error: error instanceof Error ? error.message : "Failed to get unified stats",
         });
       }
     },
@@ -377,14 +377,14 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
           },
           errors: {
             retrySuccessRate: `${summary.retrySuccessRate.toFixed(2)}%`,
-            byCategory: summary.errors.map((err: any) => ({
+            byCategory: summary.errors.map((err) => ({
               category: err.category,
               count: err.count,
               percentage: `${err.percentage.toFixed(2)}%`,
               isRetryable: err.isRetryable,
               suggestedAction: err.suggestedAction,
             })),
-            topErrors: summary.topErrors.map((err: any) => ({
+            topErrors: summary.topErrors.map((err) => ({
               fingerprint: err.fingerprint,
               count: err.count,
               category: err.category,
@@ -392,10 +392,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             })),
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         fastify.log.error({ err: error }, "Failed to get metrics");
         return reply.status(500).send({
-          error: error.message || "Failed to get metrics",
+          error: error instanceof Error ? error.message : "Failed to get metrics",
         });
       }
     },
@@ -459,10 +459,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             hitRate: snapshot.cacheHitRate,
           },
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         fastify.log.error({ err: error }, "Failed to get performance metrics");
         return reply.status(500).send({
-          error: error.message || "Failed to get performance metrics",
+          error: error instanceof Error ? error.message : "Failed to get performance metrics",
         });
       }
     },
@@ -508,10 +508,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       fastify.log.error({ err: error }, "Failed to get cost metrics");
       return reply.status(500).send({
-        error: error.message || "Failed to get cost metrics",
+        error: error instanceof Error ? error.message : "Failed to get cost metrics",
       });
     }
   });
@@ -564,23 +564,23 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             retrievalsSaved: costSavings.retrievalsSaved,
             estimatedSavingsPerDay: `$${costSavings.estimatedSavingsPerDay.toFixed(2)}`,
           },
-          topQueries: queryPatterns.map((pattern: any) => ({
+          topQueries: queryPatterns.map((pattern) => ({
             query: pattern.query,
             hits: pattern.hits,
             avgDocuments: pattern.avgDocumentCount.toFixed(1),
             lastHit: new Date(pattern.lastHit).toISOString(),
           })),
-          timeline: timeline.map((t: any) => ({
+          timeline: timeline.map((t) => ({
             timestamp: new Date(t.timestamp).toISOString(),
             hits: t.hits,
             misses: t.misses,
             hitRate: t.hits + t.misses > 0 ? `${((t.hits / (t.hits + t.misses)) * 100).toFixed(1)}%` : "0%",
           })),
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         fastify.log.error({ err: error }, "Failed to get cache metrics");
         return reply.status(500).send({
-          error: error.message || "Failed to get cache metrics",
+          error: error instanceof Error ? error.message : "Failed to get cache metrics",
         });
       }
     },
@@ -623,7 +623,7 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             errorSpike: errorSpike,
           },
           byCategory: errorsByCategory,
-          topErrors: topErrors.map((err: any) => ({
+          topErrors: topErrors.map((err) => ({
             fingerprint: err.fingerprint,
             count: err.count,
             category: err.example.category,
@@ -632,15 +632,15 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             isRetryable: err.example.isRetryable,
             suggestedAction: err.example.suggestedAction,
           })),
-          timeline: timeline.map((t: any) => ({
+          timeline: timeline.map((t) => ({
             timestamp: new Date(t.timestamp).toISOString(),
             count: t.count,
           })),
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         fastify.log.error({ err: error }, "Failed to get error metrics");
         return reply.status(500).send({
-          error: error.message || "Failed to get error metrics",
+          error: error instanceof Error ? error.message : "Failed to get error metrics",
         });
       }
     },
@@ -671,10 +671,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
           external: `${(memoryUsage.external / 1024 / 1024).toFixed(2)} MB`,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       fastify.log.error({ err: error }, "Failed to get system info");
       return reply.status(500).send({
-        error: error.message || "Failed to get system info",
+        error: error instanceof Error ? error.message : "Failed to get system info",
       });
     }
   });
@@ -742,10 +742,10 @@ export default async function observabilityRoutes(fastify: FastifyInstance) {
             userId: trace.userId,
           })),
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         fastify.log.error({ err: error }, "Failed to get quality metrics");
         return reply.status(500).send({
-          error: error.message || "Failed to get quality metrics",
+          error: error instanceof Error ? error.message : "Failed to get quality metrics",
         });
       }
     },

@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
-import type { XTweetExternal } from "../../types/integrations";
+import type { TransformFnParams } from "class-transformer";
+import type { XMediaEntity, XPlaceEntity, XPollEntity, XTweetExternal } from "../../types/integrations";
 
 /**
  * X (Twitter) Tweet entity with class-transformer decorators.
@@ -16,63 +17,63 @@ export class XTweetEntity {
   authorId!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   authorUsername!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   authorName!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "en")
+  @Transform(({ value }: TransformFnParams) => value ?? "en")
   lang = "en";
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   retweetCount = 0;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   likeCount = 0;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   replyCount = 0;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   quoteCount = 0;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   conversationId: string | null = null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   inReplyToUserId: string | null = null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
-  mediaAttachments: any[] = [];
+  @Transform(({ value }: TransformFnParams) => value ?? [])
+  mediaAttachments: XMediaEntity[] = [];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
-  pollData: any = null;
+  @Transform(({ value }: TransformFnParams) => value ?? null)
+  pollData: XPollEntity | null = null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
-  placeData: any = null;
+  @Transform(({ value }: TransformFnParams) => value ?? null)
+  placeData: XPlaceEntity | null = null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? {})
+  @Transform(({ value }: TransformFnParams) => value ?? {})
   jsonData: Record<string, unknown> = {};
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

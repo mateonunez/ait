@@ -109,14 +109,14 @@ export class ConnectorGooglePhotosDataSource {
     }
   }
 
-  async createPickerSession(): Promise<any> {
+  async createPickerSession(): Promise<Record<string, unknown>> {
     // https://developers.google.com/photos/picker/reference/rest/v1/sessions/create
     const url = "https://photospicker.googleapis.com/v1/sessions";
     // Using a separate request here since the base URL is different
     return this._fetchFromUrl(url, "POST");
   }
 
-  async getPickerSession(sessionId: string): Promise<any> {
+  async getPickerSession(sessionId: string): Promise<Record<string, unknown>> {
     // https://developers.google.com/photos/picker/reference/rest/v1/sessions/get
     const url = `https://photospicker.googleapis.com/v1/sessions/${sessionId}`;
     return this._fetchFromUrl(url, "GET");

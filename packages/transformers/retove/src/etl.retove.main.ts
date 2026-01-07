@@ -1,6 +1,6 @@
 import { type EntityType, getLogger } from "@ait/core";
 import { closePostgresConnection, getPostgresClient } from "@ait/postgres";
-import { getQdrantClient } from "@ait/qdrant";
+import { getQdrantClient, type qdrant } from "@ait/qdrant";
 import {
   runGitHubCommitETL,
   runGitHubFileETL,
@@ -23,7 +23,10 @@ import {
 
 const logger = getLogger();
 
-const etlRunners: Record<EntityType, any> = {
+const etlRunners: Record<
+  EntityType,
+  (q: qdrant.QdrantClient, p: ReturnType<typeof getPostgresClient>) => Promise<void>
+> = {
   spotify_track: runSpotifyTrackETL,
   spotify_artist: runSpotifyArtistETL,
   spotify_playlist: runSpotifyPlaylistETL,
@@ -66,9 +69,14 @@ async function main() {
     logger.info("🚀 Starting ETL process (All)...");
   }
 
-  const results: { name: string; status: "success" | "failure"; error?: any }[] = [];
+  const results: { name: string; status: "success" | "failure"; error?: unknown }[] = [];
 
-  const runETL = async (name: string, runner: (q: any, p: any) => Promise<void>, qdrantClient: any, pgClient: any) => {
+  const runETL = async (
+    name: string,
+    runner: (q: qdrant.QdrantClient, p: ReturnType<typeof getPostgresClient>) => Promise<void>,
+    qdrantClient: qdrant.QdrantClient,
+    pgClient: ReturnType<typeof getPostgresClient>,
+  ) => {
     logger.info(`⏳ Starting ${name}...`);
     try {
       await runner(qdrantClient, pgClient);

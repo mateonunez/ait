@@ -55,11 +55,11 @@ export class ConnectorGoogleDataSource {
   }
 
   // Picker methods
-  async createPickerSession(): Promise<any> {
+  async createPickerSession(): Promise<Record<string, unknown>> {
     return this._photosDataSource.createPickerSession();
   }
 
-  async getPickerSession(sessionId: string): Promise<any> {
+  async getPickerSession(sessionId: string): Promise<Record<string, unknown>> {
     return this._photosDataSource.getPickerSession(sessionId);
   }
 

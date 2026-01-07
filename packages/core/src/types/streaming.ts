@@ -205,3 +205,10 @@ export interface ChatMessageWithMetadata {
   traceId?: string;
   createdAt: Date;
 }
+
+export interface TokenUsage {
+  inputTokens: number;
+  outputTokens: number;
+  ragContextTokens: number;
+  totalTokens: number;
+}
