@@ -363,6 +363,7 @@ export default function GooglePage() {
 
   return (
     <IntegrationLayout
+      vendor="google"
       title="Google"
       description="Calendar events, YouTube subscriptions, Contacts, and Photos"
       color="#4285F4"

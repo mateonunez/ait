@@ -35,6 +35,14 @@ export abstract class ConnectorServiceBase<
     this._connector = this.createConnector(oauth);
   }
 
+  public get userId(): string | undefined {
+    return (this._connector.authenticator as ConnectorOAuth).config.userId;
+  }
+
+  public get connectorConfigId(): string | undefined {
+    return (this._connector.authenticator as ConnectorOAuth).config.connectorConfigId;
+  }
+
   protected registerEntityConfig<K extends keyof TEntityMap, E>(
     entityType: K,
     config: {

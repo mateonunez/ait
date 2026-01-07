@@ -1,7 +1,7 @@
 import { getLogger } from "@ait/core";
 import { getQdrantClient } from "@ait/qdrant";
 import { getAItClient } from "../client/ai-sdk.client";
-import { type CollectionConfig, getAllCollections } from "../config/collections.config";
+import { type CollectionConfig, getAllCollections, getGrantAwareCollections } from "../config/collections.config";
 import { SPARSE_VECTOR_NAME } from "../constants/embeddings.constants";
 import { getCacheProvider } from "../providers";
 import { type SparseVector, getSparseVectorService } from "../services/embeddings/sparse-vector.service";
@@ -28,6 +28,7 @@ export interface RetrieveOptions {
   traceContext?: TraceContext;
   collectionWeights?: Record<string, number>;
   enableDeduplication?: boolean;
+  allowedVendors?: Set<string>;
   filter?: {
     fromDate?: string | Date;
     toDate?: string | Date;
@@ -65,11 +66,13 @@ async function filterExistingCollections(
 ): Promise<CollectionConfig[]> {
   try {
     const response = await qdrantClient.getCollections();
-    const existingNames = new Set(response.collections.map((c: { name: string }) => c.name));
-    const filtered = collections.filter((c) => existingNames.has(c.name));
+    const existingNames = new Set(response.collections.map((coll: { name: string }) => coll.name));
+    const filtered = collections.filter((collection) => existingNames.has(collection.name));
 
     if (filtered.length < collections.length) {
-      const missing = collections.filter((c) => !existingNames.has(c.name)).map((c) => c.name);
+      const missing = collections
+        .filter((collection) => !existingNames.has(collection.name))
+        .map((collection) => collection.name);
       logger.debug("Skipping non-existent collections", { missing });
     }
 
@@ -215,9 +218,11 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
   const qdrantClient = getQdrantClient();
 
   // Determine target collections
-  const allCollections = getAllCollections();
+  const allCollections = options.allowedVendors
+    ? getGrantAwareCollections(options.allowedVendors)
+    : getAllCollections();
   const targetCollections = options.collections
-    ? allCollections.filter((c) => options.collections!.includes(c.name))
+    ? allCollections.filter((collection) => options.collections!.includes(collection.name))
     : allCollections;
 
   // Filter to only existing collections
@@ -228,7 +233,7 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
     return { documents: [], totalFound: 0 };
   }
 
-  const collectionNames = existingCollections.map((c) => c.name).sort();
+  const collectionNames = existingCollections.map((collection) => collection.name).sort();
   const targetTypes = (options.types || []).slice().sort();
 
   // Build cache key with all relevant options
@@ -296,9 +301,9 @@ export async function retrieve(options: RetrieveOptions): Promise<RetrieveResult
 
   logger.info("Retrieval results", {
     totalResults: flatResults.length,
-    byCollection: existingCollections.map((c, i) => ({
-      name: c.name,
-      count: allResults[i]?.length || 0,
+    byCollection: existingCollections.map((collection, index) => ({
+      name: collection.name,
+      count: allResults[index]?.length || 0,
     })),
   });
 

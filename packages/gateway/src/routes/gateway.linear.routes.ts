@@ -1,11 +1,8 @@
 import { type ConnectorLinearService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-declare module "fastify" {
-  interface FastifyInstance {
-    linearService: ConnectorLinearService;
-  }
-}
+const logger = getLogger();
 
 interface AuthCallbackQuery {
   code: string;
@@ -19,22 +16,43 @@ interface PaginationQuery {
 const connectorType = "linear";
 
 export default async function linearRoutes(fastify: FastifyInstance) {
-  if (!fastify.linearService) {
-    fastify.decorate("linearService", connectorServiceFactory.getService<ConnectorLinearService>(connectorType));
-  }
+  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorLinearService> => {
+    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
 
-  const linearService = fastify.linearService;
+    // Support extracting userId from OAuth state if it's encoded there
+    const state = (request.query as any).state;
+    if (!userId && state && typeof state === "string" && state.includes(":")) {
+      userId = state.split(":")[1];
+    }
 
-  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+    const currentUserId = userId || "anonymous";
+
+    if (configId) {
+      return await connectorServiceFactory.getServiceByConfig<ConnectorLinearService>(configId, currentUserId);
+    }
+
+    // Fallback/Legacy
+    return connectorServiceFactory.getService<ConnectorLinearService>(connectorType);
+  };
+
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
     try {
+      const { configId } = request.query;
+      if (!configId) return reply.status(400).send({ error: "Missing configId" });
+
+      const service = await getService(request, configId);
+      const config = service.connector.authenticator.getOAuthConfig();
+
+      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
       const params = new URLSearchParams({
-        client_id: process.env.LINEAR_CLIENT_ID!,
-        redirect_uri: process.env.LINEAR_REDIRECT_URI!,
+        client_id: config.clientId,
+        redirect_uri: config.redirectUri!,
         response_type: "code",
         scope: "read,write",
+        state: `${configId}:${userId}`,
       });
 
-      const authUrl = `${process.env.LINEAR_AUTH_URL}?${params}`;
+      const authUrl = `https://linear.app/oauth/authorize?${params}`;
       reply.redirect(authUrl);
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Linear authentication.");
@@ -44,8 +62,9 @@ export default async function linearRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      const { code } = request.query;
+    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+      const { code, state } = request.query;
+      const [configId] = (state || "").split(":");
 
       if (!code) {
         fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
@@ -53,10 +72,8 @@ export default async function linearRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await linearService.connector.connect(code);
-
-        // Data fetching is now handled separately via the /refresh endpoint or background jobs
-        // to avoid timeout issues during the auth callback.
+        const service = await getService(request, configId);
+        await service.connector.connect(code);
 
         reply.send({
           success: true,
@@ -69,35 +86,46 @@ export default async function linearRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await clearOAuthData(connectorType);
-      reply.send({ success: true, message: "Linear disconnected successfully." });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Linear.");
-      reply.status(500).send({ error: "Failed to disconnect Linear." });
-    }
-  });
+  fastify.post(
+    "/auth/disconnect",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const userId = request.headers["x-user-id"] as string;
+        await clearOAuthData(connectorType, userId);
+        reply.send({ success: true, message: "Linear disconnected successfully." });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Linear.");
+        reply.status(500).send({ error: "Failed to disconnect Linear." });
+      }
+    },
+  );
 
-  fastify.get("/issues", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const issues = await linearService.fetchIssues();
-      reply.send(issues);
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/issues" }, "Failed to fetch issues.");
-      reply.status(500).send({ error: "Failed to fetch issues." });
-    }
-  });
+  fastify.get(
+    "/issues",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const issues = await service.fetchIssues();
+        reply.send(issues);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/issues" }, "Failed to fetch issues.");
+        reply.status(500).send({ error: "Failed to fetch issues." });
+      }
+    },
+  );
 
   // Paginated data route
   fastify.get(
     "/data/issues",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await linearService.getIssuesPaginated({ page, limit });
+        const result = await service.getIssuesPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/issues" }, "Failed to fetch issues from DB.");
@@ -107,12 +135,13 @@ export default async function linearRoutes(fastify: FastifyInstance) {
   );
 
   // Refresh endpoint with optional entity filter
-  // Usage: POST /refresh?entities=issues or POST /refresh (all entities)
   fastify.post(
     "/refresh",
-    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: { entities?: string; configId?: string } }>, reply: FastifyReply) => {
       try {
-        const { entities: entitiesParam } = request.query;
+        const { entities: entitiesParam, configId } = request.query;
+        const service = await getService(request, configId);
+
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
           : ["issues"];
@@ -120,8 +149,8 @@ export default async function linearRoutes(fastify: FastifyInstance) {
         const counts: Record<string, number> = {};
 
         if (entitiesToRefresh.includes("issues")) {
-          const issues = await linearService.fetchIssues();
-          await linearService.connector.store.save(issues);
+          const issues = await service.fetchIssues();
+          await service.connector.store.save(issues);
           counts.issues = issues.length;
         }
 

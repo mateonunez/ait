@@ -17,6 +17,7 @@
     "db:fix-collation": "pnpm copy:env && tsx src/db.fix-collation.ts",
     "db:generate:test": "pnpm copy:env:test && NODE_ENV=test drizzle-kit generate --config src/drizzle.config.ts",
     "db:migrate:test": "pnpm copy:env:test && NODE_ENV=test tsx src/db.migrate.ts",
+    "db:seed": "pnpm copy:env && tsx src/db.seed.ts",
     "db:studio": "drizzle-kit studio --config ./src/drizzle.config.ts"
   },
   "keywords": [],

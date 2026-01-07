@@ -7,21 +7,24 @@ import { ConnectorSlackMessageRepository } from "./connector.slack-message.repos
 export class ConnectorSlackRepository extends ConnectorSlackMessageRepository implements IConnectorSlackRepository {
   private _slackMessageRepository: ConnectorSlackMessageRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     super();
     this._slackMessageRepository = new ConnectorSlackMessageRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "slack");
+    await saveOAuthData(data, "slack", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("slack");
+    return getOAuthData("slack", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("slack");
+    await clearOAuthData("slack", this.userId);
   }
 
   get message(): ConnectorSlackMessageRepository {

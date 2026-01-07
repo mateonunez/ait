@@ -17,7 +17,7 @@ import {
   mapSpotifyTrack,
 } from "@ait/core";
 import { ConnectorSpotify } from "../../infrastructure/vendors/spotify/connector.spotify";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { ConnectorOAuth, IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
 import {
@@ -46,8 +46,8 @@ export class ConnectorSpotifyService
   extends ConnectorServiceBase<ConnectorSpotify, SpotifyServiceEntityMap>
   implements IConnectorSpotifyService
 {
-  constructor() {
-    super(getConnectorConfig("spotify"));
+  constructor(config?: IConnectorOAuthConfig) {
+    super(config ?? getConnectorConfig("spotify"));
 
     this.registerPaginatedEntityConfig<SPOTIFY_ENTITY_TYPES_ENUM.TRACK, SpotifyTrackExternal>(
       SPOTIFY_ENTITY_TYPES_ENUM.TRACK,

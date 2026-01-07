@@ -1,11 +1,8 @@
 import { type ConnectorSlackService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-declare module "fastify" {
-  interface FastifyInstance {
-    slackService: ConnectorSlackService;
-  }
-}
+const logger = getLogger();
 
 interface AuthCallbackQuery {
   code: string;
@@ -19,34 +16,47 @@ interface PaginationQuery {
 const connectorType = "slack";
 
 export default async function slackRoutes(fastify: FastifyInstance) {
-  if (!fastify.slackService) {
-    fastify.decorate("slackService", connectorServiceFactory.getService<ConnectorSlackService>(connectorType));
-  }
+  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorSlackService> => {
+    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
 
-  const slackService = fastify.slackService;
+    // Support extracting userId from OAuth state if it's encoded there
+    const state = (request.query as any).state;
+    if (!userId && state && typeof state === "string" && state.includes(":")) {
+      userId = state.split(":")[1];
+    }
 
-  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+    const currentUserId = userId || "anonymous";
+
+    if (configId) {
+      return await connectorServiceFactory.getServiceByConfig<ConnectorSlackService>(configId, currentUserId);
+    }
+
+    // Fallback/Legacy
+    return connectorServiceFactory.getService<ConnectorSlackService>(connectorType);
+  };
+
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
     try {
-      const clientId = process.env.SLACK_CLIENT_ID;
-      const redirectUri = process.env.SLACK_REDIRECT_URI;
+      const { configId } = request.query;
+      if (!configId) return reply.status(400).send({ error: "Missing configId" });
 
-      if (!clientId || !redirectUri) {
-        fastify.log.error({ route: "/auth" }, "Missing SLACK_CLIENT_ID or SLACK_REDIRECT_URI environment variables.");
-        return reply.status(500).send({ error: "Missing required Slack configuration." });
-      }
+      const service = await getService(request, configId);
+      const config = service.connector.authenticator.getOAuthConfig();
 
-      const baseUrl = process.env.SLACK_AUTH_URL || "https://slack.com/oauth/v2/authorize";
+      const baseUrl = "https://slack.com/oauth/v2/authorize";
 
+      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
       const params = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
+        client_id: config.clientId,
+        redirect_uri: config.redirectUri!,
         user_scope:
           "channels:read,groups:read,im:read,mpim:read,channels:history,groups:history,im:history,mpim:history,users:read,chat:write",
         response_type: "code",
+        state: `${configId}:${userId}`,
       });
 
       const authUrl = `${baseUrl}?${params.toString()}`;
-      fastify.log.info({ authUrl, redirectUri, clientId }, "Redirecting to Slack OAuth");
+      fastify.log.info({ authUrl, configId }, "Redirecting to Slack OAuth");
       reply.redirect(authUrl);
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Slack authentication.");
@@ -56,8 +66,9 @@ export default async function slackRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      const { code } = request.query;
+    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+      const { code, state } = request.query;
+      const [configId] = (state || "").split(":");
 
       if (!code) {
         fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
@@ -65,10 +76,8 @@ export default async function slackRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await slackService.connector.connect(code);
-
-        // Data fetching is now handled separately via the /refresh endpoint or background jobs
-        // to avoid timeout issues during the auth callback.
+        const service = await getService(request, configId);
+        await service.connector.connect(code);
 
         reply.send({
           success: true,
@@ -81,35 +90,46 @@ export default async function slackRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await clearOAuthData(connectorType);
-      reply.send({ success: true, message: "Slack disconnected successfully." });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Slack.");
-      reply.status(500).send({ error: "Failed to disconnect Slack." });
-    }
-  });
+  fastify.post(
+    "/auth/disconnect",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const userId = request.headers["x-user-id"] as string;
+        await clearOAuthData(connectorType, userId);
+        reply.send({ success: true, message: "Slack disconnected successfully." });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect Slack.");
+        reply.status(500).send({ error: "Failed to disconnect Slack." });
+      }
+    },
+  );
 
-  fastify.get("/messages", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const messages = await slackService.fetchMessages();
-      reply.send(messages);
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/messages" }, "Failed to fetch messages.");
-      reply.status(500).send({ error: "Failed to fetch messages." });
-    }
-  });
+  fastify.get(
+    "/messages",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const messages = await service.fetchMessages();
+        reply.send(messages);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/messages" }, "Failed to fetch messages.");
+        reply.status(500).send({ error: "Failed to fetch messages." });
+      }
+    },
+  );
 
   // Paginated data route
   fastify.get(
     "/data/messages",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await slackService.getMessagesPaginated({ page, limit });
+        const result = await service.getMessagesPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/messages" }, "Failed to fetch messages from DB.");
@@ -119,12 +139,13 @@ export default async function slackRoutes(fastify: FastifyInstance) {
   );
 
   // Refresh endpoint with optional entity filter
-  // Usage: POST /refresh?entities=messages or POST /refresh (all entities)
   fastify.post(
     "/refresh",
-    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: { entities?: string; configId?: string } }>, reply: FastifyReply) => {
       try {
-        const { entities: entitiesParam } = request.query;
+        const { entities: entitiesParam, configId } = request.query;
+        const service = await getService(request, configId);
+
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
           : ["messages"];
@@ -132,8 +153,8 @@ export default async function slackRoutes(fastify: FastifyInstance) {
         const counts: Record<string, number> = {};
 
         if (entitiesToRefresh.includes("messages")) {
-          const messages = await slackService.fetchMessages();
-          await slackService.connector.store.save(messages);
+          const messages = await service.fetchMessages();
+          await service.connector.store.save(messages);
           counts.messages = messages.length;
         }
 

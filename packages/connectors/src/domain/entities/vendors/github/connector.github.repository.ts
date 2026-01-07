@@ -13,7 +13,10 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
   private _gitHubCommitRepository: ConnectorGitHubCommitRepository;
   private _gitHubFileRepository: ConnectorGitHubFileRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     super();
     this._gitHubRepositoryRepository = new ConnectorGitHubRepoRepository();
     this._gitHubPullRequestRepository = new ConnectorGitHubPullRequestRepository();
@@ -22,15 +25,15 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "github");
+    await saveOAuthData(data, "github", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("github");
+    return getOAuthData("github", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("github");
+    await clearOAuthData("github", this.userId);
   }
 
   get repo(): ConnectorGitHubRepoRepository {

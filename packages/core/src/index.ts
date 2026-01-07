@@ -31,6 +31,7 @@ export * from "./types/insights";
 export * from "./entities";
 
 export * from "./utils/string.utils";
+export * from "./utils/encryption.utils";
 export * from "./utils/hash.utils";
 export * from "./utils/array.utils";
 export * from "./utils/format.utils";

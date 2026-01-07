@@ -16,11 +16,11 @@ export function HomeFeed({ isLoading, sections, sectionsData, totalItems }: Home
       <div className="space-y-6 sm:space-y-8 pb-6 sm:pb-8">
         {sections.map((section) => (
           <div key={section.id} className="space-y-3 sm:space-y-4">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl flex justify-center sm:justify-start">
               <Skeleton className="h-7 w-48" />
             </div>
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex gap-3 sm:gap-4 overflow-hidden">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl">
+              <div className="flex gap-3 sm:gap-4 overflow-hidden justify-center sm:justify-start">
                 {[1, 2, 3, 4].map((i) => (
                   <Skeleton key={i} className="h-72 w-[220px] sm:w-[240px] md:w-[280px] flex-shrink-0 rounded-xl" />
                 ))}

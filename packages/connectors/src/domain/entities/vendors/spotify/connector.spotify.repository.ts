@@ -15,7 +15,10 @@ export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository 
   private _spotifyAlbumRepository: ConnectorSpotifyAlbumRepository;
   private _spotifyRecentlyPlayedRepository: ConnectorSpotifyRecentlyPlayedRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     super();
     this._spotifyTrackRepository = new ConnectorSpotifyTrackRepository();
     this._spotifyArtistRepository = new ConnectorSpotifyArtistRepository();
@@ -25,15 +28,15 @@ export class ConnectorSpotifyRepository extends ConnectorSpotifyTrackRepository 
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "spotify");
+    await saveOAuthData(data, "spotify", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("spotify");
+    return getOAuthData("spotify", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("spotify");
+    await clearOAuthData("spotify", this.userId);
   }
 
   get track(): ConnectorSpotifyTrackRepository {

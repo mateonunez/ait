@@ -15,7 +15,7 @@ export class ConnectorX extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorXAuthenticator(oauth);
-    const repository = new ConnectorXRepository();
+    const repository = new ConnectorXRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorXStore(repository);
     super(authenticator, repository, store);
   }

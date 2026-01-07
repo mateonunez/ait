@@ -112,21 +112,24 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
 export class ConnectorXRepository extends ConnectorXTweetRepository implements IConnectorXRepository {
   private _connectorXTweetRepository: ConnectorXTweetRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     super();
     this._connectorXTweetRepository = new ConnectorXTweetRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "x");
+    await saveOAuthData(data, "x", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("x");
+    return getOAuthData("x", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("x");
+    await clearOAuthData("x", this.userId);
   }
 
   get tweet(): ConnectorXTweetRepository {

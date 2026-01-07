@@ -18,25 +18,47 @@ export { createMCPToolsForVendor, getMCPToolsSummary } from "./mcp";
  * TODO: create a service manager for connector tools
  *
  * @param spotifyService - Optional Spotify service for real-time playback tools
+ * @param allowedVendors - Optional set of allowed vendors. If provided, filters tools.
  */
-export function createAllConnectorTools(spotifyService?: SpotifyServiceInterface): Record<string, Tool> {
-  return {
-    ...createSpotifyTools(spotifyService),
-    ...createConversationTools(),
+export function createAllConnectorTools(
+  spotifyService?: SpotifyServiceInterface,
+  allowedVendors?: Set<string>,
+): Record<string, Tool> {
+  const tools: Record<string, Tool> = {
+    ...createConversationTools(), // Internal tools always allowed
   };
+
+  if (spotifyService && (!allowedVendors || allowedVendors.has("spotify"))) {
+    Object.assign(tools, createSpotifyTools(spotifyService));
+  }
+
+  return tools;
 }
 
 export async function createAllConnectorToolsWithMCP(
   spotifyService?: SpotifyServiceInterface,
   mcpManager?: MCPClientManager,
+  allowedVendors?: Set<string>,
 ): Promise<Record<string, Tool>> {
-  const connectorTools = createAllConnectorTools(spotifyService);
+  const connectorTools = createAllConnectorTools(spotifyService, allowedVendors);
 
   if (!mcpManager) {
     return connectorTools;
   }
 
   const mcpTools = await new McpToolRegistry({ manager: mcpManager }).getToolsForConnectedVendors();
+
+  if (allowedVendors) {
+    const connectedVendors = mcpManager.getConnectedVendors();
+
+    for (const key of Object.keys(mcpTools)) {
+      const toolVendor = connectedVendors.find((vendor) => key.startsWith(`${vendor}_`));
+
+      if (toolVendor && !allowedVendors.has(toolVendor)) {
+        delete mcpTools[key];
+      }
+    }
+  }
 
   return {
     ...connectorTools,

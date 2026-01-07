@@ -56,6 +56,7 @@ export default function LinearPage() {
 
   return (
     <IntegrationLayout
+      vendor="linear"
       title="Linear"
       description="Assigned issues"
       color="#5e6ad2"

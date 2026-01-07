@@ -5,8 +5,15 @@ import type { IConnectorOAuthTokenResponse } from "./connector.oauth";
 const _pgClient = getPostgresClient();
 
 // TODO: move this
-export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider: string): Promise<void> {
-  const ouathData = await getOAuthData(provider);
+export async function saveOAuthData(
+  data: IConnectorOAuthTokenResponse,
+  provider: string,
+  userId?: string,
+  connectorConfigId?: string,
+): Promise<void> {
+  const currentUserId = userId || "anonymous";
+
+  const ouathData = await getOAuthData(provider, currentUserId);
   const randomId = randomUUID();
   const now = new Date();
 
@@ -29,13 +36,21 @@ export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider
           scope: scope || ouathData.scope,
           expiresIn: expiresIn ? expiresIn.toString() : ouathData.expiresIn,
           metadata: data.metadata || ouathData.metadata,
+          connectorConfigId: connectorConfigId || ouathData.connectorConfigId,
           updatedAt: now,
         })
-        .where(drizzleOrm.eq(oauthTokens.provider, provider))
+        .where(
+          drizzleOrm.and(
+            drizzleOrm.eq(oauthTokens.provider, provider),
+            drizzleOrm.eq(oauthTokens.userId, currentUserId),
+          ),
+        )
         .execute();
     } else {
       const tokenData = {
         id: randomId,
+        userId: currentUserId,
+        connectorConfigId,
         accessToken: accessToken,
         refreshToken: refreshToken,
         tokenType: tokenType,
@@ -51,10 +66,13 @@ export async function saveOAuthData(data: IConnectorOAuthTokenResponse, provider
   });
 }
 
-export async function getOAuthData(provider: string): Promise<OAuthTokenDataTarget | null> {
+export async function getOAuthData(provider: string, userId?: string): Promise<OAuthTokenDataTarget | null> {
+  const currentUserId = userId || "anonymous";
   const data = await _pgClient.db
     .select({
       id: oauthTokens.id,
+      userId: oauthTokens.userId,
+      connectorConfigId: oauthTokens.connectorConfigId,
       accessToken: oauthTokens.accessToken,
       refreshToken: oauthTokens.refreshToken,
       tokenType: oauthTokens.tokenType,
@@ -66,7 +84,9 @@ export async function getOAuthData(provider: string): Promise<OAuthTokenDataTarg
       updatedAt: oauthTokens.updatedAt,
     })
     .from(oauthTokens)
-    .where(drizzleOrm.eq(oauthTokens.provider, provider))
+    .where(
+      drizzleOrm.and(drizzleOrm.eq(oauthTokens.provider, provider), drizzleOrm.eq(oauthTokens.userId, currentUserId)),
+    )
     .execute();
 
   if (!data.length) {
@@ -76,8 +96,14 @@ export async function getOAuthData(provider: string): Promise<OAuthTokenDataTarg
   return data[0] as OAuthTokenDataTarget;
 }
 
-export async function clearOAuthData(provider: string): Promise<void> {
-  await _pgClient.db.delete(oauthTokens).where(drizzleOrm.eq(oauthTokens.provider, provider)).execute();
+export async function clearOAuthData(provider: string, userId?: string): Promise<void> {
+  const currentUserId = userId || "anonymous";
+  await _pgClient.db
+    .delete(oauthTokens)
+    .where(
+      drizzleOrm.and(drizzleOrm.eq(oauthTokens.provider, provider), drizzleOrm.eq(oauthTokens.userId, currentUserId)),
+    )
+    .execute();
 }
 
 export function isTokenExpiringSoon(expiresAt: Date, updatedAt: Date): boolean {

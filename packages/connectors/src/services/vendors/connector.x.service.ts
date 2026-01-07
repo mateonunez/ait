@@ -1,6 +1,6 @@
 import type { PaginatedResponse, PaginationParams, XTweetEntity, XTweetExternal } from "@ait/core";
 import { ConnectorX } from "../../infrastructure/vendors/x/connector.x";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { ConnectorOAuth, IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
 import { type XServiceEntityMap, X_ENTITY_TYPES_ENUM, connectorEntityConfigs } from "./connector.vendors.config";
@@ -14,8 +14,8 @@ export class ConnectorXService
   extends ConnectorServiceBase<ConnectorX, XServiceEntityMap>
   implements IConnectorXService
 {
-  constructor() {
-    super(getConnectorConfig("x"));
+  constructor(config?: IConnectorOAuthConfig) {
+    super(config ?? getConnectorConfig("x"));
 
     this.registerPaginatedEntityConfig<X_ENTITY_TYPES_ENUM.TWEET, XTweetExternal>(
       X_ENTITY_TYPES_ENUM.TWEET,

@@ -1,4 +1,5 @@
 import type { ConnectorServiceBase } from "../../services/connector.service.base.abstract";
+import type { IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 
 export interface IConnector<T, U, W> {
   connect(code: string): Promise<void>;
@@ -9,4 +10,6 @@ export interface IConnector<T, U, W> {
 
 export type ConnectorType = "github" | "linear" | "spotify" | "x" | "notion" | "slack" | "google" | "youtube";
 
-export type ConnectorServiceConstructor<T extends ConnectorServiceBase<any, any>> = new () => T;
+export type ConnectorServiceConstructor<T extends ConnectorServiceBase<any, any>> = new (
+  config?: IConnectorOAuthConfig,
+) => T;

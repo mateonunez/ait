@@ -15,7 +15,7 @@ export class ConnectorGoogle extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorGoogleAuthenticator(oauth);
-    const repository = new ConnectorGoogleRepository();
+    const repository = new ConnectorGoogleRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorGoogleStore(repository);
     super(authenticator, repository, store);
   }

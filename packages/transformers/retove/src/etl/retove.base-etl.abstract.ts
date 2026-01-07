@@ -7,10 +7,12 @@ import {
   OPTIMAL_CHUNK_SIZE,
   SPARSE_VECTOR_NAME,
   type SparseVector,
+  getCollectionVendorByName,
   getCollectionsNames,
   getEmbeddingModelConfig,
   getSparseVectorService,
 } from "@ait/ai-sdk";
+import { connectorGrantService } from "@ait/connectors";
 import { type ConnectorCursor, type ISyncStateService, SyncStateService } from "@ait/connectors";
 import { type EntityType, getLogger } from "@ait/core";
 import { drizzleOrm, type getPostgresClient } from "@ait/postgres";
@@ -102,6 +104,24 @@ export abstract class RetoveBaseETLAbstract<T> {
 
   public async run(limit: number): Promise<void> {
     try {
+      // Grant check
+      const vendor = getCollectionVendorByName(this._collectionName);
+      if (vendor && vendor !== "general" && vendor !== "google-calendar" && vendor !== "youtube") {
+        // Check if globally enabled (no userId passed)
+        // Note: This checks the global provider flag.
+        // It does NOT check individual user configs, so it assumes if provider is enabled globally,
+        // we can process data for it.
+        // For strict user-level processing, we would need to filter extracted data by enabled users,
+        // but that requires significant refactoring of the extract() query.
+        const isGranted = await connectorGrantService.isGranted(vendor);
+        if (!isGranted) {
+          this._logger.warn(
+            `⛔ Skipping ETL for ${this._collectionName} because vendor ${vendor} is disabled globally.`,
+          );
+          return;
+        }
+      }
+
       this._logger.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
 
@@ -236,8 +256,8 @@ export abstract class RetoveBaseETLAbstract<T> {
       try {
         const rawCursor = syncState.cursor;
         cursor = { timestamp: new Date(rawCursor.timestamp), id: rawCursor.id };
-      } catch (e) {
-        this._logger.warn("Failed to parse sync state cursor", { error: e });
+      } catch (error) {
+        this._logger.warn("Failed to parse sync state cursor", { error });
       }
     }
 
@@ -428,38 +448,38 @@ export abstract class RetoveBaseETLAbstract<T> {
     const allPoints: BaseVectorPoint[] = [];
     const concurrency = this._transformConcurrency;
 
-    for (let i = 0; i < data.length; i += concurrency) {
-      const chunk = data.slice(i, i + concurrency);
+    for (let index = 0; index < data.length; index += concurrency) {
+      const chunk = data.slice(index, index + concurrency);
       const results = await Promise.all(
-        chunk.map(async (item, index) => {
+        chunk.map(async (item, itemIndex) => {
           try {
             let enrichment: EnrichmentResult | null = null;
 
             if (this._enableAIEnrichment && this._descriptor.enrich) {
               enrichment = await this._descriptor.enrich(item, {
-                correlationId: `retove-${this._collectionName}-${(item as any).id}`,
+                correlationId: `retove-${this._collectionName}-${(item as { id: string }).id}`,
               });
             }
 
             const enriched: EnrichedEntity<T> = { target: item, enrichment };
 
-            return await this._transformSingleEntity(enriched, i + index);
+            return await this._transformSingleEntity(enriched, index + itemIndex);
           } catch (error) {
-            this._logger.error(`Error processing item ${i + index}:`, { error });
+            this._logger.error(`Error processing item ${index + itemIndex}:`, { error });
             return null;
           }
         }),
       );
 
       // Collect successful results
-      const successfulPoints = results.filter((r): r is BaseVectorPoint => r !== null);
+      const successfulPoints = results.filter((result): result is BaseVectorPoint => result !== null);
       allPoints.push(...successfulPoints);
 
       // Stream load in batches to avoid memory buildup
       if (allPoints.length >= this._batchSize) {
         const batchToLoad = allPoints.splice(0, this._batchSize);
         await this.load(batchToLoad);
-        const processed = Math.min(i + concurrency, data.length);
+        const processed = Math.min(index + concurrency, data.length);
         this._logger.debug(
           `   └─ Upserting: ${batchToLoad.length} points (${processed}/${data.length} items processed)`,
         );
@@ -486,7 +506,7 @@ export abstract class RetoveBaseETLAbstract<T> {
   protected async _transformSingleEntity(enriched: EnrichedEntity<T>, index: number): Promise<BaseVectorPoint> {
     const text = this.getTextForEmbedding(enriched);
     const item = enriched.target;
-    const entityId = String((item as any).id || `entity-${index}`);
+    const entityId = String((item as { id: string }).id || `entity-${index}`);
     const correlationId = `retove-${this._collectionName}-${entityId}`;
 
     // Generate dense embedding - chunking is handled by EmbeddingsService
@@ -669,18 +689,21 @@ export abstract class RetoveBaseETLAbstract<T> {
 
     const { table, updatedAtField, idField } = tableConfig;
     const result = await this._pgClient.db.transaction(async (tx) => {
-      let query = tx.select({ count: drizzleOrm.count() }).from(table) as any;
+      let query = tx.select({ count: drizzleOrm.count() }).from(table as any) as any;
       if (cursor) {
         // Correct cursor pagination: (timestamp > cursor) OR (timestamp = cursor AND id > cursor_id)
         // Must match the extract() query logic in each vendor ETL
-        query = query.where(
+        query = (query as any).where(
           drizzleOrm.or(
-            drizzleOrm.gt(updatedAtField, cursor.timestamp),
-            drizzleOrm.and(drizzleOrm.eq(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
+            drizzleOrm.gt(updatedAtField as any, cursor.timestamp),
+            drizzleOrm.and(
+              drizzleOrm.eq(updatedAtField as any, cursor.timestamp),
+              drizzleOrm.gt(idField as any, cursor.id),
+            ),
           ),
         );
       }
-      return query.execute();
+      return (query as any).execute();
     });
     const countVal = Number(result[0]?.count ?? 0);
     this._logger.debug(

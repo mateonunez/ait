@@ -267,6 +267,48 @@
       "when": 1767043873232,
       "tag": "0037_powerful_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1767786335153,
+      "tag": "0038_sturdy_abomination",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1767793303715,
+      "tag": "0039_absent_nomad",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1767793418430,
+      "tag": "0040_majestic_ted_forrester",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1767793429637,
+      "tag": "0041_stormy_union_jack",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1767793478908,
+      "tag": "0042_gigantic_toxin",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1767793618898,
+      "tag": "0043_vengeful_war_machine",
+      "breakpoints": true
     }
   ]
 }

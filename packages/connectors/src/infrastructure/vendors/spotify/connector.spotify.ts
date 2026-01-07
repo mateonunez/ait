@@ -14,7 +14,7 @@ export class ConnectorSpotify extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorSpotifyAuthenticator(oauth);
-    const repository = new ConnectorSpotifyRepository();
+    const repository = new ConnectorSpotifyRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorSpotifyStore(repository);
     super(authenticator, repository, store);
   }

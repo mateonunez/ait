@@ -56,6 +56,7 @@ export default function NotionPage() {
 
   return (
     <IntegrationLayout
+      vendor="notion"
       title="Notion"
       description="Recent documents and updates"
       color="#000000"

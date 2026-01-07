@@ -7,21 +7,24 @@ import { ConnectorNotionPageRepository } from "./connector.notion-page.repositor
 export class ConnectorNotionRepository extends ConnectorNotionPageRepository implements IConnectorNotionRepository {
   private _notionPageRepository: ConnectorNotionPageRepository;
 
-  constructor() {
+  constructor(
+    private userId?: string,
+    private connectorConfigId?: string,
+  ) {
     super();
     this._notionPageRepository = new ConnectorNotionPageRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {
-    await saveOAuthData(data, "notion");
+    await saveOAuthData(data, "notion", this.userId, this.connectorConfigId);
   }
 
   public async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
-    return getOAuthData("notion");
+    return getOAuthData("notion", this.userId);
   }
 
   public async clearAuthenticationData(): Promise<void> {
-    await clearOAuthData("notion");
+    await clearOAuthData("notion", this.userId);
   }
 
   get page(): ConnectorNotionPageRepository {

@@ -120,19 +120,34 @@ export function getCollectionConfig(vendor: CollectionVendor): CollectionConfig 
 
 export function getAllCollections(): ReadonlyArray<CollectionConfig> {
   const seen = new Set<string>();
-  return Object.values(COLLECTIONS_REGISTRY).filter((c) => {
-    if (!c.enabled || seen.has(c.name)) return false;
-    seen.add(c.name);
+  return Object.values(COLLECTIONS_REGISTRY).filter((config) => {
+    if (!config.enabled || seen.has(config.name)) return false;
+    seen.add(config.name);
     return true;
   });
 }
 
+export function getGrantAwareCollections(
+  allowedVendors: Set<IntegrationVendor | string>,
+): ReadonlyArray<CollectionConfig> {
+  const seen = new Set<string>();
+  return Object.values(COLLECTIONS_REGISTRY).filter((config) => {
+    if (!config.enabled) return false;
+    if (seen.has(config.name)) return false;
+    seen.add(config.name);
+
+    if (config.vendor === "general") return true;
+
+    return allowedVendors.has(config.vendor);
+  });
+}
+
 export function getCollectionsNames(): string[] {
-  return getAllCollections().map((c) => c.name);
+  return getAllCollections().map((config) => config.name);
 }
 
 export function getEnabledVendors(): Set<CollectionVendor> {
-  return new Set(getAllCollections().map((c) => c.vendor));
+  return new Set(getAllCollections().map((config) => config.vendor));
 }
 
 export function getCollectionByEntityType(entityType: EntityType): CollectionConfig | undefined {
@@ -170,5 +185,5 @@ export function getCollectionNameByEntityType(entityType: EntityType): string {
 
 export function getCollectionVendorByName(collectionName: string): CollectionVendor | undefined {
   const entry = Object.entries(COLLECTIONS_REGISTRY).find(([, config]) => config.name === collectionName);
-  return entry ? (entry[0] as CollectionVendor) : undefined;
+  return entry ? entry[1].vendor : undefined;
 }

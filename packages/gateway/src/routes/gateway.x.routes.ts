@@ -1,11 +1,8 @@
 import { type ConnectorXService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-declare module "fastify" {
-  interface FastifyInstance {
-    xService: ConnectorXService;
-  }
-}
+const logger = getLogger();
 
 interface AuthCallbackQuery {
   code: string;
@@ -19,18 +16,39 @@ interface PaginationQuery {
 const connectorType = "x";
 
 export default async function xRoutes(fastify: FastifyInstance) {
-  if (!fastify.xService) {
-    fastify.decorate("xService", connectorServiceFactory.getService<ConnectorXService>(connectorType));
-  }
+  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorXService> => {
+    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
 
-  const xService = fastify.xService;
-  const store = xService.connector.store;
-  const authenticator = xService.connector.authenticator;
+    // Support extracting userId from OAuth state if it's encoded there
+    const state = (request.query as any).state;
+    if (!userId && state && typeof state === "string" && state.includes(":")) {
+      userId = state.split(":")[1];
+    }
 
-  fastify.get("/auth", async (_request: FastifyRequest, reply: FastifyReply) => {
+    const currentUserId = userId || "anonymous";
+
+    if (configId) {
+      return await connectorServiceFactory.getServiceByConfig<ConnectorXService>(configId, currentUserId);
+    }
+
+    // Fallback/Legacy
+    return connectorServiceFactory.getService<ConnectorXService>(connectorType);
+  };
+
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
     try {
-      const authUrl = authenticator.getAuthorizationUrl();
-      reply.redirect(authUrl);
+      const { configId } = request.query;
+      if (!configId) return reply.status(400).send({ error: "Missing configId" });
+
+      const service = await getService(request, configId);
+      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
+      const authUrl = service.connector.authenticator.getAuthorizationUrl();
+
+      // X OAuth2 using state as configId:userId
+      const url = new URL(authUrl);
+      url.searchParams.set("state", `${configId}:${userId}`);
+
+      reply.redirect(url.toString());
     } catch (err: any) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate X authentication.");
       reply.status(500).send({ error: "Failed to initiate X authentication." });
@@ -39,8 +57,9 @@ export default async function xRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery }>, reply: FastifyReply) => {
-      const { code } = request.query;
+    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+      const { code, state } = request.query;
+      const [configId] = (state || "").split(":");
 
       if (!code) {
         fastify.log.error({ route: "/auth/callback" }, "Missing authorization code.");
@@ -48,10 +67,8 @@ export default async function xRoutes(fastify: FastifyInstance) {
       }
 
       try {
-        await xService.connector.connect(code);
-
-        // Data fetching is now handled separately via the /refresh endpoint or background jobs
-        // to avoid timeout issues during the auth callback.
+        const service = await getService(request, configId);
+        await service.connector.connect(code);
 
         reply.send({
           success: true,
@@ -64,35 +81,46 @@ export default async function xRoutes(fastify: FastifyInstance) {
     },
   );
 
-  fastify.post("/auth/disconnect", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await clearOAuthData(connectorType);
-      reply.send({ success: true, message: "X disconnected successfully." });
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect X.");
-      reply.status(500).send({ error: "Failed to disconnect X." });
-    }
-  });
+  fastify.post(
+    "/auth/disconnect",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const userId = request.headers["x-user-id"] as string;
+        await clearOAuthData(connectorType, userId);
+        reply.send({ success: true, message: "X disconnected successfully." });
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/auth/disconnect" }, "Failed to disconnect X.");
+        reply.status(500).send({ error: "Failed to disconnect X." });
+      }
+    },
+  );
 
-  fastify.get("/tweets", async (_request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const tweets = await xService.fetchTweets();
-      reply.send(tweets);
-    } catch (err: unknown) {
-      fastify.log.error({ err, route: "/tweets" }, "Failed to fetch X tweets.");
-      reply.status(500).send({ error: "Failed to fetch X tweets." });
-    }
-  });
+  fastify.get(
+    "/tweets",
+    async (request: FastifyRequest<{ Querystring: { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const tweets = await service.fetchTweets();
+        reply.send(tweets);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/tweets" }, "Failed to fetch X tweets.");
+        reply.status(500).send({ error: "Failed to fetch X tweets." });
+      }
+    },
+  );
 
   // Paginated data route
   fastify.get(
     "/data/tweets",
-    async (request: FastifyRequest<{ Querystring: PaginationQuery }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
       try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
         const page = Number.parseInt(request.query.page || "1", 10);
         const limit = Number.parseInt(request.query.limit || "50", 10);
 
-        const result = await xService.getTweetsPaginated({ page, limit });
+        const result = await service.getTweetsPaginated({ page, limit });
         reply.send(result);
       } catch (err: unknown) {
         fastify.log.error({ err, route: "/data/tweets" }, "Failed to fetch tweets from DB.");
@@ -102,12 +130,13 @@ export default async function xRoutes(fastify: FastifyInstance) {
   );
 
   // Refresh endpoint with optional entity filter
-  // Usage: POST /refresh?entities=tweets or POST /refresh (all entities)
   fastify.post(
     "/refresh",
-    async (request: FastifyRequest<{ Querystring: { entities?: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: { entities?: string; configId?: string } }>, reply: FastifyReply) => {
       try {
-        const { entities: entitiesParam } = request.query;
+        const { entities: entitiesParam, configId } = request.query;
+        const service = await getService(request, configId);
+
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
           : ["tweets"];
@@ -115,8 +144,8 @@ export default async function xRoutes(fastify: FastifyInstance) {
         const counts: Record<string, number> = {};
 
         if (entitiesToRefresh.includes("tweets")) {
-          const tweets = await xService.fetchTweets();
-          await store.save(tweets);
+          const tweets = await service.fetchTweets();
+          await service.connector.store.save(tweets);
           counts.tweets = tweets.length;
         }
 

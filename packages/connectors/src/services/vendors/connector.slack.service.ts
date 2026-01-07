@@ -1,6 +1,6 @@
 import type { PaginatedResponse, PaginationParams, SlackMessageEntity, SlackMessageExternal } from "@ait/core";
 import { ConnectorSlack } from "../../infrastructure/vendors/slack/connector.slack";
-import type { ConnectorOAuth } from "../../shared/auth/lib/oauth/connector.oauth";
+import type { ConnectorOAuth, IConnectorOAuthConfig } from "../../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorServiceBase } from "../connector.service.base.abstract";
 import { getConnectorConfig } from "../connector.service.config";
 import {
@@ -18,8 +18,8 @@ export class ConnectorSlackService
   extends ConnectorServiceBase<ConnectorSlack, SlackServiceEntityMap>
   implements IConnectorSlackService
 {
-  constructor() {
-    super(getConnectorConfig("slack"));
+  constructor(config?: IConnectorOAuthConfig) {
+    super(config ?? getConnectorConfig("slack"));
 
     this.registerPaginatedEntityConfig<SLACK_ENTITY_TYPES_ENUM.MESSAGE, SlackMessageExternal>(
       SLACK_ENTITY_TYPES_ENUM.MESSAGE,

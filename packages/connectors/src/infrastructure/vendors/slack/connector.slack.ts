@@ -15,7 +15,7 @@ export class ConnectorSlack extends BaseConnectorAbstract<
 > {
   constructor(oauth: IConnectorOAuth) {
     const authenticator = new ConnectorSlackAuthenticator(oauth);
-    const repository = new ConnectorSlackRepository();
+    const repository = new ConnectorSlackRepository(oauth.config.userId, oauth.config.connectorConfigId);
     const store = new ConnectorSlackStore(repository);
     super(authenticator, repository, store);
   }

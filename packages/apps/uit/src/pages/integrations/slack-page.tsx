@@ -56,6 +56,7 @@ export default function SlackPage() {
 
   return (
     <IntegrationLayout
+      vendor="slack"
       title="Slack"
       description="Channel updates"
       color="#4A154B"
