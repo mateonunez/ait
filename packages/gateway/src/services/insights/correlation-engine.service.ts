@@ -67,7 +67,10 @@ export class CorrelationEngineService {
     };
   }
 
-  private _align(s1: any[], s2: any[]): Array<[number, number]> {
+  private _align(
+    s1: Array<{ date: string; count: number }>,
+    s2: Array<{ date: string; count: number }>,
+  ): Array<[number, number]> {
     const m1 = new Map(s1.map((s) => [s.date, s.count]));
     const m2 = new Map(s2.map((s) => [s.date, s.count]));
     const aligned: Array<[number, number]> = [];

@@ -1,4 +1,4 @@
-import type { ActivityData, IntegrationVendor } from "@ait/core";
+import type { ActivityData, InsightAnomaly, InsightCorrelation, IntegrationVendor } from "@ait/core";
 import { getIntegrationRegistryService } from "../insights/integration-registry.service";
 
 function formatActivityContext(activityData: ActivityData): string {
@@ -171,7 +171,11 @@ Return anomalies as a JSON array:
 `;
 }
 
-export function getRecommendationPrompt(activityData: ActivityData, anomalies: any[], correlations: any[]): string {
+export function getRecommendationPrompt(
+  activityData: ActivityData,
+  anomalies: InsightAnomaly[],
+  correlations: InsightCorrelation[],
+): string {
   return `
 Role: Professional Performance Coach
 Task: Generate high-leverage recommendations based on recent behavior.

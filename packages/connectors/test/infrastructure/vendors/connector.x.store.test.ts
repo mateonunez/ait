@@ -1,9 +1,8 @@
 import assert from "node:assert/strict";
 // connector.x.store.test.ts
 import { beforeEach, describe, it } from "node:test";
-import type { XEntity } from "@ait/core";
+import type { XTweetEntity } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
-import type { XTweetEntity } from "../../../src/domain/entities/x/x-tweet.entity";
 import { ConnectorXStore } from "../../../src/infrastructure/vendors/x/connector.x.store";
 import type { IConnectorOAuthTokenResponse } from "../../../src/shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorXRepository } from "../../../src/types/domain/entities/vendors/connector.x.repository.types";
@@ -52,7 +51,7 @@ describe("ConnectorXStore", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         jsonData: {},
-      } as XTweetEntity;
+      } as unknown as any;
 
       await store.save(tweet);
 
@@ -87,7 +86,7 @@ describe("ConnectorXStore", () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           jsonData: {},
-        },
+        } as unknown as any,
         {
           id: "tweet-2",
           text: "Second tweet",
@@ -108,7 +107,7 @@ describe("ConnectorXStore", () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           jsonData: {},
-        },
+        } as unknown as any,
       ];
 
       await store.save(tweets);
@@ -120,10 +119,9 @@ describe("ConnectorXStore", () => {
 
     it("should throw an error if the item type is not supported", async () => {
       const unsupportedEntity = {
-        id: "unsupported-1",
         text: "Not supported",
         __type: "unsupported",
-      } as unknown as XEntity;
+      } as unknown as any;
 
       await assert.rejects(
         async () => {
@@ -166,6 +164,11 @@ describe("ConnectorXStore", () => {
         expiresIn: "3600",
         refreshToken: "x-refresh-token",
         scope: "read",
+        id: "test-id",
+        userId: "test-user-id",
+        provider: "x",
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
 
       mockRepository.getAuthenticationData = async () => expectedAuthData;

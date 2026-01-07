@@ -23,7 +23,16 @@ import { getCorrelationPrompt, getRecommendationPrompt, getSummaryPrompt } from 
 
 const logger = getLogger();
 
-export class InsightsService {
+export interface IInsightsService {
+  generateInsights(
+    activityData: ActivityData,
+    range: "week" | "month" | "year",
+    historicalData?: ActivityData[],
+    userId?: string,
+  ): Promise<InsightsData>;
+}
+
+export class InsightsService implements IInsightsService {
   private config: Required<InsightsConfig>;
   private anomalyDetector: AnomalyDetectorService;
   private correlationEngine: CorrelationEngineService;
@@ -100,15 +109,12 @@ export class InsightsService {
     return promise;
   }
 
-  /**
-   * Helper for retrying AI calls with exponential backoff
-   */
   private async _withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
     for (let i = 0; i <= retries; i++) {
       try {
         return await fn();
-      } catch (error) {
+      } catch (error: unknown) {
         lastError = error;
         if (i < retries) {
           const delay = 1000 * 2 ** i;
@@ -120,12 +126,12 @@ export class InsightsService {
     throw lastError;
   }
 
-  private async _generateSummary(data: ActivityData, range: any): Promise<InsightSummary | null> {
+  private async _generateSummary(data: ActivityData, range: "week" | "month" | "year"): Promise<InsightSummary | null> {
     if (!this.config.enableSummary) return null;
     const prompt = getSummaryPrompt(data, range);
     return await getAItClient().generateStructured<InsightSummary>({
       prompt,
-      schema: InsightSummarySchema as any,
+      schema: InsightSummarySchema,
       temperature: 0.7,
     });
   }
@@ -138,7 +144,7 @@ export class InsightsService {
     const prompt = getCorrelationPrompt(data);
     const ai = await getAItClient().generateStructured<InsightCorrelation[]>({
       prompt,
-      schema: InsightCorrelationSchema.array() as any,
+      schema: InsightCorrelationSchema.array(),
       temperature: 0.6,
     });
 
@@ -162,7 +168,7 @@ export class InsightsService {
     const prompt = getRecommendationPrompt(data, anomalies, correlations);
     return await getAItClient().generateStructured<InsightRecommendation[]>({
       prompt,
-      schema: InsightRecommendationSchema.array() as any,
+      schema: InsightRecommendationSchema.array(),
       temperature: 0.8,
     });
   }
@@ -171,7 +177,7 @@ export class InsightsService {
     // Stable sort of keys to ensure consistent hashing
     const sortedVendors = Object.keys(data).sort();
     // Use totals as proxy for data freshness instead of hashing entire data
-    const activityMap = data as any;
+    const activityMap = data as Record<string, { total: number } | undefined>;
     const summary = sortedVendors.map((v) => `${v}:${activityMap[v]?.total || 0}`).join(",");
 
     const hash = crypto.createHash("md5").update(summary).digest("hex").slice(0, 8);

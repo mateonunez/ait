@@ -54,7 +54,7 @@ export default async function linearRoutes(fastify: FastifyInstance) {
 
       const authUrl = `https://linear.app/oauth/authorize?${params}`;
       reply.redirect(authUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Linear authentication.");
       reply.status(500).send({ error: "Failed to initiate Linear authentication." });
     }
@@ -79,7 +79,7 @@ export default async function linearRoutes(fastify: FastifyInstance) {
           success: true,
           message: "Authentication successful. You can close this window.",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
         reply.status(500).send({ error: "Authentication failed." });
       }

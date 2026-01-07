@@ -2,7 +2,6 @@ import { getLogger } from "@ait/core";
 import { type EmbeddingModel, embed, extractReasoningMiddleware, wrapLanguageModel } from "ai";
 import { createOllama } from "ai-sdk-ollama";
 import dotenv from "dotenv";
-import type { ZodType } from "zod";
 import {
   type EmbeddingModelName,
   type GenerationModelName,
@@ -31,7 +30,7 @@ export type AItClientConfig = ClientConfig;
 
 export interface LlmStructuredGenerationOptions<T> {
   prompt: string;
-  schema: ZodType<T>;
+  schema: unknown;
   temperature?: number;
   jsonInstruction?: string;
   maxRetries?: number;

@@ -44,6 +44,17 @@ export interface DiscoveryServiceOptions {
   cacheTtlMs?: number;
 }
 
+export interface DailyActivity {
+  date: string;
+  [integrationKey: string]: number | string;
+}
+
+export interface DiscoveryStatsData {
+  timeRange: "week" | "month" | "year";
+  data: DailyActivity[];
+  totals: Record<string, number>;
+}
+
 /**
  * Fetch discovery feed with caching and retry logic
  */
@@ -109,19 +120,19 @@ export async function fetchDiscoveryFeed(
 /**
  * Fetch discovery stats with retries
  */
-export async function fetchDiscoveryStats(range: "week" | "month" | "year" = "week"): Promise<any> {
+export async function fetchDiscoveryStats(range: "week" | "month" | "year" = "week"): Promise<DiscoveryStatsData> {
   const url = `${apiConfig.apiBaseUrl}/discovery/stats?range=${range}`;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await apiGet<any>(url);
+      const res = await apiGet<unknown>(url);
 
       if (!res.ok) {
         throw new Error(res.error || "Failed to fetch discovery stats");
       }
 
-      return res.data;
+      return res.data as DiscoveryStatsData;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
       logger.warn("[DiscoveryService] Stats fetch attempt failed", {

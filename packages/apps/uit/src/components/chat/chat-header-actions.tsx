@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/styles/utils";
+import type { TokenUsage } from "@ait/core";
 import { MessageSquarePlus, PanelRight } from "lucide-react";
 import { ModelSelector } from "../ai-elements";
 import { ContextWindowTracker } from "../context-window-tracker";
@@ -17,7 +18,7 @@ export const ChatHeaderActions = ({
 }: {
   selectedModel: string;
   setSelectedModel: (id: string) => void;
-  tokenUsage: any;
+  tokenUsage: TokenUsage;
   maxContextWindow: number;
   isLoading: boolean;
   messagesLength: number;

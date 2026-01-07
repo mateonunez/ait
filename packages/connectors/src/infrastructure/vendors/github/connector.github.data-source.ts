@@ -88,7 +88,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
         ...repo,
         __type: "github_repository" as const,
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       this._handleError(error, "GITHUB_FETCH_REPOS");
     }
   }
@@ -138,7 +138,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       }
 
       return allPullRequests;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this._handleError(error, "GITHUB_FETCH_PRS");
     }
   }
@@ -190,7 +190,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       }
 
       return allCommits;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this._handleError(error, "GITHUB_FETCH_COMMITS");
     }
   }
@@ -280,9 +280,15 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
         repoIndex++;
         page = 1;
-      } catch (error) {
+      } catch (error: unknown) {
         this._logger.warn(`Failed to fetch PRs for ${repo.full_name}`, { error });
-        if (error instanceof RateLimitError || (error as any).status === 403 || (error as any).status === 429) {
+        if (
+          error instanceof RateLimitError ||
+          (typeof error === "object" &&
+            error !== null &&
+            "status" in error &&
+            (error.status === 403 || error.status === 429))
+        ) {
           this._handleError(error, "GITHUB_FETCH_PRS_PAGINATED");
         }
         repoIndex++;
@@ -361,9 +367,15 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
 
         repoIndex++;
         page = 1;
-      } catch (error) {
+      } catch (error: unknown) {
         this._logger.warn(`Failed to fetch commits for ${repo.full_name}`, { error });
-        if (error instanceof RateLimitError || (error as any).status === 403 || (error as any).status === 429) {
+        if (
+          error instanceof RateLimitError ||
+          (typeof error === "object" &&
+            error !== null &&
+            "status" in error &&
+            (error.status === 403 || error.status === 429))
+        ) {
           this._handleError(error, "GITHUB_FETCH_COMMITS_PAGINATED");
         }
         repoIndex++;
@@ -378,27 +390,29 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
     owner: string,
     repoName: string,
     repoFullName: string,
-    prs: any[],
+    prs: GitHubPullRequestExternal[] | Array<Record<string, unknown>>,
   ): Promise<GitHubPullRequestExternal[]> {
-    const detailedPRs: any[] = [];
+    const detailedPRs: Record<string, unknown>[] = [];
     const chunkSize = 5;
 
     for (let i = 0; i < prs.length; i += chunkSize) {
       const chunk = prs.slice(i, i + chunkSize);
       const chunkResults = await Promise.all(
-        chunk.map(async (pr: any) => {
+        chunk.map(async (pr) => {
           try {
+            const pull_number = "number" in pr && typeof pr.number === "number" ? pr.number : (pr as any).number;
             const detailResponse = await this.octokit.pulls.get({
               owner,
               repo: repoName,
-              pull_number: pr.number,
+              pull_number,
             });
             return detailResponse.data;
           } catch (error) {
-            this._logger.warn(`Failed to fetch detailed PR ${pr.number} for ${repoFullName}`, {
+            const pull_number = "number" in pr && typeof pr.number === "number" ? pr.number : (pr as any).number;
+            this._logger.warn(`Failed to fetch detailed PR ${pull_number} for ${repoFullName}`, {
               error: error instanceof Error ? error.message : String(error),
             });
-            return pr; // Fallback to list item if detail fetch fails
+            return pr as GitHubPullRequestExternal; // Fallback to list item if detail fetch fails
           }
         }),
       );
@@ -475,7 +489,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             __type: "github_tree_item" as const,
           }))
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       this._handleError(error, "GITHUB_FETCH_TREE");
     }
   }
@@ -491,7 +505,7 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       });
 
       return response.data as unknown as string;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this._handleError(error, "GITHUB_FETCH_FILE_CONTENT");
     }
   }
@@ -501,18 +515,29 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
     return isText(filename, buffer) ?? false;
   }
 
-  private _handleError(error: any, context: string): never {
-    if (error.status === 403 || error.status === 429) {
-      const resetHeader = error.response?.headers?.["x-ratelimit-reset"];
-      const remainingHeader = error.response?.headers?.["x-ratelimit-remaining"];
+  private _handleError(error: unknown, context: string): never {
+    if (typeof error === "object" && error !== null && "status" in error) {
+      const status = (error as { status: number }).status;
+      const response =
+        "response" in error
+          ? (error.response as { headers?: Record<string, string>; data?: { message?: string } })
+          : undefined;
 
-      if (remainingHeader === "0" || error.status === 429) {
-        const resetTime = resetHeader ? Number.parseInt(resetHeader, 10) * 1000 : Date.now() + 60 * 60 * 1000;
-        throw new RateLimitError("github", resetTime, `GitHub rate limit exceeded in ${context}`);
+      if (status === 403 || status === 429) {
+        const resetHeader = response?.headers?.["x-ratelimit-reset"];
+        const remainingHeader = response?.headers?.["x-ratelimit-remaining"];
+
+        if (remainingHeader === "0" || status === 429) {
+          const resetTime = resetHeader ? Number.parseInt(resetHeader, 10) * 1000 : Date.now() + 60 * 60 * 1000;
+          throw new RateLimitError("github", resetTime, `GitHub rate limit exceeded in ${context}`);
+        }
       }
+
+      const message = response?.data?.message || (error as any).message || "Unknown error";
+      throw new AItError(context, `Invalid ${context}: ${message}`, { message }, error);
     }
 
-    const message = error.response?.data?.message || error.message || "Unknown error";
-    throw new AItError(context, `Invalid ${context}: ${message}`, { message }, error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    throw new AItError(context, `Invalid ${context}: ${message}`, { message: String(error) }, error);
   }
 }

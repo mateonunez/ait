@@ -30,19 +30,9 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { AiInsightsPanel } from "./ai-insights-panel";
+import type { DailyActivity, DiscoveryStatsData } from "@/services/discovery.service";
 
 const logger = getLogger();
-
-interface DailyActivity {
-  date: string;
-  [integrationKey: string]: number | string;
-}
-
-interface DiscoveryStatsData {
-  timeRange: "week" | "month" | "year";
-  data: DailyActivity[];
-  totals: Record<string, number>;
-}
 
 interface StatCardProps {
   item: {

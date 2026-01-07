@@ -91,7 +91,7 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
         };
 
         reply.send(response);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/stats" }, "Failed to fetch discovery stats.");
         reply.status(500).send({ error: "Failed to fetch discovery stats." });
       }
@@ -117,7 +117,7 @@ export default async function discoveryRoutes(fastify: FastifyInstance) {
         }
 
         reply.send(response);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/feed" }, "Failed to fetch discovery feed.");
         reply.status(500).send({ error: "Failed to fetch discovery feed." });
       }

@@ -38,7 +38,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
         const insights = await insightsService.generateInsights(activityData, range);
 
         reply.send(insights);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/summary" }, "Failed to generate insights summary.");
         reply.status(500).send({ error: "Failed to generate insights summary." });
       }
@@ -58,7 +58,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
         const insights = await insightsService.generateInsights(activityData, range);
 
         reply.send({ correlations: insights.correlations });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/correlations" }, "Failed to get correlations.");
         reply.status(500).send({ error: "Failed to get correlations." });
       }
@@ -82,7 +82,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
         const insights = await insightsService.generateInsights(activityData, range, historicalData);
 
         reply.send({ anomalies: insights.anomalies });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/anomalies" }, "Failed to detect anomalies.");
         reply.status(500).send({ error: "Failed to detect anomalies." });
       }
@@ -103,7 +103,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
         const insights = await insightsService.generateInsights(activityData, range);
 
         reply.send({ recommendations: insights.recommendations });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/recommendations" }, "Failed to generate recommendations.");
         reply.status(500).send({ error: "Failed to generate recommendations." });
       }
@@ -120,7 +120,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
       try {
         const goal = await goalService.createGoal("default", request.body);
         reply.status(201).send(goal);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/goals [POST]" }, "Failed to create goal.");
         reply.status(500).send({ error: "Failed to create goal." });
       }
@@ -139,7 +139,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
       const updatedGoals = await goalService.getGoals(userId);
 
       reply.send(updatedGoals);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/goals [GET]" }, "Failed to get goals.");
       reply.status(500).send({ error: "Failed to get goals." });
     }
@@ -160,7 +160,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
         }
 
         reply.send(goal);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/goals/:id [PATCH]" }, "Failed to update goal.");
         reply.status(500).send({ error: "Failed to update goal." });
       }
@@ -177,7 +177,7 @@ export default async function insightsRoutes(fastify: FastifyInstance) {
       try {
         await goalService.deleteGoal(request.params.id, "default");
         reply.status(204).send();
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/goals/:id [DELETE]" }, "Failed to delete goal.");
         reply.status(500).send({ error: "Failed to delete goal." });
       }

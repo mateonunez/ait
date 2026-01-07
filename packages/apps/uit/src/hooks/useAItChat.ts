@@ -1,7 +1,7 @@
 import { getConversation, sendMessage } from "@/services/chat.service";
 import { createEmptyMetadata } from "@/utils/stream-parser.utils";
 import { calculateConversationTokens } from "@/utils/token-counter.utils";
-import type { ChatMessageWithMetadata, MessageRole } from "@ait/core";
+import type { ChatMessageWithMetadata, MessageRole, TokenUsage } from "@ait/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export interface UseAItChatOptions {
@@ -11,13 +11,6 @@ export interface UseAItChatOptions {
   conversationId?: string;
   onConversationCreated?: (conversationId: string) => void;
   onError?: (error: string) => void;
-}
-
-export interface TokenUsage {
-  inputTokens: number;
-  outputTokens: number;
-  ragContextTokens: number;
-  totalTokens: number;
 }
 
 export interface UseAItChatReturn {
@@ -70,7 +63,7 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
           id: message.id,
           role: message.role as MessageRole,
           content: message.content,
-          metadata: message.metadata as any,
+          metadata: message.metadata as ChatMessageWithMetadata["metadata"],
           traceId: message.traceId || undefined,
           createdAt: new Date(message.createdAt),
         }));

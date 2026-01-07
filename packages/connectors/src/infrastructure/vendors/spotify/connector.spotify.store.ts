@@ -7,6 +7,7 @@ import type {
 } from "@ait/core";
 import type { SpotifyEntityType } from "@ait/core";
 import { AItError } from "@ait/core";
+import type { OAuthTokenDataTarget } from "@ait/postgres";
 import { SPOTIFY_ENTITY_TYPES_ENUM } from "../../../services/vendors/connector.vendors.config";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
 import type { IConnectorSpotifyRepository } from "../../../types/domain/entities/vendors/connector.spotify.types";
@@ -61,7 +62,7 @@ export class ConnectorSpotifyStore implements IConnectorStore {
     await this._connectorSpotifyRepository.saveAuthenticationData(data);
   }
 
-  async getAuthenticationData(): Promise<any> {
+  async getAuthenticationData(): Promise<OAuthTokenDataTarget | null> {
     return this._connectorSpotifyRepository.getAuthenticationData();
   }
 

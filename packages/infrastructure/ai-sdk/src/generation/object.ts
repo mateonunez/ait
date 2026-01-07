@@ -11,16 +11,13 @@ const DEFAULT_STRUCTURED_MAX_RETRIES = 2;
 
 export interface ObjectGenerateOptions<T> {
   prompt: string;
-  schema: ZodType<T>;
+  schema: unknown;
   temperature?: number;
   jsonInstruction?: string;
   maxRetries?: number;
   delayMs?: number;
 }
 
-/**
- * Generate a structured object with native support and fallback repair logic.
- */
 export async function generateObject<T>(options: ObjectGenerateOptions<T>): Promise<T> {
   const client = getAItClient();
   const modelName = client.generationModelConfig.name;
@@ -43,7 +40,7 @@ export async function generateObject<T>(options: ObjectGenerateOptions<T>): Prom
 
       const { object } = await vercelGenerateObject({
         model,
-        schema: options.schema,
+        schema: options.schema as ZodType<T>,
         prompt,
         temperature: baseTemperature,
         // Native JSON mode for Ollama/etc
@@ -70,7 +67,7 @@ export async function generateObject<T>(options: ObjectGenerateOptions<T>): Prom
       // Fallback: search and repair logic if native failed or not supported
       try {
         const prompt = augmentPrompt(options.prompt, options.jsonInstruction);
-        const repaired = await attemptStructuredRepair(model, prompt, options.schema, baseTemperature);
+        const repaired = await attemptStructuredRepair(model, prompt, options.schema as ZodType<T>, baseTemperature);
         if (repaired.success) {
           return repaired.data as T;
         }

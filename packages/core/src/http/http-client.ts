@@ -52,11 +52,11 @@ export async function requestJson<T>(
     });
 
     if (!isSuccessStatus(response.status)) {
-      let body: any;
+      let body: unknown;
       try {
         const text = await response.text();
         try {
-          body = JSON.parse(text);
+          body = JSON.parse(text) as Record<string, unknown>;
         } catch {
           body = text;
         }

@@ -14,7 +14,7 @@ export interface RedisCacheConfig {
 }
 
 export class RedisCacheProvider implements ICacheProvider {
-  private client: any = null;
+  private client: Redis | null = null;
   private readonly config: Required<RedisCacheConfig>;
   private connected = false;
   private connecting = false;

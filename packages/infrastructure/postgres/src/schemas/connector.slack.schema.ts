@@ -27,6 +27,7 @@ export const slackMessages = pgTable(
       threadIdx: index("slack_messages_thread_idx").on(table.threadTs),
       userIdx: index("slack_messages_user_idx").on(table.userId),
       tsIdx: index("slack_messages_ts_idx").on(table.ts),
+      updatedAtIdIdx: index("slack_messages_updated_at_id_idx").on(table.updatedAt, table.id),
     };
   },
 );

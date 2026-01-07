@@ -1,8 +1,14 @@
 import { type EntityType, type FeedRequirement, type IntegrationEntity, getLogger } from "@ait/core";
 import { drizzleOrm, getPostgresClient } from "@ait/postgres";
 import * as postgresSchemas from "@ait/postgres";
+import type { PgColumn, PgTableWithColumns } from "drizzle-orm/pg-core";
 
 const logger = getLogger();
+
+interface FetchParams {
+  limit?: number;
+  page?: number;
+}
 
 export interface IFeedRepository {
   getBulkFeed(requirements: FeedRequirement[]): Promise<Map<string, IntegrationEntity[]>>;
@@ -27,7 +33,7 @@ export class FeedRepository implements IFeedRepository {
     return results;
   }
 
-  private async _fetchEntityData(entityType: EntityType, params: any): Promise<IntegrationEntity[]> {
+  private async _fetchEntityData(entityType: EntityType, params: FetchParams): Promise<IntegrationEntity[]> {
     const table = this._getTableForEntity(entityType);
     if (!table) return [];
 
@@ -47,10 +53,11 @@ export class FeedRepository implements IFeedRepository {
       .execute();
 
     // Add __type to each row for frontend identification
-    return rows.map((row: any) => ({ ...row, __type: entityType }));
+    // Type assertion needed because Drizzle's select() doesn't preserve full entity schema
+    return rows.map((row) => ({ ...row, __type: entityType }) as IntegrationEntity);
   }
 
-  private _getTableForEntity(entityType: EntityType): any {
+  private _getTableForEntity(entityType: EntityType): PgTableWithColumns<any> | null {
     const {
       githubRepositories,
       githubCommits,
@@ -65,11 +72,9 @@ export class FeedRepository implements IFeedRepository {
       notionPages,
       xTweets,
       googleCalendarEvents,
-      googleCalendars,
-      googleYouTubeSubscriptions,
       googleContacts,
       googlePhotos,
-    } = postgresSchemas as any;
+    } = postgresSchemas;
 
     switch (entityType) {
       case "github_repository":
@@ -98,10 +103,6 @@ export class FeedRepository implements IFeedRepository {
         return xTweets;
       case "google_calendar_event":
         return googleCalendarEvents;
-      case "google_calendar_calendar":
-        return googleCalendars;
-      case "google_youtube_subscription":
-        return googleYouTubeSubscriptions;
       case "google_contact":
         return googleContacts;
       case "google_photo":
@@ -111,7 +112,7 @@ export class FeedRepository implements IFeedRepository {
     }
   }
 
-  private _getSortColumnForEntity(entityType: EntityType, table: any): any {
+  private _getSortColumnForEntity(entityType: EntityType, table: PgTableWithColumns<any>): PgColumn<any> {
     switch (entityType) {
       case "github_repository":
         return table.updatedAt;

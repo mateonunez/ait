@@ -48,16 +48,21 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
 
         await tx
           .insert(xTweets)
-          .values(tweetData as any)
+          .values(tweetData as XTweetDataTarget)
           .onConflictDoUpdate({
             target: xTweets.id,
             set: updateValues,
           })
           .execute();
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to save tweet:", { tweetId, error });
-      throw new AItError("X_SAVE_TWEET", `Failed to save tweet ${tweetId}: ${error.message}`, { id: tweetId }, error);
+      throw new AItError(
+        "X_SAVE_TWEET",
+        `Failed to save tweet ${tweetId}: ${(error as Error).message}`,
+        { id: tweetId },
+        error,
+      );
     }
   }
 

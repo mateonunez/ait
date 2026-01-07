@@ -5,6 +5,7 @@ import {
   ConnectorOAuthNetworkError,
   ConnectorOAuthRefreshTokenExpiredError,
   ConnectorOAuthRequestError,
+  type IConnectorOAuthTokenResponse,
 } from "../shared/auth/lib/oauth/connector.oauth";
 import { AIT } from "../shared/constants/ait.constant";
 import { retryWithBackoff } from "../shared/utils/retry.utils";
@@ -58,7 +59,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
     await this._updateDataSourceAndSaveAuth(response);
   }
 
-  private async _handleExistingAuthentication(authenticatedData: any): Promise<void> {
+  private async _handleExistingAuthentication(authenticatedData: OAuthTokenDataTarget): Promise<void> {
     if (this._isTokenExpired(authenticatedData)) {
       this._logger.info("[Connector] Token expired. Refreshing...");
       if (this._refreshInProgress) {
@@ -79,6 +80,9 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
       return;
     }
 
+    if (!authenticatedData.accessToken) {
+      throw new Error("Access token is missing");
+    }
     this._dataSource = this.createDataSource(authenticatedData.accessToken);
   }
 
@@ -111,7 +115,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
       const duration = Date.now() - startTime;
       _logger.info("Token refreshed successfully", { durationMs: duration });
       await this._updateDataSourceAndSaveAuth(response);
-    } catch (error: any) {
+    } catch (error: unknown) {
       const duration = Date.now() - startTime;
 
       if (error instanceof ConnectorOAuthRefreshTokenExpiredError) {
@@ -140,14 +144,14 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
       } else {
         _logger.error("Unexpected error during token refresh", {
           durationMs: duration,
-          error: error.message,
+          error: (error as Error).message,
         });
         throw error;
       }
     }
   }
 
-  private async _updateDataSourceAndSaveAuth(response: any): Promise<void> {
+  private async _updateDataSourceAndSaveAuth(response: IConnectorOAuthTokenResponse): Promise<void> {
     this._dataSource = this.createDataSource(response.access_token);
     await this.saveAuthenticatedData(response);
   }
@@ -175,7 +179,7 @@ export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, S
     }
   }
 
-  protected abstract getAuthenticatedData(): Promise<any>;
+  protected abstract getAuthenticatedData(): Promise<OAuthTokenDataTarget | null>;
   protected abstract authenticate(code: string): Promise<{ access_token: string }>;
   protected abstract refreshToken(refreshToken: string): Promise<{ access_token: string }>;
   protected abstract createDataSource(accessToken: string): DataSourceType;

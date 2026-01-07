@@ -106,11 +106,12 @@ export class IntegrationRegistryService {
     return displayNames[vendor] || vendor;
   }
 
-  extractDateFromEntity(entity: any, dateField: string | string[]): Date | null {
+  extractDateFromEntity(entity: Record<string, unknown> | null, dateField: string | string[]): Date | null {
     const fields = Array.isArray(dateField) ? dateField : [dateField];
 
     for (const field of fields) {
-      const value = entity[field];
+      if (!entity) continue;
+      const value = entity[field] as string | number | null | undefined;
       if (value === null || value === undefined) continue;
 
       // Handle Slack Unix timestamps

@@ -8,7 +8,7 @@ const logger = getLogger();
 const ACTIVITY_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export interface IConnectorServiceFactory {
-  getService<T = any>(vendor: any): T;
+  getService<T>(vendor: string): T;
 }
 
 export interface FetchActivityOptions {

@@ -28,7 +28,7 @@ export async function assetsRoutes(fastify: FastifyInstance) {
         reply.header("Cache-Control", "public, max-age=31536000, immutable");
 
         return reply.send(result.body);
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/assets" }, "Failed to serve asset.");
         return reply.status(500).send({ error: "Failed to serve asset" });
       }

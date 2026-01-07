@@ -58,7 +58,7 @@ export default async function slackRoutes(fastify: FastifyInstance) {
       const authUrl = `${baseUrl}?${params.toString()}`;
       fastify.log.info({ authUrl, configId }, "Redirecting to Slack OAuth");
       reply.redirect(authUrl);
-    } catch (err: any) {
+    } catch (err: unknown) {
       fastify.log.error({ err, route: "/auth" }, "Failed to initiate Slack authentication.");
       reply.status(500).send({ error: "Failed to initiate Slack authentication." });
     }
@@ -83,7 +83,7 @@ export default async function slackRoutes(fastify: FastifyInstance) {
           success: true,
           message: "Authentication successful. You can close this window.",
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
         fastify.log.error({ err, route: "/auth/callback" }, "Authentication failed.");
         reply.status(500).send({ error: "Authentication failed." });
       }

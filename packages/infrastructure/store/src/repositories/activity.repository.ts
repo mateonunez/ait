@@ -20,6 +20,7 @@ import {
   spotifyRecentlyPlayed,
   xTweets,
 } from "@ait/postgres";
+import type { PgColumn, PgTableWithColumns } from "drizzle-orm/pg-core";
 
 const logger = getLogger();
 const pgClient = getPostgresClient();
@@ -151,7 +152,9 @@ export class ActivityRepository implements IActivityRepository {
     };
   }
 
-  private _getTableForEntity(entityType: EntityType): { table: any; dateColumn: any } | null {
+  private _getTableForEntity(
+    entityType: EntityType,
+  ): { table: PgTableWithColumns<any>; dateColumn: PgColumn<any> } | null {
     switch (entityType) {
       case "github_repository":
         return { table: githubRepositories, dateColumn: githubRepositories.updatedAt };

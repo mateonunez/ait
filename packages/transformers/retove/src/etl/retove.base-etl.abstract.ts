@@ -47,11 +47,11 @@ export type ETLCursor = ConnectorCursor;
  */
 export interface ETLTableConfig {
   /** Drizzle table reference (e.g., spotifyTracks) */
-  table: any;
+  table: drizzleOrm.Table<any>;
   /** Column reference for updatedAt field (e.g., spotifyTracks.updatedAt) */
-  updatedAtField: any;
+  updatedAtField: drizzleOrm.Column<any>;
   /** Column reference for id field (e.g., spotifyTracks.id) */
-  idField: any;
+  idField: drizzleOrm.Column<any>;
 }
 
 export abstract class RetoveBaseETLAbstract<T> {
@@ -689,21 +689,18 @@ export abstract class RetoveBaseETLAbstract<T> {
 
     const { table, updatedAtField, idField } = tableConfig;
     const result = await this._pgClient.db.transaction(async (tx) => {
-      let query = tx.select({ count: drizzleOrm.count() }).from(table as any) as any;
+      let query = tx.select({ count: drizzleOrm.count() }).from(table).$dynamic();
       if (cursor) {
         // Correct cursor pagination: (timestamp > cursor) OR (timestamp = cursor AND id > cursor_id)
         // Must match the extract() query logic in each vendor ETL
-        query = (query as any).where(
+        query = query.where(
           drizzleOrm.or(
-            drizzleOrm.gt(updatedAtField as any, cursor.timestamp),
-            drizzleOrm.and(
-              drizzleOrm.eq(updatedAtField as any, cursor.timestamp),
-              drizzleOrm.gt(idField as any, cursor.id),
-            ),
+            drizzleOrm.gt(updatedAtField, cursor.timestamp),
+            drizzleOrm.and(drizzleOrm.eq(updatedAtField, cursor.timestamp), drizzleOrm.gt(idField, cursor.id)),
           ),
         );
       }
-      return (query as any).execute();
+      return query.execute();
     });
     const countVal = Number(result[0]?.count ?? 0);
     this._logger.debug(
