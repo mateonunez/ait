@@ -29,11 +29,14 @@ cp .env.example .env
 # 4. Initialize database
 pnpm migrate
 
-# 5. Install Ollama models (required for AI features)
-docker exec -it ait_ollama ollama pull gemma3:latest # gpt-oss:20b-cloud
+# 5. Seed database (Initial providers configuration)
+pnpm run --filter @ait/postgres db:seed
+
+# 6. Install Ollama models (required for AI features)
+docker exec -it ait_ollama ollama pull gemma3:latest
 docker exec -it ait_ollama ollama pull mxbai-embed-large:latest
 
-# 6. Start development servers
+# 7. Start development servers
 pnpm dev
 ```
 
@@ -45,7 +48,7 @@ AIt follows a modular monorepo architecture with clear separation of concerns:
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                                   UIt                                       │
 │                          (Web Interface - React)                            │
-└─────────────────────────────────┬───────────────────────────────────────────┘
+└─────────────────────────────────────┬───────────────────────────────────────┘
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -65,7 +68,7 @@ AIt follows a modular monorepo architecture with clear separation of concerns:
 │                         INFRASTRUCTURE LAYER                                │
 ├─────────────────┬─────────────────┬─────────────────┬───────────────────────┤
 │   PostgreSQL    │     Qdrant      │     Ollama      │        Redis          │
-│ (Structured DB) │ (Vector Store)  │  (Local LLM)    │    (Job Queue)        │
+│ (Structured DB) │ (Vector Store)  │   (Local LLM)   │      (Job Queue)      │
 └─────────────────┴─────────────────┴─────────────────┴───────────────────────┘
 ```
 
