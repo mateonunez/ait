@@ -37,6 +37,8 @@ Both the gateway and connectors rely on common environment variables. Create a `
 # Server Configuration
 APP_PORT=3000
 USE_HTTPS=false  # Set to true for HTTPS (see HTTPS_SETUP.md)
+SESSION_SECRET=your_session_secret
+AIT_ENCRYPTION_KEY=your_64_character_hex_encryption_key_here
 
 # Database
 POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
@@ -44,27 +46,8 @@ POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
 # Redis (used by caching/queues depending on enabled services)
 REDIS_URL=redis://:myredissecret@localhost:6379
 
-# OAuth Credentials
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_secret
-
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-
-LINEAR_CLIENT_ID=your_linear_client_id
-LINEAR_CLIENT_SECRET=your_linear_secret
-
-X_CLIENT_ID=your_x_client_id
-X_CLIENT_SECRET=your_x_secret
-
-NOTION_CLIENT_ID=your_notion_client_id
-NOTION_CLIENT_SECRET=your_notion_secret
-
-SLACK_CLIENT_ID=your_slack_client_id
-SLACK_CLIENT_SECRET=your_slack_secret
-
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_secret
+# Qdrant (Vector Database)
+QDRANT_URL=http://localhost:6333
 
 # S3 / MinIO (required for Google Photos binary storage)
 MINIO_REGION=us-east-1
@@ -72,6 +55,9 @@ MINIO_ENDPOINT=http://localhost:9090
 MINIO_ROOT_USER=minio
 MINIO_ROOT_PASSWORD=miniosecret
 ```
+
+> [!IMPORTANT]
+> OAuth credentials for various platforms are now managed through the database and are securely encrypted using `AIT_ENCRYPTION_KEY`. Individual environment variables for client IDs and secrets are no longer required.
 
 See the [Connectors README](../connectors/README.md) for detailed connector configuration.
 
@@ -124,7 +110,9 @@ pnpm test
 
 ## Integration with Connectors
 
-The Gateway uses connectors at runtime. Any secrets or configuration required by connectors must be available as environment variables when running the gateway.
+The Gateway uses connectors at runtime. All connector-specific credentials (client IDs, secrets, etc.) are stored in the database as encrypted configurations.
+
+For the gateway to decrypt and use these configurations, you must provide the `AIT_ENCRYPTION_KEY` environment variable.
 
 For connector implementation details, see the [Connectors README](../connectors/README.md).
 

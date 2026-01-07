@@ -130,28 +130,17 @@ MINIO_ENDPOINT=http://localhost:9090
 MINIO_ROOT_USER=minio
 MINIO_ROOT_PASSWORD=miniosecret
 
-# OAuth Credentials (at least one connector)
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_secret
+# Encryption
+AIT_ENCRYPTION_KEY=your_64_character_hex_encryption_key_here
 
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_secret
-
-LINEAR_CLIENT_ID=your_linear_client_id
-LINEAR_CLIENT_SECRET=your_linear_secret
-
-X_CLIENT_ID=your_x_client_id
-X_CLIENT_SECRET=your_x_secret
-
-NOTION_CLIENT_ID=your_notion_client_id
-NOTION_CLIENT_SECRET=your_notion_secret
-
-SLACK_CLIENT_ID=your_slack_client_id
-SLACK_CLIENT_SECRET=your_slack_secret
-
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_secret
+# OAuth Redirects (Base URL for callbacks)
+# Gateway will use these to construct callback URIs if needed
+# GITHUB_REDIRECT_URI=https://localhost:3000/api/github/auth/callback
 ```
+
+> [!IMPORTANT]
+> OAuth credentials (client IDs and secrets) are now managed through the database and are securely encrypted using `AIT_ENCRYPTION_KEY`. They do NOT need to be provided as environment variables.
+
 
 See individual package READMEs and [.env.example](.env.example) for all available options.
 

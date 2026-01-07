@@ -43,30 +43,32 @@ pnpm install
 
 ### Environment Variables
 
-Each connector requires OAuth credentials. Set these in your `.env` file:
+The Connectors package requires `AIT_ENCRYPTION_KEY` to be set in the environment for decrypting platform configurations stored in the database.
 
 ```bash
 # PostgreSQL Configuration
 POSTGRES_URL=postgresql://root:toor@localhost:5432/ait
+
+# Encryption
+AIT_ENCRYPTION_KEY=your_64_character_hex_encryption_key_here
 ```
 
 ## Usage
 
 ### Basic Connector Usage
 
+Connectors are now database-driven. Use the `connectorServiceFactory` to retrieve a service based on its configuration ID from the database.
+
 ```typescript
-import { ConnectorServiceFactory } from '@ait/connectors';
+import { connectorServiceFactory } from '@ait/connectors';
 
-// Create a connector service
-const githubService = ConnectorServiceFactory.create('github', {
-  clientId: process.env.GITHUB_CLIENT_ID,
-  clientSecret: process.env.GITHUB_CLIENT_SECRET,
-});
+// Retrieve a connector service by its database configuration ID
+const githubService = await connectorServiceFactory.getServiceByConfig(
+  'config_id_from_db',
+  'user_id'
+);
 
-// Authenticate (OAuth flow handled by gateway)
-await githubService.authenticate(accessToken);
-
-// Fetch data
+// Fetch data (authentication and token management is handled internally)
 const repositories = await githubService.getRepositories();
 ```
 
