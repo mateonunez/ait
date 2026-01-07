@@ -109,12 +109,8 @@
           "name": "messages_conversation_id_conversations_id_fk",
           "tableFrom": "messages",
           "tableTo": "conversations",
-          "columnsFrom": [
-            "conversation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["conversation_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -201,12 +197,8 @@
           "name": "connector_configs_provider_id_providers_id_fk",
           "tableFrom": "connector_configs",
           "tableTo": "providers",
-          "columnsFrom": [
-            "provider_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2004,12 +1996,8 @@
           "name": "oauth_tokens_connector_config_id_connector_configs_id_fk",
           "tableFrom": "oauth_tokens",
           "tableTo": "connector_configs",
-          "columnsFrom": [
-            "connector_config_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["connector_config_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2947,12 +2935,8 @@
           "name": "feedback_message_id_messages_id_fk",
           "tableFrom": "feedback",
           "tableTo": "messages",
-          "columnsFrom": [
-            "message_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["message_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3137,9 +3121,7 @@
         "providers_slug_unique": {
           "name": "providers_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -3151,30 +3133,17 @@
     "public.connector_config_status": {
       "name": "connector_config_status",
       "schema": "public",
-      "values": [
-        "active",
-        "error",
-        "revoked",
-        "pending"
-      ]
+      "values": ["active", "error", "revoked", "pending"]
     },
     "public.feedback_rating": {
       "name": "feedback_rating",
       "schema": "public",
-      "values": [
-        "thumbs_up",
-        "thumbs_down",
-        "neutral"
-      ]
+      "values": ["thumbs_up", "thumbs_down", "neutral"]
     },
     "public.provider_auth_type": {
       "name": "provider_auth_type",
       "schema": "public",
-      "values": [
-        "oauth2",
-        "api_key",
-        "basic"
-      ]
+      "values": ["oauth2", "api_key", "basic"]
     }
   },
   "schemas": {},

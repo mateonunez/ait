@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useInsights } from "@/contexts/insights.context";
 import { useConnectionStatus } from "@/hooks/useConnectionStatus";
+import type { DailyActivity, DiscoveryStatsData } from "@/services/discovery.service";
 import { fetchDiscoveryStats } from "@/services/observability.service";
 import { cn } from "@/styles/utils";
 import { getLogger } from "@ait/core";
@@ -30,7 +31,6 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { AiInsightsPanel } from "./ai-insights-panel";
-import type { DailyActivity, DiscoveryStatsData } from "@/services/discovery.service";
 
 const logger = getLogger();
 
