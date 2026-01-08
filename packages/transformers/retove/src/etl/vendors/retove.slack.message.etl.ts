@@ -33,11 +33,12 @@ export class RetoveSlackMessageETL extends RetoveBaseETLAbstract<SlackMessageDat
       let query = tx.select().from(slackMessages) as any;
 
       if (cursor) {
+        const cursorTimestampIso = cursor.timestamp.toISOString();
         query = query.where(
           drizzleOrm.or(
-            drizzleOrm.gt(drizzleOrm.sql`${slackMessages.updatedAt}::timestamp(3)`, cursor.timestamp),
+            drizzleOrm.gt(drizzleOrm.sql`${slackMessages.updatedAt}::timestamp(3)`, cursorTimestampIso),
             drizzleOrm.and(
-              drizzleOrm.eq(drizzleOrm.sql`${slackMessages.updatedAt}::timestamp(3)`, cursor.timestamp),
+              drizzleOrm.eq(drizzleOrm.sql`${slackMessages.updatedAt}::timestamp(3)`, cursorTimestampIso),
               drizzleOrm.gt(slackMessages.id, cursor.id),
             ),
           ),
