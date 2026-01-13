@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, SpotifyPlaylistEntity, getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  SpotifyPlaylistEntity,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type SpotifyPlaylistDataTarget, drizzleOrm, getPostgresClient, spotifyPlaylists } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyPlaylistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
@@ -45,11 +53,12 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save playlist:", { playlistId: playlist.id, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save playlist:", { playlistId: playlist.id, error: message });
       throw new AItError(
         "SPOTIFY_SAVE_PLAYLIST",
-        `Failed to save playlist ${playlist.id}: ${error.message}`,
+        `Failed to save playlist ${playlist.id}: ${message}`,
         { id: playlist.id },
         error,
       );
@@ -91,9 +100,7 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
   }
 
   async getPlaylistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyPlaylistEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [playlists, totalResult] = await Promise.all([
       this._pgClient.db
@@ -105,17 +112,10 @@ export class ConnectorSpotifyPlaylistRepository implements IConnectorSpotifyPlay
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyPlaylists),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: playlists.map((playlist) => SpotifyPlaylistEntity.fromPlain(playlist as SpotifyPlaylistDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      playlists.map((playlist) => SpotifyPlaylistEntity.fromPlain(playlist as SpotifyPlaylistDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { AItError, decrypt } from "@ait/core";
-import { and, connectorConfigs, eq, getPostgresClient } from "@ait/postgres";
+import { and, connectorConfigs, eq, getPostgresClient, providers } from "@ait/postgres";
 import type { ConnectorServiceConstructor, ConnectorType } from "../types/infrastructure/connector.interface";
 import type { ConnectorServiceBase } from "./connector.service.base.abstract";
 import { ConnectorGitHubService } from "./vendors/connector.github.service";
@@ -22,16 +22,12 @@ export const connectorServices: Record<ConnectorType, ConnectorServiceConstructo
 };
 
 export class ConnectorServiceFactory {
-  private services = new Map<string, ConnectorServiceBase<any, any>>();
+  private _services = new Map<string, ConnectorServiceBase<any, any>>();
 
-  /**
-   * Returns a connector service instance based on its database configuration ID.
-   * This handles decryption of settings automatically.
-   */
   async getServiceByConfig<T extends ConnectorServiceBase<any, any>>(configId: string, userId: string): Promise<T> {
     const cacheKey = `${userId}:${configId}`;
-    if (this.services.has(cacheKey)) {
-      return this.services.get(cacheKey) as T;
+    if (this._services.has(cacheKey)) {
+      return this._services.get(cacheKey) as T;
     }
 
     const { db } = getPostgresClient();
@@ -65,8 +61,6 @@ export class ConnectorServiceFactory {
       throw new AItError("CONNECTOR_UNKNOWN", `Unknown connector type: ${connectorType}`);
     }
 
-    // We assume the settings match the expectations of the service's OAuth config
-    // We inject the userId and connectorConfigId from the database context
     const serviceConfig = {
       ...settings,
       userId,
@@ -74,23 +68,60 @@ export class ConnectorServiceFactory {
     };
 
     const service = new ConnectorServiceClass(serviceConfig);
-    this.services.set(cacheKey, service);
+    this._services.set(cacheKey, service);
 
     return service;
+  }
+
+  async getActiveServiceByVendor<T extends ConnectorServiceBase<any, any>>(
+    vendor: ConnectorType,
+    userId: string,
+  ): Promise<T | null> {
+    const { db } = getPostgresClient();
+    const config = (await db.query.connectorConfigs.findFirst({
+      where: and(eq(connectorConfigs.userId, userId), eq(connectorConfigs.isEnabled, true)),
+      with: {
+        provider: true,
+      },
+    })) as any;
+
+    if (!config || config.provider.slug !== vendor) {
+      const provider = await db.query.providers.findFirst({
+        where: eq(providers.slug, vendor),
+      });
+
+      if (!provider) return null;
+
+      const specificConfig = await db.query.connectorConfigs.findFirst({
+        where: and(
+          eq(connectorConfigs.userId, userId),
+          eq(connectorConfigs.isEnabled, true),
+          eq(connectorConfigs.providerId, provider.id),
+        ),
+        with: {
+          provider: true,
+        },
+      });
+
+      if (!specificConfig) return null;
+      return this.getServiceByConfig<T>(specificConfig.id, userId);
+    }
+
+    return this.getServiceByConfig<T>(config.id, userId);
   }
 
   /**
    * @deprecated Use getServiceByConfig instead for database-driven connectors.
    */
   getService<T extends ConnectorServiceBase<any, any>>(connectorType: ConnectorType): T {
-    if (!this.services.has(connectorType)) {
+    if (!this._services.has(connectorType)) {
       const ConnectorServiceClass = connectorServices[connectorType] as ConnectorServiceConstructor<T>;
       if (!ConnectorServiceClass) {
         throw new AItError("CONNECTOR_UNKNOWN", `Unknown connector type: ${connectorType}`);
       }
-      this.services.set(connectorType, new (ConnectorServiceClass as any)({} as any)); // Warning: empty config for legacy
+      this._services.set(connectorType, new (ConnectorServiceClass as any)({} as any)); // Warning: empty config for legacy
     }
-    return this.services.get(connectorType) as T;
+    return this._services.get(connectorType) as T;
   }
 }
 

@@ -1,4 +1,12 @@
-import { AItError, GoogleContactEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GoogleContactEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type GoogleContactDataTarget, drizzleOrm, getPostgresClient, googleContacts } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGoogleContactRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
@@ -41,11 +49,12 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save Google Contact:", { contactId: contact.id, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save Google Contact:", { contactId: contact.id, error: message });
       throw new AItError(
         "GOOGLE_CONTACT_SAVE_CONTACT",
-        `Failed to save contact ${contact.id}: ${error.message}`,
+        `Failed to save contact ${contact.id}: ${message}`,
         { id: contact.id },
         error,
       );
@@ -84,9 +93,7 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
   }
 
   async getContactsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleContactEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [contacts, totalResult] = await Promise.all([
       this._pgClient.db
@@ -98,17 +105,10 @@ export class ConnectorGoogleContactRepository implements IConnectorGoogleContact
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(googleContacts),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: contacts.map((contact) => GoogleContactEntity.fromPlain(contact as GoogleContactDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      contacts.map((contact) => GoogleContactEntity.fromPlain(contact as GoogleContactDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, SpotifyAlbumEntity, getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  SpotifyAlbumEntity,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type SpotifyAlbumDataTarget, drizzleOrm, getPostgresClient, spotifyAlbums } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyAlbumRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
@@ -49,14 +57,10 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save album:", { albumId: album.id, error });
-      throw new AItError(
-        "SPOTIFY_SAVE_ALBUM",
-        `Failed to save album ${album.id}: ${error.message}`,
-        { id: album.id },
-        error,
-      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save album:", { albumId: album.id, error: message });
+      throw new AItError("SPOTIFY_SAVE_ALBUM", `Failed to save album ${album.id}: ${message}`, { id: album.id }, error);
     }
   }
 
@@ -95,9 +99,7 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
   }
 
   async getAlbumsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyAlbumEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [albums, totalResult] = await Promise.all([
       this._pgClient.db
@@ -109,17 +111,10 @@ export class ConnectorSpotifyAlbumRepository implements IConnectorSpotifyAlbumRe
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyAlbums),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: albums.map((album) => SpotifyAlbumEntity.fromPlain(album as SpotifyAlbumDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      albums.map((album) => SpotifyAlbumEntity.fromPlain(album as SpotifyAlbumDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

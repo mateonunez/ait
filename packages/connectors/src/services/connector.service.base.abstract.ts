@@ -1,8 +1,11 @@
 import { AItError, type ValidationSchema, getLogger, validate } from "@ait/core";
 import { getRedisClient } from "@ait/redis";
 import type { BaseConnectorAbstract } from "../infrastructure/connector.base.abstract";
+import type { IConnectorAuthenticator } from "../shared/auth/connector.authenticator.abstract";
 import type { IConnectorOAuthConfig } from "../shared/auth/lib/oauth/connector.oauth";
 import { ConnectorOAuth } from "../shared/auth/lib/oauth/connector.oauth";
+import type { IConnectorRepository } from "../types/domain/entities/connector.repository.interface";
+import type { IConnectorStore } from "../types/shared/store/connector.store.interface";
 
 import { createHash } from "node:crypto";
 import { SyncStateService } from "./shared/sync/sync-state.service";
@@ -21,12 +24,29 @@ interface EntityConfig<TEntityMap, K extends keyof TEntityMap, E> {
   checksumEnabled?: boolean;
 }
 
+/**
+ * Type-erased version for internal storage of heterogeneous entity configs.
+ * The public register methods maintain full type safety.
+ */
+interface EntityConfigEntry {
+  fetcher?: () => Promise<unknown[]>;
+  paginatedFetcher?: (cursor?: ConnectorCursor) => Promise<{
+    data: unknown[];
+    nextCursor?: ConnectorCursor;
+  }>;
+  mapper: (entity: unknown) => unknown;
+  schema?: ValidationSchema<unknown>;
+  cacheTtl?: number;
+  batchSize?: number;
+  checksumEnabled?: boolean;
+}
+
 export abstract class ConnectorServiceBase<
-  TConnector extends BaseConnectorAbstract<any, any, any, any>,
-  TEntityMap extends Record<string, any>,
+  TConnector extends BaseConnectorAbstract<IConnectorAuthenticator, unknown, IConnectorStore, IConnectorRepository>,
+  TEntityMap extends object,
 > {
   protected _connector: TConnector;
-  protected entityConfigs: Map<keyof TEntityMap, EntityConfig<TEntityMap, any, any>> = new Map();
+  protected entityConfigs: Map<keyof TEntityMap, EntityConfigEntry> = new Map();
   private _logger = getLogger();
   private _syncStateService = new SyncStateService();
 
@@ -36,11 +56,16 @@ export abstract class ConnectorServiceBase<
   }
 
   public get userId(): string | undefined {
-    return (this._connector.authenticator as ConnectorOAuth).config.userId;
+    return this.getAuthenticatorConfig().userId;
   }
 
   public get connectorConfigId(): string | undefined {
-    return (this._connector.authenticator as ConnectorOAuth).config.connectorConfigId;
+    return this.getAuthenticatorConfig().connectorConfigId;
+  }
+
+  private getAuthenticatorConfig(): IConnectorOAuthConfig {
+    const auth = this._connector.authenticator as IConnectorAuthenticator;
+    return auth.getOAuthConfig();
   }
 
   protected registerEntityConfig<K extends keyof TEntityMap, E>(
@@ -54,8 +79,8 @@ export abstract class ConnectorServiceBase<
   ): void {
     this.entityConfigs.set(entityType, {
       fetcher: () => config.fetcher(this._connector),
-      mapper: config.mapper,
-      schema: config.schema,
+      mapper: config.mapper as (entity: unknown) => unknown,
+      schema: config.schema as ValidationSchema<unknown> | undefined,
       cacheTtl: config.cacheTtl,
     });
   }
@@ -79,8 +104,8 @@ export abstract class ConnectorServiceBase<
   ): void {
     this.entityConfigs.set(entityType, {
       paginatedFetcher: (cursor?: ConnectorCursor) => config.paginatedFetcher(this._connector, cursor),
-      mapper: config.mapper,
-      schema: config.schema,
+      mapper: config.mapper as (entity: unknown) => unknown,
+      schema: config.schema as ValidationSchema<unknown> | undefined,
       cacheTtl: config.cacheTtl,
       batchSize: config.batchSize,
       checksumEnabled: config.checksumEnabled,
@@ -210,7 +235,7 @@ export abstract class ConnectorServiceBase<
     entityType: K,
     config: EntityConfig<TEntityMap, K, E>,
     cacheKey: string | null,
-    redis: any,
+    redis: ReturnType<typeof getRedisClient>,
   ): Promise<TEntityMap[K][]> {
     let entities: E[] = [];
 

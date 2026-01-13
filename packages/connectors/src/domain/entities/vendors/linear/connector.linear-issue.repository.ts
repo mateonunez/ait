@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, LinearIssueEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  LinearIssueEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type LinearIssueDataTarget, drizzleOrm, getPostgresClient, linearIssues } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorLinearIssueRepository } from "../../../../types/domain/entities/vendors/connector.linear.types";
@@ -43,14 +51,10 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save issue:", { issueId, error });
-      throw new AItError(
-        "LINEAR_SAVE_ISSUE",
-        `Failed to save issue ${issueId}: ${error.message}`,
-        { id: issueId },
-        error,
-      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save issue:", { issueId, error: message });
+      throw new AItError("LINEAR_SAVE_ISSUE", `Failed to save issue ${issueId}: ${message}`, { id: issueId }, error);
     }
   }
 
@@ -89,9 +93,7 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
   }
 
   async getIssuesPaginated(params: PaginationParams): Promise<PaginatedResponse<LinearIssueEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [issues, totalResult] = await Promise.all([
       this._pgClient.db
@@ -103,17 +105,10 @@ export class ConnectorLinearIssueRepository implements IConnectorLinearIssueRepo
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(linearIssues),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: issues.map((issue) => LinearIssueEntity.fromPlain(issue as LinearIssueDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      issues.map((issue) => LinearIssueEntity.fromPlain(issue as LinearIssueDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

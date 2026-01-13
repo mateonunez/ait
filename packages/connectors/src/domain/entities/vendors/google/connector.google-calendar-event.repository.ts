@@ -3,7 +3,9 @@ import {
   GoogleCalendarEventEntity,
   type PaginatedResponse,
   type PaginationParams,
+  buildPaginatedResponse,
   getLogger,
+  getPaginationOffset,
 } from "@ait/core";
 import { type GoogleCalendarEventDataTarget, drizzleOrm, getPostgresClient, googleCalendarEvents } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
@@ -118,9 +120,7 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
   }
 
   async getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [events, totalResult] = await Promise.all([
       this._pgClient.db
@@ -132,17 +132,10 @@ export class ConnectorGoogleCalendarEventRepository implements IConnectorGoogleC
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(googleCalendarEvents),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: events.map((event) => GoogleCalendarEventEntity.fromPlain(event as GoogleCalendarEventDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      events.map((event) => GoogleCalendarEventEntity.fromPlain(event as GoogleCalendarEventDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

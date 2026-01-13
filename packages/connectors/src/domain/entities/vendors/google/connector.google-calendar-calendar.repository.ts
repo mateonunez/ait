@@ -3,7 +3,9 @@ import {
   GoogleCalendarCalendarEntity,
   type PaginatedResponse,
   type PaginationParams,
+  buildPaginatedResponse,
   getLogger,
+  getPaginationOffset,
 } from "@ait/core";
 import {
   type GoogleCalendarCalendarDataTarget,
@@ -59,11 +61,12 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save Google Calendar calendar:", { calendarId: calendar.id, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save Google Calendar calendar:", { calendarId: calendar.id, error: message });
       throw new AItError(
         "GOOGLE_CALENDAR_SAVE_CALENDAR",
-        `Failed to save calendar ${calendar.id}: ${error.message}`,
+        `Failed to save calendar ${calendar.id}: ${message}`,
         { id: calendar.id },
         error,
       );
@@ -111,9 +114,7 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
   }
 
   async getCalendarsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarCalendarEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [calendars, totalResult] = await Promise.all([
       this._pgClient.db
@@ -125,19 +126,10 @@ export class ConnectorGoogleCalendarCalendarRepository implements IConnectorGoog
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(googleCalendarCalendars),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: calendars.map((calendar) =>
-        GoogleCalendarCalendarEntity.fromPlain(calendar as GoogleCalendarCalendarDataTarget),
-      ),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      calendars.map((calendar) => GoogleCalendarCalendarEntity.fromPlain(calendar as GoogleCalendarCalendarDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

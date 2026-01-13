@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { type Logger, getLogger } from "@ait/core";
+import { type Logger, getLogger, retryWithBackoff } from "@ait/core";
 import type { OAuthTokenDataTarget } from "@ait/postgres";
 import {
   ConnectorOAuthNetworkError,
@@ -8,7 +8,6 @@ import {
   type IConnectorOAuthTokenResponse,
 } from "../shared/auth/lib/oauth/connector.oauth";
 import { AIT } from "../shared/constants/ait.constant";
-import { retryWithBackoff } from "../shared/utils/retry.utils";
 import type { IConnector } from "../types/infrastructure/connector.interface";
 
 export abstract class BaseConnectorAbstract<AuthenticatorType, DataSourceType, StoreType, RepositoryType>

@@ -4,7 +4,9 @@ import {
   type PaginatedResponse,
   type PaginationParams,
   SpotifyRecentlyPlayedEntity,
+  buildPaginatedResponse,
   getLogger,
+  getPaginationOffset,
 } from "@ait/core";
 import {
   type SpotifyRecentlyPlayedDataTarget,
@@ -54,11 +56,12 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save recently played item:", { itemId: item.id, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save recently played item:", { itemId: item.id, error: message });
       throw new AItError(
         "SPOTIFY_SAVE_RECENTLY_PLAYED",
-        `Failed to save recently played item ${item.id}: ${error.message}`,
+        `Failed to save recently played item ${item.id}: ${message}`,
         { id: item.id },
         error,
       );
@@ -107,9 +110,7 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
   }
 
   async getRecentlyPlayedPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyRecentlyPlayedEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [recentlyPlayed, totalResult] = await Promise.all([
       this._pgClient.db
@@ -121,19 +122,10 @@ export class ConnectorSpotifyRecentlyPlayedRepository implements IConnectorSpoti
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyRecentlyPlayed),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: recentlyPlayed.map((item) =>
-        SpotifyRecentlyPlayedEntity.fromPlain(item as SpotifyRecentlyPlayedDataTarget),
-      ),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      recentlyPlayed.map((item) => SpotifyRecentlyPlayedEntity.fromPlain(item as SpotifyRecentlyPlayedDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

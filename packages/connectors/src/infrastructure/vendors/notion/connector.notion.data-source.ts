@@ -1,4 +1,4 @@
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import { AItError, RateLimitError, getErrorMessage, getLogger, requestJson } from "@ait/core";
 import type { NotionPageExternal } from "@ait/core";
 
 export interface IConnectorNotionDataSource {
@@ -129,8 +129,8 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
       } while (nextCursor);
 
       return contentParts.join("\n").trim();
-    } catch (error: any) {
-      this._logger.warn(`Error fetching content for page ${pageId}`, { error: error.message });
+    } catch (error: unknown) {
+      this._logger.warn(`Error fetching content for page ${pageId}`, { error: getErrorMessage(error) });
       return "";
     }
   }
@@ -204,7 +204,7 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
         pages: sortedPages,
         nextCursor: response.next_cursor || undefined,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AItError) {
         if (error.code === "HTTP_429" || error.meta?.status === 429) {
           const headers = (error.meta?.headers as Record<string, string>) || {};
@@ -214,7 +214,12 @@ export class ConnectorNotionDataSource implements IConnectorNotionDataSource {
         }
         throw error;
       }
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
+      throw new AItError(
+        "NETWORK",
+        `Network error: ${getErrorMessage(error)}`,
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 }

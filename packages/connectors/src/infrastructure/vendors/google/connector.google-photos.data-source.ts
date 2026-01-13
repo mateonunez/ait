@@ -14,10 +14,11 @@ export class ConnectorGooglePhotosDataSource {
   async fetchPhotos(cursor?: string): Promise<GooglePhotosPaginatedResponse<GooglePhotoExternal>> {
     let currentCursor = cursor;
     let pageCount = 0;
-    const MAX_EMPTY_PAGES = 10;
+    const MAX_PAGES_PER_CALL = 5; // How many empty pages to skip in a single tool call
 
-    while (pageCount < MAX_EMPTY_PAGES) {
+    while (pageCount < MAX_PAGES_PER_CALL) {
       const params = new URLSearchParams();
+      params.append("pageSize", "100");
 
       if (currentCursor) {
         params.append("pageToken", currentCursor);
@@ -38,24 +39,23 @@ export class ConnectorGooglePhotosDataSource {
           pageIteration: pageCount + 1,
         });
 
+        // If we found items OR there are no more pages, return immediately
         if (itemCount > 0 || !response.nextPageToken) {
           return response;
         }
 
+        // If we hit an empty page, keep looking for some more pages in this same call
         currentCursor = response.nextPageToken;
         pageCount++;
-
-        if (pageCount >= MAX_EMPTY_PAGES) {
-          this._logger.warn(`[GooglePhotos] Hit max empty pages limit (${MAX_EMPTY_PAGES}). Stopping scan.`);
-          return { mediaItems: [], nextPageToken: undefined };
-        }
       } catch (error) {
         this._logger.error("Failed to fetch Google Photos", { error });
         throw error;
       }
     }
 
-    return { mediaItems: [] }; // Safe fallback
+    // If we reached the limit of empty pages for this call, return empty data
+    // but KEEP the nextPageToken so the next sync iteration can continue.
+    return { mediaItems: [], nextPageToken: currentCursor };
   }
 
   private async _fetchFromGooglePhotos<T>(

@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@ait/core";
 import { request } from "undici";
 
 export class ConnectorOAuth implements IConnectorOAuth {
@@ -43,7 +44,7 @@ export class ConnectorOAuth implements IConnectorOAuth {
 
     try {
       return await this._postFormData<IConnectorOAuthTokenResponse>(this.config.endpoint, formData, true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ConnectorOAuthRequestError && (error.statusCode === 400 || error.statusCode === 401)) {
         throw new ConnectorOAuthRefreshTokenExpiredError(error.statusCode, error.responseBody);
       }
@@ -90,7 +91,7 @@ export class ConnectorOAuth implements IConnectorOAuth {
       }
 
       return parsedBody as T;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (
         error instanceof ConnectorOAuthRequestError ||
         error instanceof ConnectorOAuthJsonParseError ||
@@ -100,9 +101,10 @@ export class ConnectorOAuth implements IConnectorOAuth {
       }
 
       // Otherwise, it's a network/connection error
+      const originalError = error instanceof Error ? error : new Error(getErrorMessage(error));
       throw new ConnectorOAuthNetworkError(
-        `Network error during OAuth ${isRefresh ? "token refresh" : "request"}: ${error.message}`,
-        error,
+        `Network error during OAuth ${isRefresh ? "token refresh" : "request"}: ${getErrorMessage(error)}`,
+        originalError,
       );
     }
   }

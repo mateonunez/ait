@@ -1,5 +1,14 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, SpotifyTrackEntity, getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  SpotifyTrackEntity,
+  buildPaginatedResponse,
+  getErrorMessage,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type SpotifyTrackDataTarget, drizzleOrm, getPostgresClient, spotifyTracks } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyTrackRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
@@ -52,13 +61,13 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
           })
           .execute();
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to save track:", { trackId: track.id, error });
       throw new AItError(
         "SPOTIFY_SAVE_TRACK",
-        `Failed to save track ${track.id}: ${error.message}`,
+        `Failed to save track ${track.id}: ${getErrorMessage(error)}`,
         { id: track.id },
-        error,
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -98,9 +107,7 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
   }
 
   async getTracksPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyTrackEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [tracks, totalResult] = await Promise.all([
       this._pgClient.db
@@ -112,17 +119,10 @@ export class ConnectorSpotifyTrackRepository implements IConnectorSpotifyTrackRe
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyTracks),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: tracks.map((track) => SpotifyTrackEntity.fromPlain(track as SpotifyTrackDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      tracks.map((track) => SpotifyTrackEntity.fromPlain(track as SpotifyTrackDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

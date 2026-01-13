@@ -1,5 +1,4 @@
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
-import { type RetryOptions, retryWithBackoff } from "./retry.utils";
+import { AItError, RateLimitError, type RetryOptions, getLogger, requestJson, retryWithBackoff } from "@ait/core";
 
 const logger = getLogger();
 
@@ -109,7 +108,7 @@ export class RateLimitedHttpClient {
 
         return result.value.data as unknown as T;
       }, retryOptions);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // After all retries exhausted, throw RateLimitError if it was a rate limit
       if (error instanceof AItError) {
         if (error.code === "HTTP_429" || error.meta?.status === 429) {
@@ -122,7 +121,8 @@ export class RateLimitedHttpClient {
         }
         throw error;
       }
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new AItError("NETWORK", `Network error: ${message}`, undefined, error);
     }
   }
 
