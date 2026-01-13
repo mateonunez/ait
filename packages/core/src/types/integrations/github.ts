@@ -144,6 +144,51 @@ export const GitHubPullRequestSchema = z
   })
   .passthrough();
 
+export const GitHubIssueSchema = z
+  .object({
+    url: z.string().url(),
+    repository_url: z.string().url(),
+    labels_url: z.string(),
+    comments_url: z.string().url(),
+    events_url: z.string().url(),
+    html_url: z.string().url(),
+    id: z.number(),
+    node_id: z.string(),
+    number: z.number(),
+    title: z.string(),
+    user: z
+      .object({
+        login: z.string(),
+        id: z.number(),
+      })
+      .nullable(),
+    labels: z.array(z.any()),
+    state: z.string(),
+    locked: z.boolean(),
+    assignee: z
+      .object({
+        login: z.string(),
+        id: z.number(),
+      })
+      .nullable(),
+    assignees: z.array(z.any()).optional(),
+    milestone: z.any().nullable(),
+    comments: z.number(),
+    created_at: z.string(),
+    updated_at: z.string(),
+    closed_at: z.string().nullable(),
+    author_association: z.string(),
+    active_lock_reason: z.string().nullable().optional(),
+    draft: z.boolean().optional(),
+    pull_request: z.object({ url: z.string().url().optional() }).optional(),
+    body: z.string().nullable(),
+    reactions: z.record(z.string(), z.any()).optional(),
+    timeline_url: z.string().url().optional(),
+    performed_via_github_app: z.any().nullable().optional(),
+    state_reason: z.string().nullable().optional(),
+  })
+  .passthrough();
+
 export const GitHubCommitSchema = z
   .object({
     sha: z.string(),
@@ -196,7 +241,7 @@ export const GitHubCommitSchema = z
 // --- External Types (from OpenAPI) ---
 
 export interface BaseGitHubEntityType {
-  __type: "github_repository" | "github_pull_request" | "github_commit" | "github_file";
+  __type: "github_repository" | "github_pull_request" | "github_commit" | "github_issue" | "github_file";
 }
 
 type GitHubRepository = GitHubComponents["schemas"]["repository"];
@@ -214,7 +259,16 @@ export interface GitHubCommitExternal extends Omit<GitHubCommit, "__type"> {
   __type: "github_commit";
 }
 
-export type GitHubExternal = GitHubRepositoryExternal | GitHubPullRequestExternal | GitHubCommitExternal;
+type GitHubIssue = GitHubComponents["schemas"]["issue"];
+export interface GitHubIssueExternal extends Omit<GitHubIssue, "__type"> {
+  __type: "github_issue";
+}
+
+export type GitHubExternal =
+  | GitHubRepositoryExternal
+  | GitHubPullRequestExternal
+  | GitHubCommitExternal
+  | GitHubIssueExternal;
 
 // --- Domain Types (Zod-inferred for consistency) ---
 
@@ -341,6 +395,34 @@ export const GitHubCommitEntityTypeSchema = z.object({
   __type: z.literal("github_commit"),
 });
 
+export const GitHubIssueEntityTypeSchema = z.object({
+  id: z.string(),
+  number: z.number(),
+  title: z.string(),
+  body: z.string().nullable(),
+  state: z.string(),
+  stateReason: z.string().nullable(),
+  locked: z.boolean(),
+  htmlUrl: z.string(),
+  comments: z.number(),
+  repositoryId: z.string().nullable(),
+  repositoryName: z.string().nullable(),
+  repositoryFullName: z.string().nullable(),
+  authorData: z.record(z.string(), z.unknown()).nullable(),
+  assigneeData: z.record(z.string(), z.unknown()).nullable(),
+  assigneesData: z.array(z.record(z.string(), z.unknown())).nullable(),
+  labelsData: z.array(z.record(z.string(), z.unknown())).nullable(),
+  milestoneData: z.record(z.string(), z.unknown()).nullable(),
+  reactionsData: z.record(z.string(), z.unknown()).nullable(),
+  isPullRequest: z.boolean(),
+  issueCreatedAt: z.date().nullable(),
+  issueUpdatedAt: z.date().nullable(),
+  issueClosedAt: z.date().nullable(),
+  createdAt: z.date().nullable(),
+  updatedAt: z.date().nullable(),
+  __type: z.literal("github_issue"),
+});
+
 // --- Repository File Types (for code ingestion) ---
 
 export interface GitHubTreeItemExternal {
@@ -383,10 +465,12 @@ export const GitHubFileEntityTypeSchema = z.object({
 export type GitHubRepositoryEntityType = z.infer<typeof GitHubRepositoryEntityTypeSchema>;
 export type GitHubPullRequestEntityType = z.infer<typeof GitHubPullRequestEntityTypeSchema>;
 export type GitHubCommitEntityType = z.infer<typeof GitHubCommitEntityTypeSchema>;
+export type GitHubIssueEntityType = z.infer<typeof GitHubIssueEntityTypeSchema>;
 export type GitHubFileEntityType = z.infer<typeof GitHubFileEntityTypeSchema>;
 
 export type GitHubEntityType =
   | GitHubRepositoryEntityType
   | GitHubPullRequestEntityType
   | GitHubCommitEntityType
+  | GitHubIssueEntityType
   | GitHubFileEntityType;

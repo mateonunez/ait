@@ -1,3 +1,4 @@
+import type { GmailMessageEntityType } from "./gmail";
 import type { GoogleCalendarEntityType } from "./google-calendar";
 import type { GoogleContactEntityType } from "./google-contact";
 import type { GooglePhotoEntityType } from "./google-photos";
@@ -7,4 +8,5 @@ export type GoogleEntityType =
   | GoogleCalendarEntityType
   | GoogleYouTubeSubscriptionEntityType
   | GoogleContactEntityType
-  | GooglePhotoEntityType;
+  | GooglePhotoEntityType
+  | GmailMessageEntityType;

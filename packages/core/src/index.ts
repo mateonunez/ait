@@ -16,6 +16,7 @@ export * from "./types/integrations/google-youtube";
 export * from "./types/integrations/google-contact";
 export * from "./types/integrations/google-photos";
 export * from "./types/integrations/google";
+export * from "./types/integrations/gmail";
 
 export * from "./types/pagination";
 export * from "./types/stats";

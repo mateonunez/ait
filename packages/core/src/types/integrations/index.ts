@@ -9,3 +9,4 @@ export * from "./google-youtube";
 export * from "./google-contact";
 export * from "./google-photos";
 export * from "./google";
+export * from "./gmail";
