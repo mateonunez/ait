@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 const logger = getLogger();
 
 export default function NotionPage() {
-  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor, clearCache } = useIntegrationsContext();
   const [pages, setPages] = useState<NotionPageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,10 +34,19 @@ export default function NotionPage() {
     [fetchEntityData],
   );
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      await refreshVendor("notion");
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
+      if (entitiesToRefresh) {
+        const { notionService } = await import("@/services/notion.service");
+        await notionService.refresh(entitiesToRefresh);
+        clearCache("notion");
+      } else {
+        await refreshVendor("notion");
+      }
+
       await fetchData(currentPage);
     } catch (error) {
       logger.error("Failed to refresh Notion data:", { error });
@@ -45,6 +54,8 @@ export default function NotionPage() {
       setIsRefreshing(false);
     }
   };
+
+  const availableEntities = [{ id: "pages", label: "Pages" }];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -61,6 +72,7 @@ export default function NotionPage() {
       description="Recent documents and updates"
       color="#000000"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 const logger = getLogger();
 
 export default function LinearPage() {
-  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor, clearCache } = useIntegrationsContext();
   const [issues, setIssues] = useState<LinearIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,10 +34,19 @@ export default function LinearPage() {
     [fetchEntityData],
   );
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      await refreshVendor("linear");
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
+      if (entitiesToRefresh) {
+        const { linearService } = await import("@/services/linear.service");
+        await linearService.refresh(entitiesToRefresh);
+        clearCache("linear");
+      } else {
+        await refreshVendor("linear");
+      }
+
       await fetchData(currentPage);
     } catch (error) {
       logger.error("Failed to refresh Linear data:", { error });
@@ -45,6 +54,8 @@ export default function LinearPage() {
       setIsRefreshing(false);
     }
   };
+
+  const availableEntities = [{ id: "issues", label: "Issues" }];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -61,6 +72,7 @@ export default function LinearPage() {
       description="Assigned issues"
       color="#5e6ad2"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">

@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 const logger = getLogger();
 
 export default function SlackPage() {
-  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor, clearCache } = useIntegrationsContext();
   const [messages, setMessages] = useState<SlackMessageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,10 +34,19 @@ export default function SlackPage() {
     [fetchEntityData],
   );
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      await refreshVendor("slack");
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
+      if (entitiesToRefresh) {
+        const { slackService } = await import("@/services/slack.service");
+        await slackService.refresh(entitiesToRefresh);
+        clearCache("slack");
+      } else {
+        await refreshVendor("slack");
+      }
+
       await fetchData(currentPage);
     } catch (error) {
       logger.error("Failed to refresh Slack data:", { error });
@@ -45,6 +54,8 @@ export default function SlackPage() {
       setIsRefreshing(false);
     }
   };
+
+  const availableEntities = [{ id: "messages", label: "Messages" }];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -61,6 +72,7 @@ export default function SlackPage() {
       description="Channel updates"
       color="#4A154B"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">

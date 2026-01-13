@@ -24,10 +24,12 @@ const HOME_SECTIONS: HomeSectionType[] = [
     id: "recent",
     title: "Recent Activity",
     entityTypes: [
+      "gmail_message",
       "x_tweet",
       "linear_issue",
       "spotify_recently_played",
       "github_pull_request",
+      "github_issue",
       "google_calendar_event",
       "google_photo",
       "spotify_playlist",
@@ -45,9 +47,16 @@ const HOME_SECTIONS: HomeSectionType[] = [
   {
     id: "code",
     title: "Code & Projects",
-    entityTypes: ["github_commit", "github_pull_request", "github_repository"],
+    entityTypes: ["github_commit", "github_pull_request", "github_issue", "github_repository"],
     variant: "scroll",
     viewAllHref: "/integrations/github",
+  },
+  {
+    id: "emails",
+    title: "Recent Emails",
+    entityTypes: ["gmail_message"],
+    variant: "scroll",
+    viewAllHref: "/integrations/google?tab=gmail",
   },
   {
     id: "tweets",
@@ -73,7 +82,7 @@ const HOME_SECTIONS: HomeSectionType[] = [
   {
     id: "tasks",
     title: "Tasks & Issues",
-    entityTypes: ["linear_issue"],
+    entityTypes: ["linear_issue", "github_issue"],
     variant: "grid",
     viewAllHref: "/integrations/linear",
   },

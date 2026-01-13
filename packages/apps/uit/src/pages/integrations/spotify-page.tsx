@@ -23,7 +23,7 @@ const logger = getLogger();
 type TabId = "tracks" | "artists" | "playlists" | "albums" | "recently-played";
 
 export default function SpotifyPage() {
-  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor, clearCache } = useIntegrationsContext();
   const [activeTab, setActiveTab] = useState<TabId>("tracks");
   const [tracks, setTracks] = useState<SpotifyTrack[]>([]);
   const [artists, setArtists] = useState<SpotifyArtist[]>([]);
@@ -91,10 +91,19 @@ export default function SpotifyPage() {
     [activeTab, fetchEntityData],
   );
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      await refreshVendor("spotify");
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
+      if (entitiesToRefresh) {
+        const { spotifyService } = await import("@/services/spotify.service");
+        await spotifyService.refresh(entitiesToRefresh);
+        clearCache("spotify");
+      } else {
+        await refreshVendor("spotify");
+      }
+
       await fetchData(currentPage);
     } catch (error) {
       logger.error("Failed to refresh Spotify data:", { error });
@@ -102,6 +111,14 @@ export default function SpotifyPage() {
       setIsRefreshing(false);
     }
   };
+
+  const availableEntities = [
+    { id: "tracks", label: "Tracks" },
+    { id: "artists", label: "Artists" },
+    { id: "playlists", label: "Playlists" },
+    { id: "albums", label: "Albums" },
+    { id: "recently-played", label: "Recently Played" },
+  ];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -148,6 +165,8 @@ export default function SpotifyPage() {
       description="Now playing"
       color="#1DB954"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
+      activeEntityId={activeTab}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">

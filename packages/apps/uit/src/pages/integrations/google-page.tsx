@@ -1,5 +1,6 @@
 import { CalendarCard } from "@/components/connectors/calendar-card";
 import { EventCard } from "@/components/connectors/event-card";
+import { GmailMessageCard } from "@/components/connectors/gmail-message-card";
 import { GoogleContactCard } from "@/components/connectors/google-contact-card";
 import { GooglePhotoCard } from "@/components/connectors/google-photo-card";
 import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
 import { useGrantedConfigId } from "@/hooks/useGrantedConfigId";
 import {
+  type GmailMessageEntity,
   type GoogleCalendarCalendarEntity,
   type GoogleCalendarEventEntity,
   type GoogleContactEntity,
@@ -19,7 +21,7 @@ import {
   getLogger,
   requestJson,
 } from "@ait/core";
-import { Calendar, Image as ImageIcon, Upload, User, Youtube } from "lucide-react";
+import { Calendar, Image as ImageIcon, Mail, Upload, User, Youtube } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
@@ -30,6 +32,7 @@ const TABS = [
   { id: "subscriptions", label: "Subscriptions" },
   { id: "contacts", label: "Contacts" },
   { id: "photos", label: "Photos" },
+  { id: "gmail", label: "Gmail" },
 ];
 
 export default function GooglePage() {
@@ -46,6 +49,7 @@ export default function GooglePage() {
   const [subscriptions, setSubscriptions] = useState<GoogleYouTubeSubscriptionEntity[]>([]);
   const [contacts, setContacts] = useState<GoogleContactEntity[]>([]);
   const [photos, setPhotos] = useState<GooglePhotoEntity[]>([]);
+  const [gmailMessages, setGmailMessages] = useState<GmailMessageEntity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -77,6 +81,10 @@ export default function GooglePage() {
           const response = await fetchEntityData("google", "google_photo", { page, limit: pageSize });
           setPhotos(response.data as GooglePhotoEntity[]);
           setTotalPages(response.pagination.totalPages);
+        } else if (tab === "gmail") {
+          const response = await fetchEntityData("google", "gmail_message", { page, limit: pageSize });
+          setGmailMessages(response.data as GmailMessageEntity[]);
+          setTotalPages(response.pagination.totalPages);
         }
       } catch (error) {
         logger.error("Failed to fetch Google data:", { error });
@@ -94,29 +102,42 @@ export default function GooglePage() {
     subscriptions: "subscriptions",
     contacts: "contacts",
     photos: "photos",
+    gmail: "gmail",
   };
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      // Only refresh the current tab's entity for faster response
-      const entity = tabToEntityMap[activeTab];
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
       const queryParams = new URLSearchParams({
-        entities: entity!,
+        ...(entitiesToRefresh ? { entities: entitiesToRefresh.join(",") } : {}),
         ...(configId ? { configId } : {}),
       });
+
       await requestJson(`/api/google/refresh?${queryParams}`, { method: "POST" });
 
-      // Clear cache to ensure fresh data is fetched
       const entityTypeMap: Record<string, string> = {
         events: "google_calendar_event",
         calendars: "google_calendar_calendar",
         subscriptions: "google_youtube_subscription",
         contacts: "google_contact",
         photos: "google_photo",
+        gmail: "gmail_message",
       };
-      clearCache("google", entityTypeMap[activeTab] as any);
-      await fetchData(activeTab, currentPage);
+
+      const refreshedEntities = entitiesToRefresh || Object.keys(tabToEntityMap);
+
+      for (const entity of refreshedEntities) {
+        const tab = Object.keys(tabToEntityMap).find((key) => tabToEntityMap[key] === entity);
+        if (tab && entityTypeMap[tab]) {
+          clearCache("google", entityTypeMap[tab] as any);
+        }
+      }
+
+      if (!entitiesToRefresh || entitiesToRefresh.includes(tabToEntityMap[activeTab])) {
+        await fetchData(activeTab, currentPage);
+      }
     } catch (error) {
       logger.error("Failed to refresh Google data:", { error });
     } finally {
@@ -374,8 +395,43 @@ export default function GooglePage() {
       );
     }
 
+    if (activeTab === "gmail") {
+      return (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {gmailMessages.map((message) => (
+              <GmailMessageCard key={message.id} item={message} />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center py-8">
+              <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+            </div>
+          )}
+
+          {gmailMessages.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Mail className="w-12 h-12 text-muted-foreground mb-4" />
+              <p className="text-lg text-muted-foreground">No messages found</p>
+              <p className="text-sm text-muted-foreground mt-2">Try refreshing or connecting your Google account</p>
+            </div>
+          )}
+        </>
+      );
+    }
+
     return null;
   };
+
+  const availableEntities = [
+    { id: "events", label: "Events" },
+    { id: "calendars", label: "Calendars" },
+    { id: "subscriptions", label: "Subscriptions" },
+    { id: "contacts", label: "Contacts" },
+    { id: "photos", label: "Photos" },
+    { id: "gmail", label: "Gmail" },
+  ];
 
   return (
     <IntegrationLayout
@@ -384,6 +440,8 @@ export default function GooglePage() {
       description="Calendar events, YouTube subscriptions, Contacts, and Photos"
       color="#4285F4"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
+      activeEntityId={activeTab}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">
