@@ -13,11 +13,11 @@ import insightsRoutes from "./routes/gateway.insights.routes";
 import linearRoutes from "./routes/gateway.linear.routes";
 import modelsRoutes from "./routes/gateway.models.routes";
 import notionRoutes from "./routes/gateway.notion.routes";
-import observabilityRoutes from "./routes/gateway.observability.routes";
 import slackRoutes from "./routes/gateway.slack.routes";
 import spotifyRoutes from "./routes/gateway.spotify.routes";
 import suggestionsRoutes from "./routes/gateway.suggestions.routes";
 import xRoutes from "./routes/gateway.x.routes";
+import observabilityRoutes from "./routes/observability";
 import { initializeAnalyticsProvider } from "./services/analytics/analytics.adapter";
 import { initializeCacheProvider } from "./services/cache/redis-cache.provider";
 

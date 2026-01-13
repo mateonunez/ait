@@ -1,26 +1,22 @@
 import { type ConnectorLinearService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
 import { getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { AuthQuery, OAuthCallbackQuery, PaginationQuery } from "../types/route.types";
 
 const logger = getLogger();
-
-interface AuthCallbackQuery {
-  code: string;
-}
-
-interface PaginationQuery {
-  page?: string;
-  limit?: string;
-}
 
 const connectorType = "linear";
 
 export default async function linearRoutes(fastify: FastifyInstance) {
-  const getService = async (request: FastifyRequest, configId?: string): Promise<ConnectorLinearService> => {
-    let userId = (request.headers["x-user-id"] || (request.query as any).userId) as string | undefined;
+  const getService = async (
+    request: FastifyRequest<{ Querystring: OAuthCallbackQuery }>,
+    configId?: string,
+  ): Promise<ConnectorLinearService> => {
+    const query = request.query;
+    let userId = (request.headers["x-user-id"] || query.userId) as string | undefined;
 
     // Support extracting userId from OAuth state if it's encoded there
-    const state = (request.query as any).state;
+    const state = query.state;
     if (!userId && state && typeof state === "string" && state.includes(":")) {
       userId = state.split(":")[1];
     }
@@ -35,15 +31,15 @@ export default async function linearRoutes(fastify: FastifyInstance) {
     return connectorServiceFactory.getService<ConnectorLinearService>(connectorType);
   };
 
-  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: { configId: string } }>, reply: FastifyReply) => {
+  fastify.get("/auth", async (request: FastifyRequest<{ Querystring: AuthQuery }>, reply: FastifyReply) => {
     try {
-      const { configId } = request.query;
+      const { configId, userId: queryUserId } = request.query;
       if (!configId) return reply.status(400).send({ error: "Missing configId" });
 
-      const service = await getService(request, configId);
+      const service = await getService(request as FastifyRequest<{ Querystring: OAuthCallbackQuery }>, configId);
       const config = service.connector.authenticator.getOAuthConfig();
 
-      const userId = (request.headers["x-user-id"] || (request.query as any).userId) as string;
+      const userId = (request.headers["x-user-id"] || queryUserId) as string;
       const params = new URLSearchParams({
         client_id: config.clientId,
         redirect_uri: config.redirectUri!,
@@ -62,7 +58,7 @@ export default async function linearRoutes(fastify: FastifyInstance) {
 
   fastify.get(
     "/auth/callback",
-    async (request: FastifyRequest<{ Querystring: AuthCallbackQuery & { state?: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: OAuthCallbackQuery }>, reply: FastifyReply) => {
       const { code, state } = request.query;
       const [configId] = (state || "").split(":");
 

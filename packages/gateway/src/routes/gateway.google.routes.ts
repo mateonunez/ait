@@ -47,6 +47,14 @@ export default async function googleRoutes(fastify: FastifyInstance) {
       return await connectorServiceFactory.getServiceByConfig<ConnectorGoogleService>(configId, currentUserId);
     }
 
+    // Attempt to find the first active Google service for the user
+    const service = await connectorServiceFactory.getActiveServiceByVendor<ConnectorGoogleService>(
+      connectorType,
+      currentUserId,
+    );
+
+    if (service) return service;
+
     // Fallback/Legacy
     return connectorServiceFactory.getService<ConnectorGoogleService>(connectorType);
   };

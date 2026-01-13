@@ -1,16 +1,22 @@
-import type { ActivityData, InsightAnomaly, InsightCorrelation, IntegrationVendor } from "@ait/core";
+import type {
+  ActivityData,
+  InsightAnomaly,
+  InsightCorrelation,
+  IntegrationActivity,
+  IntegrationVendor,
+} from "@ait/core";
 import { getIntegrationRegistryService } from "../insights/integration-registry.service";
 
 function formatActivityContext(activityData: ActivityData): string {
   const registry = getIntegrationRegistryService();
   const validEntries = Object.entries(activityData)
-    .filter(([_, data]) => data && typeof data === "object" && "total" in data)
+    .filter((entry): entry is [string, IntegrationActivity] => entry[1] != null && "total" in entry[1])
     .map(([vendor, data]) => ({
       vendor: vendor as IntegrationVendor,
       displayName: registry.getVendorDisplayName(vendor as IntegrationVendor),
-      total: data!.total,
+      total: data.total,
       unit: registry.getUnitLabel(vendor as IntegrationVendor),
-      daily: data && "daily" in data ? (data as any).daily : [],
+      daily: data.daily,
     }));
 
   if (validEntries.length === 0) return "No activity recorded.";
@@ -21,10 +27,10 @@ function formatActivityContext(activityData: ActivityData): string {
 function formatDailyBreakdownContext(activityData: ActivityData): string {
   const registry = getIntegrationRegistryService();
   return Object.entries(activityData)
-    .filter(([_, data]) => data && typeof data === "object" && "daily" in data && Array.isArray((data as any).daily))
+    .filter((entry): entry is [string, IntegrationActivity] => entry[1] != null && Array.isArray(entry[1].daily))
     .map(([vendor, data]) => {
       const displayName = registry.getVendorDisplayName(vendor as IntegrationVendor);
-      const recentDaily = (data as any).daily.slice(-7);
+      const recentDaily = data.daily.slice(-7);
       return `${displayName} (Last 7 days): ${JSON.stringify(recentDaily)}`;
     })
     .filter(Boolean)
