@@ -22,6 +22,7 @@ const GOOGLE_SCOPES = [
   "https://www.googleapis.com/auth/calendar.readonly",
   "https://www.googleapis.com/auth/youtube.readonly",
   "https://www.googleapis.com/auth/contacts.readonly",
+  "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/photoslibrary",
   "https://www.googleapis.com/auth/photoslibrary.readonly",
   "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata",
@@ -284,6 +285,24 @@ export default async function googleRoutes(fastify: FastifyInstance) {
     },
   );
 
+  fastify.get(
+    "/data/gmail_message",
+    async (request: FastifyRequest<{ Querystring: PaginationQuery & { configId?: string } }>, reply: FastifyReply) => {
+      try {
+        const { configId } = request.query;
+        const service = await getService(request, configId);
+        const page = Number.parseInt(request.query.page || "1", 10);
+        const limit = Number.parseInt(request.query.limit || "50", 10);
+
+        const result = await service.getMessagesPaginated({ page, limit });
+        reply.send(result);
+      } catch (err: unknown) {
+        fastify.log.error({ err, route: "/data/gmail_message" }, "Failed to fetch Gmail messages from DB.");
+        reply.status(500).send({ error: "Failed to fetch Gmail messages from database." });
+      }
+    },
+  );
+
   // Refresh endpoint with optional entity filter
   fastify.post(
     "/refresh",
@@ -326,6 +345,12 @@ export default async function googleRoutes(fastify: FastifyInstance) {
           const photos = await service.fetchPhotos();
           await service.connector.store.save(photos);
           counts.photos = photos.length;
+        }
+
+        if (entitiesToRefresh.includes("gmail")) {
+          const messages = await service.fetchMessages();
+          await service.connector.store.save(messages);
+          counts.gmail = messages.length;
         }
 
         reply.send({
