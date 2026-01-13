@@ -4,12 +4,14 @@ import type { getPostgresClient } from "@ait/postgres";
 import type { qdrant } from "@ait/qdrant";
 import { RetoveGitHubCommitETL } from "../../etl/vendors/retove.github.commit.etl";
 import { RetoveGitHubFileETL } from "../../etl/vendors/retove.github.file.etl";
+import { RetoveGitHubIssueETL } from "../../etl/vendors/retove.github.issue.etl";
 import { RetoveGitHubPullRequestETL } from "../../etl/vendors/retove.github.pull-request.etl";
 import { RetoveGitHubRepositoryETL } from "../../etl/vendors/retove.github.repository.etl";
 import { RetoveGoogleCalendarEventETL } from "../../etl/vendors/retove.google-calendar.event.etl";
 import { RetoveGoogleContactETL } from "../../etl/vendors/retove.google-contact.etl";
 import { RetoveGooglePhotoETL } from "../../etl/vendors/retove.google-photo.etl";
 import { RetoveGoogleYouTubeSubscriptionETL } from "../../etl/vendors/retove.google-youtube.subscription.etl";
+import { RetoveGoogleGmailMessageETL } from "../../etl/vendors/retove.google.gmail.message.etl";
 import { RetoveLinearIssueETL } from "../../etl/vendors/retove.linear.issue.etl";
 import { RetoveNotionPageETL } from "../../etl/vendors/retove.notion.page.etl";
 import { RetoveSlackMessageETL } from "../../etl/vendors/retove.slack.message.etl";
@@ -34,6 +36,7 @@ export const GitHubETLs = {
   repository: "RetoveGitHubRepositoryETL",
   pullRequest: "RetoveGitHubPullRequestETL",
   commit: "RetoveGitHubCommitETL",
+  issue: "RetoveGitHubIssueETL",
   file: "RetoveGitHubFileETL",
 };
 
@@ -67,6 +70,10 @@ export const GooglePeopleETLs = {
 
 export const GoogleYouTubeETLs = {
   subscription: "RetoveGoogleYouTubeSubscriptionETL",
+};
+
+export const GoogleGmailETLs = {
+  message: "RetoveGoogleGmailMessageETL",
 };
 
 const LIMIT = 100_000;
@@ -168,6 +175,16 @@ export async function runGitHubFileETL(
   logger.info(`✅ RetoveGitHubFileETL → ${collection} completed successfully!`);
 }
 
+export async function runGitHubIssueETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const etl = new RetoveGitHubIssueETL(pgClient, qdrantClient);
+  logger.info(`🔍 Running RetoveGitHubIssueETL with limit of ${LIMIT}...`);
+  await etl.run(LIMIT);
+  logger.info("✅ RetoveGitHubIssueETL process completed successfully!");
+}
+
 export async function runXETL(qdrantClient: qdrant.QdrantClient, pgClient: ReturnType<typeof getPostgresClient>) {
   const collection = getCollectionNameByVendor("x");
   const xETL = new RetoveXTweetETL(pgClient, qdrantClient);
@@ -250,4 +267,16 @@ export async function runGooglePhotoETL(
   logger.info(`🔍 Running RetoveGooglePhotoETL → ${collection} with limit of ${LIMIT}...`);
   await googlePhotoETL.run(LIMIT);
   logger.info(`✅ RetoveGooglePhotoETL → ${collection} completed successfully!`);
+}
+
+export async function runGoogleGmailMessageETL(
+  qdrantClient: qdrant.QdrantClient,
+  pgClient: ReturnType<typeof getPostgresClient>,
+) {
+  const collection = getCollectionNameByVendor("google");
+  const gmailETL = new RetoveGoogleGmailMessageETL(pgClient, qdrantClient);
+
+  logger.info(`🔍 Running RetoveGoogleGmailMessageETL → ${collection} with limit of ${LIMIT}...`);
+  await gmailETL.run(LIMIT);
+  logger.info(`✅ RetoveGoogleGmailMessageETL → ${collection} completed successfully!`);
 }
