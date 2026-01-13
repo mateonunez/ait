@@ -3,6 +3,8 @@ import { ArtistCard } from "@/components/connectors/artist-card";
 import { CalendarCard } from "@/components/connectors/calendar-card";
 import { CommitCard } from "@/components/connectors/commit-card";
 import { EventCard } from "@/components/connectors/event-card";
+import { GitHubIssueCard } from "@/components/connectors/github-issue-card";
+import { GmailMessageCard } from "@/components/connectors/gmail-message-card";
 import { GoogleContactCard } from "@/components/connectors/google-contact-card";
 import { GooglePhotoCard } from "@/components/connectors/google-photo-card";
 import { GoogleYouTubeSubscriptionCard } from "@/components/connectors/google-youtube-subscription-card";
@@ -18,8 +20,10 @@ import { TweetCard } from "@/components/connectors/tweet-card";
 import type { IntegrationEntity } from "@/types/integrations.types";
 import type {
   GitHubCommitEntity,
+  GitHubIssueEntity,
   GitHubPullRequestEntity,
   GitHubRepositoryEntity,
+  GmailMessageEntity,
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
   GoogleContactEntity,
@@ -56,6 +60,8 @@ export function renderCard(item: IntegrationEntity, onClick?: () => void) {
       return <PullRequestCard pullRequest={item as GitHubPullRequestEntity} onClick={onClick} />;
     case "github_commit":
       return <CommitCard commit={item as GitHubCommitEntity} onClick={onClick} />;
+    case "github_issue":
+      return <GitHubIssueCard issue={item as unknown as GitHubIssueEntity} onClick={onClick} />;
     case "linear_issue":
       return <IssueCard issue={item as LinearIssueEntity} onClick={onClick} />;
     case "x_tweet":
@@ -74,6 +80,8 @@ export function renderCard(item: IntegrationEntity, onClick?: () => void) {
       return <GoogleContactCard contact={item as GoogleContactEntity} onClick={onClick} />;
     case "google_photo":
       return <GooglePhotoCard photo={item as GooglePhotoEntity} />;
+    case "gmail_message":
+      return <GmailMessageCard item={item as unknown as GmailMessageEntity} onClick={onClick} />;
     default:
       return null;
   }

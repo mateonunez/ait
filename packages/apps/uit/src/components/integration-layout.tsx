@@ -4,6 +4,7 @@ import type { IntegrationVendor } from "@ait/core";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
+import { RefreshControl, type RefreshEntity } from "./common/refresh-control";
 import { Button } from "./ui/button";
 
 interface IntegrationLayoutProps {
@@ -11,7 +12,9 @@ interface IntegrationLayoutProps {
   title: string;
   description?: string;
   color?: string;
-  onRefresh?: () => void;
+  onRefresh?: (selectedIds?: string[]) => void;
+  availableEntities?: RefreshEntity[];
+  activeEntityId?: string;
   isRefreshing?: boolean;
   children: ReactNode;
   className?: string;
@@ -23,6 +26,8 @@ export function IntegrationLayout({
   description,
   color,
   onRefresh,
+  availableEntities,
+  activeEntityId,
   isRefreshing,
   children,
   className,
@@ -56,16 +61,12 @@ export function IntegrationLayout({
 
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {onRefresh && isGranted && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRefresh}
-                disabled={isRefreshing}
-                className="gap-1.5 sm:gap-2 px-2 sm:px-3"
-              >
-                <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
-                <span className="hidden sm:inline">Refresh</span>
-              </Button>
+              <RefreshControl
+                onRefresh={onRefresh}
+                availableEntities={availableEntities}
+                activeEntityId={activeEntityId}
+                isRefreshing={isRefreshing}
+              />
             )}
           </div>
         </div>

@@ -16,8 +16,9 @@ export class XService {
     return result.value.data;
   }
 
-  async refresh() {
-    const result = await requestJson<RefreshResponse>(`${this.baseUrl}/refresh`, { method: "POST" });
+  async refresh(entities?: string[]) {
+    const queryParams = entities ? `?entities=${entities.join(",")}` : "";
+    const result = await requestJson<RefreshResponse>(`${this.baseUrl}/refresh${queryParams}`, { method: "POST" });
     if (!result.ok) throw result.error;
     return result.value.data;
   }

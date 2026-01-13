@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 const logger = getLogger();
 
 export default function XPage() {
-  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor, clearCache } = useIntegrationsContext();
   const [tweets, setTweets] = useState<XTweet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -34,10 +34,19 @@ export default function XPage() {
     [fetchEntityData],
   );
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      await refreshVendor("x");
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
+      if (entitiesToRefresh) {
+        const { xService } = await import("@/services/x.service");
+        await xService.refresh(entitiesToRefresh);
+        clearCache("x");
+      } else {
+        await refreshVendor("x");
+      }
+
       await fetchData(currentPage);
     } catch (error) {
       logger.error("Failed to refresh X data:", { error });
@@ -45,6 +54,8 @@ export default function XPage() {
       setIsRefreshing(false);
     }
   };
+
+  const availableEntities = [{ id: "tweets", label: "Tweets" }];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -61,6 +72,7 @@ export default function XPage() {
       description="Latest tweets"
       color="#14171A"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">

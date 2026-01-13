@@ -1,5 +1,6 @@
 import { CommitCard } from "@/components/connectors/commit-card";
 import { FileCard } from "@/components/connectors/file-card";
+import { GitHubIssueCard } from "@/components/connectors/github-issue-card";
 import { PullRequestCard } from "@/components/connectors/pull-request-card";
 import { RepositoryCard } from "@/components/connectors/repository-card";
 import { IntegrationLayout } from "@/components/integration-layout";
@@ -11,6 +12,7 @@ import { getLogger } from "@ait/core";
 import type {
   GitHubCommitEntity as GitHubCommit,
   GitHubFileEntity as GitHubFile,
+  GitHubIssueEntity as GitHubIssue,
   GitHubPullRequestEntity as GitHubPullRequest,
   GitHubRepositoryEntity as GitHubRepository,
 } from "@ait/core";
@@ -18,15 +20,16 @@ import { useCallback, useEffect, useState } from "react";
 
 const logger = getLogger();
 
-type TabId = "repositories" | "pull-requests" | "commits" | "files";
+type TabId = "repositories" | "pull-requests" | "commits" | "files" | "issues";
 
 export default function GitHubPage() {
-  const { fetchEntityData, refreshVendor } = useIntegrationsContext();
+  const { fetchEntityData, refreshVendor, clearCache } = useIntegrationsContext();
   const [activeTab, setActiveTab] = useState<TabId>("repositories");
   const [repositories, setRepositories] = useState<GitHubRepository[]>([]);
   const [pullRequests, setPullRequests] = useState<GitHubPullRequest[]>([]);
   const [commits, setCommits] = useState<GitHubCommit[]>([]);
   const [files, setFiles] = useState<GitHubFile[]>([]);
+  const [issues, setIssues] = useState<GitHubIssue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,6 +38,7 @@ export default function GitHubPage() {
   const [totalPullRequests, setTotalPullRequests] = useState(0);
   const [totalCommits, setTotalCommits] = useState(0);
   const [totalFiles, setTotalFiles] = useState(0);
+  const [totalIssues, setTotalIssues] = useState(0);
   const pageSize = 50;
 
   const fetchData = useCallback(
@@ -61,6 +65,11 @@ export default function GitHubPage() {
           setFiles(response.data as GitHubFile[]);
           setTotalPages(response.pagination.totalPages);
           setTotalFiles(response.pagination.total);
+        } else if (activeTab === "issues") {
+          const response = await fetchEntityData("github", "github_issue", { page, limit: pageSize });
+          setIssues(response.data as unknown as GitHubIssue[]);
+          setTotalPages(response.pagination.totalPages);
+          setTotalIssues(response.pagination.total);
         }
       } catch (error) {
         logger.error("Failed to fetch GitHub data:", { error });
@@ -71,10 +80,28 @@ export default function GitHubPage() {
     [activeTab, fetchEntityData],
   );
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (selectedIds?: string[]) => {
     setIsRefreshing(true);
     try {
-      await refreshVendor("github");
+      // If selectedIds provided, use them. Otherwise default to ALL (unlike Google which defaulted to current tab?
+      // ACTUALLY, Google defaulted to selectedIds OR all.
+      // Let's implement consistent behavior: If selection, refresh selection. If no selection (via refresh generic button), refresh all.
+
+      // But notice: RefreshControl calls onRefresh with selection if items are checked.
+      // If nothing checked, we disabled the button in RefreshControl.
+      // If specific entities not provided (no availableEntities), it calls onRefresh().
+
+      const entitiesToRefresh = selectedIds && selectedIds.length > 0 ? selectedIds : undefined;
+
+      if (entitiesToRefresh) {
+        // Use service directly to support params
+        const { githubService } = await import("@/services/github.service");
+        await githubService.refresh(entitiesToRefresh);
+        clearCache("github");
+      } else {
+        await refreshVendor("github");
+      }
+
       await fetchData(currentPage);
     } catch (error) {
       logger.error("Failed to refresh GitHub data:", { error });
@@ -82,6 +109,14 @@ export default function GitHubPage() {
       setIsRefreshing(false);
     }
   };
+
+  const availableEntities = [
+    { id: "repositories", label: "Repositories" },
+    { id: "pull-requests", label: "Pull Requests" },
+    { id: "commits", label: "Commits" },
+    { id: "files", label: "Code Files" },
+    { id: "issues", label: "Issues" },
+  ];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -101,6 +136,7 @@ export default function GitHubPage() {
     { id: "pull-requests", label: "Pull Requests", count: totalPullRequests },
     { id: "commits", label: "Commits", count: totalCommits },
     { id: "files", label: "Code Files", count: totalFiles },
+    { id: "issues", label: "Issues", count: totalIssues },
   ];
 
   return (
@@ -110,6 +146,8 @@ export default function GitHubPage() {
       description="Recent activity and repositories"
       color="#1A1E22"
       onRefresh={handleRefresh}
+      availableEntities={availableEntities}
+      activeEntityId={activeTab}
       isRefreshing={isRefreshing}
     >
       <div className="space-y-6">
@@ -151,6 +189,14 @@ export default function GitHubPage() {
               </div>
             )}
 
+            {activeTab === "issues" && (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {issues.map((issue) => (
+                  <GitHubIssueCard key={issue.id} issue={issue} />
+                ))}
+              </div>
+            )}
+
             {totalPages > 1 && (
               <div className="flex justify-center py-8">
                 <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
@@ -160,7 +206,8 @@ export default function GitHubPage() {
             {((activeTab === "repositories" && repositories.length === 0) ||
               (activeTab === "pull-requests" && pullRequests.length === 0) ||
               (activeTab === "commits" && commits.length === 0) ||
-              (activeTab === "files" && files.length === 0)) && (
+              (activeTab === "files" && files.length === 0) ||
+              (activeTab === "issues" && issues.length === 0)) && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <p className="text-lg text-muted-foreground">No data found</p>
                 <p className="text-sm text-muted-foreground mt-2">Try refreshing or connecting your GitHub account</p>
