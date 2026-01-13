@@ -1,32 +1,60 @@
 import { getAIDescriptorService } from "@ait/ai-sdk";
+import { getLogger } from "@ait/core";
 import type { GooglePhotoDataTarget } from "@ait/postgres";
-import { storageService } from "@ait/storage";
+import { photoStorageService, storageService } from "@ait/storage";
 import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
 
 const aiDescriptor = getAIDescriptorService();
+const logger = getLogger();
 
 export class ETLGooglePhotoDescriptor implements IETLEmbeddingDescriptor<GooglePhotoDataTarget> {
   public async enrich(photo: GooglePhotoDataTarget, options?: any): Promise<EnrichmentResult | null> {
-    const storagePath = this._parseStoragePath(photo.localPath);
+    const correlationId = options?.correlationId;
+    let localPath = photo.localPath;
+
+    let storagePath = this._parseStoragePath(localPath);
+
+    if (!storagePath && photo.baseUrl) {
+      logger.info(`Photo ${photo.id} not found locally. Attempting on-demand download...`, { correlationId });
+      const downloadResult = await photoStorageService.downloadAndStore({
+        id: photo.id,
+        baseUrl: photo.baseUrl,
+        filename: photo.filename || undefined,
+      });
+
+      if (downloadResult.success && downloadResult.localPath) {
+        localPath = downloadResult.localPath;
+        storagePath = this._parseStoragePath(localPath);
+      } else {
+        logger.warn(`Failed to download photo ${photo.id} on-demand: ${downloadResult.error}`, { correlationId });
+      }
+    }
+
     if (storagePath) {
       try {
         const result = await storageService.get(storagePath.bucket, storagePath.key);
         if (result?.body) {
-          return await aiDescriptor.describeImage(result.body, { correlationId: options?.correlationId });
+          logger.info(`Running vision AI enrichment for photo ${photo.id}`, { correlationId });
+          return await aiDescriptor.describeImage(result.body, { correlationId });
         }
-      } catch (error) {
-        // Fallback to text enrichment if vision fails
+      } catch (error: any) {
+        logger.error(`Vision AI enrichment failed for photo ${photo.id}`, {
+          error: error.message,
+          correlationId,
+        });
       }
     }
 
     if (photo.description) {
+      logger.info(`Running text AI enrichment for photo ${photo.id} (description fallback)`, { correlationId });
       return await aiDescriptor.describeText(photo.description, "Google Photo Description", {
-        correlationId: options?.correlationId,
+        correlationId,
       });
     }
 
+    logger.debug(`No enrichment possible for photo ${photo.id}`, { correlationId });
     return null;
   }
 

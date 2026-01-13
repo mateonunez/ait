@@ -5,10 +5,8 @@ import {
   type ISparseVectorService,
   OPTIMAL_CHUNK_OVERLAP,
   OPTIMAL_CHUNK_SIZE,
-  SPARSE_VECTOR_NAME,
   type SparseVector,
   getCollectionVendorByName,
-  getCollectionsNames,
   getEmbeddingModelConfig,
   getSparseVectorService,
 } from "@ait/ai-sdk";
@@ -22,37 +20,18 @@ import type {
   EnrichmentResult,
   IETLEmbeddingDescriptor,
 } from "../infrastructure/embeddings/descriptors/etl.embedding.descriptor.interface";
+import { ETLCollectionManager, ETLVectorLoader, ETLVectorSearcher } from "./helpers";
+import type { BaseVectorPoint, PayloadIndex, RetryOptions } from "./retove.etl.types";
 
-export interface BaseVectorPoint {
-  id: string;
-  vector: number[];
-  sparseVector?: SparseVector;
-  payload: Record<string, unknown>;
-  __type: EntityType;
-}
-
-export interface RetryOptions {
-  maxRetries: number;
-  initialDelay: number;
-  maxDelay: number;
+export type { BaseVectorPoint, RetryOptions } from "./retove.etl.types";
+export type ETLCursor = ConnectorCursor;
+export interface ETLTableConfig {
+  table: drizzleOrm.Table<any>;
+  updatedAtField: drizzleOrm.Column<any>;
+  idField: drizzleOrm.Column<any>;
 }
 
 const embeddingModelConfig = getEmbeddingModelConfig();
-
-export type ETLCursor = ConnectorCursor;
-
-/**
- * Configuration for cursor-based ETL operations.
- * Provides the Drizzle table and column references for count/extract queries.
- */
-export interface ETLTableConfig {
-  /** Drizzle table reference (e.g., spotifyTracks) */
-  table: drizzleOrm.Table<any>;
-  /** Column reference for updatedAt field (e.g., spotifyTracks.updatedAt) */
-  updatedAtField: drizzleOrm.Column<any>;
-  /** Column reference for id field (e.g., spotifyTracks.id) */
-  idField: drizzleOrm.Column<any>;
-}
 
 export abstract class RetoveBaseETLAbstract<T> {
   protected readonly _logger = getLogger();
@@ -62,11 +41,16 @@ export abstract class RetoveBaseETLAbstract<T> {
   private readonly _vectorSize = embeddingModelConfig.vectorSize ?? 4096;
   protected readonly _transformConcurrency: number = 2;
   protected readonly _batchUpsertConcurrency: number = 3;
-  protected readonly _queryEmbeddingCache: Map<string, number[]> = new Map();
   protected readonly _syncStateService: ISyncStateService = new SyncStateService();
   protected readonly _sparseVectorService: ISparseVectorService = getSparseVectorService();
   protected readonly _enableHybridSearch: boolean = true;
   protected readonly _enableAIEnrichment: boolean = true;
+  protected readonly _progressiveBatchSize: number = 1000;
+
+  // Helper instances (composition over inheritance)
+  private readonly _collectionManager: ETLCollectionManager;
+  private readonly _vectorLoader: ETLVectorLoader;
+  private readonly _vectorSearcher: ETLVectorSearcher;
 
   constructor(
     protected readonly _pgClient: ReturnType<typeof getPostgresClient>,
@@ -81,7 +65,6 @@ export abstract class RetoveBaseETLAbstract<T> {
       embeddingModelConfig.name,
       embeddingModelConfig.vectorSize ?? 4096,
       {
-        // Use optimal chunk size from central config (single source of truth)
         chunkSize: OPTIMAL_CHUNK_SIZE,
         chunkOverlap: OPTIMAL_CHUNK_OVERLAP,
         concurrencyLimit: 1,
@@ -90,29 +73,34 @@ export abstract class RetoveBaseETLAbstract<T> {
     ),
   ) {
     this.retryOptions = retryOptions;
-    this.validateCollectionName(_collectionName);
-  }
 
-  private validateCollectionName(collectionName: string): void {
-    const validCollections = getCollectionsNames();
-    if (!validCollections.includes(collectionName)) {
-      throw new Error(`Invalid collection name: ${collectionName}. Must be one of: ${validCollections.join(", ")}`);
-    }
-  }
+    // Initialize helper instances with bound retry function
+    const boundRetry = this.retry.bind(this);
 
-  protected readonly _progressiveBatchSize: number = 1000;
+    this._collectionManager = new ETLCollectionManager(_qdrantClient, _collectionName, this._vectorSize, boundRetry);
+
+    this._vectorLoader = new ETLVectorLoader(
+      _qdrantClient,
+      _collectionName,
+      this._batchSize,
+      this._batchUpsertConcurrency,
+      boundRetry,
+    );
+
+    this._vectorSearcher = new ETLVectorSearcher(
+      _qdrantClient,
+      _collectionName,
+      this._vectorSize,
+      _embeddingsService,
+      () => this._getEntityType(),
+    );
+  }
 
   public async run(limit: number): Promise<void> {
     try {
       // Grant check
       const vendor = getCollectionVendorByName(this._collectionName);
       if (vendor && vendor !== "general" && vendor !== "google-calendar" && vendor !== "youtube") {
-        // Check if globally enabled (no userId passed)
-        // Note: This checks the global provider flag.
-        // It does NOT check individual user configs, so it assumes if provider is enabled globally,
-        // we can process data for it.
-        // For strict user-level processing, we would need to filter extracted data by enabled users,
-        // but that requires significant refactoring of the extract() query.
         const isGranted = await connectorGrantService.isGranted(vendor);
         if (!isGranted) {
           this._logger.warn(
@@ -125,7 +113,6 @@ export abstract class RetoveBaseETLAbstract<T> {
       this._logger.info(`Starting ETL process for collection: ${this._collectionName}. Limit: ${limit}`);
       await this.ensureCollectionExists();
 
-      // Get validated cursor - logic similar to timestamp validation but using cursor object
       let currentCursor = await this._getValidatedCursor();
 
       if (currentCursor) {
@@ -136,7 +123,6 @@ export abstract class RetoveBaseETLAbstract<T> {
         this._logger.info("No previous ETL cursor found, processing all records");
       }
 
-      // Calculate total pending items (Delta)
       const pendingCount = await this.count(currentCursor);
       const hasPendingCount = pendingCount !== Number.MAX_SAFE_INTEGER;
       if (hasPendingCount) {
@@ -151,12 +137,9 @@ export abstract class RetoveBaseETLAbstract<T> {
       let totalProcessed = 0;
       let batchNumber = 0;
 
-      // Loop as long as we have limit budget AND there are pending items (or if count is partial)
-      // If count returns 0, we shouldn't run unless limit > 0 allows discovery (handled by extract length check)
       while (remainingLimit > 0) {
         batchNumber++;
         const batchLimit = Math.min(remainingLimit, this._progressiveBatchSize);
-        // Pass the full cursor object to extract
         this._logger.debug(
           `[ETL Debug] Loop state: remainingLimit=${remainingLimit}, progressiveBatchSize=${this._progressiveBatchSize}, batchLimit=${batchLimit}`,
         );
@@ -178,17 +161,14 @@ export abstract class RetoveBaseETLAbstract<T> {
           this._logger.warn(
             `⚠️ Batch #${batchNumber}: Extracted ${data.length} items but 0 were transformed (duplicates/filtered). Advancing cursor.`,
           );
-          // Do not break; allow cursor update to skip these bad/filtered items
         } else if (transformedData.length > 0) {
           this._logger.info(`   └─ Transformed: ${transformedData.length.toLocaleString()} vector points`);
         }
 
         if (data.length > 0) {
-          // Determine the new cursor from the *extracted* data (to ensure we move forward past these items)
           const lastItem = data[data.length - 1];
           const newCursor = this.getCursorFromItem(lastItem);
 
-          // Update Sync State with new Cursor and Timestamp
           await this._updateSyncState(newCursor);
           this._logger.debug(
             `   └─ Cursor updated: ${newCursor.timestamp.toISOString()} (${newCursor.id.substring(0, 20)}...)`,
@@ -200,7 +180,6 @@ export abstract class RetoveBaseETLAbstract<T> {
         totalProcessed += data.length;
         remainingLimit -= data.length;
 
-        // Show progress
         const progressInfo = hasPendingCount
           ? `${totalProcessed.toLocaleString()}/${pendingCount.toLocaleString()} (${
               pendingCount > 0 ? Math.min(100, Math.round((totalProcessed / pendingCount) * 100)) : 0
@@ -218,13 +197,22 @@ export abstract class RetoveBaseETLAbstract<T> {
     }
   }
 
-  /**
-   * Updates the sync state with the new cursor and timestamp.
-   * Manually constructs the state to avoid changing ISyncStateService interface for now.
-   */
+  protected async ensureCollectionExists(): Promise<void> {
+    await this._collectionManager.ensureCollectionExists();
+    await this._createPayloadIndexes();
+  }
+
+  protected async _createPayloadIndexes(): Promise<void> {
+    const collectionIndexes = this._getCollectionSpecificIndexes();
+    await this._collectionManager.createPayloadIndexes(collectionIndexes);
+  }
+
+  protected _getCollectionSpecificIndexes(): PayloadIndex[] {
+    return [];
+  }
+
   private async _updateSyncState(cursor: ETLCursor): Promise<void> {
     const entityType = this._getEntityType();
-    // Use proper entityType instead of generic "etl"
     let currentState = await this._syncStateService.getState(this._collectionName, entityType);
     if (!currentState) {
       currentState = {
@@ -235,19 +223,14 @@ export abstract class RetoveBaseETLAbstract<T> {
       };
     }
 
-    // Always update cursor and timestamp
     currentState.cursor = cursor;
     currentState.lastETLRun = new Date();
 
     await this._syncStateService.saveState(currentState);
   }
 
-  /**
-   * Validates and retrieves the initial cursor.
-   */
   private async _getValidatedCursor(): Promise<ETLCursor | undefined> {
     const entityType = this._getEntityType();
-    // Use proper entityType instead of generic "etl"
     const syncState = await this._syncStateService.getState(this._collectionName, entityType);
 
     let cursor: ETLCursor | undefined;
@@ -261,7 +244,6 @@ export abstract class RetoveBaseETLAbstract<T> {
       }
     }
 
-    // Validation against Qdrant (similar to before)
     const collectionInfo = await this._getCollectionVectorCount(entityType);
     if (collectionInfo.count === 0) {
       if (cursor) {
@@ -274,22 +256,13 @@ export abstract class RetoveBaseETLAbstract<T> {
     return cursor;
   }
 
-  /**
-   * Get count and latest timestamp of vectors in collection for this entity type.
-   */
   private async _getCollectionVectorCount(
     entityType: string,
   ): Promise<{ count: number; latestTimestamp: string | null }> {
     try {
-      // Count vectors of this entity type
       const countResult = await this._qdrantClient.count(this._collectionName, {
         filter: {
-          must: [
-            {
-              key: "metadata.__type",
-              match: { value: entityType },
-            },
-          ],
+          must: [{ key: "metadata.__type", match: { value: entityType } }],
         },
         exact: true,
       });
@@ -298,22 +271,13 @@ export abstract class RetoveBaseETLAbstract<T> {
         return { count: 0, latestTimestamp: null };
       }
 
-      // Get the latest indexed timestamp by scrolling with sort
       const scrollResult = await this._qdrantClient.scroll(this._collectionName, {
         filter: {
-          must: [
-            {
-              key: "metadata.__type",
-              match: { value: entityType },
-            },
-          ],
+          must: [{ key: "metadata.__type", match: { value: entityType } }],
         },
         limit: 1,
         with_payload: true,
-        order_by: {
-          key: "metadata.__indexed_at",
-          direction: "desc",
-        },
+        order_by: { key: "metadata.__indexed_at", direction: "desc" },
       });
 
       const latestPoint = scrollResult.points[0];
@@ -333,117 +297,10 @@ export abstract class RetoveBaseETLAbstract<T> {
     }
   }
 
-  /**
-   * Get the entity type for this ETL (e.g., "github_repository", "github_pull_request", "spotify_track").
-   * Override in subclasses if needed.
-   */
   protected _getEntityType(): EntityType | "unknown" {
-    // Default implementation tries to infer from a sample payload
-    // Subclasses should override for accuracy
     return "unknown";
   }
 
-  protected async ensureCollectionExists(): Promise<void> {
-    const response = await this.retry(() => this._qdrantClient.getCollections());
-    const collectionExists = response.collections.some((collection) => collection.name === this._collectionName);
-    if (collectionExists) {
-      this._logger.debug(`Collection ${this._collectionName} already exists`);
-      return;
-    }
-
-    this._logger.info(`Creating collection: ${this._collectionName}`);
-    await this.retry(() =>
-      this._qdrantClient.createCollection(this._collectionName, {
-        vectors: {
-          size: this._vectorSize,
-          distance: "Cosine",
-        },
-        optimizers_config: {
-          default_segment_number: 4,
-          indexing_threshold: 10000,
-          memmap_threshold: 100000,
-          payload_indexing_threshold: 5000,
-        },
-        replication_factor: 1,
-        write_consistency_factor: 1,
-        on_disk_payload: true,
-        hnsw_config: {
-          m: 16,
-          ef_construct: 200,
-          full_scan_threshold: 5000,
-        },
-        quantization_config: {
-          scalar: {
-            type: "int8",
-            always_ram: true,
-            quantile: 0.99,
-          },
-        },
-        sparse_vectors: {
-          [SPARSE_VECTOR_NAME]: {
-            index: {
-              on_disk: true,
-              full_scan_threshold: 5000,
-            },
-          },
-        },
-      }),
-    );
-
-    // Create core indexes
-    await this._createPayloadIndexes();
-  }
-
-  /**
-   * Create payload indexes for efficient filtering.
-   * Override in subclasses to add entity-specific indexes.
-   */
-  protected async _createPayloadIndexes(): Promise<void> {
-    // Core indexes for all collections
-    const coreIndexes: Array<{
-      field_name: string;
-      field_schema: "keyword" | "datetime" | "integer" | "float" | "bool" | "text";
-    }> = [
-      { field_name: "metadata.__type", field_schema: "keyword" },
-      { field_name: "metadata.id", field_schema: "keyword" },
-      { field_name: "metadata.__indexed_at", field_schema: "datetime" },
-    ];
-
-    // Add collection-specific indexes
-    const collectionIndexes = this._getCollectionSpecificIndexes();
-
-    const allIndexes = [...coreIndexes, ...collectionIndexes];
-
-    for (const index of allIndexes) {
-      try {
-        await this.retry(() =>
-          this._qdrantClient.createPayloadIndex(this._collectionName, {
-            field_name: index.field_name,
-            field_schema: index.field_schema,
-          }),
-        );
-        this._logger.debug(`Created index: ${index.field_name} (${index.field_schema})`);
-      } catch (error) {
-        // Index may already exist
-        this._logger.debug(`Index ${index.field_name} may already exist: ${error}`, { error });
-      }
-    }
-  }
-
-  /**
-   * Override in subclasses to provide collection-specific indexes.
-   */
-  protected _getCollectionSpecificIndexes(): Array<{
-    field_name: string;
-    field_schema: "keyword" | "datetime" | "integer" | "float" | "bool" | "text";
-  }> {
-    return [];
-  }
-
-  /**
-   * Transform entities to vector points.
-   * Uses streaming batch processing to avoid memory issues.
-   */
   protected async transform(data: T[]): Promise<BaseVectorPoint[]> {
     const allPoints: BaseVectorPoint[] = [];
     const concurrency = this._transformConcurrency;
@@ -471,11 +328,9 @@ export abstract class RetoveBaseETLAbstract<T> {
         }),
       );
 
-      // Collect successful results
       const successfulPoints = results.filter((result): result is BaseVectorPoint => result !== null);
       allPoints.push(...successfulPoints);
 
-      // Stream load in batches to avoid memory buildup
       if (allPoints.length >= this._batchSize) {
         const batchToLoad = allPoints.splice(0, this._batchSize);
         await this.load(batchToLoad);
@@ -485,11 +340,9 @@ export abstract class RetoveBaseETLAbstract<T> {
         );
       }
 
-      // Yield to event loop
       await new Promise((resolve) => setImmediate(resolve));
     }
 
-    // Load remaining points
     if (allPoints.length > 0) {
       await this.load(allPoints);
       this._logger.debug(`Loaded final batch of ${allPoints.length} points`);
@@ -498,35 +351,24 @@ export abstract class RetoveBaseETLAbstract<T> {
     return allPoints;
   }
 
-  /**
-   * Transform a single entity to a vector point.
-   * Embeddings service handles chunking internally.
-   * Generates both dense and sparse vectors for hybrid search.
-   */
   protected async _transformSingleEntity(enriched: EnrichedEntity<T>, index: number): Promise<BaseVectorPoint> {
     const text = this.getTextForEmbedding(enriched);
     const item = enriched.target;
     const entityId = String((item as { id: string }).id || `entity-${index}`);
     const correlationId = `retove-${this._collectionName}-${entityId}`;
 
-    // Generate dense embedding - chunking is handled by EmbeddingsService
-    const vector = await this._embeddingsService.generateEmbeddings(text, {
-      correlationId,
-    });
+    const vector = await this._embeddingsService.generateEmbeddings(text, { correlationId });
 
     if (vector.length !== this._vectorSize) {
       throw new Error(`Invalid vector size: ${vector.length}. Expected: ${this._vectorSize}`);
     }
 
-    // Generate sparse vector for hybrid search
     let sparseVector: SparseVector | undefined;
     if (this._enableHybridSearch) {
       sparseVector = this._sparseVectorService.generateSparseVector(text);
     }
 
     const payloadObj = this.getPayload(enriched);
-
-    // Generate deterministic UUID for this entity
     const pointId = this._generateDeterministicId(this._collectionName, entityId);
 
     return {
@@ -549,62 +391,14 @@ export abstract class RetoveBaseETLAbstract<T> {
     };
   }
 
-  /**
-   * Generate a deterministic UUID v5-style ID based on namespace and entity ID.
-   * This ensures the same entity always gets the same ID (for upserts).
-   */
   protected _generateDeterministicId(collection: string, entityId: string): string {
     const input = `${collection}:${entityId}`;
     const hash = createHash("sha256").update(input).digest("hex");
-    // Format as UUID-like string for Qdrant compatibility
     return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
   }
 
   protected async load(data: BaseVectorPoint[]): Promise<void> {
-    if (data.length === 0) return;
-
-    const tasks: Array<() => Promise<void>> = [];
-    for (let i = 0; i < data.length; i += this._batchSize) {
-      const batch = data.slice(i, i + this._batchSize);
-      tasks.push(async () => {
-        const upsertPoints = batch.map((point) => {
-          const basePoint: {
-            id: string;
-            vector: number[] | Record<string, number[] | { indices: number[]; values: number[] }>;
-            payload: Record<string, unknown>;
-          } = {
-            id: point.id,
-            vector: point.vector,
-            payload: point.payload,
-          };
-
-          // Add sparse vector for hybrid search if available
-          if (point.sparseVector && point.sparseVector.indices.length > 0) {
-            basePoint.vector = {
-              "": point.vector, // Default dense vector
-              [SPARSE_VECTOR_NAME]: {
-                indices: point.sparseVector.indices,
-                values: point.sparseVector.values,
-              },
-            };
-          }
-
-          return basePoint;
-        });
-
-        await this.retry(async () => {
-          await this._qdrantClient.upsert(this._collectionName, {
-            wait: true,
-            points: upsertPoints,
-          });
-        });
-      });
-    }
-
-    for (let i = 0; i < tasks.length; i += this._batchUpsertConcurrency) {
-      const chunkTasks = tasks.slice(i, i + this._batchUpsertConcurrency).map((task) => task());
-      await Promise.all(chunkTasks);
-    }
+    await this._vectorLoader.load(data);
   }
 
   public async search(
@@ -612,32 +406,7 @@ export abstract class RetoveBaseETLAbstract<T> {
     searchLimit: number,
     filter?: Record<string, unknown>,
   ): Promise<BaseVectorPoint[]> {
-    this._logger.info(`Searching in collection ${this._collectionName} with limit ${searchLimit}`);
-
-    const searchParams = {
-      vector: queryVector,
-      limit: searchLimit,
-      filter: filter,
-      params: {
-        hnsw_ef: 128,
-        exact: false,
-      },
-      with_payload: true,
-      with_vectors: false,
-      score_threshold: 0.5,
-    };
-
-    const result = await this._qdrantClient.search(this._collectionName, searchParams);
-
-    return result.map((hit) => ({
-      id: String(hit.id),
-      vector: [],
-      payload: {
-        ...hit.payload,
-        _score: hit.score,
-      },
-      __type: this._getEntityType(),
-    })) as BaseVectorPoint[];
+    return this._vectorSearcher.search(queryVector, searchLimit, filter);
   }
 
   public async searchByText(
@@ -645,26 +414,7 @@ export abstract class RetoveBaseETLAbstract<T> {
     searchLimit: number,
     filter?: Record<string, unknown>,
   ): Promise<BaseVectorPoint[]> {
-    this._logger.info(`Generating embedding for the query text: ${queryText.substring(0, 50)}...`);
-    let queryVector = this.getCachedQuery(queryText);
-    if (!queryVector) {
-      queryVector = await this._embeddingsService.generateEmbeddings(queryText, {
-        correlationId: `search-${Date.now()}`,
-      });
-      this.cacheQuery(queryText, queryVector);
-    }
-    if (queryVector.length !== this._vectorSize) {
-      throw new Error(`Invalid query vector size: ${queryVector.length}. Expected: ${this._vectorSize}`);
-    }
-    return this.search(queryVector, searchLimit, filter);
-  }
-
-  protected getCachedQuery(queryText: string): number[] | undefined {
-    return this._queryEmbeddingCache.get(queryText);
-  }
-
-  protected cacheQuery(queryText: string, vector: number[]): void {
-    this._queryEmbeddingCache.set(queryText, vector);
+    return this._vectorSearcher.searchByText(queryText, searchLimit, filter);
   }
 
   protected async retry<T>(operation: () => Promise<T>, attempt = 0): Promise<T> {
@@ -691,8 +441,6 @@ export abstract class RetoveBaseETLAbstract<T> {
     const result = await this._pgClient.db.transaction(async (tx) => {
       let query = tx.select({ count: drizzleOrm.count() }).from(table).$dynamic();
       if (cursor) {
-        // Correct cursor pagination: (timestamp > cursor) OR (timestamp = cursor AND id > cursor_id)
-        // Must match the extract() query logic in each vendor ETL
         query = query.where(
           drizzleOrm.or(
             drizzleOrm.gt(updatedAtField, cursor.timestamp),
@@ -712,6 +460,7 @@ export abstract class RetoveBaseETLAbstract<T> {
   protected _getTableConfig(): ETLTableConfig | null {
     return null;
   }
+
   protected abstract extract(limit: number, cursor?: ETLCursor): Promise<T[]>;
   protected abstract getTextForEmbedding(enriched: EnrichedEntity<T>): string;
   protected abstract getPayload(enriched: EnrichedEntity<T>): Record<string, unknown>;
