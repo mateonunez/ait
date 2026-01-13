@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import type { SpotifyPlaylistExternal } from "../../types/integrations";
 
 /**
@@ -13,33 +14,33 @@ export class SpotifyPlaylistEntity {
   name!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   public!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   collaborative!: boolean;
 
   @Expose()
   owner!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   tracks!: any[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   followers!: number;
 
   @Expose()
   snapshotId!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   externalUrls!: string[];
 
   @Expose()
@@ -49,15 +50,15 @@ export class SpotifyPlaylistEntity {
   href!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   images!: { url: string; height: number; width: number }[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

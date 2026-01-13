@@ -1,4 +1,11 @@
 import type { IntegrationVendor } from "./entities.config";
+import type { GitHubEntityType } from "./integrations/github";
+import type { GoogleEntityType } from "./integrations/google";
+import type { LinearEntityType } from "./integrations/linear";
+import type { NotionEntityType } from "./integrations/notion";
+import type { SlackEntityType } from "./integrations/slack";
+import type { SpotifyEntityType } from "./integrations/spotify";
+import type { XEntityType } from "./integrations/x";
 
 export type EntityType =
   | "spotify_track"
@@ -41,10 +48,14 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "google_photo",
 ] as const;
 
-export type IntegrationEntity = Record<string, any> & {
-  id: string | number;
-  __type: EntityType;
-};
+export type IntegrationEntity =
+  | SpotifyEntityType
+  | GitHubEntityType
+  | LinearEntityType
+  | XEntityType
+  | NotionEntityType
+  | SlackEntityType
+  | GoogleEntityType;
 
 export interface FeedRequirement {
   vendor: IntegrationVendor;

@@ -1,4 +1,5 @@
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import { countLines, detectLanguage, getExtension, getFilename } from "../../utils/github-file.utils";
 
 /**
@@ -47,7 +48,7 @@ export class GitHubFileEntity {
   content!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   size!: number;
 
   @Expose()
@@ -63,11 +64,11 @@ export class GitHubFileEntity {
   linesOfCode!: number;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()

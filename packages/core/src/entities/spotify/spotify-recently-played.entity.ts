@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import type { SpotifyRecentlyPlayedExternal } from "../../types/integrations";
 
 /**
@@ -19,38 +20,38 @@ export class SpotifyRecentlyPlayedEntity {
   artist!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   album!: string | null;
 
   @Expose()
   durationMs!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   explicit!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   popularity!: number | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   playedAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   context!: { type: string; uri: string } | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   albumData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

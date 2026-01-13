@@ -1,5 +1,5 @@
-import { formatRelativeTime } from "@/utils/date.utils";
-import { getEntityDate } from "@/utils/entity-date.utils";
+import { formatRelativeTime } from "@ait/core";
+import { getEntityDate } from "@ait/core";
 import type { SpotifyArtistEntity as SpotifyArtist } from "@ait/core";
 import { motion } from "framer-motion";
 import { Mic2, TrendingUp } from "lucide-react";

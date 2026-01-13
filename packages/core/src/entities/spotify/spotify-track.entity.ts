@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import type { SpotifyTrackExternal } from "../../types/integrations";
 
 /**
@@ -16,74 +17,74 @@ export class SpotifyTrackEntity {
   artist!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   album!: string | null;
 
   @Expose()
   durationMs!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   explicit!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   isPlayable!: boolean | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   previewUrl!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   trackNumber!: number | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   discNumber!: number | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   uri!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   href!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isLocal!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   popularity!: number | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   albumData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   artistsData!: Record<string, unknown>[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   externalIds!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   externalUrls!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   addedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

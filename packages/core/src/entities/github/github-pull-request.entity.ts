@@ -1,12 +1,13 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 
 /**
  * GitHub Pull Request entity with class-transformer decorators.
  */
 export class GitHubPullRequestEntity {
   @Expose()
-  @Transform(({ value }: any) => String(value))
+  @Transform(({ value }: TransformFnParams) => String(value))
   id!: string;
 
   @Expose()
@@ -22,11 +23,11 @@ export class GitHubPullRequestEntity {
   state!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   draft!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   locked!: boolean;
 
   @Expose()
@@ -42,42 +43,42 @@ export class GitHubPullRequestEntity {
   issueUrl!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   merged!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   mergedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   closedAt!: Date | null;
 
   @Expose()
   mergeCommitSha!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   commits!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   additions!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   deletions!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   changedFiles!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   comments!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   reviewComments!: number;
 
   @Expose()
@@ -111,74 +112,74 @@ export class GitHubPullRequestEntity {
   mergeableState!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   maintainerCanModify!: boolean;
 
   @Expose()
   authorAssociation!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value !== null)
+  @Transform(({ value }: TransformFnParams) => value !== null)
   autoMerge!: boolean | null;
 
   @Expose()
   activeLockReason!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   prCreatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   prUpdatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   userData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   assigneeData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { assignees: value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { assignees: value } : null))
   assigneesData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   mergedByData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   labels!: Record<string, unknown>[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   milestoneData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { requestedReviewers: value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { requestedReviewers: value } : null))
   requestedReviewersData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { requestedTeams: value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { requestedTeams: value } : null))
   requestedTeamsData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value?.repo ? { ...value.repo } : null))
+  @Transform(({ value }: TransformFnParams) => (value?.repo ? { ...value.repo } : null))
   headRepoData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value?.repo ? { ...value.repo } : null))
+  @Transform(({ value }: TransformFnParams) => (value?.repo ? { ...value.repo } : null))
   baseRepoData!: Record<string, unknown> | null;
 
   // Use prCreatedAt/prUpdatedAt as createdAt/updatedAt
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()

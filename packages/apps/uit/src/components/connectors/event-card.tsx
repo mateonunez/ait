@@ -1,5 +1,5 @@
 import { cn } from "@/styles/utils";
-import { formatRelativeTime } from "@/utils/date.utils";
+import { formatRelativeTime } from "@ait/core";
 import type { GoogleCalendarEventEntity as GoogleCalendarEvent } from "@ait/core";
 import { motion } from "framer-motion";
 import { AlertCircle, Calendar, CheckCircle2, Clock, MapPin, Repeat, Users, Video, XCircle } from "lucide-react";

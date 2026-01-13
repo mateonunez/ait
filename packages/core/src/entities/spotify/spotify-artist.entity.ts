@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import type { SpotifyArtistExternal } from "../../types/integrations";
 
 /**
@@ -16,19 +17,19 @@ export class SpotifyArtistEntity {
   popularity!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   genres!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   images!: { url: string; height: number; width: number }[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

@@ -1,11 +1,11 @@
 import { cn } from "@/styles/utils";
-import { formatRelativeTime } from "@/utils/date.utils";
+import { formatRelativeTime } from "@ait/core";
 import type { SlackFile, SlackMessageEntity as SlackMessage, SlackReaction } from "@ait/core";
+import { getEntityDate, truncate } from "@ait/core";
 import { motion } from "framer-motion";
 import { Archive, File, FileText, Hash, Image, MessageSquare, Music, Pin, Reply, Video } from "lucide-react";
-import { getEntityDate } from "../../utils/entity-date.utils";
-import { DEFAULT_MAX_CHARS, truncateText } from "../../utils/text.utils";
 import { Badge } from "../ui/badge";
+import { DEFAULT_MAX_CHARS } from "./connector-card-base";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
@@ -178,7 +178,7 @@ export function MessageCard({ message, onClick, className }: MessageCardProps) {
         {/* Message Text */}
         {message.text && (
           <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed break-words whitespace-pre-wrap">
-            {truncateText(message.text, DEFAULT_MAX_CHARS)}
+            {truncate(message.text, DEFAULT_MAX_CHARS)}
           </p>
         )}
 
