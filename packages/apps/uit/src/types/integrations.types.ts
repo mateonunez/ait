@@ -1,5 +1,7 @@
 import type { EntityType, IntegrationEntity, PaginationMeta } from "@ait/core";
 
+export type { EntityType, IntegrationEntity, PaginationMeta };
+
 export interface CachedEntityData {
   data: IntegrationEntity[];
   pagination: PaginationMeta;
