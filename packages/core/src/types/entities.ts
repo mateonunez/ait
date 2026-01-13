@@ -1,5 +1,6 @@
 import type { IntegrationVendor } from "./entities.config";
 import type { GitHubEntityType } from "./integrations/github";
+import type { GmailEntityType } from "./integrations/gmail";
 import type { GoogleEntityType } from "./integrations/google";
 import type { LinearEntityType } from "./integrations/linear";
 import type { NotionEntityType } from "./integrations/notion";
@@ -16,6 +17,7 @@ export type EntityType =
   | "github_repository"
   | "github_pull_request"
   | "github_commit"
+  | "github_issue"
   | "github_file"
   | "linear_issue"
   | "x_tweet"
@@ -25,7 +27,9 @@ export type EntityType =
   | "google_calendar_calendar"
   | "google_youtube_subscription"
   | "google_contact"
-  | "google_photo";
+  | "google_photo"
+  | "gmail_message"
+  | "gmail_thread";
 
 export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "spotify_track",
@@ -36,6 +40,7 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "github_repository",
   "github_pull_request",
   "github_commit",
+  "github_issue",
   "github_file",
   "x_tweet",
   "linear_issue",
@@ -46,6 +51,8 @@ export const VALID_ENTITY_TYPES: readonly EntityType[] = [
   "google_youtube_subscription",
   "google_contact",
   "google_photo",
+  "gmail_message",
+  "gmail_thread",
 ] as const;
 
 export type IntegrationEntity =
@@ -55,7 +62,8 @@ export type IntegrationEntity =
   | XEntityType
   | NotionEntityType
   | SlackEntityType
-  | GoogleEntityType;
+  | GoogleEntityType
+  | GmailEntityType;
 
 export interface FeedRequirement {
   vendor: IntegrationVendor;
