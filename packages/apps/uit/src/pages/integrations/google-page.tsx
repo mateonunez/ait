@@ -9,6 +9,7 @@ import { LoadingGrid } from "@/components/loading-grid";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
 import { useIntegrationsContext } from "@/contexts/integrations.context";
+import { useGrantedConfigId } from "@/hooks/useGrantedConfigId";
 import {
   type GoogleCalendarCalendarEntity,
   type GoogleCalendarEventEntity,
@@ -33,6 +34,8 @@ const TABS = [
 
 export default function GooglePage() {
   const { fetchEntityData, clearCache } = useIntegrationsContext();
+  const configId = useGrantedConfigId("google");
+
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
@@ -98,7 +101,11 @@ export default function GooglePage() {
     try {
       // Only refresh the current tab's entity for faster response
       const entity = tabToEntityMap[activeTab];
-      await requestJson(`/api/google/refresh?entities=${entity}`, { method: "POST" });
+      const queryParams = new URLSearchParams({
+        entities: entity!,
+        ...(configId ? { configId } : {}),
+      });
+      await requestJson(`/api/google/refresh?${queryParams}`, { method: "POST" });
 
       // Clear cache to ensure fresh data is fetched
       const entityTypeMap: Record<string, string> = {
@@ -120,9 +127,15 @@ export default function GooglePage() {
   const handleImportPhotos = async () => {
     setIsImporting(true);
     try {
-      const sessionResult = await requestJson<{ pickerUri: string; id: string }>("/api/google/photos/picker/session", {
-        method: "POST",
+      const queryParams = new URLSearchParams({
+        ...(configId ? { configId } : {}),
       });
+      const sessionResult = await requestJson<{ pickerUri: string; id: string }>(
+        `/api/google/photos/picker/session?${queryParams}`,
+        {
+          method: "POST",
+        },
+      );
       if (!sessionResult.ok) throw new Error("Failed to create session");
       const { pickerUri, id: sessionId } = sessionResult.value.data;
       console.log("[Picker] Session created:", sessionId);
@@ -142,8 +155,11 @@ export default function GooglePage() {
       let pollsAfterWindowClosed = 0;
       const pollInterval = setInterval(async () => {
         try {
+          const queryParams = new URLSearchParams({
+            ...(configId ? { configId } : {}),
+          });
           const statusResult = await requestJson<{ mediaItemsSet: boolean }>(
-            `/api/google/photos/picker/session/${sessionId}`,
+            `/api/google/photos/picker/session/${sessionId}?${queryParams}`,
           );
           if (statusResult.ok) {
             const statusData = statusResult.value.data;
@@ -155,7 +171,7 @@ export default function GooglePage() {
               popup?.close();
 
               const importResult = await requestJson<{ success: boolean; count: number }>(
-                `/api/google/photos/picker/import/${sessionId}`,
+                `/api/google/photos/picker/import/${sessionId}?${queryParams}`,
                 { method: "POST" },
               );
               console.log("[Picker] Import result:", importResult.ok ? importResult.value.data : "failed");

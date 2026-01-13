@@ -33,6 +33,7 @@ export interface ConnectionStatus {
   isExpiringSoon?: boolean;
   granted?: boolean;
   vendor?: IntegrationVendor;
+  configId?: string;
 }
 
 export type ConnectionsStatusMap = Record<string, ConnectionStatus>;
