@@ -1,4 +1,5 @@
 import type {
+  GmailMessageExternal,
   GoogleCalendarCalendarExternal,
   GoogleCalendarEventExternal,
   GoogleContactExternal,
@@ -9,6 +10,7 @@ import type {
 } from "@ait/core";
 import { getLogger } from "@ait/core";
 import {
+  type GmailMessageEntity,
   type GoogleCalendarCalendarEntity,
   type GoogleCalendarEventEntity,
   type GoogleContactEntity,
@@ -35,11 +37,13 @@ export interface IConnectorGoogleService extends ConnectorServiceBase<ConnectorG
   fetchSubscriptions(): Promise<GoogleYouTubeSubscriptionEntity[]>;
   fetchContacts(): Promise<GoogleContactEntity[]>;
   fetchPhotos(): Promise<GooglePhotoEntity[]>;
+  fetchMessages(): Promise<GmailMessageEntity[]>;
   getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>>;
   getCalendarsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarCalendarEntity>>;
   getSubscriptionsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>>;
   getContactsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleContactEntity>>;
   getPhotosPaginated(params: PaginationParams): Promise<PaginatedResponse<GooglePhotoEntity>>;
+  getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<GmailMessageEntity>>;
 }
 
 export class ConnectorGoogleService
@@ -122,6 +126,22 @@ export class ConnectorGoogleService
         checksumEnabled: photoConfig.checksumEnabled,
       },
     );
+
+    const messageConfig = connectorEntityConfigs.google[GOOGLE_ENTITY_TYPES_ENUM.MESSAGE];
+    if (!messageConfig.paginatedFetcher) {
+      throw new Error("Google message config missing paginatedFetcher");
+    }
+
+    this.registerPaginatedEntityConfig<GOOGLE_ENTITY_TYPES_ENUM.MESSAGE, GmailMessageExternal>(
+      GOOGLE_ENTITY_TYPES_ENUM.MESSAGE,
+      {
+        paginatedFetcher: messageConfig.paginatedFetcher,
+        mapper: messageConfig.mapper,
+        cacheTtl: messageConfig.cacheTtl,
+        batchSize: messageConfig.batchSize,
+        checksumEnabled: messageConfig.checksumEnabled,
+      },
+    );
   }
 
   protected createConnector(oauth: ConnectorOAuth): ConnectorGoogle {
@@ -148,6 +168,10 @@ export class ConnectorGoogleService
     return this.fetchEntities(GOOGLE_ENTITY_TYPES_ENUM.PHOTO, true);
   }
 
+  async fetchMessages(): Promise<GmailMessageEntity[]> {
+    return this.fetchEntities(GOOGLE_ENTITY_TYPES_ENUM.MESSAGE, true);
+  }
+
   async getEventsPaginated(params: PaginationParams): Promise<PaginatedResponse<GoogleCalendarEventEntity>> {
     return this.connector.repository.event.getEventsPaginated(params);
   }
@@ -168,6 +192,10 @@ export class ConnectorGoogleService
 
   async getPhotosPaginated(params: PaginationParams): Promise<PaginatedResponse<GooglePhotoEntity>> {
     return this.connector.repository.photo.getPhotosPaginated(params);
+  }
+
+  async getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<GmailMessageEntity>> {
+    return this.connector.repository.gmail.getMessagesPaginated(params);
   }
 
   async createPickerSession(): Promise<Record<string, unknown>> {

@@ -1,4 +1,6 @@
 import type {
+  GmailMessageExternal,
+  GmailThreadExternal,
   GoogleCalendarCalendarExternal,
   GoogleCalendarEventExternal,
   GoogleContactExternal,
@@ -10,22 +12,26 @@ import type { GoogleCalendarPaginatedResponse } from "../../../types/infrastruct
 import type { GooglePeoplePaginatedResponse } from "../../../types/infrastructure/connector.google-contact.data-source.interface";
 import type { GooglePhotosPaginatedResponse } from "../../../types/infrastructure/connector.google-photos.data-source.interface";
 import type { GoogleYouTubePaginatedResponse } from "../../../types/infrastructure/connector.google-youtube.data-source.interface";
+import type { GmailPaginatedResponse } from "../../../types/infrastructure/connector.google.gmail.data-source.interface";
 import { ConnectorGoogleCalendarDataSource } from "./connector.google-calendar.data-source";
 import { ConnectorGoogleContactDataSource } from "./connector.google-contact.data-source";
 import { ConnectorGooglePhotosDataSource } from "./connector.google-photos.data-source";
 import { ConnectorGoogleYouTubeDataSource } from "./connector.google-youtube.data-source";
+import { ConnectorGoogleGmailDataSource } from "./connector.google.gmail.data-source";
 
 export class ConnectorGoogleDataSource {
   private _calendarDataSource: ConnectorGoogleCalendarDataSource;
   private _youtubeDataSource: ConnectorGoogleYouTubeDataSource;
   private _contactDataSource: ConnectorGoogleContactDataSource;
   private _photosDataSource: ConnectorGooglePhotosDataSource;
+  private _gmailDataSource: ConnectorGoogleGmailDataSource;
 
   constructor(accessToken: string) {
     this._calendarDataSource = new ConnectorGoogleCalendarDataSource(accessToken);
     this._youtubeDataSource = new ConnectorGoogleYouTubeDataSource(accessToken);
     this._contactDataSource = new ConnectorGoogleContactDataSource(accessToken);
     this._photosDataSource = new ConnectorGooglePhotosDataSource(accessToken);
+    this._gmailDataSource = new ConnectorGoogleGmailDataSource(accessToken);
   }
 
   // Calendar methods
@@ -65,5 +71,21 @@ export class ConnectorGoogleDataSource {
 
   async listPickerMediaItems(sessionId: string): Promise<PickerPhotoInput[]> {
     return this._photosDataSource.listPickerMediaItems(sessionId);
+  }
+
+  async listMessages(cursor?: string): Promise<GmailPaginatedResponse<GmailMessageExternal>> {
+    return this._gmailDataSource.listMessages(cursor);
+  }
+
+  async getMessage(id: string): Promise<GmailMessageExternal> {
+    return this._gmailDataSource.getMessage(id);
+  }
+
+  async listThreads(cursor?: string): Promise<GmailPaginatedResponse<GmailThreadExternal>> {
+    return this._gmailDataSource.listThreads(cursor);
+  }
+
+  async getThread(id: string): Promise<GmailThreadExternal> {
+    return this._gmailDataSource.getThread(id);
   }
 }

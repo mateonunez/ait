@@ -7,6 +7,7 @@ import { ConnectorGoogleCalendarEventRepository } from "./connector.google-calen
 import { ConnectorGoogleContactRepository } from "./connector.google-contact.repository";
 import { ConnectorGooglePhotoRepository } from "./connector.google-photos.repository";
 import { ConnectorGoogleYouTubeSubscriptionRepository } from "./connector.google-youtube-subscription.repository";
+import { ConnectorGoogleGmailRepository } from "./connector.google.gmail.repository";
 
 export class ConnectorGoogleRepository implements IConnectorGoogleRepository {
   public event: ConnectorGoogleCalendarEventRepository;
@@ -14,6 +15,7 @@ export class ConnectorGoogleRepository implements IConnectorGoogleRepository {
   public subscription: ConnectorGoogleYouTubeSubscriptionRepository;
   public contact: ConnectorGoogleContactRepository;
   public photo: ConnectorGooglePhotoRepository;
+  public gmail: ConnectorGoogleGmailRepository;
 
   constructor(
     private userId?: string,
@@ -24,6 +26,7 @@ export class ConnectorGoogleRepository implements IConnectorGoogleRepository {
     this.subscription = new ConnectorGoogleYouTubeSubscriptionRepository();
     this.contact = new ConnectorGoogleContactRepository();
     this.photo = new ConnectorGooglePhotoRepository();
+    this.gmail = new ConnectorGoogleGmailRepository();
   }
 
   public async saveAuthenticationData(data: IConnectorOAuthTokenResponse): Promise<void> {

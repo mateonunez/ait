@@ -1,6 +1,7 @@
 import {
   AItError,
   type GitHubCommitExternal,
+  type GitHubIssueExternal,
   type GitHubPullRequestExternal,
   type GitHubRepositoryExternal,
   type GitHubTreeItemExternal,
@@ -21,9 +22,11 @@ export interface IConnectorGitHubDataSource {
   fetchRepositories(params?: PaginationParams): Promise<GitHubRepositoryExternal[]>;
   fetchPullRequests(params?: PaginationParams): Promise<GitHubPullRequestExternal[]>;
   fetchCommits(params?: PaginationParams): Promise<GitHubCommitExternal[]>;
+  fetchIssues(params?: PaginationParams): Promise<GitHubIssueExternal[]>;
   fetchAllRepositories(): Promise<GitHubRepositoryExternal[]>;
   fetchPullRequestsPaginated(cursor?: string): Promise<{ data: GitHubPullRequestExternal[]; nextCursor?: string }>;
   fetchCommitsPaginated(cursor?: string): Promise<{ data: GitHubCommitExternal[]; nextCursor?: string }>;
+  fetchIssuesPaginated(cursor?: string): Promise<{ data: GitHubIssueExternal[]; nextCursor?: string }>;
   fetchRepositoryTree(owner: string, repo: string, ref?: string): Promise<GitHubTreeItemExternal[]>;
   fetchFileContent(owner: string, repo: string, path: string, ref?: string): Promise<string>;
   fetchGitignore(owner: string, repo: string): Promise<Ignore>;
@@ -192,6 +195,62 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
       return allCommits;
     } catch (error: unknown) {
       this._handleError(error, "GITHUB_FETCH_COMMITS");
+    }
+  }
+
+  async fetchIssues(params?: PaginationParams): Promise<GitHubIssueExternal[]> {
+    try {
+      const repositories = await this.fetchRepositories(params);
+      const allIssues: GitHubIssueExternal[] = [];
+
+      for (const repo of repositories) {
+        const owner = repo.owner?.login;
+        const repoName = repo.name;
+
+        if (!owner || !repoName) continue;
+
+        if (await this._shouldSkipRepoForActivity(repo)) {
+          this._logger.debug(`Skipping issues for forked repo ${repo.full_name}`);
+          continue;
+        }
+
+        try {
+          const listResponse = await this.octokit.issues.listForRepo({
+            owner,
+            repo: repoName,
+            state: "all",
+            per_page: params?.limit || 30,
+            page: params?.page || 1,
+            sort: "updated",
+            direction: "desc",
+          });
+
+          const issues = listResponse.data.filter((item) => !item.pull_request);
+
+          allIssues.push(
+            ...issues.map(
+              (issue) =>
+                ({
+                  ...issue,
+                  __type: "github_issue" as const,
+                  _repositoryContext: {
+                    id: repo.id.toString(),
+                    name: repo.name,
+                    fullName: repo.full_name,
+                  },
+                }) as GitHubIssueExternal,
+            ),
+          );
+        } catch (error: unknown) {
+          this._logger.warn(`Failed to fetch issues for ${repo.full_name}`, {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+
+      return allIssues;
+    } catch (error: unknown) {
+      this._handleError(error, "GITHUB_FETCH_ISSUES");
     }
   }
 
@@ -377,6 +436,92 @@ export class ConnectorGitHubDataSource implements IConnectorGitHubDataSource {
             (error.status === 403 || error.status === 429))
         ) {
           this._handleError(error, "GITHUB_FETCH_COMMITS_PAGINATED");
+        }
+        repoIndex++;
+        page = 1;
+      }
+    }
+
+    return { data: [], nextCursor: undefined };
+  }
+
+  async fetchIssuesPaginated(cursor?: string): Promise<{ data: GitHubIssueExternal[]; nextCursor?: string }> {
+    const repositories = await this.fetchAllRepositories();
+    if (repositories.length === 0) return { data: [], nextCursor: undefined };
+
+    const parts = cursor ? cursor.split(":").map(Number) : [];
+    let repoIndex = parts[0] ?? 0;
+    let page = parts[1] ?? 1;
+    const limit = 50;
+
+    while (repoIndex < repositories.length) {
+      const repo = repositories[repoIndex];
+      if (!repo) {
+        repoIndex++;
+        continue;
+      }
+
+      const owner = repo.owner?.login;
+      const repoName = repo.name;
+
+      if (!owner || !repoName) {
+        repoIndex++;
+        page = 1;
+        continue;
+      }
+
+      if (await this._shouldSkipRepoForActivity(repo)) {
+        this._logger.debug(`Skipping issues for forked repo ${repo.full_name} (paginated)`);
+        repoIndex++;
+        page = 1;
+        continue;
+      }
+
+      try {
+        const listResponse = await this.octokit.issues.listForRepo({
+          owner,
+          repo: repoName,
+          state: "all",
+          per_page: limit,
+          page,
+          sort: "updated",
+          direction: "desc",
+        });
+
+        const issues = listResponse.data.filter((item) => !item.pull_request);
+
+        if (issues.length > 0) {
+          const fullName = repo.full_name || `${owner}/${repoName}`;
+          const mappedIssues: GitHubIssueExternal[] = issues.map(
+            (issue) =>
+              ({
+                ...issue,
+                __type: "github_issue" as const,
+                _repositoryContext: {
+                  id: repo.id.toString(),
+                  name: repo.name,
+                  fullName,
+                },
+              }) as GitHubIssueExternal,
+          );
+
+          const nextCursor = listResponse.data.length === limit ? `${repoIndex}:${page + 1}` : `${repoIndex + 1}:1`;
+
+          return { data: mappedIssues, nextCursor };
+        }
+
+        repoIndex++;
+        page = 1;
+      } catch (error: unknown) {
+        this._logger.warn(`Failed to fetch issues for ${repo.full_name}`, { error });
+        if (
+          error instanceof RateLimitError ||
+          (typeof error === "object" &&
+            error !== null &&
+            "status" in error &&
+            (error.status === 403 || error.status === 429))
+        ) {
+          this._handleError(error, "GITHUB_FETCH_ISSUES_PAGINATED");
         }
         repoIndex++;
         page = 1;
