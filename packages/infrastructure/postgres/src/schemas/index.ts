@@ -8,6 +8,7 @@ export * from "./connector.slack.schema";
 export * from "./connector.google-calendar.schema";
 export * from "./connector.google-youtube.schema";
 export * from "./connector.google-contact.schema";
+export * from "./connector.google-gmail.schema";
 export * from "./chat.schema";
 export * from "./connector.google-photos.schema";
 export * from "./providers.schema";

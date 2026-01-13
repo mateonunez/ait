@@ -129,6 +129,38 @@ export const githubCommits = pgTable("github_commits", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const githubIssues = pgTable("github_issues", {
+  id: varchar("id", { length: 255 }).primaryKey(),
+  number: integer("number").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  body: text("body"),
+  state: varchar("state", { length: 50 }).notNull(),
+  stateReason: varchar("state_reason", { length: 100 }),
+  locked: boolean("locked").default(false),
+  htmlUrl: varchar("html_url", { length: 512 }).notNull(),
+  comments: integer("comments").default(0),
+  repositoryId: varchar("repository_id", { length: 255 }),
+  repositoryName: varchar("repository_name", { length: 255 }),
+  repositoryFullName: varchar("repository_full_name", { length: 512 }),
+
+  // Timestamps from GitHub API
+  issueCreatedAt: timestamp("issue_created_at"),
+  issueUpdatedAt: timestamp("issue_updated_at"),
+  issueClosedAt: timestamp("issue_closed_at"),
+
+  // JSONB fields
+  authorData: jsonb("author_data"),
+  assigneeData: jsonb("assignee_data"),
+  assigneesData: jsonb("assignees_data"),
+  labels: jsonb("labels"),
+  milestoneData: jsonb("milestone_data"),
+  reactionsData: jsonb("reactions_data"),
+  isPullRequest: boolean("is_pull_request").default(false),
+
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const githubRepositoryFiles = pgTable("github_repository_files", {
   id: varchar("id", { length: 512 }).primaryKey(), // repoId:path:sha
   repositoryId: varchar("repository_id", { length: 255 }).notNull(),
@@ -154,4 +186,5 @@ export const githubRepositoryFiles = pgTable("github_repository_files", {
 export type GitHubRepositoryDataTarget = typeof githubRepositories.$inferInsert;
 export type GitHubPullRequestDataTarget = typeof githubPullRequests.$inferInsert;
 export type GitHubCommitDataTarget = typeof githubCommits.$inferInsert;
+export type GitHubIssueDataTarget = typeof githubIssues.$inferInsert;
 export type GitHubFileDataTarget = typeof githubRepositoryFiles.$inferInsert;
