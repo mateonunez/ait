@@ -27,8 +27,19 @@ export function ConnectorConfigModal({ provider, isOpen, onClose }: ConnectorCon
   useEffect(() => {
     if (isOpen && provider) {
       setName("");
-      setConfig({});
       setError(null);
+
+      // Apply schema defaults to the initial config
+      const schema = provider.configSchema as { properties?: Record<string, { default?: unknown }> };
+      const defaults: Record<string, unknown> = {};
+      if (schema?.properties) {
+        for (const [key, fieldSchema] of Object.entries(schema.properties)) {
+          if (fieldSchema.default !== undefined) {
+            defaults[key] = fieldSchema.default;
+          }
+        }
+      }
+      setConfig(defaults);
     }
   }, [isOpen, provider]);
 
