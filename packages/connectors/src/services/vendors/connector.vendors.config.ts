@@ -2,6 +2,7 @@ import type {
   GitHubCommitExternal,
   GitHubPullRequestExternal,
   GitHubRepositoryExternal,
+  GmailMessageExternal,
   GoogleCalendarCalendarExternal,
   GoogleCalendarEventExternal,
   GoogleContactExternal,
@@ -21,6 +22,7 @@ import {
   type GitHubCommitEntity,
   type GitHubPullRequestEntity,
   type GitHubRepositoryEntity,
+  type GmailMessageEntity,
   type GoogleCalendarCalendarEntity,
   type GoogleCalendarEventEntity,
   type GoogleContactEntity,
@@ -38,6 +40,7 @@ import {
   mapGitHubCommit,
   mapGitHubPullRequest,
   mapGitHubRepository,
+  mapGmailMessage,
   mapGoogleCalendarCalendar,
   mapGoogleCalendarEvent,
   mapGoogleContact,
@@ -141,6 +144,7 @@ export enum GOOGLE_ENTITY_TYPES_ENUM {
   SUBSCRIPTION = "google_youtube_subscription",
   CONTACT = "google_contact",
   PHOTO = "google_photo",
+  MESSAGE = "gmail_message",
 }
 
 export interface GoogleServiceEntityMap {
@@ -149,6 +153,7 @@ export interface GoogleServiceEntityMap {
   [GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION]: GoogleYouTubeSubscriptionEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.CONTACT]: GoogleContactEntity;
   [GOOGLE_ENTITY_TYPES_ENUM.PHOTO]: GooglePhotoEntity;
+  [GOOGLE_ENTITY_TYPES_ENUM.MESSAGE]: GmailMessageEntity;
 }
 
 const githubEntityConfigs = {
@@ -452,6 +457,21 @@ const googleEntityConfigs = {
     batchSize: 100,
     checksumEnabled: true,
   } satisfies EntityConfig<ConnectorGoogle, GooglePhotoExternal, GooglePhotoEntity>,
+
+  [GOOGLE_ENTITY_TYPES_ENUM.MESSAGE]: {
+    fetcher: (connector: ConnectorGoogle) => connector.dataSource.listMessages().then((res) => res.items),
+    paginatedFetcher: async (connector: ConnectorGoogle, cursor?: ConnectorCursor) => {
+      const response = await connector.dataSource.listMessages(cursor?.id);
+      return {
+        data: response.items,
+        nextCursor: response.nextCursor ? { id: response.nextCursor, timestamp: new Date() } : undefined,
+      };
+    },
+    mapper: (message: GmailMessageExternal) => mapGmailMessage(message),
+    cacheTtl: 300,
+    checksumEnabled: true,
+    batchSize: 50,
+  } satisfies EntityConfig<ConnectorGoogle, GmailMessageExternal, GmailMessageEntity>,
 } as const;
 
 export const connectorEntityConfigs = {

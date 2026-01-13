@@ -8,6 +8,7 @@ import type {
   PaginationParams,
 } from "@ait/core";
 import type { IConnectorRepository, IConnectorRepositorySaveOptions } from "../connector.repository.interface";
+import type { IConnectorGoogleGmailRepository } from "./connector.google.gmail.types";
 
 export interface IConnectorGoogleCalendarEventRepository {
   saveEvent(event: GoogleCalendarEventEntity, options?: IConnectorRepositorySaveOptions): Promise<void>;
@@ -58,4 +59,5 @@ export interface IConnectorGoogleRepository extends IConnectorRepository {
   subscription: IConnectorGoogleYouTubeSubscriptionRepository;
   contact: IConnectorGoogleContactRepository;
   photo: IConnectorGooglePhotoRepository;
+  gmail: IConnectorGoogleGmailRepository;
 }

@@ -5,12 +5,14 @@ import type { IConnectorGitHubRepository } from "../../../../types/domain/entiti
 import { ConnectorGitHubRepoRepository } from "./connector.github-repo.repository";
 import { ConnectorGitHubCommitRepository } from "./connector.github.commit.repository";
 import { ConnectorGitHubFileRepository } from "./connector.github.file.repository";
+import { ConnectorGitHubIssueRepository } from "./connector.github.issue.repository";
 import { ConnectorGitHubPullRequestRepository } from "./connector.github.pull-request.repository";
 
 export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository implements IConnectorGitHubRepository {
   private _gitHubRepositoryRepository: ConnectorGitHubRepoRepository;
   private _gitHubPullRequestRepository: ConnectorGitHubPullRequestRepository;
   private _gitHubCommitRepository: ConnectorGitHubCommitRepository;
+  private _gitHubIssueRepository: ConnectorGitHubIssueRepository;
   private _gitHubFileRepository: ConnectorGitHubFileRepository;
 
   constructor(
@@ -21,6 +23,7 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
     this._gitHubRepositoryRepository = new ConnectorGitHubRepoRepository();
     this._gitHubPullRequestRepository = new ConnectorGitHubPullRequestRepository();
     this._gitHubCommitRepository = new ConnectorGitHubCommitRepository();
+    this._gitHubIssueRepository = new ConnectorGitHubIssueRepository();
     this._gitHubFileRepository = new ConnectorGitHubFileRepository();
   }
 
@@ -58,6 +61,14 @@ export class ConnectorGitHubRepository extends ConnectorGitHubRepoRepository imp
 
   set commit(commit: ConnectorGitHubCommitRepository) {
     this._gitHubCommitRepository = commit;
+  }
+
+  get issue(): ConnectorGitHubIssueRepository {
+    return this._gitHubIssueRepository;
+  }
+
+  set issue(issue: ConnectorGitHubIssueRepository) {
+    this._gitHubIssueRepository = issue;
   }
 
   get file(): ConnectorGitHubFileRepository {
