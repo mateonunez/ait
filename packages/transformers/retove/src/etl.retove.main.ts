@@ -4,10 +4,12 @@ import { getQdrantClient, type qdrant } from "@ait/qdrant";
 import {
   runGitHubCommitETL,
   runGitHubFileETL,
+  runGitHubIssueETL,
   runGitHubPullRequestETL,
   runGitHubRepositoryETL,
   runGoogleCalendarEventETL,
   runGoogleContactETL,
+  runGoogleGmailMessageETL,
   runGooglePhotoETL,
   runGoogleYouTubeSubscriptionETL,
   runLinearETL,
@@ -23,9 +25,8 @@ import {
 
 const logger = getLogger();
 
-const etlRunners: Record<
-  EntityType,
-  (q: qdrant.QdrantClient, p: ReturnType<typeof getPostgresClient>) => Promise<void>
+const etlRunners: Partial<
+  Record<EntityType, (q: qdrant.QdrantClient, p: ReturnType<typeof getPostgresClient>) => Promise<void>>
 > = {
   spotify_track: runSpotifyTrackETL,
   spotify_artist: runSpotifyArtistETL,
@@ -36,6 +37,7 @@ const etlRunners: Record<
   github_repository: runGitHubRepositoryETL,
   github_pull_request: runGitHubPullRequestETL,
   github_commit: runGitHubCommitETL,
+  github_issue: runGitHubIssueETL,
   github_file: runGitHubFileETL,
 
   linear_issue: runLinearETL,
@@ -51,6 +53,7 @@ const etlRunners: Record<
   google_contact: runGoogleContactETL,
   google_photo: runGooglePhotoETL,
   google_calendar_calendar: runGoogleCalendarEventETL,
+  gmail_message: runGoogleGmailMessageETL,
 };
 
 async function main() {

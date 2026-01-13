@@ -1,5 +1,10 @@
 import { getAIDescriptorService } from "@ait/ai-sdk";
-import type { GitHubCommitDataTarget, GitHubPullRequestDataTarget, GitHubRepositoryDataTarget } from "@ait/postgres";
+import type {
+  GitHubCommitDataTarget,
+  GitHubIssueDataTarget,
+  GitHubPullRequestDataTarget,
+  GitHubRepositoryDataTarget,
+} from "@ait/postgres";
 import { formatEnrichmentForText } from "../../../../utils/enrichment-formatter.util";
 import { TextSanitizer } from "../../../../utils/text-sanitizer.util";
 import type { EnrichedEntity, EnrichmentResult, IETLEmbeddingDescriptor } from "../etl.embedding.descriptor.interface";
@@ -660,9 +665,110 @@ export class ETLGitHubCommitDescriptor implements IETLEmbeddingDescriptor<GitHub
   }
 }
 
+export class ETLGitHubIssueDescriptor implements IETLEmbeddingDescriptor<GitHubIssueDataTarget> {
+  public async enrich(issue: GitHubIssueDataTarget, options?: any): Promise<EnrichmentResult | null> {
+    try {
+      const result = await aiDescriptor.describeText(
+        `Title: ${issue.title}\nBody: ${issue.body}`,
+        "GitHub Issue Intent & Problem Analysis",
+        { correlationId: options?.correlationId },
+      );
+
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  public getEmbeddingText(enriched: EnrichedEntity<GitHubIssueDataTarget>): string {
+    const { target: issue, enrichment } = enriched;
+    const parts: string[] = [];
+
+    // Issue identity
+    const sanitizedTitle = TextSanitizer.sanitize(issue.title, 200);
+    parts.push(`Issue #${issue.number}: "${sanitizedTitle}"`);
+
+    // Repository context
+    const repoName = issue.repositoryFullName || issue.repositoryName;
+    if (repoName) {
+      parts.push(`in \`${repoName}\``);
+    }
+
+    // Author
+    if (issue.authorData && typeof issue.authorData === "object") {
+      const user = issue.authorData as any;
+      if (user.login) {
+        parts.push(`opened by ${user.login}`);
+      }
+    }
+
+    // Body/Description
+    if (issue.body && issue.body.trim().length > 0) {
+      const sanitizedBody = TextSanitizer.sanitize(issue.body, 300);
+      if (sanitizedBody) {
+        parts.push(`Description: ${sanitizedBody}`);
+      }
+    }
+
+    // State
+    parts.push(`state is ${issue.state}`);
+    if (issue.stateReason) {
+      parts.push(`reason: ${issue.stateReason}`);
+    }
+
+    // Labels
+    if (issue.labels && Array.isArray(issue.labels) && issue.labels.length > 0) {
+      const labelNames = issue.labels
+        .map((label: any) => label.name)
+        .filter(Boolean)
+        .slice(0, 5)
+        .join(", ");
+      if (labelNames) {
+        parts.push(`labeled as ${labelNames}`);
+      }
+    }
+
+    // Timeline
+    if (issue.issueCreatedAt) {
+      parts.push(`created on ${this._formatDate(issue.issueCreatedAt)}`);
+    }
+
+    const baseText = `${parts.join(", ")}.`;
+    return `${baseText}${formatEnrichmentForText(enrichment)}`;
+  }
+
+  private _formatDate(date: Date | string): string {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    return dateObj.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+
+  public getEmbeddingPayload<U extends Record<string, unknown>>(enriched: EnrichedEntity<GitHubIssueDataTarget>): U {
+    const { target: entity } = enriched;
+    const { updatedAt: _updatedAt, ...entityWithoutInternalTimestamps } = entity;
+
+    const sanitizedPayload = {
+      ...entityWithoutInternalTimestamps,
+      title: TextSanitizer.sanitize(entityWithoutInternalTimestamps.title, 500),
+      body: entityWithoutInternalTimestamps.body
+        ? TextSanitizer.sanitize(entityWithoutInternalTimestamps.body, 2000)
+        : null,
+    };
+
+    return {
+      __type: "github_issue",
+      ...sanitizedPayload,
+    } as unknown as U;
+  }
+}
+
 export const githubDescriptorsETL = {
   repository: new ETLGitHubRepositoryDescriptor(),
   pullRequest: new ETLGitHubPullRequestDescriptor(),
   commit: new ETLGitHubCommitDescriptor(),
+  issue: new ETLGitHubIssueDescriptor(),
   file: new ETLGitHubFileDescriptor(),
 };
