@@ -168,6 +168,8 @@ export {
   type SuggestionItem,
 } from "./types";
 
+export * from "./utils/stream-event.guards";
+
 export { initLangfuseProvider, resetLangfuseProvider, getLangfuseProvider } from "./telemetry/langfuse.provider";
 export {
   createTraceContext,
