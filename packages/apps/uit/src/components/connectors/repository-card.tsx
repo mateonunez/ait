@@ -1,4 +1,4 @@
-import { formatRelativeTime } from "@/utils/date.utils";
+import { formatRelativeTime } from "@ait/core";
 import type { GitHubRepositoryEntity as GitHubRepository } from "@ait/core";
 import { motion } from "framer-motion";
 import { GitFork, Star, User } from "lucide-react";

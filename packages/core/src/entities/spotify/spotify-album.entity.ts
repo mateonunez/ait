@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import type { SpotifyAlbumExternal } from "../../types/integrations";
 
 /**
@@ -13,71 +14,71 @@ export class SpotifyAlbumEntity {
   name!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "spotify_album")
+  @Transform(({ value }: TransformFnParams) => value ?? "spotify_album")
   albumType!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   artists!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   tracks!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   totalTracks!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   releaseDate!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   releaseDatePrecision!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isPlayable!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   uri!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   href!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   popularity!: number | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   label!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   copyrights!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   externalIds!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   genres!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   images!: { url: string; height: number; width: number }[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

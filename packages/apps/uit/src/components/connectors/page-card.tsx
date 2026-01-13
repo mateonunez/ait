@@ -1,8 +1,5 @@
 import { cn } from "@/styles/utils";
-import { formatRelativeTime } from "@/utils/date.utils";
-import { getEntityDate } from "@/utils/entity-date.utils";
-import { truncateText } from "@/utils/text.utils";
-import type { NotionPageEntity as NotionPage } from "@ait/core";
+import { type NotionPageEntity as NotionPage, formatRelativeTime, getEntityDate, truncate } from "@ait/core";
 import { motion } from "framer-motion";
 import { Archive, FileText } from "lucide-react";
 import { Badge } from "../ui/badge";
@@ -79,7 +76,7 @@ export function PageCard({ page, onClick, className }: PageCardProps) {
         {/* Content Preview */}
         {page.content && (
           <ConnectorCardDescription className="line-clamp-3">
-            {truncateText(page.content, DEFAULT_MAX_CHARS)}
+            {truncate(page.content, DEFAULT_MAX_CHARS)}
           </ConnectorCardDescription>
         )}
 

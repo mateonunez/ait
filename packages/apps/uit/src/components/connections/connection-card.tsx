@@ -1,6 +1,6 @@
 import type { ConnectionStatus } from "@/services/connections.service";
 import { cn } from "@/styles/utils";
-import { formatRelativeTime } from "@/utils/date.utils";
+import { formatRelativeTime } from "@ait/core";
 import type { IntegrationVendor } from "@ait/core";
 import { AlertTriangle, Ban, Box, CheckCircle, XCircle } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";

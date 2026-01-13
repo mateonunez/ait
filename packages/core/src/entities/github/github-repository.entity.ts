@@ -1,12 +1,13 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 
 /**
  * GitHub Repository entity with class-transformer decorators.
  */
 export class GitHubRepositoryEntity {
   @Expose()
-  @Transform(({ value }: any) => String(value))
+  @Transform(({ value }: TransformFnParams) => String(value))
   id!: string;
 
   @Expose()
@@ -16,11 +17,11 @@ export class GitHubRepositoryEntity {
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   stars!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   forks!: number;
 
   @Expose()
@@ -30,109 +31,109 @@ export class GitHubRepositoryEntity {
   url!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "")
+  @Transform(({ value }: TransformFnParams) => value ?? "")
   fullName!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   private!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   fork!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   archived!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   disabled!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "public")
+  @Transform(({ value }: TransformFnParams) => value ?? "public")
   visibility!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   watchersCount!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   openIssuesCount!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   size!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "main")
+  @Transform(({ value }: TransformFnParams) => value ?? "main")
   defaultBranch!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   topics!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isTemplate!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? true)
+  @Transform(({ value }: TransformFnParams) => value ?? true)
   hasIssues!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? true)
+  @Transform(({ value }: TransformFnParams) => value ?? true)
   hasProjects!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? true)
+  @Transform(({ value }: TransformFnParams) => value ?? true)
   hasWiki!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   hasPages!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   hasDiscussions!: boolean;
 
   @Expose()
   homepage!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   pushedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   licenseName!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "")
+  @Transform(({ value }: TransformFnParams) => value ?? "")
   cloneUrl!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "")
+  @Transform(({ value }: TransformFnParams) => value ?? "")
   sshUrl!: string;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   ownerData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   licenseData!: Record<string, unknown> | null;
 
   @Expose()
   metadata!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()

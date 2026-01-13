@@ -1,5 +1,6 @@
 import "reflect-metadata";
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "../../types/integrations";
 
 /**
@@ -10,159 +11,159 @@ export class GoogleCalendarEventEntity {
   id!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "Untitled Event")
+  @Transform(({ value }: TransformFnParams) => value ?? "Untitled Event")
   title!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   startTime!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   endTime!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isAllDay!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   timeZone!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   location!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "confirmed")
+  @Transform(({ value }: TransformFnParams) => value ?? "confirmed")
   status!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "")
+  @Transform(({ value }: TransformFnParams) => value ?? "")
   htmlUrl!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   colorId!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "default")
+  @Transform(({ value }: TransformFnParams) => value ?? "default")
   visibility!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "opaque")
+  @Transform(({ value }: TransformFnParams) => value ?? "opaque")
   transparency!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   iCalUid!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   sequence!: number | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   calendarId!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   recurringEventId!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "default")
+  @Transform(({ value }: TransformFnParams) => value ?? "default")
   eventType!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   hangoutLink!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   anyoneCanAddSelf!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? true)
+  @Transform(({ value }: TransformFnParams) => value ?? true)
   guestsCanInviteOthers!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   guestsCanModify!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? true)
+  @Transform(({ value }: TransformFnParams) => value ?? true)
   guestsCanSeeOtherGuests!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   privateCopy!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   locked!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   attendeesOmitted!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   attendeesCount!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   creatorData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   organizerData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   attendeesData!: any[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   recurrenceData!: string[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   remindersData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   conferenceData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   attachmentsData!: any[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   extendedPropertiesData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   eventCreatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   eventUpdatedAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()
@@ -185,75 +186,75 @@ export class GoogleCalendarCalendarEntity {
   id!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "Untitled Calendar")
+  @Transform(({ value }: TransformFnParams) => value ?? "Untitled Calendar")
   title!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   description!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   location!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   timeZone!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   colorId!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   backgroundColor!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   foregroundColor!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "reader")
+  @Transform(({ value }: TransformFnParams) => value ?? "reader")
   accessRole!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isPrimary!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isHidden!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? true)
+  @Transform(({ value }: TransformFnParams) => value ?? true)
   isSelected!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? false)
+  @Transform(({ value }: TransformFnParams) => value ?? false)
   isDeleted!: boolean;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   defaultRemindersData!: any[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   notificationSettingsData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   conferencePropertiesData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   createdAt!: Date;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : new Date()))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : new Date()))
   updatedAt!: Date;
 
   @Expose()

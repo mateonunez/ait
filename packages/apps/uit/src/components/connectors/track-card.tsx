@@ -1,6 +1,6 @@
 import { cn } from "@/styles/utils";
-import { formatRelativeTime } from "@/utils/date.utils";
-import { getEntityDate } from "@/utils/entity-date.utils";
+import { formatRelativeTime } from "@ait/core";
+import { getEntityDate } from "@ait/core";
 import type { SpotifyTrackEntity as SpotifyTrack } from "@ait/core";
 import { motion } from "framer-motion";
 import { Clock, Disc3, TrendingUp } from "lucide-react";

@@ -1,4 +1,5 @@
 import { Expose, Transform, instanceToPlain, plainToInstance } from "class-transformer";
+import type { TransformFnParams } from "class-transformer";
 
 /**
  * GitHub Commit entity with class-transformer decorators.
@@ -8,11 +9,11 @@ export class GitHubCommitEntity {
   sha!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? "")
+  @Transform(({ value }: TransformFnParams) => value ?? "")
   message!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   messageBody!: string | null;
 
   @Expose()
@@ -31,7 +32,7 @@ export class GitHubCommitEntity {
   authorEmail!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   authorDate!: Date | null;
 
   @Expose()
@@ -41,7 +42,7 @@ export class GitHubCommitEntity {
   committerEmail!: string | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   committerDate!: Date | null;
 
   @Expose()
@@ -51,19 +52,19 @@ export class GitHubCommitEntity {
   treeUrl!: string;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? [])
+  @Transform(({ value }: TransformFnParams) => value ?? [])
   parentShas!: string[];
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   additions!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   deletions!: number;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? 0)
+  @Transform(({ value }: TransformFnParams) => value ?? 0)
   total!: number;
 
   // These are populated externally (from context)
@@ -77,32 +78,32 @@ export class GitHubCommitEntity {
   repositoryFullName: string | null = null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   authorData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? { ...value } : null))
+  @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   committerData!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   filesData!: Record<string, unknown>[] | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   verification!: Record<string, unknown> | null;
 
   @Expose()
-  @Transform(({ value }: any) => value ?? null)
+  @Transform(({ value }: TransformFnParams) => value ?? null)
   metadata!: Record<string, unknown> | null;
 
   // Use author date as createdAt/updatedAt
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   createdAt!: Date | null;
 
   @Expose()
-  @Transform(({ value }: any) => (value ? new Date(value) : null))
+  @Transform(({ value }: TransformFnParams) => (value ? new Date(value) : null))
   updatedAt!: Date | null;
 
   @Expose()

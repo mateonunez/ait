@@ -1,4 +1,4 @@
-import { formatFriendlyDate } from "@/utils/date.utils";
+import { formatFriendlyDate } from "@ait/core";
 import type { Conversation } from "@ait/core";
 import { Trash2 } from "lucide-react";
 import { Button } from "./ui/button";

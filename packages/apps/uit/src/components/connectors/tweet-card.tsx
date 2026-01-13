@@ -1,6 +1,7 @@
 import { cn } from "@/styles/utils";
-import { formatRelativeTime } from "@/utils/date.utils";
+import { formatRelativeTime } from "@ait/core";
 import type { XMediaEntity, XPollEntity, XTweetEntity as XTweet } from "@ait/core";
+import { getEntityDate, truncate } from "@ait/core";
 import { motion } from "framer-motion";
 import {
   BarChart3,
@@ -15,11 +16,10 @@ import {
   User,
   Video,
 } from "lucide-react";
-import { getEntityDate } from "../../utils/entity-date.utils";
-import { DEFAULT_MAX_CHARS, truncateText } from "../../utils/text.utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
+import { DEFAULT_MAX_CHARS } from "./connector-card-base";
 import {
   ConnectorCardBase,
   ConnectorCardContent,
@@ -107,7 +107,7 @@ export function TweetCard({ tweet, onClick, className }: TweetCardProps) {
 
         {/* Tweet Content */}
         <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed line-clamp-4 transition-colors whitespace-pre-wrap break-words">
-          {truncateText(tweet.text, DEFAULT_MAX_CHARS)}
+          {tweet.text ? truncate(tweet.text, DEFAULT_MAX_CHARS) : ""}
         </p>
 
         {/* Media Attachments */}
