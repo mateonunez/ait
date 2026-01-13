@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, XTweetEntity, getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  XTweetEntity,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import {
   type OAuthTokenDataTarget,
   type XTweetDataTarget,
@@ -90,27 +98,18 @@ export class ConnectorXTweetRepository implements IConnectorXTweetRepository {
   }
 
   async getTweetsPaginated(params: PaginationParams): Promise<PaginatedResponse<XTweetEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [tweets, totalResult] = await Promise.all([
       this._pgClient.db.select().from(xTweets).orderBy(drizzleOrm.desc(xTweets.createdAt)).limit(limit).offset(offset),
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(xTweets),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: tweets.map((tweet) => XTweetEntity.fromPlain(tweet as XTweetDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      tweets.map((tweet) => XTweetEntity.fromPlain(tweet as XTweetDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }
 

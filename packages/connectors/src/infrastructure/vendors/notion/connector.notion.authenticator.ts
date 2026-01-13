@@ -1,3 +1,4 @@
+import { getErrorMessage } from "@ait/core";
 import { request } from "undici";
 import { ConnectorAuthenticatorAbstract } from "../../../shared/auth/connector.authenticator.abstract";
 import type { IConnectorOAuthTokenResponse } from "../../../shared/auth/lib/oauth/connector.oauth";
@@ -59,12 +60,16 @@ export class ConnectorNotionAuthenticator extends ConnectorAuthenticatorAbstract
       }
 
       return parsedBody as T;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof ConnectorOAuthRequestError) {
         throw error;
       }
 
-      throw new ConnectorOAuthNetworkError(`Network error during OAuth request: ${error.message}`, error);
+      const originalError = error instanceof Error ? error : new Error(getErrorMessage(error));
+      throw new ConnectorOAuthNetworkError(
+        `Network error during OAuth request: ${getErrorMessage(error)}`,
+        originalError,
+      );
     }
   }
 }

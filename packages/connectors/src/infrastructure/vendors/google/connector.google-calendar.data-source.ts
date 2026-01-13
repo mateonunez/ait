@@ -1,5 +1,5 @@
 import type { GoogleCalendarCalendarExternal, GoogleCalendarEventExternal } from "@ait/core";
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import { AItError, RateLimitError, getErrorMessage, getLogger, requestJson } from "@ait/core";
 import type {
   GoogleCalendarPaginatedResponse,
   IConnectorGoogleCalendarDataSource,
@@ -104,7 +104,7 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
       }
 
       return result.value.data as unknown as T;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AItError) {
         // Log the full error for debugging
         this._logger.error("Google Calendar API error", {
@@ -124,8 +124,11 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
         // Handle 403 - could be quota, disabled API, or permission issues
         if (error.code === "HTTP_403" || error.meta?.status === 403) {
           const errorMessage = error.message || "";
-          const metaMessage = (error.meta?.body as any)?.error?.message || "";
-          const fullMessage = metaMessage || errorMessage;
+          const metaMessage = (error.meta?.body as Record<string, unknown>)?.error;
+          const fullMessage =
+            ((typeof metaMessage === "object" && metaMessage !== null
+              ? (metaMessage as Record<string, unknown>).message
+              : undefined) as string) || errorMessage;
 
           // Check if it's an API not enabled error
           if (fullMessage.includes("has not been used") || fullMessage.includes("is disabled")) {
@@ -165,7 +168,12 @@ export class ConnectorGoogleCalendarDataSource implements IConnectorGoogleCalend
         throw error;
       }
 
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
+      throw new AItError(
+        "NETWORK",
+        `Network error: ${getErrorMessage(error)}`,
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 }

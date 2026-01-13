@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, GitHubFileEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GitHubFileEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type GitHubFileDataTarget, drizzleOrm, getPostgresClient, githubRepositoryFiles } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 
@@ -58,9 +66,10 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save file:", { fileId, error });
-      throw new AItError("GITHUB_SAVE_FILE", `Failed to save file ${fileId}: ${error.message}`, { id: fileId }, error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save file:", { fileId, error: message });
+      throw new AItError("GITHUB_SAVE_FILE", `Failed to save file ${fileId}: ${message}`, { id: fileId }, error);
     }
   }
 
@@ -92,9 +101,7 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
   }
 
   async getFilesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubFileEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [files, totalResult] = await Promise.all([
       this._pgClient.db
@@ -106,18 +113,11 @@ export class ConnectorGitHubFileRepository implements IConnectorGitHubFileReposi
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(githubRepositoryFiles),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: files.map((file) => GitHubFileEntity.fromPlain(file as GitHubFileDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      files.map((file) => GitHubFileEntity.fromPlain(file as GitHubFileDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 
   async getFilesByRepository(repositoryFullName: string, params?: PaginationParams): Promise<GitHubFileEntity[]> {

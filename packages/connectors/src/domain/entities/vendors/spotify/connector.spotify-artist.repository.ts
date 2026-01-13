@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, SpotifyArtistEntity, getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  SpotifyArtistEntity,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type SpotifyArtistDataTarget, drizzleOrm, getPostgresClient, spotifyArtists } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSpotifyArtistRepository } from "../../../../types/domain/entities/vendors/connector.spotify.types";
@@ -37,11 +45,12 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save artist:", { artistId: artist.id, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save artist:", { artistId: artist.id, error: message });
       throw new AItError(
         "SPOTIFY_SAVE_ARTIST",
-        `Failed to save artist ${artist.id}: ${error.message}`,
+        `Failed to save artist ${artist.id}: ${message}`,
         { id: artist.id },
         error,
       );
@@ -83,9 +92,7 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
   }
 
   async getArtistsPaginated(params: PaginationParams): Promise<PaginatedResponse<SpotifyArtistEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [artists, totalResult] = await Promise.all([
       this._pgClient.db
@@ -97,17 +104,10 @@ export class ConnectorSpotifyArtistRepository implements IConnectorSpotifyArtist
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(spotifyArtists),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: artists.map((artist) => SpotifyArtistEntity.fromPlain(artist as SpotifyArtistDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      artists.map((artist) => SpotifyArtistEntity.fromPlain(artist as SpotifyArtistDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

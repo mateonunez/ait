@@ -39,6 +39,7 @@ export type * from "./types/domain/entities/vendors/connector.google.types";
 // Sync state service
 export * from "./services/shared/sync";
 export * from "./services/connector.grant.service";
+export * from "./services/user-connector.manager";
 
 // Entity types enums
 export {

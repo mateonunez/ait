@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, GitHubPullRequestEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GitHubPullRequestEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type GitHubPullRequestDataTarget, drizzleOrm, getPostgresClient, githubPullRequests } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubPullRequestRepository } from "../../../../types/domain/entities/vendors/connector.github.pull-request.types";
@@ -66,11 +74,12 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save pull request:", { prId: pullRequestId, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save pull request:", { prId: pullRequestId, error: message });
       throw new AItError(
         "GITHUB_SAVE_PULL_REQUEST",
-        `Failed to save pull request ${pullRequestId}: ${error.message}`,
+        `Failed to save pull request ${pullRequestId}: ${message}`,
         { id: pullRequestId },
         error,
       );
@@ -96,9 +105,7 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
   }
 
   async getPullRequestsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubPullRequestEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [pullRequests, totalResult] = await Promise.all([
       this._pgClient.db
@@ -110,17 +117,10 @@ export class ConnectorGitHubPullRequestRepository implements IConnectorGitHubPul
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(githubPullRequests),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: pullRequests.map((pr) => GitHubPullRequestEntity.fromPlain(pr as GitHubPullRequestDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      pullRequests.map((pr) => GitHubPullRequestEntity.fromPlain(pr as GitHubPullRequestDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, GitHubRepositoryEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GitHubRepositoryEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type GitHubRepositoryDataTarget, drizzleOrm, getPostgresClient, githubRepositories } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubRepoRepository } from "../../../../types/domain/entities/vendors/connector.github.repository.types";
@@ -63,11 +71,12 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save repository:", { repoId: repositoryId, error });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save repository:", { repoId: repositoryId, error: message });
       throw new AItError(
         "GITHUB_SAVE_REPOSITORY",
-        `Failed to save repository ${repositoryId}: ${error.message}`,
+        `Failed to save repository ${repositoryId}: ${message}`,
         { id: repositoryId },
         error,
       );
@@ -93,9 +102,7 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
   }
 
   async getRepositoriesPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubRepositoryEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [repositories, totalResult] = await Promise.all([
       this._pgClient.db
@@ -107,17 +114,10 @@ export class ConnectorGitHubRepoRepository implements IConnectorGitHubRepoReposi
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(githubRepositories),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: repositories.map((repo) => GitHubRepositoryEntity.fromPlain(repo as GitHubRepositoryDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      repositories.map((repo) => GitHubRepositoryEntity.fromPlain(repo as GitHubRepositoryDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

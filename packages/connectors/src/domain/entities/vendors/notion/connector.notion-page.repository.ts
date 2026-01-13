@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, NotionPageEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  NotionPageEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type NotionPageDataTarget, drizzleOrm, getPostgresClient, notionPages } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorNotionPageRepository } from "../../../../types/domain/entities/vendors/connector.notion.types";
@@ -45,9 +53,10 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
           })
           .execute();
       });
-    } catch (error: any) {
-      logger.error("Failed to save page:", { pageId, error });
-      throw new AItError("NOTION_SAVE_PAGE", `Failed to save page ${pageId}: ${error.message}`, { id: pageId }, error);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save page:", { pageId, error: message });
+      throw new AItError("NOTION_SAVE_PAGE", `Failed to save page ${pageId}: ${message}`, { id: pageId }, error);
     }
   }
 
@@ -82,9 +91,7 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
   }
 
   async getPagesPaginated(params: PaginationParams): Promise<PaginatedResponse<NotionPageEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [pages, totalResult] = await Promise.all([
       this._pgClient.db
@@ -96,17 +103,10 @@ export class ConnectorNotionPageRepository implements IConnectorNotionPageReposi
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(notionPages),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: pages.map((page) => NotionPageEntity.fromPlain(page as NotionPageDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      pages.map((page) => NotionPageEntity.fromPlain(page as NotionPageDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

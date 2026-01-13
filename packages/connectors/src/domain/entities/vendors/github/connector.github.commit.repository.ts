@@ -1,4 +1,13 @@
-import { AItError, GitHubCommitEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GitHubCommitEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getErrorMessage,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type GitHubCommitDataTarget, drizzleOrm, getPostgresClient, githubCommits } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGitHubCommitRepository } from "../../../../types/domain/entities/vendors/connector.github.commit.types";
@@ -52,13 +61,13 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
           })
           .execute();
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error("Failed to save commit:", { sha: commit.sha, error });
       throw new AItError(
         "GITHUB_SAVE_COMMIT",
-        `Failed to save commit ${commit.sha}: ${error.message}`,
+        `Failed to save commit ${commit.sha}: ${getErrorMessage(error)}`,
         { sha: commit.sha },
-        error,
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -82,9 +91,7 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
   }
 
   async getCommitsPaginated(params: PaginationParams): Promise<PaginatedResponse<GitHubCommitEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [commits, totalResult] = await Promise.all([
       this._pgClient.db
@@ -96,17 +103,10 @@ export class ConnectorGitHubCommitRepository implements IConnectorGitHubCommitRe
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(githubCommits),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: commits.map((commit) => GitHubCommitEntity.fromPlain(commit as GitHubCommitDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      commits.map((commit) => GitHubCommitEntity.fromPlain(commit as GitHubCommitDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

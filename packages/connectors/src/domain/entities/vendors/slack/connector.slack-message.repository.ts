@@ -1,5 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { AItError, type PaginatedResponse, type PaginationParams, SlackMessageEntity, getLogger } from "@ait/core";
+import {
+  AItError,
+  type PaginatedResponse,
+  type PaginationParams,
+  SlackMessageEntity,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type SlackMessageDataTarget, drizzleOrm, getPostgresClient, slackMessages } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorSlackMessageRepository } from "../../../../types/domain/entities/vendors/connector.slack.types";
@@ -88,9 +96,7 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
   }
 
   async getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<SlackMessageEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [messages, totalResult] = await Promise.all([
       this._pgClient.db
@@ -102,17 +108,10 @@ export class ConnectorSlackMessageRepository implements IConnectorSlackMessageRe
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(slackMessages),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: messages.map((message) => SlackMessageEntity.fromPlain(message as SlackMessageDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      messages.map((message) => SlackMessageEntity.fromPlain(message as SlackMessageDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

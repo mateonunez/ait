@@ -1,4 +1,12 @@
-import { AItError, GooglePhotoEntity, type PaginatedResponse, type PaginationParams, getLogger } from "@ait/core";
+import {
+  AItError,
+  GooglePhotoEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getLogger,
+  getPaginationOffset,
+} from "@ait/core";
 import { type GooglePhotoDataTarget, drizzleOrm, getPostgresClient, googlePhotos } from "@ait/postgres";
 import type { IConnectorRepositorySaveOptions } from "../../../../types/domain/entities/connector.repository.interface";
 import type { IConnectorGooglePhotoRepository } from "../../../../types/domain/entities/vendors/connector.google.types";
@@ -24,14 +32,10 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
           set: dataTarget,
         })
         .execute();
-    } catch (error: any) {
-      logger.error("Failed to save Google Photo:", { photoId: photo.id, error });
-      throw new AItError(
-        "GOOGLE_PHOTO_SAVE",
-        `Failed to save photo ${photo.id}: ${error.message}`,
-        { id: photo.id },
-        error,
-      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error("Failed to save Google Photo:", { photoId: photo.id, error: message });
+      throw new AItError("GOOGLE_PHOTO_SAVE", `Failed to save photo ${photo.id}: ${message}`, { id: photo.id }, error);
     }
   }
 
@@ -68,9 +72,7 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
   }
 
   async getPhotosPaginated(params: PaginationParams): Promise<PaginatedResponse<GooglePhotoEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [photos, totalResult] = await Promise.all([
       this._pgClient.db
@@ -82,17 +84,10 @@ export class ConnectorGooglePhotoRepository implements IConnectorGooglePhotoRepo
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(googlePhotos),
     ]);
 
-    const total = totalResult[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
-
-    return {
-      data: photos.map((p) => GooglePhotoEntity.fromPlain(p as GooglePhotoDataTarget)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    };
+    return buildPaginatedResponse(
+      photos.map((p) => GooglePhotoEntity.fromPlain(p as GooglePhotoDataTarget)),
+      params,
+      totalResult[0]?.count || 0,
+    );
   }
 }

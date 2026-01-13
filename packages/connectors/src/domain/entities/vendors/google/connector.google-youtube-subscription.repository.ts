@@ -1,4 +1,10 @@
-import { GoogleYouTubeSubscriptionEntity, type PaginatedResponse, type PaginationParams } from "@ait/core";
+import {
+  GoogleYouTubeSubscriptionEntity,
+  type PaginatedResponse,
+  type PaginationParams,
+  buildPaginatedResponse,
+  getPaginationOffset,
+} from "@ait/core";
 import {
   type GoogleSubscriptionDataTargetInsert,
   drizzleOrm,
@@ -69,9 +75,7 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
   async getSubscriptionsPaginated(
     params: PaginationParams,
   ): Promise<PaginatedResponse<GoogleYouTubeSubscriptionEntity>> {
-    const page = params.page || 1;
-    const limit = params.limit || 50;
-    const offset = (page - 1) * limit;
+    const { limit, offset } = getPaginationOffset(params);
 
     const [results, countResult] = await Promise.all([
       this._pgClient.db
@@ -83,16 +87,10 @@ export class ConnectorGoogleYouTubeSubscriptionRepository implements IConnectorG
       this._pgClient.db.select({ count: drizzleOrm.count() }).from(googleSubscriptions),
     ]);
 
-    const total = Number(countResult[0]?.count || 0);
-
-    return {
-      data: results.map((r) => GoogleYouTubeSubscriptionEntity.fromPlain(r as GoogleSubscriptionDataTargetInsert)),
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return buildPaginatedResponse(
+      results.map((r) => GoogleYouTubeSubscriptionEntity.fromPlain(r as GoogleSubscriptionDataTargetInsert)),
+      params,
+      Number(countResult[0]?.count || 0),
+    );
   }
 }

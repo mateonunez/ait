@@ -1,4 +1,4 @@
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import { AItError, RateLimitError, getErrorMessage, getLogger, requestJson } from "@ait/core";
 import type { LinearIssueExternal } from "@ait/core";
 
 export interface IConnectorLinearDataSource {
@@ -125,7 +125,7 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         issues: sortedIssues,
         nextCursor: payload.data.issues.pageInfo.hasNextPage ? payload.data.issues.pageInfo.endCursor : undefined,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AItError) {
         if (error.code === "HTTP_429" || error.meta?.status === 429) {
           const headers = (error.meta?.headers as Record<string, string>) || {};
@@ -135,7 +135,12 @@ export class ConnectorLinearDataSource implements IConnectorLinearDataSource {
         }
         throw error;
       }
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
+      throw new AItError(
+        "NETWORK",
+        `Network error: ${getErrorMessage(error)}`,
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 }

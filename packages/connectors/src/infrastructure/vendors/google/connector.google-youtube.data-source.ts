@@ -1,5 +1,5 @@
 import type { GoogleYouTubeSubscriptionExternal } from "@ait/core";
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import { AItError, RateLimitError, getErrorMessage, getLogger, requestJson } from "@ait/core";
 import type {
   GoogleYouTubePaginatedResponse,
   IConnectorGoogleYouTubeDataSource,
@@ -58,7 +58,7 @@ export class ConnectorGoogleYouTubeDataSource implements IConnectorGoogleYouTube
       }
 
       return response.value.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AItError) {
         this._logger.error("YouTube API error", {
           code: error.code,
@@ -77,8 +77,11 @@ export class ConnectorGoogleYouTubeDataSource implements IConnectorGoogleYouTube
         // Handle 403 - could be quota, disabled API, or permission issues
         if (error.code === "HTTP_403" || error.meta?.status === 403) {
           const errorMessage = error.message || "";
-          const metaMessage = (error.meta?.body as any)?.error?.message || "";
-          const fullMessage = metaMessage || errorMessage;
+          const metaMessage = (error.meta?.body as Record<string, unknown>)?.error;
+          const fullMessage =
+            ((typeof metaMessage === "object" && metaMessage !== null
+              ? (metaMessage as Record<string, unknown>).message
+              : undefined) as string) || errorMessage;
 
           // Check if it's an API not enabled error
           if (fullMessage.includes("has not been used") || fullMessage.includes("is disabled")) {
@@ -117,7 +120,12 @@ export class ConnectorGoogleYouTubeDataSource implements IConnectorGoogleYouTube
       }
 
       this._logger.error("Error fetching from YouTube", { error });
-      throw new AItError("YOUTUBE_API_ERROR", `Failed to fetch from YouTube: ${error.message}`, undefined, error);
+      throw new AItError(
+        "YOUTUBE_API_ERROR",
+        `Failed to fetch from YouTube: ${getErrorMessage(error)}`,
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 }

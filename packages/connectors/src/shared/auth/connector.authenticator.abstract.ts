@@ -4,6 +4,7 @@ export interface IConnectorAuthenticator {
   authenticate(code: string): Promise<IConnectorOAuthTokenResponse>;
   refreshToken(refreshToken: string): Promise<IConnectorOAuthTokenResponse>;
   revoke(refreshToken: string): Promise<void>;
+  getOAuthConfig(): IConnectorOAuthConfig;
 }
 
 export abstract class ConnectorAuthenticatorAbstract implements IConnectorAuthenticator {

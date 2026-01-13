@@ -1,5 +1,5 @@
 import type { GoogleContactExternal } from "@ait/core";
-import { AItError, RateLimitError, getLogger, requestJson } from "@ait/core";
+import { AItError, RateLimitError, getErrorMessage, getLogger, requestJson } from "@ait/core";
 import type {
   GooglePeoplePaginatedResponse,
   IConnectorGoogleContactDataSource,
@@ -69,7 +69,7 @@ export class ConnectorGoogleContactDataSource implements IConnectorGoogleContact
       }
 
       return result.value.data as unknown as T;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof AItError) {
         this._logger.error("Google People API error", {
           code: error.code,
@@ -83,9 +83,14 @@ export class ConnectorGoogleContactDataSource implements IConnectorGoogleContact
 
         if (error.code === "HTTP_403" || error.meta?.status === 403) {
           const errorMessage = error.message || "";
-          const metaBody = error.meta?.body as any;
-          const metaMessage = metaBody?.error?.message || (typeof metaBody === "string" ? metaBody : "");
-          const fullMessage = metaMessage || errorMessage;
+          const metaBody = error.meta?.body as Record<string, unknown> | undefined;
+          const metaMessage = metaBody?.error;
+          const fullMessage =
+            ((typeof metaMessage === "object" && metaMessage !== null
+              ? (metaMessage as Record<string, unknown>).message
+              : typeof metaBody === "string"
+                ? metaBody
+                : undefined) as string) || errorMessage;
 
           if (fullMessage.includes("has not been used") || fullMessage.includes("is disabled")) {
             throw new AItError(
@@ -115,7 +120,12 @@ export class ConnectorGoogleContactDataSource implements IConnectorGoogleContact
         throw error;
       }
 
-      throw new AItError("NETWORK", `Network error: ${error.message}`, undefined, error);
+      throw new AItError(
+        "NETWORK",
+        `Network error: ${getErrorMessage(error)}`,
+        undefined,
+        error instanceof Error ? error : undefined,
+      );
     }
   }
 }
