@@ -1,5 +1,5 @@
-import { type ConnectorXService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import { type ConnectorXService, X_ENTITY_TYPES_ENUM, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
+import { type XEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthQuery, OAuthCallbackQuery, PaginationQuery } from "../types/route.types";
 
@@ -137,10 +137,28 @@ export default async function xRoutes(fastify: FastifyInstance) {
 
         const counts: Record<string, number> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as XEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
         if (entitiesToRefresh.includes("tweets")) {
-          const tweets = await service.fetchTweets();
-          await service.connector.store.save(tweets);
-          counts.tweets = tweets.length;
+          counts.tweets = await fetchAndStoreProgressively(
+            "tweets",
+            service.fetchEntitiesPaginated(X_ENTITY_TYPES_ENUM.TWEET, true, true),
+          );
         }
 
         reply.send({

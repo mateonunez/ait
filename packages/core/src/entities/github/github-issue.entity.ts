@@ -71,6 +71,10 @@ export class GitHubIssueEntity {
   labels!: Record<string, unknown>[] | null;
 
   @Expose()
+  @Transform(({ value }: TransformFnParams) => value ?? null)
+  labelsData!: Record<string, unknown>[] | null;
+
+  @Expose()
   @Transform(({ value }: TransformFnParams) => (value ? { ...value } : null))
   milestoneData!: Record<string, unknown> | null;
 
@@ -119,6 +123,7 @@ export function mapGitHubIssue(external: any): GitHubIssueEntity {
     authorData: external.user ?? external.authorData,
     assigneeData: external.assignee ?? external.assigneeData,
     assigneesData: external.assignees ? { assignees: external.assignees } : external.assigneesData,
+    labelsData: external.labels ?? external.labelsData,
     milestoneData: external.milestone ?? external.milestoneData,
     reactionsData: external.reactions ?? external.reactionsData,
     isPullRequest: !!external.pull_request || external.isPullRequest === true,

@@ -1,6 +1,7 @@
 import type { GoogleEntityType } from "@ait/core";
 import { AItError } from "@ait/core";
 import type {
+  GmailMessageEntity,
   GoogleCalendarCalendarEntity,
   GoogleCalendarEventEntity,
   GoogleContactEntity,
@@ -52,6 +53,14 @@ export class ConnectorGoogleStore implements IConnectorStore {
           await this._ConnectorGoogleRepository.photo.savePhoto(item as unknown as GooglePhotoEntity, {
             incremental: false,
           });
+          break;
+        case GOOGLE_ENTITY_TYPES_ENUM.MESSAGE:
+          await this._ConnectorGoogleRepository.gmail.saveEntities(
+            [item as unknown as GmailMessageEntity],
+            (item as { connectorConfigId?: string }).connectorConfigId ||
+              this._ConnectorGoogleRepository.connectorConfigId ||
+              "",
+          );
           break;
         default:
           // @ts-ignore: Unreachable code error

@@ -1,11 +1,12 @@
 import {
   CODE_INGESTION_REPOS,
   type ConnectorGitHubService,
+  GITHUB_ENTITY_TYPES_ENUM,
   clearOAuthData,
   connectorServiceFactory,
   mapGitHubFile,
 } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import { type GitHubEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 const logger = getLogger();
@@ -219,25 +220,45 @@ export default async function githubRoutes(fastify: FastifyInstance) {
 
         const counts: Record<string, number | { added: number; updated: number; deleted: number }> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as GitHubEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
         // Repositories
         if (entitiesToRefresh.includes("repositories")) {
-          const repositories = await service.fetchRepositories();
-          await service.connector.store.save(repositories);
-          counts.repositories = repositories.length;
+          counts.repositories = await fetchAndStoreProgressively(
+            "repositories",
+            service.fetchEntitiesPaginated(GITHUB_ENTITY_TYPES_ENUM.REPOSITORY, true, true),
+          );
         }
 
         // Pull Requests
         if (entitiesToRefresh.includes("pull-requests") || entitiesToRefresh.includes("pullrequests")) {
-          const pullRequests = await service.fetchPullRequests();
-          await service.connector.store.save(pullRequests);
-          counts.pullRequests = pullRequests.length;
+          counts.pullRequests = await fetchAndStoreProgressively(
+            "pull-requests",
+            service.fetchEntitiesPaginated(GITHUB_ENTITY_TYPES_ENUM.PULL_REQUEST, true, true),
+          );
         }
 
         // Commits
         if (entitiesToRefresh.includes("commits")) {
-          const commits = await service.fetchCommits();
-          await service.connector.store.save(commits);
-          counts.commits = commits.length;
+          counts.commits = await fetchAndStoreProgressively(
+            "commits",
+            service.fetchEntitiesPaginated(GITHUB_ENTITY_TYPES_ENUM.COMMIT, true, true),
+          );
         }
 
         // Files - uses syncFiles to handle deletions

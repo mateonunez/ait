@@ -49,6 +49,14 @@ export class ConnectorGoogleGmailDataSource implements IConnectorGoogleGmailData
           const detail = await this.getMessage(msg.id);
           messages.push(detail);
         } catch (e) {
+          // If token expired mid-batch, return what we have so far
+          if (e instanceof AItError && (e.code === "UNAUTHORIZED" || e.code === "TOKEN_EXPIRED")) {
+            this._logger.warn(
+              `Token expired while fetching message ${msg.id}, returning ${messages.length} messages fetched so far`,
+            );
+            // Return partial results without nextCursor to signal pagination should stop
+            return { items: messages, nextCursor: undefined };
+          }
           this._logger.warn(`Failed to fetch message details for ${msg.id}`, { error: e });
         }
       }
@@ -58,6 +66,11 @@ export class ConnectorGoogleGmailDataSource implements IConnectorGoogleGmailData
         nextCursor: response.nextPageToken,
       };
     } catch (error) {
+      // If token expired during the initial list call, return empty with no cursor
+      if (error instanceof AItError && (error.code === "UNAUTHORIZED" || error.code === "TOKEN_EXPIRED")) {
+        this._logger.warn("Token expired during message list, returning empty result");
+        return { items: [], nextCursor: undefined };
+      }
       this._logger.error("Failed to list Gmail messages", { error });
       throw error;
     }
