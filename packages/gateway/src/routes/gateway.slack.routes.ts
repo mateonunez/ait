@@ -1,5 +1,10 @@
-import { type ConnectorSlackService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import {
+  type ConnectorSlackService,
+  SLACK_ENTITY_TYPES_ENUM,
+  clearOAuthData,
+  connectorServiceFactory,
+} from "@ait/connectors";
+import { type SlackEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthQuery, OAuthCallbackQuery, PaginationQuery } from "../types/route.types";
 
@@ -148,10 +153,28 @@ export default async function slackRoutes(fastify: FastifyInstance) {
 
         const counts: Record<string, number> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as SlackEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
         if (entitiesToRefresh.includes("messages")) {
-          const messages = await service.fetchMessages();
-          await service.connector.store.save(messages);
-          counts.messages = messages.length;
+          counts.messages = await fetchAndStoreProgressively(
+            "messages",
+            service.fetchEntitiesPaginated(SLACK_ENTITY_TYPES_ENUM.MESSAGE, true, true),
+          );
         }
 
         reply.send({

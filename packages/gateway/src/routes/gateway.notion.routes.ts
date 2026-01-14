@@ -1,5 +1,10 @@
-import { type ConnectorNotionService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import {
+  type ConnectorNotionService,
+  NOTION_ENTITY_TYPES_ENUM,
+  clearOAuthData,
+  connectorServiceFactory,
+} from "@ait/connectors";
+import { type NotionEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthQuery, OAuthCallbackQuery, PaginationQuery } from "../types/route.types";
 
@@ -145,10 +150,28 @@ export default async function notionRoutes(fastify: FastifyInstance) {
 
         const counts: Record<string, number> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as NotionEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
         if (entitiesToRefresh.includes("pages")) {
-          const pages = await service.fetchPages();
-          await service.connector.store.save(pages);
-          counts.pages = pages.length;
+          counts.pages = await fetchAndStoreProgressively(
+            "pages",
+            service.fetchEntitiesPaginated(NOTION_ENTITY_TYPES_ENUM.PAGE, true, true),
+          );
         }
 
         reply.send({

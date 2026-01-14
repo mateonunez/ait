@@ -1,5 +1,10 @@
-import { type ConnectorSpotifyService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import {
+  type ConnectorSpotifyService,
+  SPOTIFY_ENTITY_TYPES_ENUM,
+  clearOAuthData,
+  connectorServiceFactory,
+} from "@ait/connectors";
+import { type SpotifyEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthQuery, OAuthCallbackQuery, PaginationQuery } from "../types/route.types";
 
@@ -211,34 +216,56 @@ export default async function spotifyRoutes(fastify: FastifyInstance) {
 
         const counts: Record<string, number> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as SpotifyEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
         if (entitiesToRefresh.includes("tracks")) {
-          const tracks = await service.fetchTracks();
-          await service.connector.store.save(tracks);
-          counts.tracks = tracks.length;
+          counts.tracks = await fetchAndStoreProgressively(
+            "tracks",
+            service.fetchEntitiesPaginated(SPOTIFY_ENTITY_TYPES_ENUM.TRACK, true, true),
+          );
         }
 
         if (entitiesToRefresh.includes("artists")) {
-          const artists = await service.fetchArtists();
-          await service.connector.store.save(artists);
-          counts.artists = artists.length;
+          counts.artists = await fetchAndStoreProgressively(
+            "artists",
+            service.fetchEntitiesPaginated(SPOTIFY_ENTITY_TYPES_ENUM.ARTIST, true, true),
+          );
         }
 
         if (entitiesToRefresh.includes("playlists")) {
-          const playlists = await service.fetchPlaylists();
-          await service.connector.store.save(playlists);
-          counts.playlists = playlists.length;
+          counts.playlists = await fetchAndStoreProgressively(
+            "playlists",
+            service.fetchEntitiesPaginated(SPOTIFY_ENTITY_TYPES_ENUM.PLAYLIST, true, true),
+          );
         }
 
         if (entitiesToRefresh.includes("albums")) {
-          const albums = await service.fetchAlbums();
-          await service.connector.store.save(albums);
-          counts.albums = albums.length;
+          counts.albums = await fetchAndStoreProgressively(
+            "albums",
+            service.fetchEntitiesPaginated(SPOTIFY_ENTITY_TYPES_ENUM.ALBUM, true, true),
+          );
         }
 
         if (entitiesToRefresh.includes("recently-played") || entitiesToRefresh.includes("recentlyplayed")) {
-          const recentlyPlayed = await service.fetchRecentlyPlayed();
-          await service.connector.store.save(recentlyPlayed);
-          counts.recentlyPlayed = recentlyPlayed.length;
+          counts.recentlyPlayed = await fetchAndStoreProgressively(
+            "recently-played",
+            service.fetchEntitiesPaginated(SPOTIFY_ENTITY_TYPES_ENUM.RECENTLY_PLAYED, true, true),
+          );
         }
 
         reply.send({

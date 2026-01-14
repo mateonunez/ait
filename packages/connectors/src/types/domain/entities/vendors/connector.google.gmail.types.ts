@@ -3,5 +3,6 @@ import type { GmailMessageEntity, GmailMessageExternal, PaginatedResponse, Pagin
 export interface IConnectorGoogleGmailRepository {
   save(data: GmailMessageExternal, connectorConfigId: string): Promise<void>;
   saveMessages(data: GmailMessageExternal[], connectorConfigId: string): Promise<void>;
+  saveEntities(data: GmailMessageEntity[], connectorConfigId: string): Promise<void>;
   getMessagesPaginated(params: PaginationParams): Promise<PaginatedResponse<GmailMessageEntity>>;
 }

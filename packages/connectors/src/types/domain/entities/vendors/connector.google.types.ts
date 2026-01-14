@@ -54,6 +54,7 @@ export interface IConnectorGooglePhotoRepository {
 }
 
 export interface IConnectorGoogleRepository extends IConnectorRepository {
+  connectorConfigId?: string;
   event: IConnectorGoogleCalendarEventRepository;
   calendar: IConnectorGoogleCalendarCalendarRepository;
   subscription: IConnectorGoogleYouTubeSubscriptionRepository;

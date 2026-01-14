@@ -1,5 +1,10 @@
-import { type ConnectorGoogleService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import {
+  type ConnectorGoogleService,
+  GOOGLE_ENTITY_TYPES_ENUM,
+  clearOAuthData,
+  connectorServiceFactory,
+} from "@ait/connectors";
+import { type GoogleEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 const logger = getLogger();
@@ -313,44 +318,77 @@ export default async function googleRoutes(fastify: FastifyInstance) {
 
         const entitiesToRefresh = entitiesParam
           ? entitiesParam.split(",").map((e) => e.trim().toLowerCase())
-          : ["events", "calendars", "subscriptions", "contacts", "photos"];
+          : ["events", "calendars", "subscriptions", "contacts", "photos", "gmail"];
 
         const counts: Record<string, number> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as GoogleEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
+        // Events (paginated)
         if (entitiesToRefresh.includes("events")) {
-          const events = await service.fetchEvents();
-          await service.connector.store.save(events);
-          counts.events = events.length;
+          counts.events = await fetchAndStoreProgressively(
+            "events",
+            service.fetchEntitiesPaginated(GOOGLE_ENTITY_TYPES_ENUM.EVENT, true, true),
+          );
         }
 
+        // Calendars (non-paginated)
         if (entitiesToRefresh.includes("calendars")) {
-          const calendars = await service.fetchCalendars();
-          await service.connector.store.save(calendars);
-          counts.calendars = calendars.length;
+          try {
+            const calendars = await service.fetchCalendars();
+            await service.connector.store.save(calendars);
+            counts.calendars = calendars.length;
+          } catch (error) {
+            logger.warn("Calendars refresh failed", { error });
+            counts.calendars = 0;
+          }
         }
 
+        // Subscriptions (paginated)
         if (entitiesToRefresh.includes("subscriptions")) {
-          const subscriptions = await service.fetchSubscriptions();
-          await service.connector.store.save(subscriptions);
-          counts.subscriptions = subscriptions.length;
+          counts.subscriptions = await fetchAndStoreProgressively(
+            "subscriptions",
+            service.fetchEntitiesPaginated(GOOGLE_ENTITY_TYPES_ENUM.SUBSCRIPTION, true, true),
+          );
         }
 
+        // Contacts (paginated)
         if (entitiesToRefresh.includes("contacts")) {
-          const contacts = await service.fetchContacts();
-          await service.connector.store.save(contacts);
-          counts.contacts = contacts.length;
+          counts.contacts = await fetchAndStoreProgressively(
+            "contacts",
+            service.fetchEntitiesPaginated(GOOGLE_ENTITY_TYPES_ENUM.CONTACT, true, true),
+          );
         }
 
+        // Photos (paginated)
         if (entitiesToRefresh.includes("photos")) {
-          const photos = await service.fetchPhotos();
-          await service.connector.store.save(photos);
-          counts.photos = photos.length;
+          counts.photos = await fetchAndStoreProgressively(
+            "photos",
+            service.fetchEntitiesPaginated(GOOGLE_ENTITY_TYPES_ENUM.PHOTO, true, true),
+          );
         }
 
+        // Gmail (paginated)
         if (entitiesToRefresh.includes("gmail")) {
-          const messages = await service.fetchMessages();
-          await service.connector.store.save(messages);
-          counts.gmail = messages.length;
+          counts.gmail = await fetchAndStoreProgressively(
+            "gmail",
+            service.fetchEntitiesPaginated(GOOGLE_ENTITY_TYPES_ENUM.MESSAGE, true, true),
+          );
         }
 
         reply.send({

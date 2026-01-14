@@ -1,5 +1,6 @@
 import { requestJson } from "@ait/core";
 import type {
+  GmailMessageEntity,
   GoogleCalendarEntityType as GoogleCalendar,
   GoogleCalendarEventEntity as GoogleCalendarEvent,
   GoogleContactEntity as GoogleContact,
@@ -49,6 +50,13 @@ export class GoogleService {
   async fetchPhotos(params?: PaginationParams) {
     const url = `${this.baseUrl}/data/photos${buildQueryString(params)}`;
     const result = await requestJson<PaginatedResponse<GooglePhoto>>(url);
+    if (!result.ok) throw result.error;
+    return result.value.data;
+  }
+
+  async fetchMessages(params?: PaginationParams) {
+    const url = `${this.baseUrl}/data/gmail_message${buildQueryString(params)}`;
+    const result = await requestJson<PaginatedResponse<GmailMessageEntity>>(url);
     if (!result.ok) throw result.error;
     return result.value.data;
   }

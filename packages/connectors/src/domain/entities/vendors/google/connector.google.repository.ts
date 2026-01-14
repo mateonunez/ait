@@ -19,7 +19,7 @@ export class ConnectorGoogleRepository implements IConnectorGoogleRepository {
 
   constructor(
     private userId?: string,
-    private connectorConfigId?: string,
+    public connectorConfigId?: string,
   ) {
     this.event = new ConnectorGoogleCalendarEventRepository();
     this.calendar = new ConnectorGoogleCalendarCalendarRepository();

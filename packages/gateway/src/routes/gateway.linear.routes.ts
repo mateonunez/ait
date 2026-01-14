@@ -1,5 +1,10 @@
-import { type ConnectorLinearService, clearOAuthData, connectorServiceFactory } from "@ait/connectors";
-import { getLogger } from "@ait/core";
+import {
+  type ConnectorLinearService,
+  LINEAR_ENTITY_TYPES_ENUM,
+  clearOAuthData,
+  connectorServiceFactory,
+} from "@ait/connectors";
+import { type LinearEntityType, getLogger } from "@ait/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { AuthQuery, OAuthCallbackQuery, PaginationQuery } from "../types/route.types";
 
@@ -144,10 +149,28 @@ export default async function linearRoutes(fastify: FastifyInstance) {
 
         const counts: Record<string, number> = {};
 
+        // Helper for progressive paginated fetching - saves each batch immediately
+        const fetchAndStoreProgressively = async (
+          entityType: string,
+          generator: AsyncGenerator<unknown[], void, unknown>,
+        ): Promise<number> => {
+          let count = 0;
+          try {
+            for await (const batch of generator) {
+              await service.connector.store.save(batch as LinearEntityType[]);
+              count += batch.length;
+            }
+          } catch (error) {
+            logger.warn(`${entityType} refresh stopped after ${count} items`, { error });
+          }
+          return count;
+        };
+
         if (entitiesToRefresh.includes("issues")) {
-          const issues = await service.fetchIssues();
-          await service.connector.store.save(issues);
-          counts.issues = issues.length;
+          counts.issues = await fetchAndStoreProgressively(
+            "issues",
+            service.fetchEntitiesPaginated(LINEAR_ENTITY_TYPES_ENUM.ISSUE, true, true),
+          );
         }
 
         reply.send({
