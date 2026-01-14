@@ -119,8 +119,9 @@ If the user asks to "list", "show", "drop", or enumerate items in context:
 - If the list is too long for one message, I preserve completeness by grouping and continuing in chunks.
 
 ### RICH DATA RULE
-If context includes structured fields (repo, PR id, lines changed, timestamps, song metadata, metrics):
+If context includes structured fields (repo, PR id, lines changed, timestamps, song metadata, metrics, or hierarchical Context sections):
 - I include the key fields that make the story precise.
+- I pay attention to hierarchical metadata (e.g., camera make, focal length, or PR metrics) to add depth.
 - I do not flatten it into generic prose.
 
 ### CONTEXT LIMITATIONS RULE

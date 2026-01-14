@@ -5,6 +5,7 @@ import { type TokenizerService, getTokenizer } from "../../tokenizer/tokenizer.s
 import { ContextBudgetManager } from "./budget.manager";
 import { type ContextBudget, type ContextItem, ContextTier, type IContextManager } from "./context.types";
 import { ContextDriftMonitor } from "./drift.monitor";
+import { getMetadataFormatter } from "./metadata.formatter";
 import { RollingSummarizer } from "./summarizer.service";
 import { ContextTierManager } from "./tier.manager";
 
@@ -66,6 +67,7 @@ export class SmartContextManager implements IContextManager {
 
     if (request.retrievedDocs && request.retrievedDocs.length > 0) {
       const seenDocs = new Set<string>();
+      const metadataFormatter = getMetadataFormatter();
 
       request.retrievedDocs.forEach((doc, index) => {
         const id = doc.metadata.id ? String(doc.metadata.id) : null;
@@ -82,14 +84,24 @@ export class SmartContextManager implements IContextManager {
         }
         seenDocs.add(uniqueKey);
 
-        const title = (doc.metadata?.title as string) || (doc.metadata?.name as string) || null;
+        const title =
+          (doc.metadata?.title as string) ||
+          (doc.metadata?.name as string) ||
+          (doc.metadata?.filename as string) ||
+          null;
         const source =
           (doc.metadata?.source as string) ||
           (doc.metadata?.url as string) ||
           (doc.metadata?.collection as string) ||
           null;
         const header = title ? `[${title}]` : source ? `Source: ${source}` : null;
-        const content = header ? `${header}\n${doc.pageContent}` : doc.pageContent;
+
+        // Format rich metadata
+        const formattedMetadata = metadataFormatter.format(doc.metadata);
+        const metadataSection = formattedMetadata ? `\n--- Context ---\n${formattedMetadata}` : "";
+
+        const content = `${header ? `${header}\n` : ""}${doc.pageContent}${metadataSection}`;
+
         this.tierManager.addItem({
           id: `doc-${uniqueKey}`,
           tier: ContextTier.LONG_TERM_MEMORY,
