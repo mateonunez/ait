@@ -89,6 +89,10 @@ const TEMPORAL_KEYWORDS: Record<TemporalIntent, readonly string[]> = {
     "was",
     "were",
     "ago",
+    "latest",
+    "recent",
+    "recently",
+    "newest",
     // Italian
     "passato",
     "passata",
@@ -100,6 +104,12 @@ const TEMPORAL_KEYWORDS: Record<TemporalIntent, readonly string[]> = {
     "era",
     "erano",
     "fa",
+    "ultime",
+    "ultimi",
+    "ultima",
+    "ultimo",
+    "recente",
+    "recenti",
     // Spanish
     "pasado",
     "pasada",
@@ -110,6 +120,12 @@ const TEMPORAL_KEYWORDS: Record<TemporalIntent, readonly string[]> = {
     "era",
     "eran",
     "hace",
+    "últimas",
+    "últimos",
+    "última",
+    "último",
+    "reciente",
+    "recientes",
   ],
   today: [
     // English
