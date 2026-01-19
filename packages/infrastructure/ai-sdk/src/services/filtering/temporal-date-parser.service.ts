@@ -81,6 +81,33 @@ const UNIT_MAP: Record<string, "day" | "week" | "month" | "year"> = {
   años: "year",
 };
 
+const RECENCY_KEYWORDS = [
+  // English
+  "latest",
+  "recent",
+  "recently",
+  "newest",
+  "most recent",
+  // Italian
+  "ultime",
+  "ultimi",
+  "ultima",
+  "ultimo",
+  "recente",
+  "recenti",
+  "più recente",
+  "più recenti",
+  // Spanish
+  "últimas",
+  "últimos",
+  "última",
+  "último",
+  "reciente",
+  "recientes",
+  "más reciente",
+  "más recientes",
+];
+
 export class TemporalDateParser implements ITemporalDateParser {
   readonly name = "temporal-date-parser";
 
@@ -168,6 +195,21 @@ export class TemporalDateParser implements ITemporalDateParser {
         from.setHours(0, 0, 0, 0);
         const to = new Date(target);
         to.setHours(23, 59, 59, 999);
+        return { from: from.toISOString(), to: to.toISOString() };
+      },
+    },
+    // Pattern: "latest/recent/ultime" (implicit recency, defaults to last 7 days)
+    {
+      regex: new RegExp(`\\b(${RECENCY_KEYWORDS.join("|")})\\b`, "i"),
+      handler: (_match, now) => {
+        // "Latest/recent" implies last 7 days as a reasonable default
+        const from = new Date(now);
+        from.setDate(now.getDate() - 7);
+        from.setHours(0, 0, 0, 0);
+
+        const to = new Date(now);
+        to.setHours(23, 59, 59, 999);
+
         return { from: from.toISOString(), to: to.toISOString() };
       },
     },
