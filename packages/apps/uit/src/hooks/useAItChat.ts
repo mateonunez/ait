@@ -10,6 +10,7 @@ export interface UseAItChatOptions {
   enableMetadata?: boolean;
   conversationId?: string;
   onConversationCreated?: (conversationId: string) => void;
+  onTitleCreated?: (title: string) => void;
   onError?: (error: string) => void;
 }
 
@@ -33,6 +34,7 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
     enableMetadata = true,
     conversationId: initialConversationId,
     onConversationCreated,
+    onTitleCreated,
     onError,
   } = options;
 
@@ -143,13 +145,35 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
             setMessages((prev) => prev.map((m) => (m.id === assistantMessageId ? { ...m, metadata } : m)));
           },
           onComplete: (data) => {
-            setMessages((prev) => prev.map((m) => (m.id === assistantMessageId ? { ...m, traceId: data.traceId } : m)));
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantMessageId
+                  ? {
+                      ...m,
+                      traceId: data.traceId,
+                      metadata: {
+                        reasoning: m.metadata?.reasoning || [],
+                        tasks: m.metadata?.tasks || [],
+                        suggestions: m.metadata?.suggestions || [],
+                        toolCalls: m.metadata?.toolCalls || [],
+                        ...m.metadata,
+                        usage: (data as any).metadata?.totalTokens
+                          ? { totalTokens: (data as any).metadata.totalTokens }
+                          : m.metadata?.usage,
+                      },
+                    }
+                  : m,
+              ),
+            );
             setIsLoading(false);
             // Store conversationId if returned
             if (data.conversationId && !conversationId) {
               setConversationId(data.conversationId);
               onConversationCreated?.(data.conversationId);
             }
+          },
+          onTitleUpdate: (title) => {
+            onTitleCreated?.(title);
           },
           onError: (errorMessage) => {
             setError(errorMessage);
@@ -164,7 +188,17 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
         onError?.(errorMessage);
       }
     },
-    [messages, isLoading, selectedModel, enableMetadata, onError, sessionId, conversationId, onConversationCreated],
+    [
+      messages,
+      isLoading,
+      selectedModel,
+      enableMetadata,
+      onError,
+      sessionId,
+      conversationId,
+      onConversationCreated,
+      onTitleCreated,
+    ],
   );
 
   // Calculate token usage - RAG context from LATEST message only (what's actually sent to LLM)
@@ -172,6 +206,19 @@ export function useAItChat(options: UseAItChatOptions = {}): UseAItChatReturn {
     // Get RAG context length from the latest assistant message only
     // Previous messages' RAG context is NOT sent again - only the current turn's context matters
     const latestAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+
+    // If we have actual usage tokens from backend, use them
+    if (latestAssistant?.metadata?.usage?.totalTokens) {
+      return {
+        totalTokens: latestAssistant.metadata.usage.totalTokens,
+        promptTokens: latestAssistant.metadata.usage.promptTokens || 0,
+        completionTokens: latestAssistant.metadata.usage.completionTokens || 0,
+        inputTokens: latestAssistant.metadata.usage.promptTokens || 0,
+        outputTokens: latestAssistant.metadata.usage.completionTokens || 0,
+        ragContextTokens: latestAssistant.metadata.context?.contextLength || 0,
+      };
+    }
+
     const ragContextLength = latestAssistant?.metadata?.context?.contextLength ?? 0;
 
     return calculateConversationTokens(

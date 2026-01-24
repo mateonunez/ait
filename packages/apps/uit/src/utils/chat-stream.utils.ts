@@ -5,7 +5,8 @@ import { parseGatewayStream } from "./stream-parser.utils";
 export interface ChatServiceCallbacks {
   onText?: (text: string) => void;
   onMetadata?: (metadata: AggregatedMetadata) => void;
-  onComplete?: (data: { finishReason: string; traceId: string; conversationId?: string }) => void;
+  onComplete?: (data: { finishReason: string; traceId: string; conversationId?: string; title?: string }) => void;
+  onTitleUpdate?: (title: string) => void;
   onError?: (error: string) => void;
 }
 
@@ -88,6 +89,9 @@ export async function processStreamEvents(
           traceId: event.traceId || "",
           conversationId: event.conversationId,
         });
+        break;
+      case STREAM_EVENT.TITLE_UPDATED:
+        callbacks.onTitleUpdate?.(event.title);
         break;
       case STREAM_EVENT.ERROR:
         onError?.(event.message);

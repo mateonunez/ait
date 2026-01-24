@@ -62,6 +62,9 @@ export default function ChatPage() {
       setLocation(`/chat/${id}`);
       loadHistory();
     },
+    onTitleCreated: (title: string) => {
+      setConversations((prev) => prev.map((c) => (c.id === currentConversationId ? { ...c, title } : c)));
+    },
   });
 
   const handleDeleteConversation = async (id: string) => {

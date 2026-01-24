@@ -2,19 +2,15 @@ import { type StreamEvent, getLogger } from "@ait/core";
 import { stream as streamGeneration } from "../../generation/stream";
 import { generate as generateText } from "../../generation/text";
 import { getAnalyticsProvider } from "../../providers";
-import { rerank } from "../../rag/rerank";
-import { type RetrievedDocument, retrieve } from "../../rag/retrieve";
 import { type GenerationTelemetryContext, createGenerationTelemetry } from "../../telemetry/generation-telemetry";
 import { routeToolsAsync } from "../../tools/router/tool-router";
 import { REASONING_TYPE, STREAM_EVENT } from "../../types";
 import type { ChatMessage } from "../../types/chat";
 import type { TextGenerationFeatureConfig } from "../../types/config";
 import type { Tool } from "../../types/tools";
-import { getContextPreprocessorService } from "../context/context-preprocessor.service";
-import { SmartContextManager } from "../context/smart/smart-context.manager";
+import { RAGManager } from "../context/rag/rag-manager.service";
 import { getErrorClassificationService } from "../errors/error-classification.service";
 import { TypeFilterService } from "../filtering/type-filter.service";
-import { ragContextPrompt } from "../prompts/rag-context.prompt";
 import { MetadataEmitterService } from "../streaming/metadata-emitter.service";
 
 const logger = getLogger();
@@ -88,20 +84,13 @@ export class TextGenerationService implements ITextGenerationService {
   readonly name = "text-generation";
   private readonly _metadataEmitter: MetadataEmitterService;
   private readonly _config: TextGenerationConfig;
-  private readonly _contextManager: SmartContextManager;
+  private readonly _ragManager: RAGManager;
   private readonly _typeFilterService: TypeFilterService;
 
   constructor(config: TextGenerationConfig = {}) {
     this._config = config;
     this._metadataEmitter = new MetadataEmitterService();
-    this._contextManager = new SmartContextManager({
-      totalTokenLimit: config.contextConfig?.maxContextChars
-        ? Math.floor(config.contextConfig.maxContextChars / 4)
-        : undefined,
-      ragTokenLimit: config.contextConfig?.maxContextChars
-        ? Math.floor((config.contextConfig.maxContextChars / 4) * 0.4) // 40% of max context
-        : 20000,
-    });
+    this._ragManager = new RAGManager(config);
     this._typeFilterService = new TypeFilterService();
   }
 
@@ -140,14 +129,12 @@ export class TextGenerationService implements ITextGenerationService {
 
       for await (const part of fullStream) {
         if (part.type === "text-delta") {
-          const chunk =
-            (part as { textDelta?: string; text?: string }).textDelta ?? (part as { text?: string }).text ?? "";
+          const chunk = part.text;
           chunkCount++;
           fullResponse += chunk;
           yield chunk;
         } else if (part.type === "reasoning-delta") {
-          const delta =
-            (part as { textDelta?: string; text?: string }).textDelta ?? (part as { text?: string }).text ?? "";
+          const delta = part.text;
           reasoningContent += delta;
           yield {
             type: STREAM_EVENT.REASONING,
@@ -160,6 +147,20 @@ export class TextGenerationService implements ITextGenerationService {
           reasoningContent = "";
         } else if (part.type === "finish") {
           reasoningContent = "";
+          // Return completion data with usage if available
+          const usage = (part as any).usage;
+          if (usage) {
+            yield {
+              type: STREAM_EVENT.DATA,
+              data: {
+                finishReason: part.finishReason,
+                metadata: {
+                  totalTokens: usage.totalTokens,
+                  model: options.model,
+                },
+              },
+            } as StreamEvent;
+          }
         } else if (part.type === "error") {
           const errorMsg = typeof part.error === "string" ? part.error : ((part.error as Error)?.message ?? "");
           if (errorMsg.includes("reasoning part") && errorMsg.includes("not found")) {
@@ -268,70 +269,18 @@ export class TextGenerationService implements ITextGenerationService {
     }
 
     let ragContext: string | undefined;
-    let ragDocuments: RetrievedDocument[] | undefined;
+    let ragDocuments: any[] | undefined;
 
     if (options.enableRAG) {
-      const retrieval = await retrieve({
-        query: finalPrompt,
-        types: typeFilter?.types,
-        limit: this._config.retrievalConfig?.limit ?? 20,
-        scoreThreshold: this._config.retrievalConfig?.scoreThreshold ?? 0.4,
-        filter: typeFilter?.timeRange
-          ? {
-              fromDate: typeFilter.timeRange.from,
-              toDate: typeFilter.timeRange.to,
-            }
-          : undefined,
-        traceContext: telemetry.optionalContext,
-        enableCache: true,
+      const ragResult = await this._ragManager.retrieveAndProcess({
+        prompt: finalPrompt,
+        typeFilter,
         allowedVendors: options.allowedVendors,
+        traceContext: telemetry.optionalContext,
       });
 
-      if (retrieval.documents.length > 0) {
-        const ranked = rerank({
-          query: finalPrompt,
-          documents: retrieval.documents,
-          topK: this._config.retrievalConfig?.limit ?? 20,
-        });
-
-        // Pre-filter documents by temporal intent before sending to LLM
-        const contextPreprocessor = getContextPreprocessorService();
-        const preprocessed = contextPreprocessor.filter({
-          documents: ranked.documents,
-          query: finalPrompt,
-        });
-
-        ragDocuments = preprocessed.documents;
-
-        if (preprocessed.filtered > 0) {
-          logger.info("[RAG] Documents preprocessed by temporal intent", {
-            originalCount: ranked.documents.length,
-            filteredCount: preprocessed.filtered,
-            keptCount: preprocessed.kept,
-            temporalIntent: preprocessed.temporalIntent,
-          });
-        }
-
-        ragContext = await this._contextManager.assembleContext({
-          systemInstructions: ragContextPrompt,
-          retrievedDocs: ragDocuments.map((doc) => ({
-            pageContent: doc.content,
-            metadata: {
-              id: doc.id,
-              __type: "document",
-              source: doc.source || (doc.metadata?.source as string),
-              collection: doc.collection,
-              ...doc.metadata,
-            },
-          })),
-        });
-
-        logger.info("[RAG] Context assembled", {
-          ragContextLength: ragContext?.length,
-          ragContextPreview: ragContext?.slice(0, 300),
-          documentCount: ragDocuments?.length,
-        });
-      }
+      ragContext = ragResult.context;
+      ragDocuments = ragResult.documents;
     }
 
     return {
@@ -442,7 +391,7 @@ export class TextGenerationService implements ITextGenerationService {
     const reason = error instanceof Error ? error.message : String(error);
     yield {
       type: STREAM_EVENT.ERROR,
-      data: `${baseMessage} (${reason}). Please try again later.`,
+      data: `${baseMessage} (${reason}). ${classifiedError.suggestedAction || "Please try again later."}`,
     };
   }
 }
