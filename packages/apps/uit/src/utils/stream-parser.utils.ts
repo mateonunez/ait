@@ -204,6 +204,9 @@ export async function* parseGatewayStream(response: Response): AsyncGenerator<an
                 };
                 break;
               }
+              case STREAM_EVENT.TITLE_UPDATED:
+                yield { type: STREAM_EVENT.TITLE_UPDATED, ...data };
+                break;
               default:
                 logger.warn(`Unknown stream event type received: ${type}`);
             }

@@ -20,6 +20,7 @@ export interface SendMessageOptions {
   onText?: (text: string) => void;
   onMetadata?: (metadata: AggregatedMetadata) => void;
   onComplete?: (data: { finishReason: string; traceId: string; conversationId?: string }) => void;
+  onTitleUpdate?: (title: string) => void;
   onError?: (error: string) => void;
   signal?: AbortSignal;
 }
@@ -57,7 +58,13 @@ export async function sendMessage(options: SendMessageOptions): Promise<void> {
 
   try {
     const aggregatedMetadata = createEmptyMetadata();
-    await processStreamEvents(result.value, aggregatedMetadata, { onText, onMetadata, onComplete, onError });
+    await processStreamEvents(result.value, aggregatedMetadata, {
+      onText,
+      onMetadata,
+      onComplete,
+      onTitleUpdate: options.onTitleUpdate,
+      onError,
+    });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     logger.error("[ChatService] Error processing stream:", { error: errorMessage });

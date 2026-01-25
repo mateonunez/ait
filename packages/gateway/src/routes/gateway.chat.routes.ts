@@ -117,18 +117,31 @@ export default async function chatRoutes(fastify: FastifyInstance) {
         let conversationId = request.body.conversationId;
 
         if (!conversationId) {
-          const title = await textGenerationService.generateText({
-            prompt: `You're an expert at generating titles for conversations, based on Nietzsche's style. Generate a 33 chars title for the following prompt, do not include any additional text or characters, simple text and concise: ${prompt}`,
-            telemetryOptions,
-            model,
-          });
-
           const conversation = await conversationService.createConversation({
-            title,
+            title: prompt?.slice(0, 33) || "New Conversation",
             userId,
             metadata: { model: model || "default" },
           });
           conversationId = conversation.id;
+
+          // Generate a better title in background
+          (async () => {
+            try {
+              const title = await textGenerationService.generateText({
+                prompt: `You're an expert at generating titles for conversations, based on Nietzsche's style. Generate a 33 chars title for the following prompt, do not include any additional text or characters, simple text and concise: ${prompt}`,
+                telemetryOptions,
+                model,
+              });
+              await conversationService.updateConversation(conversationId, { title });
+
+              // If the connection is still open, notify the UI
+              if (!reply.raw.destroyed) {
+                reply.raw.write(`${STREAM_EVENT.TITLE_UPDATED}:${JSON.stringify({ title, conversationId })}\n`);
+              }
+            } catch (titleError) {
+              logger.error("[Gateway] Failed to generate background title:", { error: titleError });
+            }
+          })();
         }
 
         await conversationService.addMessage({

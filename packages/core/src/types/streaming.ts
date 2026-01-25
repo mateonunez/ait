@@ -4,6 +4,7 @@ export const STREAM_EVENT = {
   DATA: "d",
   ERROR: "3",
   REASONING: "reasoning",
+  TITLE_UPDATED: "title",
 } as const;
 
 export type StreamEventType = (typeof STREAM_EVENT)[keyof typeof STREAM_EVENT];
@@ -193,6 +194,11 @@ export interface AggregatedMetadata {
   suggestions: SuggestionItem[];
   toolCalls: ToolCallMetadata[];
   model?: ModelMetadata;
+  usage?: {
+    totalTokens?: number;
+    promptTokens?: number;
+    completionTokens?: number;
+  };
 }
 
 export type MessageRole = "user" | "assistant" | "system";

@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "createdAt": "2026-01-23T19:45:39.730Z",
+  "scope": "project",
+  "operation": "change-to-agents",
+  "entries": [
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.agents/commands",
+      "kind": "dir",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.claude/commands",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.opencode/commands",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.cursor/commands",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.agents/hooks",
+      "kind": "dir",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.claude/hooks",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.agents/skills",
+      "kind": "dir",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.claude/skills",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.opencode/skills",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.cursor/skills",
+      "kind": "symlink",
+      "action": "create"
+    },
+    {
+      "originalPath": "/Users/mateonunez/source/mateonunez/ait/.github/skills",
+      "kind": "symlink",
+      "action": "create"
+    }
+  ]
+}
